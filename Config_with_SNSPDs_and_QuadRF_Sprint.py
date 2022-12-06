@@ -6,7 +6,7 @@ import sys
 import logging
 from logging import StreamHandler, Formatter, INFO, WARN, ERROR
 from matplotlib import pyplot as plt
-
+import math
 
 def gaussian(x, mu, sigma):
     return 1 / sigma / np.sqrt(2 * np.pi) * np.exp(-1.0 / 2.0 * ((x - mu) / sigma) ** 2)
@@ -74,16 +74,17 @@ spectrum_pulse = 240
 IF_TOP1_MOT = 113e6
 IF_TOP1_PGC = 93e6
 IF_TOP1_Flash = 121.6625e6
-IF_TOP2 = 100e6
+IF_TOP2 = 90e6
 IF_AOM_MOT = 110e6
 IF_AOM_MOT_OFF = 80e6
 IF_AOM_OD = 92675000 # (226 - 266.65 / 2) * 1e6
 # IF_AOM_OD = 133.325e6
 IF_AOM_Depump = 133.325e6
 IF_AOM_Repump = 78.4735e6
-IF_AOM_N = 89.2368e6
-IF_AOM_S = 80e6
+# IF_AOM_N = 89.2368e6
+IF_AOM_N = 129.2368e6
 # IF_AOM_S = 89.2368e6
+IF_AOM_S = 129.2368e6
 IF_AOM_LO = 89.2368e6
 IF_AOM_SigmaPlus = 114.58e6
 IF_AOM_SigmaMinus = 114.58e6
@@ -126,10 +127,12 @@ num_of_photons_per_sequence_N = num_of_photons_det_pulses * num_of_det_pulses_N 
 def Sprint_Exp_Gaussian_samples(det_pulses_amp = [0.4]*4,sprint_pulses_amp = [0.4]*4,num_init_zeros = 10,num_between_zeros = 10):
     Sprint_Exp_Gaussian_samples = [0] * num_init_zeros
     for n in det_pulses_amp:
-        Sprint_Exp_Gaussian_samples +=  [0] * num_between_zeros + (signal.gaussian(50, std=(15 / 2.355)) * n).tolist()
+        # Sprint_Exp_Gaussian_samples += [n] * 50 + [0] * num_between_zeros
+        Sprint_Exp_Gaussian_samples += (signal.gaussian(50, std=(50 / 2.355)) * n).tolist() + [0] * num_between_zeros
     for m in sprint_pulses_amp:
-        Sprint_Exp_Gaussian_samples +=  [0] * num_between_zeros + (signal.gaussian(110, std=(30 / 2.355)) * m).tolist()
-    return Sprint_Exp_Gaussian_samples
+        # Sprint_Exp_Gaussian_samples += [m] * 110 + [0] * num_between_zeros
+        Sprint_Exp_Gaussian_samples += (signal.gaussian(110, std=(110 / 2.355)) * m).tolist() + [0] * num_between_zeros
+    return Sprint_Exp_Gaussian_samples[:-num_between_zeros]
 
 
 Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(det_pulses_amp=[0.4, 0, 0.4, 0],
@@ -140,8 +143,8 @@ Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(det_pulses_amp=[0, 0
                                                             sprint_pulses_amp=[0, 0.4, 0, 0.4], num_init_zeros=10,
                                                             num_between_zeros=10)
 
-readout_pulse_sprint_len_N = (opx_max_per_window/num_of_photons_per_sequence_N)*len(Sprint_Exp_Gaussian_samples_N)# [ns] length of the measurment window for North
-readout_pulse_sprint_len_S = (opx_max_per_window/num_of_photons_per_sequence_S)*len(Sprint_Exp_Gaussian_samples_S) # [ns] length of the measurment window for South
+readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/4)/(1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
+readout_pulse_sprint_len_S = math.ceil(((opx_max_per_window/4)/(1e6*num_of_photons_per_sequence_S))*len(Sprint_Exp_Gaussian_samples_S))*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
 
 CRUS_probe_samples = [0] * 340 + ([0.4] * (256 * 2 + 10)) + [0] * 162 # twice the 512ns period of the AWG, with scope triggered
 CRUS_pulser_samples = [0] * 128 + ([0.4] * (256 + 128)) + [0] * 128 * 4 # twice the 512ns period of the AWG, with scope triggered
@@ -233,14 +236,14 @@ config = {
             },
 
             'digital_inputs': {
-                1: {'polarity': 'RISING',  "threshold": 0.5, 'deadtime':4},
-                2: {'polarity': 'RISING',  "threshold": 0.5, 'deadtime':4},
-                3: {'polarity': 'RISING',  "threshold": 0.5, 'deadtime':4},
-                4: {'polarity': 'RISING',  "threshold": 0.5, 'deadtime':4},
-                5: {'polarity': 'RISING',  "threshold": 0.5, 'deadtime':4},
-                6: {'polarity': 'RISING',  "threshold": 0.5, 'deadtime':4},
-                7: {'polarity': 'RISING',  "threshold": 0.5, 'deadtime':4},
-                8: {'polarity': 'RISING',  "threshold": 0.5, 'deadtime':4},
+                1: {'polarity': 'High', 'window': 6, "threshold": 0.5},
+                2: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
+                3: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
+                4: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
+                5: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
+                6: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
+                7: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
+                8: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
             },
         }
     },
@@ -306,11 +309,6 @@ config = {
                     "delay": 0,
                     "buffer": 0,
                 },
-                # "Shutter_Switch": {
-                #     "port": (controller, 5),
-                #     "delay": 0,
-                #     "buffer": 0,
-                # },
             },
             'operations': {
                 'OD_FS': "OD_FS_pulse",
@@ -322,9 +320,6 @@ config = {
             "singleInput": {
                 "port": (controller, 5)
             },
-            # "outputs": {
-            #     'out1': (controller, 2)
-            # },
             'digitalInputs': {
                 "OD_Switch": {
                     "port": (controller, 2),
@@ -336,16 +331,6 @@ config = {
                     "delay": 0,
                     "buffer": 0,
                 },
-                # "Blue_Switch": {
-                #     "port": (controller, 7),
-                #     "delay": 0,
-                #     "buffer": 0,
-                # },
-                # "AWG_Switch": {
-                #     "port": (controller, 10),
-                #     "delay": 0,
-                #     "buffer": 0,
-                # },
             },
             'operations': {
                 'OD': "OD_pulse",
@@ -353,58 +338,7 @@ config = {
                 'Depump': "Depump_pulse",
             },
             'intermediate_frequency': IF_AOM_OD,
-            # 'time_of_flight': 24,
-            # 'smearing': 0,
         },
-
-        # "AOM_2-2/3'_detuned": {
-        #     "singleInput": {
-        #         "port": (controller, 5)
-        #     },
-        #     'digitalInputs': {
-        #         "OD_Switch": {
-        #             "port": (controller, 2),
-        #             "delay": 0,
-        #             "buffer": 0,
-        #         },
-        #         "Shutter_Switch": {
-        #             "port": (controller, 5),
-        #             "delay": 0,
-        #             "buffer": 0,
-        #         },
-        #         "QuadRF_Switch": {
-        #             "port": (controller, 4),
-        #             "delay": 70,
-        #             "buffer": 0,
-        #         },
-        #     },
-        #     'operations': {
-        #         'OD': "OD_pulse",
-        #         'OD_FS': "OD_FS_pulse",
-        #         'Depump': "Depump_pulse",
-        #         'OD_Gaussian_Pulse': "Spectrum_Gaussian_pulse"
-        #     },
-        #     'intermediate_frequency': IF_AOM_OD,
-        #     'time_of_flight': 24,
-        #     'smearing': 0,
-        # },
-
-        # "AOM_2-2'": {
-        #     'singleInput': {
-        #         "port": (controller, 6)
-        #     },
-        #     'digitalInputs': {
-        #         "Depump_Trigger": {
-        #             "port": (controller, 7),
-        #             "delay": 0,
-        #             "buffer": 0,
-        #         },
-        #     },
-        #     'operations': {
-        #         'Depump': "Depump_pulse",
-        #     },
-        #     'intermediate_frequency': IF_AOM_Depump,
-        # },
 
         "Measurement": {
             'digitalInputs': {
@@ -418,19 +352,6 @@ config = {
                 'Measure': "Measure_trigger",
             },
         },
-
-        # "Probe_shutter": {
-        #     'digitalInputs': {
-        #         "Shutter_Switch": {
-        #             "port": (controller, 5),
-        #             "delay": 0,
-        #             "buffer": 0,
-        #         },
-        #     },
-        #     'operations': {
-        #         'Shutter_ON': "Shutter_on",
-        #     },
-        # },
 
         "Dig_detectors": {
             ## fake port ##
@@ -459,8 +380,8 @@ config = {
                 'readout': "digital_readout",
                 # 'readout_CRUS': "digital_readout_CRUS",
             },
-            # 'time_of_flight': 24,
-            # 'smearing': 0,
+            'time_of_flight': 24,
+            'smearing': 0,
             # 'intermediate_frequency': 0,
         },
 
@@ -489,8 +410,8 @@ config = {
                 'readout': "digital_readout_sprint",
                 'readout_CRUS': "digital_readout_CRUS",
             },
-            # 'time_of_flight': 24,
-            # 'smearing': 0,
+            'time_of_flight': 24,
+            'smearing': 0,
             # 'intermediate_frequency': 0,
         },
 
@@ -884,11 +805,12 @@ config = {
         },
 
         "digital_readout_sprint": {
-            'length': min(readout_pulse_sprint_len_N,readout_pulse_sprint_len_S),
+            'length': readout_pulse_sprint_len_N,
             'operation': 'control',
             'waveforms': {
                 'single': 'zero_wf'
             },
+            'digital_marker': 'ON'
         },
 
         "digital_readout_CRUS": {
@@ -916,15 +838,6 @@ config = {
                 'I': 'wf_gaus',
                 'Q': 'wf_0'
             }
-        },
-
-        "digital_readout_CRUS": {
-            'length': readout_CRUS_pulse_len,
-            'operation': 'control',
-            'waveforms': {
-                'single': 'zero_wf'
-            },
-            'digital_marker': 'ON'
         },
 
         'pulse1_in': {

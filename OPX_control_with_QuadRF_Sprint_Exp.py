@@ -58,12 +58,12 @@ def MOT(mot_repetitions):
     """
     FLR = declare(fixed)
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-3'_for_interference", "FLR_detection", "Measurement", "Dig_detectors_spectrum","Dig_detectors", "AOM_N", "AOM_S")
+          "AOM_2-2/3'", "AOM_2-3'_for_interference", "FLR_detection", "Measurement", "Dig_detectors_spectrum", "Dig_detectors") # , "AOM_N", "AOM_S")
 
     ## MOT build-up ##
     n = declare(int)
     m = declare(int)
-    m = declare(int)
+    play("Detection" * amp(FLR * 0), "FLR_detection", duration=4)  # we dont know why this works, but Yoav from QM made us write this line to solve an alignment problem we had in the next 2 for loops
     with for_(n, 1, n <= mot_repetitions, n + 1):
         play("MOT" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0")
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
@@ -72,10 +72,10 @@ def MOT(mot_repetitions):
         play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
     with for_(m, 1, m <= (mot_repetitions - 1), m + 1):
         measure("Detection", "FLR_detection", None, integration.full("Detection_opt", FLR, "out1"))
-        play("OD_FS" * amp(0.1), "AOM_2-3'_for_interference")
+        # play("OD_FS" * amp(0.1), "AOM_2-3'_for_interference")
 
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "FLR_detection", "Measurement", "Dig_detectors","Dig_detectors_spectrum", "AOM_N", "AOM_S")
+          "AOM_2-2/3'", "FLR_detection", "Measurement", "Dig_detectors","Dig_detectors_spectrum") #, "AOM_N", "AOM_S")
 
     return FLR
 
@@ -223,7 +223,7 @@ def FreeFall(freefall_duration, coils_timing):
 
     ## Aligning all the different elements used during the freefall time of the experiment ##
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'",
-          "Measurement","Dig_detectors", "Dig_detectors_spectrum", "AOM_N", "AOM_S")
+          "Measurement", "Dig_detectors", "Dig_detectors_spectrum", "AOM_N", "AOM_S")
 
     ## Zeeman Coils turn-on sequence ##
     wait(coils_timing, "Zeeman_Coils")
@@ -452,8 +452,8 @@ def Probe_counts_Measure_SNSPDs(m_off_time, m_time, m_window, shutter_open_time,
         save(counts8, ON_counts_st8)
 
 def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
-                    ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8,
-                    tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st):
+               ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8,
+               tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st):
     """
      Generates train of 8 pulses (to be configured from config if each of thenm is north ore south)
      for SPRINT experiments
@@ -495,20 +495,19 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
     m8 = declare(int)
 
     align("AOM_N", "AOM_S", "Dig_detectors_spectrum")
-    play("Const_open", "AOM_S", duration=shutter_open_time)
+    # play("Const_open", "AOM_S", duration=shutter_open_time)
+    wait(shutter_open_time, "AOM_S")
     align("AOM_N", "AOM_S", "Dig_detectors_spectrum")
     with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.Sprint_Exp_Gaussian_samples_S))):
         play("Sprint_experiment_pulses_S", "AOM_S")
         play("Sprint_experiment_pulses_N", "AOM_N")
 
-    with for_(n, 0, n < (m_time + m_off_time) * 4, n + m_window + m_off_time * 4):
-        measure("readout_CRUS", "Dig_detectors_spectrum", None,
+    with for_(n, 0, n < m_time * 4, n + m_window):
+        measure("readout", "Dig_detectors_spectrum", None,
                 time_tagging.digital(tt_vec5, m_window, element_output="out5", targetLen=counts5),
                 time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
                 time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
                 time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8))
-        with if_(m_off_time > 0):
-            wait(m_off_time, "Dig_detectors_spectrum")
 
         ## Save Data: ##
 
@@ -536,19 +535,12 @@ def opx_control(obj, qm):
     with program() as opx_control_prog:
         ## declaring program variables: ##
         i = declare(int)
-        k = declare(int)
-        j = declare(int)
-        filler = declare(int, value=1)
         Trigger_Phase = declare(int, value=Phases_Names.index(obj.Exp_Values['Triggering_Phase']))
         Imaging_Phase = declare(int, value=Phases_Names.index(obj.Exp_Values['Imaging_Phase']))
 
         # Boolean variables:
-        MOT_ON = declare(bool, value=True)
-        AntiHelmholtz_delay_ON = declare(bool, value=False)
         AntiHelmholtz_ON = declare(bool, value=True)
-        Linear_PGC_ON = declare(bool, value=True)
-        Transits_Exp_ON = declare(bool, value=False)
-        CRUS_Exp_ON = declare(bool, value=False)
+        SPRINT_Exp_ON = declare(bool, value=True)
         Probe_max_counts_Exp_ON = declare(bool, value=False)
 
         # MOT variables
@@ -560,15 +552,10 @@ def opx_control(obj, qm):
 
         # PGC variables:
         pgc_duration = declare(int, value=int(obj.pgc_duration))
-        pgc_prep_time = declare(int, value=int(obj.pgc_prep_duration))
-        pgc_pulse_duration_0 = declare(int, value=int(obj.pgc_pulse_duration_0))  # The relative duration to reach the desired amplitude
-        pgc_pulse_duration_minus = declare(int, value=int(obj.pgc_pulse_duration_minus))  # The relative duration to reach the desired amplitude
-        pgc_pulse_duration_plus = declare(int, value=int(obj.pgc_pulse_duration_plus))  # The relative duration to reach the desired amplitude
 
         # Fountain variables:
         fountain_duration = declare(int, value=int(obj.fountain_duration))
         # TODO: pre_PGC_fountain_duration = declare(int, value=int(obj.pre_PGC_fountain_duration))
-        fountain_prep_time = declare(int, value=int(obj.fountain_prep_duration))  # Can't be used with Chirp!!!
         fountain_pulse_duration_0 = declare(int, value=int(obj.fountain_pulse_duration_0))  # The relative duration to reach the desired amplitude
         fountain_pulse_duration_minus = declare(int, value=int(obj.fountain_pulse_duration_minus))  # The relative duration to reach the desired amplitude
         fountain_pulse_duration_plus = declare(int, value=int(obj.fountain_pulse_duration_plus))  # The relative duration to reach the desired amplitude
@@ -584,7 +571,6 @@ def opx_control(obj, qm):
         Buffer_Cycles = declare(int, value=obj.Exp_Values['Buffer_Cycles'])
 
         # General measurements variables:
-        Trigger_delay = declare(int, value=int(obj.Exp_Values['Trigger_delay'] * 1e6 / 4))
         PrePulse_duration = declare(int, value=int(obj.Exp_Values['PrePulse_duration'] * 1e6 / 4))
 
         # Pulse_1_parameters:
@@ -606,24 +592,9 @@ def opx_control(obj, qm):
         Depump_start = declare(int, value=int(obj.Depump_Start * 1e6 / 4))
 
         # OD measurement variables:
-        ## Free Space:
-        OD_FS_pulse_duration = declare(int, value=int(obj.OD_FS_pulse_duration * 1e6 / 4))
-        OD_FS_pulses_spacing = declare(int, value=int(obj.OD_FS_pulses_spacing * 1e6 / 4))
-        OD_FS_start = declare(int, value=int(obj.OD_FS_Start * 1e6 / 4))
-        OD_FS_sleep = declare(int, value=int(obj.OD_FS_sleep * 1e6 / 4))
         ## In fiber:
-        M_duration = declare(int, value=int(obj.M_time / 4))  # From [nsec] to [4 nsec]
         M_off_time = declare(int, value=int(obj.M_off_time / 4))
-        OD_Delay = declare(int, value=int(obj.OD_delay * 1e6 / 4))
         shutter_open_time = declare(int, value=int(obj.Shutter_open_time * 1e6 / 4))
-        Rep = declare(int, value=obj.rep)
-
-        # MW spectroscopy variables:
-        MW_freq = declare(int, value=obj.MW_start_frequency)
-        pulse_length_MW = declare(int, value=(obj.Pulse_Length_MW * int(1e3 / 4)))
-        pulse_length_OD = declare(int, value=(obj.Pulse_Length_OD * int(1e3 / 4)))
-        Repetitions = declare(int, value=1)
-        Delta_f = declare(int, value=0)
 
         # Stream processing:
         ON_counts_st1 = declare_stream()
@@ -649,103 +620,75 @@ def opx_control(obj, qm):
 
         with infinite_loop_():
             assign(i, IO1)
-            with for_(k, 1, k <= N_Snaps + Buffer_Cycles, k + 1):
-                with for_(j, 1, j <= filler, j + 1):
-                    ##########################
-                    ## Cooling Sequence ##
-                    ##########################
 
-                    with if_(MOT_ON & AntiHelmholtz_ON):
-                        FLR = MOT(MOT_Repetitions)
-                        align(*all_elements, "AOM_2-2/3'")
-                    with if_(antihelmholtz_delay > 0):
-                        play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
-                    with if_(Trigger_Phase == 1):  # Trigger on PGC
-                        ## Trigger QuadRF Sequence #####################
-                        play("C_Seq", "Cooling_Sequence", duration=2500)
-                        ################################################
-                    # align(*all_elements, "AOM_2-2/3'")
-                    with if_(post_MOT_delay > 0):
-                        wait(post_MOT_delay, "Cooling_Sequence")
-                        align(*all_elements, "Zeeman_Coils", "AOM_2-2/3'")
-                    with if_(fountain_duration > 0):
-                        wait(fountain_duration, "Cooling_Sequence")
-                        Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
-                                                   fountain_pulse_duration_0, fountain_pulse_duration_minus,
-                                                   fountain_pulse_duration_plus, fountain_aom_chirp_rate,
-                                                   fountain_delta_f)
-                        align(*all_elements, "Zeeman_Coils", "AOM_2-2/3'")
-                    with if_(pgc_duration > 0):
-                        wait(pgc_duration, "Cooling_Sequence")
-                        Pulse_const(pgc_duration)
+            ##########################
+            ## Cooling Sequence ##
+            ##########################
+
+            # MOT sequence:
+            FLR = MOT(MOT_Repetitions)
+            play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
+
+            # Delay before fountain:
+            wait(post_MOT_delay, "Cooling_Sequence")
+            align(*all_elements)
+
+            # Fountain sequence:
+            wait(fountain_duration, "Cooling_Sequence")
+            Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
+                                       fountain_pulse_duration_0, fountain_pulse_duration_minus,
+                                       fountain_pulse_duration_plus, fountain_aom_chirp_rate,
+                                       fountain_delta_f)
+
+            # PGC sequence:
+            wait(pgc_duration, "Cooling_Sequence")
+            Pulse_const(pgc_duration)
+            align(*all_elements)
+
+            # FreeFall sequence:
+            FreeFall(FreeFall_duration, coils_timing)
+
+            ##########################
+            ## Measurement Sequence ##
+            ##########################
+
+            with if_(Trigger_Phase == 3):  # when trigger on PrePulse
+                ## Trigger QuadRF Sequence #####################
+                play("C_Seq", "Cooling_Sequence", duration=2500)
+                ################################################
+
+            wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
+            align(*all_elements,  "AOM_2-2/3'")
+
+            with if_(Trigger_Phase == 4):  # when trigger on pulse 1
+                ## Trigger QuadRF Sequence #####################
+                play("C_Seq", "Cooling_Sequence", duration=2500)
+                ################################################
+            with if_((Imaging_Phase == 4) & (Pulse_1_duration > 0)):  # 4 means imaging phase on pulse_1
+                with if_(SPRINT_Exp_ON):
+                    align(*all_elements, "Dig_detectors_spectrum", "AOM_N", "AOM_S")
+                    Sprint_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
+                               ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8,
+                               tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st)
+                    save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
+                    with if_(AntiHelmholtz_ON):
+                        save(FLR, FLR_st)
+                    align(*all_elements, "Dig_detectors_spectrum", "AOM_N", "AOM_S")
+                with else_():
+                    with if_(Probe_max_counts_Exp_ON):
+                        align(*all_elements, "Dig_detectors", "AOM_2-2/3'")
+                        Probe_counts_Measure_SNSPDs(M_off_time, Pulse_1_duration, obj.M_window,
+                                                    shutter_open_time, ON_counts_st1, ON_counts_st2,
+                                                    ON_counts_st3, ON_counts_st4, ON_counts_st5,
+                                                    ON_counts_st6, ON_counts_st7, ON_counts_st8)
+                        align(*all_elements, "Dig_detectors", "AOM_2-2/3'")
+                    ## For taking an image:
+                    with else_():
                         align(*all_elements)
-                    with if_((k >= 1) & (Imaging_Phase == 4)):  # 4 means imaging phase on pulse_1
-                        with if_(k <= Buffer_Cycles):
-                            FreeFall(FreeFall_duration, coils_timing)
-                        with else_():
-                            FreeFall(FreeFall_duration + PrePulse_duration * (k - 1 - Buffer_Cycles), coils_timing)
-
-                    ##########################
-                    ## Measurement Sequence ##
-                    ##########################
-                    with if_(Trigger_Phase == 3):  # when trigger on PrePulse
-                        ## Trigger QuadRF Sequence #####################
-                        play("C_Seq", "Cooling_Sequence", duration=2500)
-                        ################################################
-                    ## Measurement start time:
-                    # with if_((k > Buffer_Cycles) & (Imaging_Phase == 4)):  # 4 means imaging phase on pulse_1
-                    #     wait(PrePulse_duration * (k - Buffer_Cycles), "Cooling_Sequence", "Measurement")
-                    # with else_():
-                    wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
-                    align(*all_elements,  "AOM_2-2/3'")
-
-                    with if_(Trigger_Phase == 4):  # when trigger on pulse 1
-                        ## Trigger QuadRF Sequence #####################
-                        play("C_Seq", "Cooling_Sequence", duration=2500)
-                        ################################################
-                    with if_((Imaging_Phase == 4) & (Pulse_1_duration > 0)):  # 4 means imaging phase on pulse_1
-                        ## For Depump measurement:
-                        with if_(Depump_pulse_duration > 0):
-                            wait(Depump_start + 4, "AOM_2-2/3'")
-                            Depump_Measure(Depump_pulse_duration, Depump_pulses_spacing)
-                            align(*all_elements, "AOM_2-2/3'")
-                        with else_():
-                            ## For free-space OD measurement:
-                            with if_(OD_FS_pulse_duration > 0):
-                                wait(OD_FS_start + 4, "AOM_2-2/3'")
-                                OD_Measure(OD_FS_pulse_duration, OD_FS_pulses_spacing, OD_FS_sleep)
-                                align(*all_elements, "AOM_2-2/3'")
-                            with else_():
-                                with if_(Transits_Exp_ON):
-                                    align(*all_elements, "Dig_detectors_spectrum", "AOM_N", "AOM_S")
-                                    Sprint_Exp(obj.vec_size, Pulse_1_duration, obj.M_window, obj.M_off_time, shutter_open_time, obj.rep,
-                                                    ON_counts_st1, ON_counts_st2, ON_counts_st3, ON_counts_st4,
-                                                    ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8,
-                                                    tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8,
-                                                    tt_st_N, tt_st_S, rep_st)
-                                    save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
-                                    with if_(AntiHelmholtz_ON):
-                                        save(FLR, FLR_st)
-                                    align(*all_elements, "Dig_detectors_spectrum", "AOM_N", "AOM_S")
-                                with else_():
-                                    with if_(Probe_max_counts_Exp_ON):
-                                        align(*all_elements, "Dig_detectors_spectrum", "AOM_2-2/3'")
-                                        Probe_counts_Measure_SNSPDs(M_off_time, Pulse_1_duration, obj.M_window,
-                                                                    shutter_open_time, ON_counts_st1, ON_counts_st2,
-                                                                    ON_counts_st3, ON_counts_st4, ON_counts_st5,
-                                                                    ON_counts_st6, ON_counts_st7, ON_counts_st8)
-                                        align(*all_elements, "Dig_detectors_spectrum", "AOM_2-2/3'")
-                                    ## For taking an image:
-                                    with else_():
-                                        align(*all_elements)
-                                        Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
-                                                        pulse_1_duration_minus, pulse_1_duration_plus)
-                                        Measure(Pulse_1_duration)  # This triggers camera (Control 7)
-                                        align(*all_elements)
-
-            with if_(~(AntiHelmholtz_ON | Transits_Exp_ON)):
-                assign(AntiHelmholtz_ON, True)
-                # assign(IO2, False)
+                        Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
+                                        pulse_1_duration_minus, pulse_1_duration_plus)
+                        Measure(Pulse_1_duration)  # This triggers camera (Control 7)
+                        align(*all_elements)
 
             assign(N_Snaps, 1)
             assign(Buffer_Cycles, 0)
@@ -756,20 +699,10 @@ def opx_control(obj, qm):
                 pause()
             with while_(i > 0):
                 ## Boolean variables control: ##
-                with if_(i == 1):
-                    assign(MOT_ON, IO2)
-                with if_(i == 2):
-                    assign(Linear_PGC_ON, IO2)
-                with if_(i == 3):
-                    assign(Transits_Exp_ON, IO2)
                 with if_(i == 4):
-                    assign(CRUS_Exp_ON, IO2)
-                with if_(i == 5):
-                    assign(AntiHelmholtz_delay_ON, IO2)
+                    assign(SPRINT_Exp_ON, IO2)
                 with if_(i == 6):
                     assign(Probe_max_counts_Exp_ON, IO2)
-                with if_(i == 7):
-                    assign(filler, IO2)
                 ## AntiHelmholtz control ##
                 with if_(i == 10):
                     assign(antihelmholtz_delay, IO2)
@@ -782,20 +715,10 @@ def opx_control(obj, qm):
                 ## PGC variables control ##
                 with if_(i == 20):  # Live control over the PGC duration
                     assign(pgc_duration, IO2)
-                with if_(i == 21):  # Live control over the preparation time of the PGC
-                    assign(pgc_prep_time, IO2)
-                with if_(i == 28):  # Live control over the final amplitude of the PGC AOM 0
-                    assign(pgc_pulse_duration_0, IO2)
-                with if_(i == 29):  # Live control over the final amplitude of the PGC AOM -
-                    assign(pgc_pulse_duration_minus, IO2)
-                with if_(i == 30):  # Live control over the final amplitude of the PGC AOM +
-                    assign(pgc_pulse_duration_plus, IO2)
 
                 ## Fountain variables control: ##
                 with if_(i == 31):  # Live control over the fountain duration
                     assign(fountain_duration, IO2)
-                with if_(i == 32):  # Live control over the preparation time of the Fountain
-                    assign(fountain_prep_time, IO2)
                 with if_(i == 36):  # Live control over the final amplitude of the fountain AOM 0
                     assign(fountain_pulse_duration_0, IO2)
                 with if_(i == 37):  # Live control over the final amplitude of the fountain AOM -
@@ -806,8 +729,6 @@ def opx_control(obj, qm):
                     assign(fountain_aom_chirp_rate, IO2)
 
                 ## Measurement variables control: ##
-                with if_(i == 41):
-                    assign(Trigger_delay, IO2)
                 with if_(i == 42):
                     assign(PrePulse_duration, IO2)
                 with if_(i == 43):
@@ -820,16 +741,6 @@ def opx_control(obj, qm):
                     assign(Buffer_Cycles, IO2)
 
                 ## OD and N_atoms measuring variable control ##
-                with if_(i == 51):  # Live control of the Free Space OD measurement start time
-                    assign(OD_FS_start, IO2)
-                with if_(i == 52):  # Live control of the Free Space OD measurement pulses duration
-                    assign(OD_FS_pulse_duration, IO2)
-                with if_(i == 53):  # Live control of the Free Space OD measurement wait duration between the 2 pulses
-                    assign(OD_FS_pulses_spacing, IO2)
-                with if_(i == 54):  # Live control of the SNSPDs OD measurement start time
-                    assign(OD_Delay, IO2)
-                with if_(i == 55):  # Live control of the SNSPDs OD measurement duration
-                    assign(Rep, IO2)
                 with if_(i == 56):  # Live control of the Depump measurement start time
                     assign(Depump_start, IO2)
                 with if_(i == 57):  # Live control of the Depump measurement pulses duration
@@ -838,17 +749,7 @@ def opx_control(obj, qm):
                     assign(Depump_pulses_spacing, IO2)
                 with if_(i == 59):  # Live control of the delay due to shutter opening time.
                     assign(shutter_open_time, IO2)
-                ## MW spectroscopy control ##
-                with if_(i == 61):  # Live control of the MW spectroscopy MW frequency
-                    assign(MW_freq, IO2)
-                with if_(i == 62):  # Live control of the MW spectroscopy MW pulse length
-                    assign(pulse_length_MW, IO2)
-                with if_(i == 63):  # Live control of the MW spectroscopy OD pulse length
-                    assign(pulse_length_OD, IO2)
-                with if_(i == 64):  # Live control of the MW spectroscopy MW pulse repetitions
-                    assign(Repetitions, IO2)
-                with if_(i == 65):  # Live control of the MW spectroscopy MW pulse frequency change
-                    assign(Delta_f, IO2)
+
 
                 pause()
                 assign(i, IO1)
@@ -856,24 +757,14 @@ def opx_control(obj, qm):
         with stream_processing():
             (ON_counts_st1 + ON_counts_st2 + ON_counts_st3 + ON_counts_st4).buffer(obj.rep).save('North_Probe')
             (ON_counts_st5 + ON_counts_st6 + ON_counts_st7 + ON_counts_st8).buffer(obj.rep).save('South_Probe')
-            # (tt_st_N + rep_st).buffer(5000 * obj.rep).save('North_Probe_TT')
-            # (tt_st_S + rep_st).buffer(5000 * obj.rep).save('South_Probe_TT')
-            ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
-            ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
-            ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
-            ON_counts_st4.buffer(obj.rep).save('Det4_Counts')
             ON_counts_st5.buffer(obj.rep).save('Det5_Counts')
             ON_counts_st6.buffer(obj.rep).save('Det6_Counts')
             ON_counts_st7.buffer(obj.rep).save('Det7_Counts')
             ON_counts_st8.buffer(obj.rep).save('Det8_Counts')
-            (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
-            (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
-            (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
-            (tt_st_4 + rep_st).buffer(obj.vec_size * obj.rep).save('Det4_Probe_TT')
-            # (tt_st_5 + rep_st).buffer(obj.vec_size * obj.rep).save('Det5_Probe_TT')
-            # (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep).save('Det6_Probe_TT')
-            # (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det7_Probe_TT')
-            # (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det8_Probe_TT')
+            (tt_st_5 + rep_st).buffer(Config.vec_size * obj.rep).save('Det5_Probe_TT')
+            (tt_st_6 + rep_st).buffer(Config.vec_size * obj.rep).save('Det6_Probe_TT')
+            (tt_st_7 + rep_st).buffer(Config.vec_size * obj.rep).save('Det7_Probe_TT')
+            (tt_st_8 + rep_st).buffer(Config.vec_size * obj.rep).save('Det8_Probe_TT')
             FLR_st.save('FLR_measure')
             AntiHelmholtz_ON_st.save("antihelmholtz_on")
 
@@ -909,20 +800,19 @@ class OPX:
 
         # ---------- Handle QuadRF ------------
         self.Exp_Values = Initial_Values  # Initialize experiment values to be as in Config_Table.py
-        # self.QuadRFControllers = []
+        self.QuadRFControllers = []
         # Note: So as not to connect again and again to QuadRF each time we update table, we now save the MOGDevic (actual QuadRF device) connected,
         # we hold this connection until update is finished, the we close the connection.
         # we do still hold the QuadRFController objects, for access to the table (read only!) when the experiment is running.
-        # qrfContr = QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 4), topticaLockWhenUpdating=False,
-        #                     debugging=True, continuous=False)
-        # self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
-        # self.QuadRFControllers.append(QuadRFMOTController(MOGdevice = qrfContr.dev,initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '133MHz', 'CH3_amp': '31dbm'},
-        #                     updateChannels=[3], debugging=False,
-        #                     continuous=False))  # updates values on QuadRF (uploads table)
+        qrfContr = QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 4), topticaLockWhenUpdating=False,
+                                        debugging=False, continuous=False)
+        self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
+        self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev, initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '100MHz', 'CH3_amp': '31dbm'},
+                                                          updateChannels=[3], debugging=False, continuous=False))  # updates values on QuadRF (uploads table)
         #self.QuadRFControllers.append(QuadRFFrequencyScannerController(MOGdevice = qrfContr.dev, channel=2, debugging=False))  # updates values on QuadRF (uploads table)
 
-        # self.Update_QuadRF_channels = set({})  # Only update these channels on QuadRF when UpdateParameters method is called [note: this is a python set]
-        # qrfContr.disconnectQuadRF()
+        self.Update_QuadRF_channels = set({})  # Only update these channels on QuadRF when UpdateParameters method is called [note: this is a python set]
+        qrfContr.disconnectQuadRF()
         # ---------- Finish handle QuadRF ------------
 
         # Free fall variables:
@@ -1025,9 +915,7 @@ class OPX:
         self.M_off_time = int(self.Exp_Values['M_off_time'] * 1e6)  # [nsec]
         # self.rep = int(self.M_time / (self.M_window + 28 + 170))
         self.rep = int(self.M_time / self.M_window)
-        self.vec_size = 1250
-        self.tt_S_measure = []
-        self.tt_N_measure = []
+        self.vec_size = 2000
 
         # MW spectroscopy parameters:
         self.MW_start_frequency = int(100e6)  # [Hz]
@@ -1214,6 +1102,9 @@ class OPX:
     def Spectrum_Exp_switch(self, Bool):
         self.update_io_parameter(4, Bool)
 
+    def SPRINT_Exp_switch(self, Bool):
+        self.update_io_parameter(4, Bool)
+
     def AntiHelmholtz_Delay_switch(self, Bool):
         self.update_io_parameter(5, Bool)
 
@@ -1294,8 +1185,7 @@ class OPX:
                 (np.average(Probe_counts_South) * 1000) / self.M_time]
 
     def Save_SNSPDs_Transit_Measurement_with_tt(self, N, histogram_bin_size, Transit_profile_bin_size, preComment,
-                                                total_counts_threshold,  transit_counts_threshold, transit_time_threshold,
-                                                max_probe_counts):
+                                                total_counts_threshold,  transit_counts_threshold, max_probe_counts):
         """
         Function for analyzing and saving the time tags data measured from the SNSPDs using the OPX. In this specific
          program we are looking for transits of atoms next to the toroid and record them.
@@ -1322,8 +1212,8 @@ class OPX:
         ### saving to file
         ###
 
-        histogram_bin_number = (self.M_time + 15300 * self.rep) // histogram_bin_size + 1
-        time_bins = np.linspace(0, self.M_time + 15300 * self.rep, histogram_bin_number)
+        histogram_bin_number = self.M_time // histogram_bin_size
+        time_bins = np.linspace(0, self.M_time, histogram_bin_number)
         # time_threshold = int(histogram_bin_size / intensity_threshold)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
         time_threshold = int(
             histogram_bin_size * 0.8)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
@@ -1335,38 +1225,28 @@ class OPX:
         print('\033[94m' + 'Press ESC to stop measurement.' + '\033[0m')  # print blue
         reps = 1  # a counter, number of repeats actually made.
 
-        # Probe_N_handle = self.job.result_handles.get("North_Probe")
-        # Probe_S_handle = self.job.result_handles.get("South_Probe")
-        Counts_1_handle = self.job.result_handles.get("Det1_Counts")
-        Counts_2_handle = self.job.result_handles.get("Det2_Counts")
-        Counts_3_handle = self.job.result_handles.get("Det3_Counts")
-        Counts_4_handle = self.job.result_handles.get("Det4_Counts")
-        Counts_5_handle = self.job.result_handles.get("Det5_Counts")
-        Counts_6_handle = self.job.result_handles.get("Det6_Counts")
-        Counts_7_handle = self.job.result_handles.get("Det7_Counts")
-        Counts_8_handle = self.job.result_handles.get("Det8_Counts")
-        tt_1_handle = self.job.result_handles.get("Det1_Probe_TT")
-        tt_2_handle = self.job.result_handles.get("Det2_Probe_TT")
-        tt_3_handle = self.job.result_handles.get("Det3_Probe_TT")
-        tt_4_handle = self.job.result_handles.get("Det4_Probe_TT")
-        tt_5_handle = self.job.result_handles.get("Det5_Probe_TT")
-        tt_6_handle = self.job.result_handles.get("Det6_Probe_TT")
-        tt_7_handle = self.job.result_handles.get("Det7_Probe_TT")
-        tt_8_handle = self.job.result_handles.get("Det8_Probe_TT")
+        Probe_N_handle = self.job.result_handles.get("North_Probe")
+        Probe_S_handle = self.job.result_handles.get("South_Probe")
+        tt_N_handle = self.job.result_handles.get("North_Probe_TT")
+        tt_S_handle = self.job.result_handles.get("South_Probe_TT")
         FLR_handle = self.job.result_handles.get("FLR_measure")
 
-        self.tt_N_measure = []
-        self.tt_S_measure = []
-        self.tt_1_measure_batch = []
-        self.tt_2_measure_batch = []
-        self.tt_3_measure_batch = []
-        self.tt_4_measure_batch = []
-        self.tt_5_measure_batch = []
-        self.tt_6_measure_batch = []
-        self.tt_7_measure_batch = []
-        self.tt_8_measure_batch = []
-        self.tt_N_measure_batch = []
-        self.tt_S_measure_batch = []
+        Probe_N_handle.wait_for_values(1)
+        Probe_S_handle.wait_for_values(1)
+        tt_N_handle.wait_for_values(1)
+        tt_S_handle.wait_for_values(1)
+        FLR_handle.wait_for_values(1)
+
+        Probe_N_res = Probe_N_handle.fetch_all()
+        Probe_S_res = Probe_S_handle.fetch_all()
+        tt_N_res = tt_N_handle.fetch_all()
+        tt_S_res = tt_S_handle.fetch_all()
+        FLR_res = -FLR_handle.fetch_all()
+
+        tt_N_measure = [i for i in tt_N_res if (i % self.M_window) != 0]
+        tt_S_measure = [i for i in tt_S_res if (i % self.M_window) != 0]
+        tt_N_measure.sort()
+        tt_S_measure.sort()
 
         tt_N_measure_batch = []
         tt_N_binning_batch = []
@@ -1387,7 +1267,7 @@ class OPX:
 
         # Place holders for results
         # while (number of photons * 10^-6 [Mcounts] / Measuring time [nsec] * 10^-9 [sec/nsec])  > total_counts_threshold [Mcounts /sec]:
-        while ((len(self.tt_S_measure) * 1000) / self.M_time) > total_counts_threshold or start:
+        while ((len(tt_S_measure) * 1000) / self.M_time) > total_counts_threshold or start:
             if self.keyPress == 'ESC':
                 print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
                 self.updateValue("Transit_Exp_switch", False)
@@ -1399,64 +1279,18 @@ class OPX:
             else:
                 print('Above Threshold')
 
-            tt_1_handle.wait_for_values(1)
-            tt_2_handle.wait_for_values(1)
-            tt_3_handle.wait_for_values(1)
-            tt_4_handle.wait_for_values(1)
-            tt_5_handle.wait_for_values(1)
-            tt_6_handle.wait_for_values(1)
-            tt_7_handle.wait_for_values(1)
-            tt_8_handle.wait_for_values(1)
-            FLR_handle.wait_for_values(1)
-
-            counts_res1 = Counts_1_handle.fetch_all()
-            counts_res2 = Counts_2_handle.fetch_all()
-            counts_res3 = Counts_3_handle.fetch_all()
-            counts_res4 = Counts_4_handle.fetch_all()
-            counts_res5 = Counts_5_handle.fetch_all()
-            counts_res6 = Counts_6_handle.fetch_all()
-            counts_res7 = Counts_7_handle.fetch_all()
-            counts_res8 = Counts_8_handle.fetch_all()
-            tt_1_res = tt_1_handle.fetch_all()
-            tt_2_res = tt_2_handle.fetch_all()
-            tt_3_res = tt_3_handle.fetch_all()
-            tt_4_res = tt_4_handle.fetch_all()
-            tt_5_res = tt_5_handle.fetch_all()
-            tt_6_res = tt_6_handle.fetch_all()
-            tt_7_res = tt_7_handle.fetch_all()
-            tt_8_res = tt_8_handle.fetch_all()
+            Probe_N_res = Probe_N_handle.fetch_all()
+            Probe_S_res = Probe_S_handle.fetch_all()
+            tt_N_res = tt_N_handle.fetch_all()
+            tt_S_res = tt_S_handle.fetch_all()
             FLR_res = -FLR_handle.fetch_all()
 
-            self.tt_1_measure = [elem for vec in [tt_1_res[(index * self.vec_size): (index * self.vec_size + counts)].tolist() for index, counts in
-                                 enumerate(counts_res1)] for elem in vec]
-            self.tt_2_measure = [elem for vec in [tt_2_res[(index * self.vec_size): (index * self.vec_size + counts)].tolist() for index, counts in
-                                 enumerate(counts_res2)] for elem in vec]
-            self.tt_3_measure = [elem for vec in [tt_3_res[(index * self.vec_size): (index * self.vec_size + counts)].tolist() for index, counts in
-                                 enumerate(counts_res3)] for elem in vec]
-            self.tt_4_measure = [elem for vec in [tt_4_res[(index * self.vec_size): (index * self.vec_size + counts)].tolist() for index, counts in
-                                 enumerate(counts_res4)] for elem in vec]
-            self.tt_5_measure = [elem for vec in [tt_5_res[(index * self.vec_size): (index * self.vec_size + counts)].tolist() for index, counts in
-                                 enumerate(counts_res5)] for elem in vec]
-            self.tt_6_measure = [elem for vec in [tt_6_res[(index * self.vec_size): (index * self.vec_size + counts)].tolist() for index, counts in
-                                 enumerate(counts_res6)] for elem in vec]
-            self.tt_7_measure = [elem for vec in [tt_7_res[(index * self.vec_size): (index * self.vec_size + counts)].tolist() for index, counts in
-                                 enumerate(counts_res7)] for elem in vec]
-            self.tt_8_measure = [elem for vec in [tt_8_res[(index * self.vec_size): (index * self.vec_size + counts)].tolist() for index, counts in
-                                 enumerate(counts_res8)] for elem in vec]
-            self.tt_N_measure = self.tt_1_measure + self.tt_2_measure + self.tt_3_measure + self.tt_4_measure
-            self.tt_S_measure = self.tt_5_measure + self.tt_6_measure + self.tt_7_measure + self.tt_8_measure
-            self.tt_1_measure.sort()
-            self.tt_2_measure.sort()
-            self.tt_3_measure.sort()
-            self.tt_4_measure.sort()
-            self.tt_5_measure.sort()
-            self.tt_6_measure.sort()
-            self.tt_7_measure.sort()
-            self.tt_8_measure.sort()
-            self.tt_N_measure.sort()
-            self.tt_S_measure.sort()
+            tt_N_measure = [i for i in tt_N_res if (i % self.M_window) != 0]
+            tt_S_measure = [i for i in tt_S_res if (i % self.M_window) != 0]
+            tt_N_measure.sort()
+            tt_S_measure.sort()
 
-        # self.tt_S_measure = tt_S_measure
+        self.tt_S_measure = tt_S_measure
         ## record time
         timest = time.strftime("%Y%m%d-%H%M%S")
         datest = time.strftime("%Y%m%d")
@@ -1464,18 +1298,18 @@ class OPX:
         FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
         Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
 
-        for x in self.tt_N_measure:
+        for x in tt_N_measure:
             tt_N_binning[x // histogram_bin_size] += 1
-        for x in self.tt_S_measure:
+        for x in tt_S_measure:
             tt_S_binning[x // histogram_bin_size] += 1
 
         if len(self.tt_S_measure_batch) == N:
-            tt_N_transit_events[[i for i, x in enumerate(tt_N_binning_batch[0]) if x > transit_counts_threshold]] -= 1
-            tt_S_transit_events[[i for i, x in enumerate(tt_S_binning_batch[0]) if x > transit_counts_threshold]] -= 1
+            tt_N_transit_events[[i for i, x in enumerate(tt_N_binning_batch[0]) if x >  transit_counts_threshold]] -= 1
+            tt_S_transit_events[[i for i, x in enumerate(tt_S_binning_batch[0]) if x >  transit_counts_threshold]] -= 1
 
-        tt_N_measure_batch = tt_N_measure_batch[-(N - 1):] + [self.tt_N_measure]
+        tt_N_measure_batch = tt_N_measure_batch[-(N - 1):] + [tt_N_measure]
         tt_N_binning_batch = tt_N_binning_batch[-(N - 1):] + [tt_N_binning]
-        self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
+        self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [tt_S_measure]
         tt_S_binning_batch = tt_S_binning_batch[-(N - 1):] + [tt_S_binning]
         Counter = 1
 
@@ -1489,7 +1323,7 @@ class OPX:
         t_transit = []
         t_transit_batch = []
         transit_histogram = []
-        for t in self.tt_S_measure:
+        for t in tt_S_measure:
             if not current_transit:  # if the array is empty
                 current_transit.append(t)
             elif (t - current_transit[-1]) < time_threshold:
@@ -1553,10 +1387,10 @@ class OPX:
             ax6.clear()
 
             props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-            textstr_N = r'$Probe_N = %.3f$' % ((len(self.tt_N_measure) * 1000) / self.M_time,) + '[MPhotons/sec]\n' \
+            textstr_N = r'$Probe_N = %.3f$' % ((len(tt_N_measure) * 1000) / self.M_time,) + '[MPhotons/sec]\n' \
                         + '$\overline{Probe}_N = %.3f$' % ((np.mean([len(x) for x in tt_N_measure_batch]) * 1000)
                                                            / self.M_time,) + '[MPhotons/sec]'
-            textstr_S = r'$Probe_S = %.3f$' % ((len(self.tt_S_measure) * 1000) / self.M_time,) + '[MPhotons/sec]\n' \
+            textstr_S = r'$Probe_S = %.3f$' % ((len(tt_S_measure) * 1000) / self.M_time,) + '[MPhotons/sec]\n' \
                         + '$\overline{Probe}_S = %.3f$' % ((np.mean([len(x) for x in self.tt_S_measure_batch]) * 1000)
                                                            / self.M_time,) + '[MPhotons/sec]'
             textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (np.mean(FLR_measurement) * 1e5,) + r'$\times 10^{-5}$'
@@ -1568,7 +1402,7 @@ class OPX:
             ax1.text(0.05, 0.95, textstr_N, transform=ax1.transAxes, fontsize=12,
                      verticalalignment='top', bbox=props)
             ax1.legend(loc='upper right')
-            print('OK')
+
             ax2.plot(time_bins, tt_S_binning, label='Counts histogram', color='b')
             ax2.set_title('South', fontweight="bold")
             ax2.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
@@ -1586,9 +1420,8 @@ class OPX:
 
             if len(transit_histogram) > 0:
                 textstr_transit_counts = r'$N_{Transits} = %s $' % (len(all_transits_aligned_first),) + r'$[Counts]$'
-                # textstr_avg_transit_counts = r'$\overline{N}_{Transits} = %.1f $' % (
-                # np.average([len(vec) for vec in all_transits_aligned_first]),) + r'$[Counts]$'
-                textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (len([vec for elem in all_transits_batch for vec in elem]),) + r'$[Counts]$'
+                textstr_avg_transit_counts = r'$\overline{N}_{Transits} = %.1f $' % (
+                np.average([len(vec) for vec in all_transits_aligned_first]),) + r'$[Counts]$'
 
                 ax5.plot(t_transit, transit_histogram, color='b')
                 ax5.set_title('Drop transits profile', fontweight="bold")
@@ -1599,7 +1432,7 @@ class OPX:
                 ax6.plot(t_transit_batch, transit_histogram_batch, color='b')
                 ax6.set_title('Accumulated drop transits profile', fontweight="bold")
                 ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-                ax6.text(0.05, 0.95, textstr_transit_event_counter, transform=ax6.transAxes, fontsize=12,
+                ax6.text(0.05, 0.95, textstr_avg_transit_counts, transform=ax6.transAxes, fontsize=12,
                          verticalalignment='top', bbox=props)
             else:
                 ax5.plot(t_transit, transit_histogram, color='b')
@@ -1619,117 +1452,51 @@ class OPX:
 
             # plt.tight_layout()
             plt.show()
-            plt.pause(1.8)
+            plt.pause(1)
 
             ###########################################################################################################
 
-            while True:
+            while tt_S_measure == self.tt_S_measure_batch[-1]:
                 # record time:
                 timest = time.strftime("%Y%m%d-%H%M%S")
                 datest = time.strftime("%Y%m%d")
 
                 # get measures:
-                tt_1_handle.wait_for_values(1)
-                tt_2_handle.wait_for_values(1)
-                tt_3_handle.wait_for_values(1)
-                tt_4_handle.wait_for_values(1)
-                tt_5_handle.wait_for_values(1)
-                tt_6_handle.wait_for_values(1)
-                tt_7_handle.wait_for_values(1)
-                tt_8_handle.wait_for_values(1)
-                FLR_handle.wait_for_values(1)
-
-                counts_res1 = Counts_1_handle.fetch_all()
-                counts_res2 = Counts_2_handle.fetch_all()
-                counts_res3 = Counts_3_handle.fetch_all()
-                counts_res4 = Counts_4_handle.fetch_all()
-                counts_res5 = Counts_5_handle.fetch_all()
-                counts_res6 = Counts_6_handle.fetch_all()
-                counts_res7 = Counts_7_handle.fetch_all()
-                counts_res8 = Counts_8_handle.fetch_all()
-                tt_1_res = tt_1_handle.fetch_all()
-                tt_2_res = tt_2_handle.fetch_all()
-                tt_3_res = tt_3_handle.fetch_all()
-                tt_4_res = tt_4_handle.fetch_all()
-                tt_5_res = tt_5_handle.fetch_all()
-                tt_6_res = tt_6_handle.fetch_all()
-                tt_7_res = tt_7_handle.fetch_all()
-                tt_8_res = tt_8_handle.fetch_all()
+                Probe_N_res = Probe_N_handle.fetch_all()
+                Probe_S_res = Probe_S_handle.fetch_all()
+                tt_N_res = tt_N_handle.fetch_all()
+                tt_S_res = tt_S_handle.fetch_all()
                 FLR_res = -FLR_handle.fetch_all()
 
-                self.tt_1_measure = [elem for vec in
-                                     [tt_1_res[(index * self.vec_size): (index * self.vec_size + counts)].tolist() for
-                                      index, counts in
-                                      enumerate(counts_res1)] for elem in vec]
-                self.tt_2_measure = [elem for vec in
-                                     [tt_2_res[(index * self.vec_size): (index * self.vec_size + counts)].tolist() for
-                                      index, counts in
-                                      enumerate(counts_res2)] for elem in vec]
-                self.tt_3_measure = [elem for vec in
-                                     [tt_3_res[(index * self.vec_size): (index * self.vec_size + counts)].tolist() for
-                                      index, counts in
-                                      enumerate(counts_res3)] for elem in vec]
-                self.tt_4_measure = [elem for vec in
-                                     [tt_4_res[(index * self.vec_size): (index * self.vec_size + counts)].tolist() for
-                                      index, counts in
-                                      enumerate(counts_res4)] for elem in vec]
-                self.tt_5_measure = [elem for vec in
-                                     [tt_5_res[(index * self.vec_size): (index * self.vec_size + counts)].tolist() for
-                                      index, counts in
-                                      enumerate(counts_res5)] for elem in vec]
-                self.tt_6_measure = [elem for vec in
-                                     [tt_6_res[(index * self.vec_size): (index * self.vec_size + counts)].tolist() for
-                                      index, counts in
-                                      enumerate(counts_res6)] for elem in vec]
-                self.tt_7_measure = [elem for vec in
-                                     [tt_7_res[(index * self.vec_size): (index * self.vec_size + counts)].tolist() for
-                                      index, counts in
-                                      enumerate(counts_res7)] for elem in vec]
-                self.tt_8_measure = [elem for vec in
-                                     [tt_8_res[(index * self.vec_size): (index * self.vec_size + counts)].tolist() for
-                                      index, counts in
-                                      enumerate(counts_res8)] for elem in vec]
-                self.tt_N_measure = self.tt_1_measure + self.tt_2_measure + self.tt_3_measure + self.tt_4_measure
-                self.tt_S_measure = self.tt_5_measure + self.tt_6_measure + self.tt_7_measure + self.tt_8_measure
-                self.tt_1_measure.sort()
-                self.tt_2_measure.sort()
-                self.tt_3_measure.sort()
-                self.tt_4_measure.sort()
-                self.tt_5_measure.sort()
-                self.tt_6_measure.sort()
-                self.tt_7_measure.sort()
-                self.tt_8_measure.sort()
-                self.tt_N_measure.sort()
-                self.tt_S_measure.sort()
+                tt_N_measure = [i for i in tt_N_res if (i % self.M_window) != 0]
+                tt_S_measure = [i for i in tt_S_res if (i % self.M_window) != 0]
+                tt_N_measure.sort()
+                tt_S_measure.sort()
 
-                if self.tt_S_measure != self.tt_S_measure_batch[-1]:
-                    break
-
-            if ((len(self.tt_S_measure) * 1000) / self.M_time) < total_counts_threshold:
+            if ((len(tt_S_measure) * 1000) / self.M_time) < total_counts_threshold:
 
                 FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
                 Counter += 1
                 print(timest, Counter)
-                print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
 
                 tt_N_binning = np.zeros(histogram_bin_number)
                 tt_S_binning = np.zeros(histogram_bin_number)
 
-                for x in self.tt_N_measure:
+                for x in tt_N_measure:
                     tt_N_binning[x // histogram_bin_size] += 1
-                for x in self.tt_S_measure:
+                for x in tt_S_measure:
                     tt_S_binning[x // histogram_bin_size] += 1
 
                 if len(self.tt_S_measure_batch) == N:
                     tt_N_transit_events[
-                        [i for i, x in enumerate(tt_N_binning_batch[0]) if x > transit_counts_threshold]] -= 1
+                        [i for i, x in enumerate(tt_N_binning_batch[0]) if x >  transit_counts_threshold]] -= 1
                     tt_S_transit_events[
-                        [i for i, x in enumerate(tt_S_binning_batch[0]) if x > transit_counts_threshold]] -= 1
+                        [i for i, x in enumerate(tt_S_binning_batch[0]) if x >  transit_counts_threshold]] -= 1
 
-                tt_N_measure_batch = tt_N_measure_batch[-(N - 1):] + [self.tt_N_measure]
+                tt_N_measure_batch = tt_N_measure_batch[-(N - 1):] + [tt_N_measure]
                 tt_N_binning_batch = tt_N_binning_batch[-(N - 1):] + [tt_N_binning]
-                self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
+                self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [tt_S_measure]
                 tt_S_binning_batch = tt_S_binning_batch[-(N - 1):] + [tt_S_binning]
 
                 tt_N_transit_events[[i for i, x in enumerate(tt_N_binning) if x >  transit_counts_threshold]] += 1
@@ -1739,12 +1506,12 @@ class OPX:
                 current_transit = []
                 all_transits = []
                 all_transits_aligned_first = []
-                for t in self.tt_S_measure:
+                for t in tt_S_measure:
                     if not current_transit:  # if the array is empty
                         current_transit.append(t)
                     elif (t - current_transit[-1]) < time_threshold:
                         current_transit.append(t)
-                    elif len(current_transit) > transit_counts_threshold:
+                    elif len(current_transit) >  transit_counts_threshold:
                         all_transits.append(current_transit)
                         all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
                         current_transit = [t]
@@ -1806,14 +1573,7 @@ class OPX:
             os.makedirs(dirname_S)
 
         # ----  msmnt files names  -----
-        filename_Det1_tt = f'Det1_timetags.npz'
-        filename_Det2_tt = f'Det2_timetags.npz'
-        filename_Det3_tt = f'Det3_timetags.npz'
-        filename_Det4_tt = f'Det4_timetags.npz'
-        filename_Det5_tt = f'Det5_timetags.npz'
-        filename_Det6_tt = f'Det6_timetags.npz'
-        filename_Det7_tt = f'Det7_timetags.npz'
-        filename_Det8_tt = f'Det8_timetags.npz'
+        # Counter_str = (Counter)
         filename_N_tt = f'North_timetags.npz'
         filename_S_tt = f'South_timetags.npz'
         filename_S_transits = f'South_Transits.npz'
@@ -1824,24 +1584,8 @@ class OPX:
             np.savez(dirname + filename_FLR, FLR_measurement)
         if len(Exp_timestr_batch) > 0:
             np.savez(dirname + filename_timestamp, Exp_timestr_batch)
-        if len(self.tt_1_measure_batch) > 0:
-            np.savez(dirname_N + filename_Det1_tt, self.tt_1_measure_batch)
-        if len(self.tt_2_measure_batch) > 0:
-            np.savez(dirname_N + filename_Det2_tt, self.tt_2_measure_batch)
-        if len(self.tt_3_measure_batch) > 0:
-            np.savez(dirname_N + filename_Det3_tt, self.tt_3_measure_batch)
-        if len(self.tt_4_measure_batch) > 0:
-            np.savez(dirname_N + filename_Det4_tt, self.tt_4_measure_batch)
         if len(tt_N_measure_batch) > 0:
             np.savez(dirname_N + filename_N_tt, tt_N_measure_batch)
-        if len(self.tt_5_measure_batch) > 0:
-            np.savez(dirname_S + filename_Det5_tt, self.tt_5_measure_batch)
-        if len(self.tt_6_measure_batch) > 0:
-            np.savez(dirname_S + filename_Det6_tt, self.tt_6_measure_batch)
-        if len(self.tt_7_measure_batch) > 0:
-            np.savez(dirname_S + filename_Det7_tt, self.tt_7_measure_batch)
-        if len(self.tt_8_measure_batch) > 0:
-            np.savez(dirname_S + filename_Det8_tt, self.tt_8_measure_batch)
         if len(self.tt_S_measure_batch) > 0:
             np.savez(dirname_S + filename_S_tt, self.tt_S_measure_batch)
         if len(all_transits_batch) > 0:
@@ -1850,7 +1594,7 @@ class OPX:
         ### Edit comments file ####
         Counter_str = str(Counter)
         cmntDir = root_dirname + '\\daily_experiment_comments.txt'
-        cmnt = timest + ' - ' + 'Number of cycles: ' + Counter_str +' - '
+        cmnt = timest + ' - '
         if preComment is not None: cmnt = cmnt + preComment + '; '
         if aftComment is not None: cmnt = cmnt + aftComment
         if preComment is None and aftComment is None: cmnt = cmnt + 'No comment. '
@@ -1905,7 +1649,7 @@ class OPX:
         time_bins = np.linspace(0, self.M_window, histogram_bin_number)
         spectrum_bin_number = bandwidth // freq_step + 1  # TODO: ask natan how many freq steps he uses
         freq_bins = np.linspace(-int(bandwidth / 2), int(bandwidth / 2), spectrum_bin_number)
-        CRUS_pulse_time = np.arange(1024)
+        CRUS_pulse_time = np.arange(512)
 
         ## Listen for keyboard
         listener = keyboard.Listener(on_press=self.on_key_press)
@@ -2337,32 +2081,31 @@ class OPX:
             qrdCtrl.saveLinesAsCSV(f'{dirname}QuadRF_table.csv')
         ## ------------------ end of saving section -------
 
-    # def Start_Transit_Exp(self, N=100, bin_size=100, preComment=None, threshold=0.1):
-    #     self.Transit_Exp_switch(True)
-    #     self.update_parameters()
-    #     self.Save_SNSPDs_Measurement(N, bin_size, preComment, threshold)
+    def Start_Transit_Exp(self, N=100, bin_size=100, preComment=None, threshold=0.1):
+        self.Transit_Exp_switch(True)
+        self.update_parameters()
+        self.Save_SNSPDs_Measurement(N, bin_size, preComment, threshold)
 
     def Start_Transit_Exp_with_tt(self, N=100, Histogram_bin_size=1000, Transit_profile_bin_size=100, preComment=None,
-                                  total_counts_threshold=1, transit_counts_threshold=5, transit_time_threshold=6000):
+                                  total_counts_threshold=1, transit_counts_threshold=5):
         # Max_probe_counts = self.Get_Max_Probe_counts(3)  # return the average maximum probe counts of 3 cycles.
         Max_probe_counts = None  # return the average maximum probe counts of 3 cycles.
         self.Transit_Exp_switch(True)
         self.update_parameters()
         self.Save_SNSPDs_Transit_Measurement_with_tt(N, Histogram_bin_size, Transit_profile_bin_size, preComment,
-                                                     total_counts_threshold, transit_counts_threshold,
-                                                     transit_time_threshold, Max_probe_counts)
+                                                     total_counts_threshold, transit_counts_threshold, Max_probe_counts)
 
-    # def Start_CRUS_Exp_with_tt(self, N=100, Histogram_bin_size=int(len(Config.CRUS_pulser_samples)),
-    #                                Transit_profile_bin_size=100, preComment=None, total_counts_threshold=1,
-    #                                transit_counts_threshold=5, transit_time_threshold=6000, bandwidth=80,
-    #                                freq_step=4):
-    #     # Max_probe_counts = self.Get_Max_Probe_counts(3)  # return the average maximum probe counts of 3 cycles.
-    #     Max_probe_counts = None  # return the average maximum probe counts of 3 cycles.
-    #     self.CRUS_Exp_switch(True)
-    #     self.update_parameters()
-    #     self.Save_SNSPDs_CRUS_Measurement_with_tt(N, Histogram_bin_size, Transit_profile_bin_size, preComment,
-    #                                                   total_counts_threshold, transit_counts_threshold,
-    #                                                   transit_time_threshold, bandwidth, freq_step, Max_probe_counts)
+    def Start_CRUS_Exp_with_tt(self, N=100, Histogram_bin_size=512,#int(len(Config.CRUS_pulser_samples)),
+                                   Transit_profile_bin_size=100, preComment=None, total_counts_threshold=1,
+                                   transit_counts_threshold=5, transit_time_threshold=6000, bandwidth=80,
+                                   freq_step=4):
+        # Max_probe_counts = self.Get_Max_Probe_counts(3)  # return the average maximum probe counts of 3 cycles.
+        Max_probe_counts = None  # return the average maximum probe counts of 3 cycles.
+        self.CRUS_Exp_switch(True)
+        self.update_parameters()
+        self.Save_SNSPDs_CRUS_Measurement_with_tt(N, Histogram_bin_size, Transit_profile_bin_size, preComment,
+                                                      total_counts_threshold, transit_counts_threshold,
+                                                      transit_time_threshold, bandwidth, freq_step, Max_probe_counts)
 
     ## MW spectroscopy variable update functions: ##
 
