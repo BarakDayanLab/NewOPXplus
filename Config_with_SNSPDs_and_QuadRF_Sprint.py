@@ -46,7 +46,7 @@ controller = 'con1'
 # time tags vector size
 
 #parametrs of sizes
-vec_size = 2000
+vec_size = 16000
 num_of_detectors = 8
 opx_max_per_window = vec_size*num_of_detectors
 
@@ -236,14 +236,14 @@ config = {
             },
 
             'digital_inputs': {
-                1: {'polarity': 'High', 'window': 6, "threshold": 0.5},
-                2: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
-                3: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
-                4: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
-                5: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
-                6: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
-                7: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
-                8: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
+                1: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                2: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                3: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                4: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                5: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                6: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                7: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                8: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
             },
         }
     },
@@ -340,6 +340,16 @@ config = {
             'intermediate_frequency': IF_AOM_OD,
         },
 
+        "AOM_2-2'": {
+            'singleInput': {
+                "port": (controller, 5)
+            },
+            'operations': {
+                'Depump': "Depump_pulse",
+            },
+            'intermediate_frequency': IF_AOM_Depump,
+        },
+
         "Measurement": {
             'digitalInputs': {
                 "Measure_trigger": {
@@ -376,11 +386,14 @@ config = {
                 "out7": (controller, 7),
                 "out8": (controller, 8),
             },
+            'outputs': {
+                  'out1': (controller, 1)
+            },
             'operations': {
                 'readout': "digital_readout",
-                # 'readout_CRUS': "digital_readout_CRUS",
+                'readout_SPRINT': "digital_readout_sprint",
             },
-            'time_of_flight': 24,
+            'time_of_flight': 36,
             'smearing': 0,
             # 'intermediate_frequency': 0,
         },
@@ -410,7 +423,10 @@ config = {
                 'readout': "digital_readout_sprint",
                 'readout_CRUS': "digital_readout_CRUS",
             },
-            'time_of_flight': 24,
+            'outputs': {
+                  'out1': (controller, 1)
+            },
+            'time_of_flight': 36,
             'smearing': 0,
             # 'intermediate_frequency': 0,
         },
@@ -427,7 +443,7 @@ config = {
             'operations': {
                 'Detection': "Det_pulse",
             },
-            'time_of_flight': 24,
+            'time_of_flight': 36,
             'smearing': 0,
         },
 
@@ -498,8 +514,8 @@ config = {
                 "port": (controller, 10),
             },
             'digitalInputs': {
-                "AWG_Switch": {
-                    "port": (controller, 10),
+                "Shutter_Switch": {
+                    "port": (controller, 5),
                     "delay": 0,
                     "buffer": 0,
                 },
@@ -644,7 +660,6 @@ config = {
             'waveforms': {
                 'single': 'const_wf'
             },
-            # 'digital_marker': 'ON'
         },
 
         "Square_detection_pulses": {

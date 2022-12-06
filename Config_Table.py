@@ -1,4 +1,5 @@
 import numpy as np
+# if __name__ == "Config_with_SNSPDs_and_QuadRF_Sprint.py":
 import Config_with_SNSPDs_and_QuadRF_Sprint as Config
 
 # ------------- AOM Double-Pass calibration ---------------------------------------
@@ -304,13 +305,13 @@ Operation_Modes = {
                                     'PrePulse_duration': 10,  # [msec]
                                     'Shutter_open_time': 3,  # [msec]
                                     'Pulse_1_Repump_amp': 0.000001,
-                                    'Pulse_1_duration': int(Config.readout_pulse_sprint_len_N) * 20 / 1e6,  # [msec]
+                                    'Pulse_1_duration': int(Config.readout_pulse_sprint_len_N) * 3 / 1e6,  # [msec]
                                     ## If with fountain:
                                     'Fountain_duration': 0.5,  # [msec]
                                     'Fountain_prep_duration': 0.5,  # [msec], Can't be zero!!!
                                     'M_window': int(Config.readout_pulse_sprint_len_N), # [nsec]
-                                    'M_time': int(Config.readout_pulse_sprint_len_N) * 20 / 1e6,  # Pulse_length[nsec] * 1000 repetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
-                                    'M_off_time': 10,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
+                                    'M_time': int(Config.readout_pulse_sprint_len_N) * 3 / 1e6,  # Pulse_length[nsec] * 1000 repetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
+                                    'M_off_time': 5,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
                                    },
                     'PrePGC_Fountain': {'Triggering_Phase': 'Pulse_1',
                                         'Fountain_final_Delta_freq': 0.45e6,
