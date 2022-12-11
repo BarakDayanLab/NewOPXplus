@@ -149,8 +149,12 @@ LO_pulse_samples = ([0.4] * 20) + [0] * 100
 
 ## MW Spectroscopy parameters
 
-with open('C:\\Users\\oriezrm\\PycharmProjects\\NewOPXplus\\conf_args.json', 'r') as fp:
-    confargs = json.load(fp)
+try:
+    with open('C:\\Users\\oriezrm\\PycharmProjects\\NewOPXplus\\conf_args.json', 'r') as fp:
+        confargs = json.load(fp)
+except Exception:
+    with open(r'C:\Pycharm\Expriements\QM\NewOPXplus\conf_args.json', 'r') as fp:
+        confargs = json.load(fp)
 dc_i = confargs['offsets']['I']
 dc_q = confargs['offsets']['Q']
 i_port = confargs['ports']['I']

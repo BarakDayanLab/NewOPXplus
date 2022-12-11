@@ -1,7 +1,6 @@
-# from Config import config
 import Config_with_SNSPDs_and_QuadRF as Config
 from Config_Table import Initial_Values, Phases_Names  # , Values_Factor
-# from quadRFMOTController import QuadRFMOTController
+from quadRFMOTController import QuadRFMOTController
 
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
@@ -1166,14 +1165,14 @@ class OPX:
         ##########################
 
         self.Exp_Values = Initial_Values  # Initialize experiment values to be as in Config_Table.py
-        # QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 4), topticaLockWhenUpdating = False, debugging=True,
-        #                     continuous=False)  # updates values on QuadRF (uploads table)
-        # # QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous',  'CH3_freq': '133MHz', 'CH3_amp': '31dbm'},
-        # #                     updateChannels=[3], debugging=False, continuous=False)  # updates values on QuadRF (uploads table)
-        # QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH2_freq': '113MHz', 'CH2_amp': '15.25dbm'},
-        #                     updateChannels=[2], debugging=True, continuous=False)  # updates values on QuadRF (uploads table)
-        #
-        # self.Update_QuadRF_channels = set({})  # Only update these channels on QuadRF when UpdateParameters method is called [note: this is a python set]
+        QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 4), topticaLockWhenUpdating = False, debugging=True,
+                            continuous=False)  # updates values on QuadRF (uploads table)
+        # QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous',  'CH3_freq': '133MHz', 'CH3_amp': '31dbm'},
+        #                     updateChannels=[3], debugging=False, continuous=False)  # updates values on QuadRF (uploads table)
+        QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH2_freq': '113MHz', 'CH2_amp': '15.25dbm'},
+                            updateChannels=[2], debugging=True, continuous=False)  # updates values on QuadRF (uploads table)
+
+        self.Update_QuadRF_channels = set({})  # Only update these channels on QuadRF when UpdateParameters method is called [note: this is a python set]
 
         # Free fall variables:
         self.FreeFall_duration = int(self.Exp_Values['FreeFall_duration'] * 1e6 / 4)

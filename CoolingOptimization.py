@@ -1,4 +1,3 @@
-import OPX_control_with_QuadRF
 from OPX_control_with_QuadRF import OPX
 import Config_with_SNSPDs_and_QuadRF as Config
 import numpy as np
