@@ -1,5 +1,5 @@
-from OPX_control_with_QuadRF import OPX
-import Config_with_SNSPDs_and_QuadRF as Config
+from OPX_control_with_QuadRF_Sprint_Exp import OPX
+import Config_with_SNSPDs_and_QuadRF_Sprint as Config
 import numpy as np
 from PIL import Image
 import time, json, os
@@ -23,6 +23,7 @@ except:
 class CoolingSequenceOptimizer(OPX):
     def __init__(self,  config, camera = None):
         super().__init__(config = config)
+        # self.SPRINT_Exp_switch(False) # To enable trigger to camera in OPX_control_with_QuadRF_Sprint_Exp
         self.camera = camera
         self.NAvg = 1
         self.NThrow = 3

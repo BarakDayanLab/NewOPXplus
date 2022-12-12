@@ -1,8 +1,8 @@
 # from Config import config
 import Config_with_SNSPDs_and_QuadRF as Config
 from Config_Table import Initial_Values, Phases_Names  # , Values_Factor
-# from quadRFMOTController import QuadRFMOTController
-# from quadRFFrequencyScannerController import QuadRFFrequencyScannerController
+from quadRFMOTController import QuadRFMOTController
+from quadRFFrequencyScannerController import QuadRFFrequencyScannerController
 
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
@@ -19,7 +19,7 @@ import logging
 from logging import StreamHandler, Formatter, INFO, WARN, ERROR
 import pymsgbox
 import Config_Table
-# from UtilityResources.HMP4040Control import HMP4040Visa
+from UtilityResources.HMP4040Control import HMP4040Visa
 
 # --------- Camera functionality ------------##
 try:
@@ -44,8 +44,7 @@ def find_nearest(array, value):
     return idx
 
 
-all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils",
-                "FLR_detection", "Measurement"]
+all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]
 
 
 def MOT(mot_repetitions):
@@ -58,13 +57,12 @@ def MOT(mot_repetitions):
     """
     FLR = declare(fixed)
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-3'_for_interference", "Pulser_CRUS", "FLR_detection", "Measurement", "Dig_detectors",
-          "Dig_detectors_spectrum")
+          "AOM_2-2/3'", "AOM_2-3'_for_interference", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors_spectrum", "Dig_detectors") # , "AOM_N", "AOM_S")
 
     ## MOT build-up ##
     n = declare(int)
     m = declare(int)
-    m = declare(int)
+    play("Detection" * amp(FLR * 0), "FLR_detection", duration=4)  # we dont know why this works, but Yoav from QM made us write this line to solve an alignment problem we had in the next 2 for loops
     with for_(n, 1, n <= mot_repetitions, n + 1):
         play("MOT" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0")
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
@@ -76,8 +74,7 @@ def MOT(mot_repetitions):
         # play("OD_FS" * amp(0.5), "AOM_2-3'_for_interference")
 
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-3'_for_interference", "Pulser_CRUS", "FLR_detection", "Measurement", "Dig_detectors",
-          "Dig_detectors_spectrum")
+          "AOM_2-2/3'", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors", "Dig_detectors_spectrum") #, "AOM_N", "AOM_S")
 
     return FLR
 
@@ -180,7 +177,6 @@ def Pulse_with_prep_with_chirp(total_pulse_duration, prep_duration, zero_pulse_d
 
     ## Playing the pulses to the AOMs for the preparation sequence. (Qua) ##
     align("MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+")
-    # align("MOT_AOM_-", "MOT_AOM_+")
     with if_(prep_duration > 0):
         with if_(zero_pulse_duration == prep_duration):
             play("Const" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0", duration=prep_duration)
@@ -226,8 +222,8 @@ def FreeFall(freefall_duration, coils_timing):
     update_frequency("MOT_AOM_+", Config.IF_AOM_MOT)
 
     ## Aligning all the different elements used during the freefall time of the experiment ##
-    align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'",
-          "AOM_2-3'_for_interference", "Pulser_CRUS", "Measurement", "Dig_detectors", "Dig_detectors_spectrum")
+    align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'", "AOM_2-2'",
+          "Measurement", "AOM_N", "AOM_S") # , "Dig_detectors", "Dig_detectors_spectrum")
 
     ## Zeeman Coils turn-on sequence ##
     wait(coils_timing, "Zeeman_Coils")
@@ -499,7 +495,8 @@ def CRUS_Experiment(m_off_time, m_time, m_window, shutter_open_time,
     m8 = declare(int)
 
     align("AOM_2-2/3'", "Pulser_CRUS", "Dig_detectors_spectrum")
-    play("OD", "AOM_2-2/3'", duration=shutter_open_time)
+    # play("OD", "AOM_2-2/3'", duration=shutter_open_time)
+    wait(shutter_open_time, "AOM_2-2/3")
     align("AOM_2-2/3'", "Pulser_CRUS", "Dig_detectors_spectrum")
     # wait(50+16, "AOM_2-2/3'", "Pulser_CRUS")
     # wait(128 + 32, "AOM_2-2/3'", "Pulser_CRUS")
@@ -648,7 +645,7 @@ def opx_control(obj, qm):
         rep_st = declare_stream()
         AntiHelmholtz_ON_st = declare_stream()
         FLR_st = declare_stream()
-
+        x = declare(int)
         assign(IO1, 0)
         assign(IO2, 0)
 
@@ -656,101 +653,78 @@ def opx_control(obj, qm):
 
         with infinite_loop_():
             assign(i, IO1)
-            with for_(k, 1, k <= N_Snaps + Buffer_Cycles, k + 1):
-                with for_(j, 1, j <= filler, j + 1):
-                    ##########################
-                    ## Cooling Sequence ##
-                    ##########################
 
-                    with if_(MOT_ON & AntiHelmholtz_ON):
-                        FLR = MOT(MOT_Repetitions)
-                        align(*all_elements, "AOM_2-2/3'")
-                    with if_(antihelmholtz_delay > 0):
-                        play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
-                    with if_(Trigger_Phase == 1):  # Trigger on PGC
-                        ## Trigger QuadRF Sequence #####################
-                        play("C_Seq", "Cooling_Sequence", duration=2500)
-                        ################################################
-                    # align(*all_elements, "AOM_2-2/3'")
-                    with if_(post_MOT_delay > 0):
-                        wait(post_MOT_delay, "Cooling_Sequence")
-                        align(*all_elements, "Zeeman_Coils", "AOM_2-2/3'")
-                    with if_(fountain_duration > 0):
-                        wait(fountain_duration, "Cooling_Sequence")
-                        Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
-                                                   fountain_pulse_duration_0, fountain_pulse_duration_minus,
-                                                   fountain_pulse_duration_plus, fountain_aom_chirp_rate,
-                                                   fountain_delta_f)
-                        align(*all_elements, "Zeeman_Coils", "AOM_2-2/3'")
-                    with if_(pgc_duration > 0):
-                        wait(pgc_duration, "Cooling_Sequence")
-                        Pulse_const(pgc_duration)
-                        align(*all_elements, "Zeeman_Coils", "AOM_2-2/3'")
-                    with if_((k >= 1) & (Imaging_Phase == 4)):  # 4 means imaging phase on pulse_1
-                        with if_(k <= Buffer_Cycles):
-                            FreeFall(FreeFall_duration, coils_timing)
-                        with else_():
-                            FreeFall(FreeFall_duration + PrePulse_duration * (k - 1 - Buffer_Cycles), coils_timing)
+            ##########################
+            ## Cooling Sequence ##
+            ##########################
 
-                    ##########################
-                    ## Measurement Sequence ##
-                    ##########################
-                    with if_(Trigger_Phase == 3):  # when trigger on PrePulse
-                        ## Trigger QuadRF Sequence #####################
-                        play("C_Seq", "Cooling_Sequence", duration=2500)
-                        ################################################
-                    ## Measurement start time:
-                    # with if_((k > Buffer_Cycles) & (Imaging_Phase == 4)):  # 4 means imaging phase on pulse_1
-                    #     wait(PrePulse_duration * (k - Buffer_Cycles), "Cooling_Sequence", "Measurement")
-                    # with else_():
-                    wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
-                    align(*all_elements,  "AOM_2-2/3'")
+            # MOT sequence:
+            FLR = MOT(MOT_Repetitions)
+            play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
 
-                    with if_(Trigger_Phase == 4):  # when trigger on pulse 1
-                        ## Trigger QuadRF Sequence #####################
-                        play("C_Seq", "Cooling_Sequence", duration=2500)
-                        ################################################
-                    with if_((Imaging_Phase == 4) & (Pulse_1_duration > 0)):  # 4 means imaging phase on pulse_1
-                        ## For Depump measurement:
-                        with if_(Depump_pulse_duration > 0):
-                            wait(Depump_start + 4, "AOM_2-2/3'")
-                            Depump_Measure(Depump_pulse_duration, Depump_pulses_spacing)
-                            align(*all_elements, "AOM_2-2/3'")
-                        with else_():
-                            ## For free-space OD measurement:
-                            with if_(OD_FS_pulse_duration > 0):
-                                wait(OD_FS_start + 4, "AOM_2-2/3'")
-                                OD_Measure(OD_FS_pulse_duration, OD_FS_pulses_spacing, OD_FS_sleep)
-                                align(*all_elements, "AOM_2-2/3'")
-                            with else_():
-                                with if_(CRUS_Exp_ON):
-                                    align(*all_elements, "Dig_detectors_spectrum", "AOM_2-2/3'", "Pulser_CRUS")
-                                    CRUS_Experiment(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
-                                                    ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8,
-                                                    tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st) #, tt_st_S)
-                                    save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
-                                    with if_(AntiHelmholtz_ON):
-                                        save(FLR, FLR_st)
-                                    align(*all_elements, "Dig_detectors_spectrum", "AOM_2-2/3'", "Pulser_CRUS")
-                                with else_():
-                                    with if_(Probe_max_counts_Exp_ON):
-                                        align(*all_elements, "Dig_detectors", "AOM_2-2/3'")
-                                        Probe_counts_Measure_SNSPDs(M_off_time, Pulse_1_duration, obj.M_window,
-                                                                    shutter_open_time, ON_counts_st1, ON_counts_st2,
-                                                                    ON_counts_st3, ON_counts_st4, ON_counts_st5,
-                                                                    ON_counts_st6, ON_counts_st7, ON_counts_st8)
-                                        align(*all_elements, "Dig_detectors", "AOM_2-2/3'")
-                                    ## For taking an image:
-                                    with else_():
-                                        align(*all_elements, "AOM_2-2/3'")
-                                        Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
-                                                        pulse_1_duration_minus, pulse_1_duration_plus)
-                                        Measure(Pulse_1_duration)  # This triggers camera (Control 7)
-                                        align(*all_elements, "AOM_2-2/3'")
+            # Delay before fountain:
+            wait(post_MOT_delay, "Cooling_Sequence")
+            align(*all_elements)
 
-            with if_(~(AntiHelmholtz_ON | Transits_Exp_ON)):
-                assign(AntiHelmholtz_ON, True)
-                # assign(IO2, False)
+            # Fountain sequence:
+            wait(fountain_duration, "Cooling_Sequence")
+            Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
+                                       fountain_pulse_duration_0, fountain_pulse_duration_minus,
+                                       fountain_pulse_duration_plus, fountain_aom_chirp_rate,
+                                       fountain_delta_f)
+
+            # PGC sequence:
+            wait(pgc_duration, "Cooling_Sequence")
+            Pulse_const(pgc_duration)
+            align(*all_elements)
+
+            # FreeFall sequence:
+            with if_(SPRINT_Exp_ON):
+                assign(x, (656000 * 2) // 4)
+            with else_():
+                assign(x, 0)
+            FreeFall(FreeFall_duration - x, coils_timing)
+            ##########################
+            ## Measurement Sequence ##
+            ##########################
+
+            with if_(Trigger_Phase == 3):  # when trigger on PrePulse
+                ## Trigger QuadRF Sequence #####################
+                play("C_Seq", "Cooling_Sequence", duration=2500)
+                ################################################
+
+            with if_(SPRINT_Exp_ON):
+                play("Depump", "AOM_2-2'", duration=(PrePulse_duration - shutter_open_time))
+            with else_():
+                wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
+            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "AOM_N", "AOM_S") # , "Dig_detectors"
+
+            with if_(Trigger_Phase == 4):  # when trigger on pulse 1
+                ## Trigger QuadRF Sequence #####################
+                play("C_Seq", "Cooling_Sequence", duration=2500)
+                ################################################
+            with if_((Imaging_Phase == 4) & (Pulse_1_duration > 0)):  # 4 means imaging phase on pulse_1
+                with if_(CRUS_Exp_ON):
+                    align(*all_elements, "Dig_detectors_spectrum", "AOM_2-2/3'", "Pulser_CRUS")
+                    CRUS_Experiment(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
+                                    ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8,
+                                    tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st) #, tt_st_S)
+                    save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
+                    with if_(AntiHelmholtz_ON):
+                        save(FLR, FLR_st)
+                with else_():
+                    with if_(Probe_max_counts_Exp_ON):
+                        Probe_counts_Measure_SNSPDs(M_off_time, Pulse_1_duration, obj.M_window,
+                                                    shutter_open_time, ON_counts_st1, ON_counts_st2,
+                                                    ON_counts_st3, ON_counts_st4, ON_counts_st5,
+                                                    ON_counts_st6, ON_counts_st7, ON_counts_st8)
+                    ## For taking an image:
+                    with else_():
+                        align(*all_elements)
+                        Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
+                                        pulse_1_duration_minus, pulse_1_duration_plus)
+                        Measure(Pulse_1_duration)  # This triggers camera (Control 7)
+                        align(*all_elements)
 
             assign(N_Snaps, 1)
             assign(Buffer_Cycles, 0)
@@ -870,7 +844,7 @@ def opx_control(obj, qm):
             (tt_st_7 + rep_st).buffer(Config.vec_size * obj.rep).save('Det7_Probe_TT')
             (tt_st_8 + rep_st).buffer(Config.vec_size * obj.rep).save('Det8_Probe_TT')
             FLR_st.save('FLR_measure')
-            # AntiHelmholtz_ON_st.save("antihelmholtz_on")
+            AntiHelmholtz_ON_st.save("antihelmholtz_on")
 
     job = qm.execute(opx_control_prog, flags=['auto-element-thread'])
 
@@ -904,20 +878,19 @@ class OPX:
 
         # ---------- Handle QuadRF ------------
         self.Exp_Values = Initial_Values  # Initialize experiment values to be as in Config_Table.py
-        # self.QuadRFControllers = []
+        self.QuadRFControllers = []
         # Note: So as not to connect again and again to QuadRF each time we update table, we now save the MOGDevic (actual QuadRF device) connected,
         # we hold this connection until update is finished, the we close the connection.
         # we do still hold the QuadRFController objects, for access to the table (read only!) when the experiment is running.
-        # qrfContr = QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 4), topticaLockWhenUpdating=False,
-        #                                 debugging=False, continuous=False)
-        # self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
-        # self.QuadRFControllers.append(QuadRFMOTController(MOGdevice = qrfContr.dev,initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '133MHz', 'CH3_amp': '31dbm'},
-        #                     updateChannels=[3], debugging=False,
-        #                     continuous=False))  # updates values on QuadRF (uploads table)
-        # #self.QuadRFControllers.append(QuadRFFrequencyScannerController(MOGdevice = qrfContr.dev, channel=2, debugging=False))  # updates values on QuadRF (uploads table)
-        #
-        # self.Update_QuadRF_channels = set({})  # Only update these channels on QuadRF when UpdateParameters method is called [note: this is a python set]
-        # qrfContr.disconnectQuadRF()
+        qrfContr = QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 4), topticaLockWhenUpdating=False,
+                                        debugging=False, continuous=False)
+        self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
+        self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev, initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '100MHz', 'CH3_amp': '31dbm'},
+                                                          updateChannels=[3], debugging=False, continuous=False))  # updates values on QuadRF (uploads table)
+        #self.QuadRFControllers.append(QuadRFFrequencyScannerController(MOGdevice = qrfContr.dev, channel=2, debugging=False))  # updates values on QuadRF (uploads table)
+
+        self.Update_QuadRF_channels = set({})  # Only update these channels on QuadRF when UpdateParameters method is called [note: this is a python set]
+        qrfContr.disconnectQuadRF()
         # ---------- Finish handle QuadRF ------------
 
         # Free fall variables:
@@ -1020,7 +993,7 @@ class OPX:
         self.M_off_time = int(self.Exp_Values['M_off_time'] * 1e6)  # [nsec]
         # self.rep = int(self.M_time / (self.M_window + 28 + 170))
         self.rep = int(self.M_time / self.M_window)
-        self.vec_size = 2500
+        self.vec_size = Config.vec_size
 
         # MW spectroscopy parameters:
         self.MW_start_frequency = int(100e6)  # [Hz]

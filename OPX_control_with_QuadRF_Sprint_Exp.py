@@ -12,7 +12,6 @@ from qm import SimulationConfig
 import matplotlib.pyplot as plt
 import numpy as np
 import time, json
-from datetime import datetime
 import sys
 import os
 from pynput import keyboard
@@ -568,7 +567,7 @@ def opx_control(obj, qm):
 
         # Boolean variables:
         AntiHelmholtz_ON = declare(bool, value=True)
-        SPRINT_Exp_ON = declare(bool, value=True)
+        SPRINT_Exp_ON = declare(bool, value=False)
         Probe_max_counts_Exp_ON = declare(bool, value=False)
 
         # MOT variables
