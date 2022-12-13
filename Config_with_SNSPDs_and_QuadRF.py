@@ -149,12 +149,8 @@ LO_pulse_samples = ([0.4] * 20) + [0] * 100
 
 ## MW Spectroscopy parameters
 
-try:
-    with open('C:\\Users\\oriezrm\\PycharmProjects\\NewOPXplus\\conf_args.json', 'r') as fp:
-        confargs = json.load(fp)
-except Exception:
-    with open(r'C:\Pycharm\Expriements\QM\NewOPXplus\conf_args.json', 'r') as fp:
-        confargs = json.load(fp)
+with open('conf_args.json', 'r') as fp:
+    confargs = json.load(fp)
 dc_i = confargs['offsets']['I']
 dc_q = confargs['offsets']['Q']
 i_port = confargs['ports']['I']
@@ -204,16 +200,16 @@ config = {
                 # 2: {'offset': +0.197359321899414038085},  # Summing amp / Homodyne
             },
 
-            # 'digital_inputs': {
-            #     1: {'polarity': 'High', 'window': 6, "threshold": 0.5},
-            #     2: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
-            #     3: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
-            #     4: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
-            #     5: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
-            #     6: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
-            #     7: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
-            #     8: {'polarity': 'HIGH', 'window': 6, "threshold": 0.5},
-            # },
+            'digital_inputs': {
+                1: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                2: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                3: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                4: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                5: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                6: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                7: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                8: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+            },
         }
     },
 
@@ -278,11 +274,6 @@ config = {
                     "delay": 0,
                     "buffer": 0,
                 },
-                # "Shutter_Switch": {
-                #     "port": (controller, 5),
-                #     "delay": 0,
-                #     "buffer": 0,
-                # },
             },
             'operations': {
                 'OD_FS': "OD_FS_pulse",
@@ -294,9 +285,6 @@ config = {
             "singleInput": {
                 "port": (controller, 5)
             },
-            # "outputs": {
-            #     'out1': (controller, 2)
-            # },
             'digitalInputs': {
                 "OD_Switch": {
                     "port": (controller, 2),
@@ -308,16 +296,6 @@ config = {
                     "delay": 0,
                     "buffer": 0,
                 },
-                # "Blue_Switch": {
-                #     "port": (controller, 7),
-                #     "delay": 0,
-                #     "buffer": 0,
-                # },
-                # "AWG_Switch": {
-                #     "port": (controller, 10),
-                #     "delay": 0,
-                #     "buffer": 0,
-                # },
             },
             'operations': {
                 'OD': "OD_pulse",
@@ -327,8 +305,6 @@ config = {
                 'CRUS_pulse': "CRUS_probe_pulses"
             },
             'intermediate_frequency': IF_AOM_OD,
-            # 'time_of_flight': 24,
-            # 'smearing': 0,
         },
         "AOM_2-2/3'_detuned": {
             "singleInput": {
@@ -358,26 +334,24 @@ config = {
                 'OD_Gaussian_Pulse': "Spectrum_Gaussian_pulse"
             },
             'intermediate_frequency': IF_AOM_OD,
-            # 'time_of_flight': 24,
-            # 'smearing': 0,
         },
 
-        # "AOM_2-2'": {
-        #     'singleInput': {
-        #         "port": (controller, 6)
-        #     },
-        #     'digitalInputs': {
-        #         "Depump_Trigger": {
-        #             "port": (controller, 7),
-        #             "delay": 0,
-        #             "buffer": 0,
-        #         },
-        #     },
-        #     'operations': {
-        #         'Depump': "Depump_pulse",
-        #     },
-        #     'intermediate_frequency': IF_AOM_Depump,
-        # },
+        "AOM_2-2'": {
+            'singleInput': {
+                "port": (controller, 6)
+            },
+            'digitalInputs': {
+                "Depump_Trigger": {
+                    "port": (controller, 7),
+                    "delay": 0,
+                    "buffer": 0,
+                },
+            },
+            'operations': {
+                'Depump': "Depump_pulse",
+            },
+            'intermediate_frequency': IF_AOM_Depump,
+        },
 
         "Measurement": {
             'digitalInputs': {
@@ -392,80 +366,86 @@ config = {
             },
         },
 
-        # "Probe_shutter": {
-        #     'digitalInputs': {
-        #         "Shutter_Switch": {
-        #             "port": (controller, 5),
-        #             "delay": 0,
-        #             "buffer": 0,
-        #         },
-        #     },
-        #     'operations': {
-        #         'Shutter_ON': "Shutter_on",
-        #     },
-        # },
+        "Probe_shutter": {
+            'digitalInputs': {
+                "Shutter_Switch": {
+                    "port": (controller, 5),
+                    "delay": 0,
+                    "buffer": 0,
+                },
+            },
+            'operations': {
+                'Shutter_ON': "Shutter_on",
+            },
+        },
 
-        # "Dig_detectors": {
-        #     ## fake port ##
-        #     "singleInput": {
-        #         "port": (controller, 6)
-        #     },
-        #     'digitalInputs': {
-        #         "AWG_Switch": {
-        #             "port": (controller, 10),
-        #             "delay": 0,
-        #             "buffer": 0,
-        #         },
-        #     },
-        #     ###############
-        #     "digitalOutputs": {
-        #         "out1": (controller, 1),
-        #         "out2": (controller, 2),
-        #         "out3": (controller, 3),
-        #         "out4": (controller, 4),
-        #         "out5": (controller, 5),
-        #         "out6": (controller, 6),
-        #         "out7": (controller, 7),
-        #         "out8": (controller, 8),
-        #     },
-        #     'operations': {
-        #         'readout': "digital_readout",
-        #         # 'readout_CRUS': "digital_readout_CRUS",
-        #     },
-        #     # 'time_of_flight': 24,
-        #     # 'smearing': 0,
-        #     # 'intermediate_frequency': 0,
-        # },
+        "Dig_detectors": {
+            ## fake port ##
+            "singleInput": {
+                "port": (controller, 6)
+            },
+            'digitalInputs': {
+                "AWG_Switch": {
+                    "port": (controller, 10),
+                    "delay": 0,
+                    "buffer": 0,
+                },
+            },
+            ###############
+            "digitalOutputs": {
+                "out1": (controller, 1),
+                "out2": (controller, 2),
+                "out3": (controller, 3),
+                "out4": (controller, 4),
+                "out5": (controller, 5),
+                "out6": (controller, 6),
+                "out7": (controller, 7),
+                "out8": (controller, 8),
+            },
+            'outputs': {
+                  'out1': (controller, 1)
+            },
+            'operations': {
+                'readout': "digital_readout",
+                # 'readout_CRUS': "digital_readout_CRUS",
+            },
+            'time_of_flight': 36,
+            'smearing': 0,
+            # 'intermediate_frequency': 0,
+        },
 
-        # "Dig_detectors_spectrum": {
-        #     ## fake port ##
-        #     "singleInput": {
-        #         "port": (controller, 6)
-        #     },
-        #     'digitalInputs': {
-        #         "AWG_Switch": {
-        #             "port": (controller, 10),
-        #             # "delay": 315,
-        #             "delay": 512 - 32, # with trigger to scope - for CRUS experiment
-        #             # "delay": 0, # with trigger to scope - for Spectrum experiment
-        #             "buffer": 0,
-        #         },
-        #     },
-        #     ###############
-        #     "digitalOutputs": {
-        #         "out5": (controller, 5),
-        #         "out6": (controller, 6),
-        #         "out7": (controller, 7),
-        #         "out8": (controller, 8),
-        #     },
-        #     'operations': {
-        #         'readout': "digital_readout_spectrum",
-        #         'readout_CRUS': "digital_readout_CRUS",
-        #     },
-        #     # 'time_of_flight': 24,
-        #     # 'smearing': 0,
-        #     # 'intermediate_frequency': 0,
-        # },
+        "Dig_detectors_spectrum": {
+            ## fake port ##
+            "singleInput": {
+                "port": (controller, 6)
+            },
+            'digitalInputs': {
+                "AWG_Switch": {
+                    "port": (controller, 10),
+                    # "delay": 315,
+                    "delay": 512 - 32, # with trigger to scope - for CRUS experiment
+                    # "delay": 0, # with trigger to scope - for Spectrum experiment
+                    "buffer": 0,
+                },
+            },
+            ###############
+            "digitalOutputs": {
+                "out5": (controller, 5),
+                "out6": (controller, 6),
+                "out7": (controller, 7),
+                "out8": (controller, 8),
+            },
+            'operations': {
+                'readout': "digital_readout_spectrum",
+                'readout_CRUS': "digital_readout_CRUS",
+            },
+            'outputs': {
+                  'out1': (controller, 1)
+            },
+            'time_of_flight': 36,
+            'smearing': 0,
+            # 'intermediate_frequency': 0,
+        },
 
         "FLR_detection": {
             # open fake:

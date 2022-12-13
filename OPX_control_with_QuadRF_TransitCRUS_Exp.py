@@ -223,7 +223,7 @@ def FreeFall(freefall_duration, coils_timing):
 
     ## Aligning all the different elements used during the freefall time of the experiment ##
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'", "AOM_2-2'",
-          "Measurement", "AOM_N", "AOM_S") # , "Dig_detectors", "Dig_detectors_spectrum")
+          "Measurement") # , "Dig_detectors", "Dig_detectors_spectrum")
 
     ## Zeeman Coils turn-on sequence ##
     wait(coils_timing, "Zeeman_Coils")
@@ -496,7 +496,7 @@ def CRUS_Experiment(m_off_time, m_time, m_window, shutter_open_time,
 
     align("AOM_2-2/3'", "Pulser_CRUS", "Dig_detectors_spectrum")
     # play("OD", "AOM_2-2/3'", duration=shutter_open_time)
-    wait(shutter_open_time, "AOM_2-2/3")
+    wait(shutter_open_time, "AOM_2-2/3'")
     align("AOM_2-2/3'", "Pulser_CRUS", "Dig_detectors_spectrum")
     # wait(50+16, "AOM_2-2/3'", "Pulser_CRUS")
     # wait(128 + 32, "AOM_2-2/3'", "Pulser_CRUS")
@@ -679,7 +679,7 @@ def opx_control(obj, qm):
             align(*all_elements)
 
             # FreeFall sequence:
-            with if_(SPRINT_Exp_ON):
+            with if_(CRUS_Exp_ON):
                 assign(x, (656000 * 2) // 4)
             with else_():
                 assign(x, 0)
@@ -693,11 +693,8 @@ def opx_control(obj, qm):
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
 
-            with if_(SPRINT_Exp_ON):
-                play("Depump", "AOM_2-2'", duration=(PrePulse_duration - shutter_open_time))
-            with else_():
-                wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
-            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "AOM_N", "AOM_S") # , "Dig_detectors"
+            wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
+            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'") # , "Dig_detectors"
 
             with if_(Trigger_Phase == 4):  # when trigger on pulse 1
                 ## Trigger QuadRF Sequence #####################
