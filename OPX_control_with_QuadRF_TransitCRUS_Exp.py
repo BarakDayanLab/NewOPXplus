@@ -2270,7 +2270,7 @@ class OPX:
 
 if __name__ == "__main__":
     experiment = OPX(Config.config)
-    # experiment.Start_Spectrum_Exp_with_tt(N=100, preComment='test')
+    experiment.Start_CRUS_Exp_with_tt(N=100, preComment='test')
     # experiment.updateValue('PrePulse_duration', 5)
     # experiment.update_parameters()
     # experiment.Repeat_Measurement(10)
