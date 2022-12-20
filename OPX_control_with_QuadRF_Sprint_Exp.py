@@ -520,10 +520,10 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
                 time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
                 time_tagging.digital(tt_vec3, m_window, element_output="out3", targetLen=counts3),
                 time_tagging.digital(tt_vec4, m_window, element_output="out4", targetLen=counts4),
-                time_tagging.digital(tt_vec5, m_window, element_output="out5", targetLen=counts5),
-                time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
-                time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
-                time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
+                # time_tagging.digital(tt_vec5, m_window, element_output="out5", targetLen=counts5),
+                # time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
+                # time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
+                # time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
                 )
 
         ## Save Data: ##
@@ -533,29 +533,40 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
         save(counts2, ON_counts_st2)
         save(counts3, ON_counts_st3)
         save(counts4, ON_counts_st4)
-        save(counts5, ON_counts_st5)
-        save(counts6, ON_counts_st6)
-        save(counts7, ON_counts_st7)
-        save(counts8, ON_counts_st8)
+        # save(counts5, ON_counts_st5)
+        # save(counts6, ON_counts_st6)
+        # save(counts7, ON_counts_st7)
+        # save(counts8, ON_counts_st8)
 
         with for_(m1, 0, m1 < vec_size, m1 + 1):
             save(tt_vec1[m1], tt_st_1)
-        with for_(m2, 0, m2 < vec_size, m2 + 1):
-            save(tt_vec2[m2], tt_st_2)
-        with for_(m3, 0, m3 < vec_size, m3 + 1):
-            save(tt_vec3[m3], tt_st_3)
-        with for_(m4, 0, m4 < vec_size, m4 + 1):
-            save(tt_vec4[m4], tt_st_4)
-        with for_(m5, 0, m5 < vec_size, m5 + 1):
-            save(tt_vec5[m5], tt_st_5)
-        with for_(m6, 0, m6 < vec_size, m6 + 1):
-            save(tt_vec6[m6], tt_st_6)
-        with for_(m7, 0, m7 < vec_size, m7 + 1):
-            save(tt_vec7[m7], tt_st_7)
-        with for_(m8, 0, m8 < vec_size, m8 + 1):
-            save(tt_vec8[m8], tt_st_8)
+            save(tt_vec2[m1], tt_st_2)
+            save(tt_vec3[m1], tt_st_3)
+            save(tt_vec4[m1], tt_st_4)
+        # with for_(m6, 0, m6 < vec_size, m6 + 1):
+
+        #     # wait(10)
+        # wait(10)
+        # with for_(m2, 0, m2 < vec_size, m2 + 1):
+        # wait(10)
+
+        # with for_(m3, 0, m3 < vec_size, m3 + 1):
+        #     save(tt_vec3[m3], tt_st_3)
+        #     # wait(10)
+        # with for_(m4, 0, m4 < vec_size, m4 + 1):
+        #     save(tt_vec4[m4], tt_st_4)
+        #     # wait(10)
+        # with for_(m5, 0, m5 < vec_size, m5 + 1):
+        #     # wait(10)
+        # with for_(m7, 0, m7 < vec_size, m7 + 1):
+        #     save(tt_vec7[m7], tt_st_7)
+        #     # wait(10)
+        # with for_(m8, 0, m8 < vec_size, m8 + 1):
+        #     save(tt_vec8[m8], tt_st_8)
+        #     # wait(10)
         with for_(m, 0, m < vec_size, m + 1):
             save(n, rep_st)
+            # wait(10)
 
 
 def opx_control(obj, qm):
@@ -793,22 +804,24 @@ def opx_control(obj, qm):
                 assign(i, IO1)
 
         with stream_processing():
-            (ON_counts_st1 + ON_counts_st2 + ON_counts_st3 + ON_counts_st4).buffer(obj.rep).save('North_Probe')
-            (ON_counts_st5 + ON_counts_st6 + ON_counts_st7 + ON_counts_st8).buffer(obj.rep).save('South_Probe')
-            # ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
-            # ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
-            # ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
-            # ON_counts_st4.buffer(obj.rep).save('Det4_Counts')
-            # ON_counts_st5.buffer(obj.rep).save('Det5_Counts')
-            # ON_counts_st6.buffer(obj.rep).save('Det6_Counts')
+            # (ON_counts_st1 + ON_counts_st2 + ON_counts_st3 + ON_counts_st4).buffer(obj.rep).save('North_Probe')
+            (ON_counts_st1 + ON_counts_st2 ).buffer(obj.rep).save('North_Probe')
+            # (ON_counts_st5 + ON_counts_st6 + ON_counts_st7 + ON_counts_st8).buffer(obj.rep).save('South_Probe')
+            (ON_counts_st5 + ON_counts_st6).buffer(obj.rep).save('South_Probe')
+            ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
+            ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
+            ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
+            ON_counts_st4.buffer(obj.rep).save('Det4_Counts')
+            # ON_counts_st5.buffer(obj.rep).save('Det5_Counts') # assaf - renamed to det3 to ease further calculation
+            # ON_counts_st6.buffer(obj.rep).save('Det6_Counts')# assaf - renamed to det4 to ease further calculation
             # ON_counts_st7.buffer(obj.rep).save('Det7_Counts')
             # ON_counts_st8.buffer(obj.rep).save('Det8_Counts')
-            # (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
-            # (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
-            # (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
-            # (tt_st_4 + rep_st).buffer(obj.vec_size * obj.rep).save('Det4_Probe_TT')
-            # (tt_st_5 + rep_st).buffer(obj.vec_size * obj.rep).save('Det5_Probe_TT')
-            # (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep).save('Det6_Probe_TT')
+            (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
+            (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
+            (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
+            (tt_st_4 + rep_st).buffer(obj.vec_size * obj.rep).save('Det4_Probe_TT')
+            # (tt_st_5 + rep_st).buffer(obj.vec_size * obj.rep).save('Det5_Probe_TT') # assaf - renamed to det3 to ease further calculation
+            # (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep).save('Det6_Probe_TT') # assaf - renamed to det4 to ease further calculation
             # (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det7_Probe_TT')
             # (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det8_Probe_TT')
             FLR_st.save('FLR_measure')
@@ -972,10 +985,16 @@ class OPX:
         self.TOP2_pulse_len = int(Config.Probe_pulse_len / 4)  # [nsec]
         self.Calibration_time = 10  # [msec]
 
-        self.qmm = QuantumMachinesManager(host='132.77.54.230', port='80')
-        self.qmm.clear_all_job_results()
-        self.qm = self.qmm.open_qm(config)
-        self.job = opx_control(self, self.qm)
+        try:
+            self.qmm = QuantumMachinesManager(host='132.77.54.230', port='80')
+            self.qmm.clear_all_job_results()
+            self.qmm.reset_data_processing()
+            self.qmm.close_all_quantum_machines()
+            self.qm = self.qmm.open_qm(config)
+            self.job = opx_control(self, self.qm)
+        except KeyboardInterrupt:
+            self.job.halt()
+            self.qmm.reset_data_processing()
 
         self.io1_list = []
         self.io2_list = []
@@ -1230,439 +1249,439 @@ class OPX:
         return [(np.average(Probe_counts_North) * 1000) / self.M_time,
                 (np.average(Probe_counts_South) * 1000) / self.M_time]
 
-    def Save_SNSPDs_Transit_Measurement_with_tt(self, N, histogram_bin_size, Transit_profile_bin_size, preComment,
-                                                total_counts_threshold,  transit_counts_threshold, max_probe_counts):
-        """
-        Function for analyzing and saving the time tags data measured from the SNSPDs using the OPX. In this specific
-         program we are looking for transits of atoms next to the toroid and record them.
-        :param N: Number of maximum experiments (free throws) saved and displayed.
-        :param histogram_bin_size: The bin size for the general experiment histogram which means - dividing the length
-                                   of the measuring time (m_time) to bins and counting the number of photon detections
-                                   at each bin.
-        :param Transit_profile_bin_size: The bin size for the transit histogram which means - dividing the length of the
-                                         transit time to bins and counting the number of transits for which there has
-                                         been a detection of photon at each bin.
-        :param preComment: The comment added at the start of the experiment, usually consisting of unique experiment
-                           parameters.
-        :param total_counts_threshold: The minimum number of MCounts / sec for which the data will be displayed and collected.
-        :param intensity_threshold: The number of photons at each time bin for which suspect we as a transit.
-        :param max_probe_counts: The maximum counts probe counts at each direction measured when cavity isn't locked.
-        :return:
-        """
-        # if preComment is True:
-        if not preComment:
-            preComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
-        aftComment = None
+    # def Save_SNSPDs_Transit_Measurement_with_tt(self, N, histogram_bin_size, Transit_profile_bin_size, preComment,
+    #                                             total_counts_threshold,  transit_counts_threshold, max_probe_counts):
+    #     """
+    #     Function for analyzing and saving the time tags data measured from the SNSPDs using the OPX. In this specific
+    #      program we are looking for transits of atoms next to the toroid and record them.
+    #     :param N: Number of maximum experiments (free throws) saved and displayed.
+    #     :param histogram_bin_size: The bin size for the general experiment histogram which means - dividing the length
+    #                                of the measuring time (m_time) to bins and counting the number of photon detections
+    #                                at each bin.
+    #     :param Transit_profile_bin_size: The bin size for the transit histogram which means - dividing the length of the
+    #                                      transit time to bins and counting the number of transits for which there has
+    #                                      been a detection of photon at each bin.
+    #     :param preComment: The comment added at the start of the experiment, usually consisting of unique experiment
+    #                        parameters.
+    #     :param total_counts_threshold: The minimum number of MCounts / sec for which the data will be displayed and collected.
+    #     :param intensity_threshold: The number of photons at each time bin for which suspect we as a transit.
+    #     :param max_probe_counts: The maximum counts probe counts at each direction measured when cavity isn't locked.
+    #     :return:
+    #     """
+    #     # if preComment is True:
+    #     if not preComment:
+    #         preComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
+    #     aftComment = None
+    #
+    #     ### fetching data from server
+    #     ### saving to file
+    #     ###
+    #
+    #     histogram_bin_number = self.M_time // histogram_bin_size
+    #     time_bins = np.linspace(0, self.M_time, histogram_bin_number)
+    #     # time_threshold = int(histogram_bin_size / intensity_threshold)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
+    #     time_threshold = int(
+    #         histogram_bin_size * 0.8)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
+    #
+    #     ## Listen for keyboard
+    #     listener = keyboard.Listener(on_press=self.on_key_press)
+    #     listener.start()  # start to listen on a separate thread
+    #     self.keyPress = None
+    #     print('\033[94m' + 'Press ESC to stop measurement.' + '\033[0m')  # print blue
+    #     reps = 1  # a counter, number of repeats actually made.
+    #
+    #     Probe_N_handle = self.job.result_handles.get("North_Probe")
+    #     Probe_S_handle = self.job.result_handles.get("South_Probe")
+    #     tt_N_handle = self.job.result_handles.get("North_Probe_TT")
+    #     tt_S_handle = self.job.result_handles.get("South_Probe_TT")
+    #     FLR_handle = self.job.result_handles.get("FLR_measure")
+    #
+    #     Probe_N_handle.wait_for_values(1)
+    #     Probe_S_handle.wait_for_values(1)
+    #     tt_N_handle.wait_for_values(1)
+    #     tt_S_handle.wait_for_values(1)
+    #     FLR_handle.wait_for_values(1)
+    #
+    #     Probe_N_res = Probe_N_handle.fetch_all()
+    #     Probe_S_res = Probe_S_handle.fetch_all()
+    #     tt_N_res = tt_N_handle.fetch_all()
+    #     tt_S_res = tt_S_handle.fetch_all()
+    #     FLR_res = -FLR_handle.fetch_all()
+    #
+    #     tt_N_measure = [i for i in tt_N_res if (i % self.M_window) != 0]
+    #     tt_S_measure = [i for i in tt_S_res if (i % self.M_window) != 0]
+    #     tt_N_measure.sort()
+    #     tt_S_measure.sort()
+    #
+    #     tt_N_measure_batch = []
+    #     tt_N_binning_batch = []
+    #     self.tt_S_measure_batch = []
+    #     tt_S_binning_batch = []
+    #     all_transits_batch = []
+    #     all_transits_aligned_first_batch = []
+    #     transit_histogram_batch = []
+    #     FLR_measurement = []
+    #     Exp_timestr_batch = []
+    #
+    #     tt_N_binning = np.zeros(histogram_bin_number)
+    #     tt_S_binning = np.zeros(histogram_bin_number)
+    #     tt_N_transit_events = np.zeros(histogram_bin_number)
+    #     tt_S_transit_events = np.zeros(histogram_bin_number)
+    #
+    #     start = True
+    #
+    #     # Place holders for results
+    #     # while (number of photons * 10^-6 [Mcounts] / Measuring time [nsec] * 10^-9 [sec/nsec])  > total_counts_threshold [Mcounts /sec]:
+    #     while ((len(tt_S_measure) * 1000) / self.M_time) > total_counts_threshold or start:
+    #         if self.keyPress == 'ESC':
+    #             print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
+    #             self.updateValue("Transit_Exp_switch", False)
+    #             self.update_parameters()
+    #             # Other actions can be added here
+    #             break
+    #         if start:
+    #             start = False
+    #         else:
+    #             print('Above Threshold')
+    #
+    #         Probe_N_res = Probe_N_handle.fetch_all()
+    #         Probe_S_res = Probe_S_handle.fetch_all()
+    #         tt_N_res = tt_N_handle.fetch_all()
+    #         tt_S_res = tt_S_handle.fetch_all()
+    #         FLR_res = -FLR_handle.fetch_all()
+    #
+    #         tt_N_measure = [i for i in tt_N_res if (i % self.M_window) != 0]
+    #         tt_S_measure = [i for i in tt_S_res if (i % self.M_window) != 0]
+    #         tt_N_measure.sort()
+    #         tt_S_measure.sort()
+    #
+    #     self.tt_S_measure = tt_S_measure
+    #     ## record time
+    #     timest = time.strftime("%Y%m%d-%H%M%S")
+    #     datest = time.strftime("%Y%m%d")
+    #
+    #     FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
+    #     Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
+    #
+    #     for x in tt_N_measure:
+    #         tt_N_binning[x // histogram_bin_size] += 1
+    #     for x in tt_S_measure:
+    #         tt_S_binning[x // histogram_bin_size] += 1
+    #
+    #     if len(self.tt_S_measure_batch) == N:
+    #         tt_N_transit_events[[i for i, x in enumerate(tt_N_binning_batch[0]) if x >  transit_counts_threshold]] -= 1
+    #         tt_S_transit_events[[i for i, x in enumerate(tt_S_binning_batch[0]) if x >  transit_counts_threshold]] -= 1
+    #
+    #     tt_N_measure_batch = tt_N_measure_batch[-(N - 1):] + [tt_N_measure]
+    #     tt_N_binning_batch = tt_N_binning_batch[-(N - 1):] + [tt_N_binning]
+    #     self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [tt_S_measure]
+    #     tt_S_binning_batch = tt_S_binning_batch[-(N - 1):] + [tt_S_binning]
+    #     Counter = 1
+    #
+    #     tt_N_transit_events[[i for i, x in enumerate(tt_N_binning) if x > transit_counts_threshold]] += 1
+    #     tt_S_transit_events[[i for i, x in enumerate(tt_S_binning) if x > transit_counts_threshold]] += 1
+    #
+    #     # Find transits and build histogram:
+    #     current_transit = []
+    #     all_transits = []
+    #     all_transits_aligned_first = []
+    #     t_transit = []
+    #     t_transit_batch = []
+    #     transit_histogram = []
+    #     for t in tt_S_measure:
+    #         if not current_transit:  # if the array is empty
+    #             current_transit.append(t)
+    #         elif (t - current_transit[-1]) < time_threshold:
+    #             current_transit.append(t)
+    #         elif len(current_transit) > transit_counts_threshold:
+    #             all_transits.append(current_transit)
+    #             all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
+    #             current_transit = [t]
+    #         else:
+    #             current_transit = [t]
+    #
+    #     if all_transits:
+    #         if len(all_transits_aligned_first_batch) == N:
+    #             for n in range(len(all_transits_aligned_first_batch[0])):
+    #                 for m in range(len(all_transits_aligned_first_batch[0][n]) - 1):
+    #                     transit_histogram_batch[
+    #                         all_transits_aligned_first_batch[0][n][m + 1] // Transit_profile_bin_size] -= 1
+    #
+    #         all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
+    #         all_transits_aligned_first_batch = all_transits_aligned_first_batch[-(N - 1):] + [
+    #             all_transits_aligned_first]
+    #         transit_histogram = np.zeros((max([vec for elem in all_transits_aligned_first for vec in elem])
+    #                                       + histogram_bin_size) // Transit_profile_bin_size)
+    #         t_transit = np.linspace(0, len(transit_histogram) * Transit_profile_bin_size, len(transit_histogram))
+    #         transit_histogram_batch = np.zeros((max(
+    #             [vec for elem in [vec for elem in all_transits_aligned_first_batch for vec in elem] for vec in
+    #              elem]) + histogram_bin_size) // Transit_profile_bin_size)
+    #         t_transit_batch = np.linspace(0, len(transit_histogram_batch) * Transit_profile_bin_size,
+    #                                       len(transit_histogram_batch))
+    #         for n in range(len(all_transits_aligned_first)):
+    #             for m in range(len(all_transits_aligned_first[n]) - 1):
+    #                 transit_histogram[all_transits_aligned_first[n][m + 1] // Transit_profile_bin_size] += 1
+    #                 transit_histogram_batch[all_transits_aligned_first[n][m + 1] // Transit_profile_bin_size] += 1
+    #
+    #     ## Prepare plots
+    #     fig = plt.figure()
+    #     ax1 = plt.subplot2grid((6, 2), (0, 0), colspan=1, rowspan=2)
+    #     ax2 = plt.subplot2grid((6, 2), (0, 1), colspan=1, rowspan=2)
+    #     ax3 = plt.subplot2grid((6, 2), (2, 0), colspan=1, rowspan=2)
+    #     ax4 = plt.subplot2grid((6, 2), (2, 1), colspan=1, rowspan=2)
+    #     ax5 = plt.subplot2grid((6, 2), (4, 0), colspan=1, rowspan=2)
+    #     ax6 = plt.subplot2grid((6, 2), (4, 1), colspan=1, rowspan=2)
+    #
+    #     while True:
+    #         if self.keyPress == 'ESC':
+    #             print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
+    #             self.updateValue("Transit_Exp_switch", False)
+    #             self.update_parameters()
+    #             # Other actions can be added here
+    #             break
+    #         if reps < N:
+    #             reps += 1
+    #
+    #         ########################## PLOT!!! ########################################################################
+    #
+    #         ax1.clear()
+    #         ax2.clear()
+    #         ax3.clear()
+    #         ax4.clear()
+    #         ax5.clear()
+    #         ax6.clear()
+    #
+    #         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    #         textstr_N = r'$Probe_N = %.3f$' % ((len(tt_N_measure) * 1000) / self.M_time,) + '[MPhotons/sec]\n' \
+    #                     + '$\overline{Probe}_N = %.3f$' % ((np.mean([len(x) for x in tt_N_measure_batch]) * 1000)
+    #                                                        / self.M_time,) + '[MPhotons/sec]'
+    #         textstr_S = r'$Probe_S = %.3f$' % ((len(tt_S_measure) * 1000) / self.M_time,) + '[MPhotons/sec]\n' \
+    #                     + '$\overline{Probe}_S = %.3f$' % ((np.mean([len(x) for x in self.tt_S_measure_batch]) * 1000)
+    #                                                        / self.M_time,) + '[MPhotons/sec]'
+    #         textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (np.mean(FLR_measurement) * 1e5,) + r'$\times 10^{-5}$'
+    #         textstr_No_transits = 'NO TRANSITS YET!!!'
+    #
+    #         ax1.plot(time_bins, tt_N_binning, label='Counts histogram', color='b')
+    #         ax1.set_title('North', fontweight="bold")
+    #         ax1.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
+    #         ax1.text(0.05, 0.95, textstr_N, transform=ax1.transAxes, fontsize=12,
+    #                  verticalalignment='top', bbox=props)
+    #         ax1.legend(loc='upper right')
+    #
+    #         ax2.plot(time_bins, tt_S_binning, label='Counts histogram', color='b')
+    #         ax2.set_title('South', fontweight="bold")
+    #         ax2.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
+    #         ax2.text(0.05, 0.95, textstr_S, transform=ax2.transAxes, fontsize=12,
+    #                  verticalalignment='top', bbox=props)
+    #         ax2.legend(loc='upper right')
+    #
+    #         ax3.plot(time_bins, tt_N_transit_events, label='Transit events histogram', marker='*', color='k')
+    #         ax3.set(xlabel='Time [msec]', ylabel='Transits events [#Number]')
+    #         ax3.legend(loc='upper right')
+    #
+    #         ax4.plot(time_bins, tt_S_transit_events, label='Transit events histogram', marker='*', color='k')
+    #         ax4.set(xlabel='Time [msec]', ylabel='Transits events [#Number]')
+    #         ax4.legend(loc='upper right')
+    #
+    #         if len(transit_histogram) > 0:
+    #             textstr_transit_counts = r'$N_{Transits} = %s $' % (len(all_transits_aligned_first),) + r'$[Counts]$'
+    #             textstr_avg_transit_counts = r'$\overline{N}_{Transits} = %.1f $' % (
+    #             np.average([len(vec) for vec in all_transits_aligned_first]),) + r'$[Counts]$'
+    #
+    #             ax5.plot(t_transit, transit_histogram, color='b')
+    #             ax5.set_title('Drop transits profile', fontweight="bold")
+    #             ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+    #             ax5.text(0.05, 0.95, textstr_transit_counts, transform=ax5.transAxes, fontsize=12,
+    #                      verticalalignment='top', bbox=props)
+    #
+    #             ax6.plot(t_transit_batch, transit_histogram_batch, color='b')
+    #             ax6.set_title('Accumulated drop transits profile', fontweight="bold")
+    #             ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+    #             ax6.text(0.05, 0.95, textstr_avg_transit_counts, transform=ax6.transAxes, fontsize=12,
+    #                      verticalalignment='top', bbox=props)
+    #         else:
+    #             ax5.plot(t_transit, transit_histogram, color='b')
+    #             ax5.set_title('Drop transits profile', fontweight="bold")
+    #             ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+    #             ax5.text(0.25, 0.5, textstr_No_transits, transform=ax5.transAxes, fontsize=24,
+    #                      verticalalignment='center', bbox=props)
+    #
+    #             ax6.plot(t_transit_batch, transit_histogram_batch, color='b')
+    #             ax6.set_title('Accumulated drop transits profile', fontweight="bold")
+    #             ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+    #             ax6.text(0.25, 0.5, textstr_No_transits, transform=ax6.transAxes, fontsize=24,
+    #                      verticalalignment='center', bbox=props)
+    #
+    #         ax1.set_ylim(0, 8)
+    #         ax2.set_ylim(0, 8)
+    #
+    #         # plt.tight_layout()
+    #         plt.show()
+    #         plt.pause(1)
+    #
+    #         ###########################################################################################################
+    #
+    #         while tt_S_measure == self.tt_S_measure_batch[-1]:
+    #             # record time:
+    #             timest = time.strftime("%Y%m%d-%H%M%S")
+    #             datest = time.strftime("%Y%m%d")
+    #
+    #             # get measures:
+    #             Probe_N_res = Probe_N_handle.fetch_all()
+    #             Probe_S_res = Probe_S_handle.fetch_all()
+    #             tt_N_res = tt_N_handle.fetch_all()
+    #             tt_S_res = tt_S_handle.fetch_all()
+    #             FLR_res = -FLR_handle.fetch_all()
+    #
+    #             tt_N_measure = [i for i in tt_N_res if (i % self.M_window) != 0]
+    #             tt_S_measure = [i for i in tt_S_res if (i % self.M_window) != 0]
+    #             tt_N_measure.sort()
+    #             tt_S_measure.sort()
+    #
+    #         if ((len(tt_S_measure) * 1000) / self.M_time) < total_counts_threshold:
+    #
+    #             FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
+    #             Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
+    #             Counter += 1
+    #             print(timest, Counter)
+    #
+    #             tt_N_binning = np.zeros(histogram_bin_number)
+    #             tt_S_binning = np.zeros(histogram_bin_number)
+    #
+    #             for x in tt_N_measure:
+    #                 tt_N_binning[x // histogram_bin_size] += 1
+    #             for x in tt_S_measure:
+    #                 tt_S_binning[x // histogram_bin_size] += 1
+    #
+    #             if len(self.tt_S_measure_batch) == N:
+    #                 tt_N_transit_events[
+    #                     [i for i, x in enumerate(tt_N_binning_batch[0]) if x >  transit_counts_threshold]] -= 1
+    #                 tt_S_transit_events[
+    #                     [i for i, x in enumerate(tt_S_binning_batch[0]) if x >  transit_counts_threshold]] -= 1
+    #
+    #             tt_N_measure_batch = tt_N_measure_batch[-(N - 1):] + [tt_N_measure]
+    #             tt_N_binning_batch = tt_N_binning_batch[-(N - 1):] + [tt_N_binning]
+    #             self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [tt_S_measure]
+    #             tt_S_binning_batch = tt_S_binning_batch[-(N - 1):] + [tt_S_binning]
+    #
+    #             tt_N_transit_events[[i for i, x in enumerate(tt_N_binning) if x >  transit_counts_threshold]] += 1
+    #             tt_S_transit_events[[i for i, x in enumerate(tt_S_binning) if x >  transit_counts_threshold]] += 1
+    #
+    #             # Find transits and build histogram:
+    #             current_transit = []
+    #             all_transits = []
+    #             all_transits_aligned_first = []
+    #             for t in tt_S_measure:
+    #                 if not current_transit:  # if the array is empty
+    #                     current_transit.append(t)
+    #                 elif (t - current_transit[-1]) < time_threshold:
+    #                     current_transit.append(t)
+    #                 elif len(current_transit) >  transit_counts_threshold:
+    #                     all_transits.append(current_transit)
+    #                     all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
+    #                     current_transit = [t]
+    #                 else:
+    #                     current_transit = [t]
+    #
+    #             if all_transits:
+    #                 if len(all_transits_aligned_first_batch) == N:
+    #                     for n in range(len(all_transits_aligned_first_batch[0])):
+    #                         for m in range(len(all_transits_aligned_first_batch[0][n]) - 1):
+    #                             transit_histogram_batch[
+    #                                 all_transits_aligned_first_batch[0][n][m + 1] // Transit_profile_bin_size] -= 1
+    #
+    #                 all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
+    #                 all_transits_aligned_first_batch = all_transits_aligned_first_batch[-(N - 1):] + [
+    #                     all_transits_aligned_first]
+    #
+    #                 transit_histogram = np.zeros((max([vec for elem in all_transits_aligned_first for vec in elem])
+    #                                               + histogram_bin_size) // Transit_profile_bin_size)
+    #                 t_transit = np.linspace(0, len(transit_histogram) * Transit_profile_bin_size,
+    #                                         len(transit_histogram))
+    #                 # transit_histogram_batch = np.zeros((max(
+    #                 #     [vec for elem in [vec for elem in all_transits_aligned_first_batch for vec in elem] for vec in
+    #                 #      elem]) + histogram_bin_size) // Transit_profile_bin_size)
+    #                 transit_histogram_batch = np.pad(transit_histogram_batch, (0, (max(
+    #                     [vec for elem in [vec for elem in all_transits_aligned_first_batch for vec in elem] for vec in
+    #                      elem]) + histogram_bin_size) // Transit_profile_bin_size - len(transit_histogram_batch)),
+    #                        'constant')
+    #                 t_transit_batch = np.linspace(0, len(transit_histogram_batch) * Transit_profile_bin_size,
+    #                                               len(transit_histogram_batch))
+    #                 for n in range(len(all_transits_aligned_first)):
+    #                     for m in range(len(all_transits_aligned_first[n]) - 1):
+    #                         transit_histogram[all_transits_aligned_first[n][m + 1] // Transit_profile_bin_size] += 1
+    #                         transit_histogram_batch[
+    #                             all_transits_aligned_first[n][m + 1] // Transit_profile_bin_size] += 1
+    #
+    #     ############################################## END WHILE LOOP #################################################
+    #
+    #     ## Adding comment to measurement [prompt whether stopped or finished regularly]
+    #     aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
+    #     if aftComment == 'Timeout': aftComment = None
+    #
+    #     #### Handle file-names and directories #####
+    #     ## Saving: np.savez(filedir, data = x) #note: @filedir is string of full directory; data is the queyword used to read @x from the file:
+    #     ## Loading: file = np.load(f, allow_pickle = True)
+    #     ##          x = file['data']
+    #
+    #     #### ------ Save results ------
+    #     #  -------   Create dir
+    #     root_dirname = f'U:\\Lab_2021-2022\\Experiment_results\\Transits\\{datest}\\'
+    #     dirname = root_dirname + f'{timest}_Photon_TimeTags\\'  # Specific experiment dir
+    #     dirname_N = dirname + 'North\\'
+    #     dirname_S = dirname + 'South\\'
+    #     if not os.path.exists(dirname):
+    #         os.makedirs(dirname)
+    #     if not os.path.exists(dirname_N):
+    #         os.makedirs(dirname_N)
+    #     if not os.path.exists(dirname_S):
+    #         os.makedirs(dirname_S)
+    #
+    #     # ----  msmnt files names  -----
+    #     # Counter_str = (Counter)
+    #     filename_N_tt = f'North_timetags.npz'
+    #     filename_S_tt = f'South_timetags.npz'
+    #     filename_S_transits = f'South_Transits.npz'
+    #     filename_FLR = f'Flouresence.npz'
+    #     filename_timestamp = f'Drops_time_stamps.npz'
+    #
+    #     if len(FLR_measurement) > 0:
+    #         np.savez(dirname + filename_FLR, FLR_measurement)
+    #     if len(Exp_timestr_batch) > 0:
+    #         np.savez(dirname + filename_timestamp, Exp_timestr_batch)
+    #     if len(tt_N_measure_batch) > 0:
+    #         np.savez(dirname_N + filename_N_tt, tt_N_measure_batch)
+    #     if len(self.tt_S_measure_batch) > 0:
+    #         np.savez(dirname_S + filename_S_tt, self.tt_S_measure_batch)
+    #     if len(all_transits_batch) > 0:
+    #         np.savez(dirname_S + filename_S_transits, all_transits_batch)
+    #
+    #     ### Edit comments file ####
+    #     Counter_str = str(Counter)
+    #     cmntDir = root_dirname + '\\daily_experiment_comments.txt'
+    #     cmnt = timest + ' - '
+    #     if preComment is not None: cmnt = cmnt + preComment + '; '
+    #     if aftComment is not None: cmnt = cmnt + aftComment
+    #     if preComment is None and aftComment is None: cmnt = cmnt + 'No comment. '
+    #     try:
+    #         with open(cmntDir, "a") as commentsFile:
+    #             commentsFile.write(cmnt + '\n')
+    #     except:
+    #         print('Could not save comments, error writing to comments-file.')
+    #         print(cmnt)
+    #
+    #     comments = {'comments': cmnt}
+    #     try:
+    #         with open(f'{dirname}experiment_comments.txt', 'w') as file:
+    #             json.dump(comments, file, indent=4)
+    #     except Exception:
+    #         pass
+    #
+    #     self.saveConfigTable(path=dirname)
+    #     ## ------------------ end of saving section -------
 
-        ### fetching data from server
-        ### saving to file
-        ###
-
-        histogram_bin_number = self.M_time // histogram_bin_size
-        time_bins = np.linspace(0, self.M_time, histogram_bin_number)
-        # time_threshold = int(histogram_bin_size / intensity_threshold)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
-        time_threshold = int(
-            histogram_bin_size * 0.8)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
-
-        ## Listen for keyboard
-        listener = keyboard.Listener(on_press=self.on_key_press)
-        listener.start()  # start to listen on a separate thread
-        self.keyPress = None
-        print('\033[94m' + 'Press ESC to stop measurement.' + '\033[0m')  # print blue
-        reps = 1  # a counter, number of repeats actually made.
-
-        Probe_N_handle = self.job.result_handles.get("North_Probe")
-        Probe_S_handle = self.job.result_handles.get("South_Probe")
-        tt_N_handle = self.job.result_handles.get("North_Probe_TT")
-        tt_S_handle = self.job.result_handles.get("South_Probe_TT")
-        FLR_handle = self.job.result_handles.get("FLR_measure")
-
-        Probe_N_handle.wait_for_values(1)
-        Probe_S_handle.wait_for_values(1)
-        tt_N_handle.wait_for_values(1)
-        tt_S_handle.wait_for_values(1)
-        FLR_handle.wait_for_values(1)
-
-        Probe_N_res = Probe_N_handle.fetch_all()
-        Probe_S_res = Probe_S_handle.fetch_all()
-        tt_N_res = tt_N_handle.fetch_all()
-        tt_S_res = tt_S_handle.fetch_all()
-        FLR_res = -FLR_handle.fetch_all()
-
-        tt_N_measure = [i for i in tt_N_res if (i % self.M_window) != 0]
-        tt_S_measure = [i for i in tt_S_res if (i % self.M_window) != 0]
-        tt_N_measure.sort()
-        tt_S_measure.sort()
-
-        tt_N_measure_batch = []
-        tt_N_binning_batch = []
-        self.tt_S_measure_batch = []
-        tt_S_binning_batch = []
-        all_transits_batch = []
-        all_transits_aligned_first_batch = []
-        transit_histogram_batch = []
-        FLR_measurement = []
-        Exp_timestr_batch = []
-
-        tt_N_binning = np.zeros(histogram_bin_number)
-        tt_S_binning = np.zeros(histogram_bin_number)
-        tt_N_transit_events = np.zeros(histogram_bin_number)
-        tt_S_transit_events = np.zeros(histogram_bin_number)
-
-        start = True
-
-        # Place holders for results
-        # while (number of photons * 10^-6 [Mcounts] / Measuring time [nsec] * 10^-9 [sec/nsec])  > total_counts_threshold [Mcounts /sec]:
-        while ((len(tt_S_measure) * 1000) / self.M_time) > total_counts_threshold or start:
-            if self.keyPress == 'ESC':
-                print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
-                self.updateValue("Transit_Exp_switch", False)
-                self.update_parameters()
-                # Other actions can be added here
-                break
-            if start:
-                start = False
-            else:
-                print('Above Threshold')
-
-            Probe_N_res = Probe_N_handle.fetch_all()
-            Probe_S_res = Probe_S_handle.fetch_all()
-            tt_N_res = tt_N_handle.fetch_all()
-            tt_S_res = tt_S_handle.fetch_all()
-            FLR_res = -FLR_handle.fetch_all()
-
-            tt_N_measure = [i for i in tt_N_res if (i % self.M_window) != 0]
-            tt_S_measure = [i for i in tt_S_res if (i % self.M_window) != 0]
-            tt_N_measure.sort()
-            tt_S_measure.sort()
-
-        self.tt_S_measure = tt_S_measure
-        ## record time
-        timest = time.strftime("%Y%m%d-%H%M%S")
-        datest = time.strftime("%Y%m%d")
-
-        FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
-        Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
-
-        for x in tt_N_measure:
-            tt_N_binning[x // histogram_bin_size] += 1
-        for x in tt_S_measure:
-            tt_S_binning[x // histogram_bin_size] += 1
-
-        if len(self.tt_S_measure_batch) == N:
-            tt_N_transit_events[[i for i, x in enumerate(tt_N_binning_batch[0]) if x >  transit_counts_threshold]] -= 1
-            tt_S_transit_events[[i for i, x in enumerate(tt_S_binning_batch[0]) if x >  transit_counts_threshold]] -= 1
-
-        tt_N_measure_batch = tt_N_measure_batch[-(N - 1):] + [tt_N_measure]
-        tt_N_binning_batch = tt_N_binning_batch[-(N - 1):] + [tt_N_binning]
-        self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [tt_S_measure]
-        tt_S_binning_batch = tt_S_binning_batch[-(N - 1):] + [tt_S_binning]
-        Counter = 1
-
-        tt_N_transit_events[[i for i, x in enumerate(tt_N_binning) if x > transit_counts_threshold]] += 1
-        tt_S_transit_events[[i for i, x in enumerate(tt_S_binning) if x > transit_counts_threshold]] += 1
-
-        # Find transits and build histogram:
-        current_transit = []
-        all_transits = []
-        all_transits_aligned_first = []
-        t_transit = []
-        t_transit_batch = []
-        transit_histogram = []
-        for t in tt_S_measure:
-            if not current_transit:  # if the array is empty
-                current_transit.append(t)
-            elif (t - current_transit[-1]) < time_threshold:
-                current_transit.append(t)
-            elif len(current_transit) > transit_counts_threshold:
-                all_transits.append(current_transit)
-                all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
-                current_transit = [t]
-            else:
-                current_transit = [t]
-
-        if all_transits:
-            if len(all_transits_aligned_first_batch) == N:
-                for n in range(len(all_transits_aligned_first_batch[0])):
-                    for m in range(len(all_transits_aligned_first_batch[0][n]) - 1):
-                        transit_histogram_batch[
-                            all_transits_aligned_first_batch[0][n][m + 1] // Transit_profile_bin_size] -= 1
-
-            all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
-            all_transits_aligned_first_batch = all_transits_aligned_first_batch[-(N - 1):] + [
-                all_transits_aligned_first]
-            transit_histogram = np.zeros((max([vec for elem in all_transits_aligned_first for vec in elem])
-                                          + histogram_bin_size) // Transit_profile_bin_size)
-            t_transit = np.linspace(0, len(transit_histogram) * Transit_profile_bin_size, len(transit_histogram))
-            transit_histogram_batch = np.zeros((max(
-                [vec for elem in [vec for elem in all_transits_aligned_first_batch for vec in elem] for vec in
-                 elem]) + histogram_bin_size) // Transit_profile_bin_size)
-            t_transit_batch = np.linspace(0, len(transit_histogram_batch) * Transit_profile_bin_size,
-                                          len(transit_histogram_batch))
-            for n in range(len(all_transits_aligned_first)):
-                for m in range(len(all_transits_aligned_first[n]) - 1):
-                    transit_histogram[all_transits_aligned_first[n][m + 1] // Transit_profile_bin_size] += 1
-                    transit_histogram_batch[all_transits_aligned_first[n][m + 1] // Transit_profile_bin_size] += 1
-
-        ## Prepare plots
-        fig = plt.figure()
-        ax1 = plt.subplot2grid((6, 2), (0, 0), colspan=1, rowspan=2)
-        ax2 = plt.subplot2grid((6, 2), (0, 1), colspan=1, rowspan=2)
-        ax3 = plt.subplot2grid((6, 2), (2, 0), colspan=1, rowspan=2)
-        ax4 = plt.subplot2grid((6, 2), (2, 1), colspan=1, rowspan=2)
-        ax5 = plt.subplot2grid((6, 2), (4, 0), colspan=1, rowspan=2)
-        ax6 = plt.subplot2grid((6, 2), (4, 1), colspan=1, rowspan=2)
-
-        while True:
-            if self.keyPress == 'ESC':
-                print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
-                self.updateValue("Transit_Exp_switch", False)
-                self.update_parameters()
-                # Other actions can be added here
-                break
-            if reps < N:
-                reps += 1
-
-            ########################## PLOT!!! ########################################################################
-
-            ax1.clear()
-            ax2.clear()
-            ax3.clear()
-            ax4.clear()
-            ax5.clear()
-            ax6.clear()
-
-            props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-            textstr_N = r'$Probe_N = %.3f$' % ((len(tt_N_measure) * 1000) / self.M_time,) + '[MPhotons/sec]\n' \
-                        + '$\overline{Probe}_N = %.3f$' % ((np.mean([len(x) for x in tt_N_measure_batch]) * 1000)
-                                                           / self.M_time,) + '[MPhotons/sec]'
-            textstr_S = r'$Probe_S = %.3f$' % ((len(tt_S_measure) * 1000) / self.M_time,) + '[MPhotons/sec]\n' \
-                        + '$\overline{Probe}_S = %.3f$' % ((np.mean([len(x) for x in self.tt_S_measure_batch]) * 1000)
-                                                           / self.M_time,) + '[MPhotons/sec]'
-            textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (np.mean(FLR_measurement) * 1e5,) + r'$\times 10^{-5}$'
-            textstr_No_transits = 'NO TRANSITS YET!!!'
-
-            ax1.plot(time_bins, tt_N_binning, label='Counts histogram', color='b')
-            ax1.set_title('North', fontweight="bold")
-            ax1.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
-            ax1.text(0.05, 0.95, textstr_N, transform=ax1.transAxes, fontsize=12,
-                     verticalalignment='top', bbox=props)
-            ax1.legend(loc='upper right')
-
-            ax2.plot(time_bins, tt_S_binning, label='Counts histogram', color='b')
-            ax2.set_title('South', fontweight="bold")
-            ax2.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
-            ax2.text(0.05, 0.95, textstr_S, transform=ax2.transAxes, fontsize=12,
-                     verticalalignment='top', bbox=props)
-            ax2.legend(loc='upper right')
-
-            ax3.plot(time_bins, tt_N_transit_events, label='Transit events histogram', marker='*', color='k')
-            ax3.set(xlabel='Time [msec]', ylabel='Transits events [#Number]')
-            ax3.legend(loc='upper right')
-
-            ax4.plot(time_bins, tt_S_transit_events, label='Transit events histogram', marker='*', color='k')
-            ax4.set(xlabel='Time [msec]', ylabel='Transits events [#Number]')
-            ax4.legend(loc='upper right')
-
-            if len(transit_histogram) > 0:
-                textstr_transit_counts = r'$N_{Transits} = %s $' % (len(all_transits_aligned_first),) + r'$[Counts]$'
-                textstr_avg_transit_counts = r'$\overline{N}_{Transits} = %.1f $' % (
-                np.average([len(vec) for vec in all_transits_aligned_first]),) + r'$[Counts]$'
-
-                ax5.plot(t_transit, transit_histogram, color='b')
-                ax5.set_title('Drop transits profile', fontweight="bold")
-                ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-                ax5.text(0.05, 0.95, textstr_transit_counts, transform=ax5.transAxes, fontsize=12,
-                         verticalalignment='top', bbox=props)
-
-                ax6.plot(t_transit_batch, transit_histogram_batch, color='b')
-                ax6.set_title('Accumulated drop transits profile', fontweight="bold")
-                ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-                ax6.text(0.05, 0.95, textstr_avg_transit_counts, transform=ax6.transAxes, fontsize=12,
-                         verticalalignment='top', bbox=props)
-            else:
-                ax5.plot(t_transit, transit_histogram, color='b')
-                ax5.set_title('Drop transits profile', fontweight="bold")
-                ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-                ax5.text(0.25, 0.5, textstr_No_transits, transform=ax5.transAxes, fontsize=24,
-                         verticalalignment='center', bbox=props)
-
-                ax6.plot(t_transit_batch, transit_histogram_batch, color='b')
-                ax6.set_title('Accumulated drop transits profile', fontweight="bold")
-                ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-                ax6.text(0.25, 0.5, textstr_No_transits, transform=ax6.transAxes, fontsize=24,
-                         verticalalignment='center', bbox=props)
-
-            ax1.set_ylim(0, 8)
-            ax2.set_ylim(0, 8)
-
-            # plt.tight_layout()
-            plt.show()
-            plt.pause(1)
-
-            ###########################################################################################################
-
-            while tt_S_measure == self.tt_S_measure_batch[-1]:
-                # record time:
-                timest = time.strftime("%Y%m%d-%H%M%S")
-                datest = time.strftime("%Y%m%d")
-
-                # get measures:
-                Probe_N_res = Probe_N_handle.fetch_all()
-                Probe_S_res = Probe_S_handle.fetch_all()
-                tt_N_res = tt_N_handle.fetch_all()
-                tt_S_res = tt_S_handle.fetch_all()
-                FLR_res = -FLR_handle.fetch_all()
-
-                tt_N_measure = [i for i in tt_N_res if (i % self.M_window) != 0]
-                tt_S_measure = [i for i in tt_S_res if (i % self.M_window) != 0]
-                tt_N_measure.sort()
-                tt_S_measure.sort()
-
-            if ((len(tt_S_measure) * 1000) / self.M_time) < total_counts_threshold:
-
-                FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
-                Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
-                Counter += 1
-                print(timest, Counter)
-
-                tt_N_binning = np.zeros(histogram_bin_number)
-                tt_S_binning = np.zeros(histogram_bin_number)
-
-                for x in tt_N_measure:
-                    tt_N_binning[x // histogram_bin_size] += 1
-                for x in tt_S_measure:
-                    tt_S_binning[x // histogram_bin_size] += 1
-
-                if len(self.tt_S_measure_batch) == N:
-                    tt_N_transit_events[
-                        [i for i, x in enumerate(tt_N_binning_batch[0]) if x >  transit_counts_threshold]] -= 1
-                    tt_S_transit_events[
-                        [i for i, x in enumerate(tt_S_binning_batch[0]) if x >  transit_counts_threshold]] -= 1
-
-                tt_N_measure_batch = tt_N_measure_batch[-(N - 1):] + [tt_N_measure]
-                tt_N_binning_batch = tt_N_binning_batch[-(N - 1):] + [tt_N_binning]
-                self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [tt_S_measure]
-                tt_S_binning_batch = tt_S_binning_batch[-(N - 1):] + [tt_S_binning]
-
-                tt_N_transit_events[[i for i, x in enumerate(tt_N_binning) if x >  transit_counts_threshold]] += 1
-                tt_S_transit_events[[i for i, x in enumerate(tt_S_binning) if x >  transit_counts_threshold]] += 1
-
-                # Find transits and build histogram:
-                current_transit = []
-                all_transits = []
-                all_transits_aligned_first = []
-                for t in tt_S_measure:
-                    if not current_transit:  # if the array is empty
-                        current_transit.append(t)
-                    elif (t - current_transit[-1]) < time_threshold:
-                        current_transit.append(t)
-                    elif len(current_transit) >  transit_counts_threshold:
-                        all_transits.append(current_transit)
-                        all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
-                        current_transit = [t]
-                    else:
-                        current_transit = [t]
-
-                if all_transits:
-                    if len(all_transits_aligned_first_batch) == N:
-                        for n in range(len(all_transits_aligned_first_batch[0])):
-                            for m in range(len(all_transits_aligned_first_batch[0][n]) - 1):
-                                transit_histogram_batch[
-                                    all_transits_aligned_first_batch[0][n][m + 1] // Transit_profile_bin_size] -= 1
-
-                    all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
-                    all_transits_aligned_first_batch = all_transits_aligned_first_batch[-(N - 1):] + [
-                        all_transits_aligned_first]
-
-                    transit_histogram = np.zeros((max([vec for elem in all_transits_aligned_first for vec in elem])
-                                                  + histogram_bin_size) // Transit_profile_bin_size)
-                    t_transit = np.linspace(0, len(transit_histogram) * Transit_profile_bin_size,
-                                            len(transit_histogram))
-                    # transit_histogram_batch = np.zeros((max(
-                    #     [vec for elem in [vec for elem in all_transits_aligned_first_batch for vec in elem] for vec in
-                    #      elem]) + histogram_bin_size) // Transit_profile_bin_size)
-                    transit_histogram_batch = np.pad(transit_histogram_batch, (0, (max(
-                        [vec for elem in [vec for elem in all_transits_aligned_first_batch for vec in elem] for vec in
-                         elem]) + histogram_bin_size) // Transit_profile_bin_size - len(transit_histogram_batch)),
-                           'constant')
-                    t_transit_batch = np.linspace(0, len(transit_histogram_batch) * Transit_profile_bin_size,
-                                                  len(transit_histogram_batch))
-                    for n in range(len(all_transits_aligned_first)):
-                        for m in range(len(all_transits_aligned_first[n]) - 1):
-                            transit_histogram[all_transits_aligned_first[n][m + 1] // Transit_profile_bin_size] += 1
-                            transit_histogram_batch[
-                                all_transits_aligned_first[n][m + 1] // Transit_profile_bin_size] += 1
-
-        ############################################## END WHILE LOOP #################################################
-
-        ## Adding comment to measurement [prompt whether stopped or finished regularly]
-        aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
-        if aftComment == 'Timeout': aftComment = None
-
-        #### Handle file-names and directories #####
-        ## Saving: np.savez(filedir, data = x) #note: @filedir is string of full directory; data is the queyword used to read @x from the file:
-        ## Loading: file = np.load(f, allow_pickle = True)
-        ##          x = file['data']
-
-        #### ------ Save results ------
-        #  -------   Create dir
-        root_dirname = f'U:\\Lab_2021-2022\\Experiment_results\\Transits\\{datest}\\'
-        dirname = root_dirname + f'{timest}_Photon_TimeTags\\'  # Specific experiment dir
-        dirname_N = dirname + 'North\\'
-        dirname_S = dirname + 'South\\'
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
-        if not os.path.exists(dirname_N):
-            os.makedirs(dirname_N)
-        if not os.path.exists(dirname_S):
-            os.makedirs(dirname_S)
-
-        # ----  msmnt files names  -----
-        # Counter_str = (Counter)
-        filename_N_tt = f'North_timetags.npz'
-        filename_S_tt = f'South_timetags.npz'
-        filename_S_transits = f'South_Transits.npz'
-        filename_FLR = f'Flouresence.npz'
-        filename_timestamp = f'Drops_time_stamps.npz'
-
-        if len(FLR_measurement) > 0:
-            np.savez(dirname + filename_FLR, FLR_measurement)
-        if len(Exp_timestr_batch) > 0:
-            np.savez(dirname + filename_timestamp, Exp_timestr_batch)
-        if len(tt_N_measure_batch) > 0:
-            np.savez(dirname_N + filename_N_tt, tt_N_measure_batch)
-        if len(self.tt_S_measure_batch) > 0:
-            np.savez(dirname_S + filename_S_tt, self.tt_S_measure_batch)
-        if len(all_transits_batch) > 0:
-            np.savez(dirname_S + filename_S_transits, all_transits_batch)
-
-        ### Edit comments file ####
-        Counter_str = str(Counter)
-        cmntDir = root_dirname + '\\daily_experiment_comments.txt'
-        cmnt = timest + ' - '
-        if preComment is not None: cmnt = cmnt + preComment + '; '
-        if aftComment is not None: cmnt = cmnt + aftComment
-        if preComment is None and aftComment is None: cmnt = cmnt + 'No comment. '
-        try:
-            with open(cmntDir, "a") as commentsFile:
-                commentsFile.write(cmnt + '\n')
-        except:
-            print('Could not save comments, error writing to comments-file.')
-            print(cmnt)
-
-        comments = {'comments': cmnt}
-        try:
-            with open(f'{dirname}experiment_comments.txt', 'w') as file:
-                json.dump(comments, file, indent=4)
-        except Exception:
-            pass
-
-        self.saveConfigTable(path=dirname)
-        ## ------------------ end of saving section -------
-
-    def Save_SNSPDs_CRUS_Measurement_with_tt(self, N, histogram_bin_size, Transit_profile_bin_size, preComment,
-                                                 total_counts_threshold, transit_counts_threshold, transit_time_threshold,
+    def  Save_SNSPDs_Sprint_Measurement_with_tt(self, N, histogram_bin_size, Transit_profile_bin_size, preComment,
+                                                 lock_err_threshold, transit_counts_threshold, transit_time_threshold,
                                                  bandwidth, freq_step, max_probe_counts, Mock = False):
         """
         Function for analyzing and saving the time tags data measured from the SNSPDs using the OPX. In this specific
@@ -1676,7 +1695,7 @@ class OPX:
                                          been a detection of photon at each bin.
         :param preComment: The comment added at the start of the experiment, usually consisting of unique experiment
                            parameters.
-        :param total_counts_threshold: The minimum number of MCounts / sec for which the data will be displayed and collected.
+        :param lock_err_threshold: The maximalerror in locking resonator to rb line.
         :param transit_counts_threshold: The number of photons at each time bin for which suspect we as a transit.
         :param transit_time_threshold: The maximum time between the start and finish of the transit in [nsec]
         :param max_probe_counts: The maximum counts probe counts at each direction measured when cavity isn't locked.
@@ -1690,12 +1709,14 @@ class OPX:
         ### fetching data from server
         ### saving to file
         ###
+        Num_Of_dets = 4
+        detector_delay = [5,0,0,15] # *Num_Of_dets
 
-        histogram_bin_number = self.M_window // (histogram_bin_size)
+        histogram_bin_number = 3*self.M_window // (histogram_bin_size)
         time_bins = np.linspace(0, self.M_window, histogram_bin_number)
         spectrum_bin_number = bandwidth // freq_step + 1  # TODO: ask natan how many freq steps he uses
         freq_bins = np.linspace(-int(bandwidth / 2), int(bandwidth / 2), spectrum_bin_number)
-        CRUS_pulse_time = np.arange(512)
+        SPRINT_pulse_time = np.arange(512)
 
         ## Listen for keyboard
         listener = keyboard.Listener(on_press=self.on_key_press)
@@ -1704,96 +1725,95 @@ class OPX:
         print('\033[94m' + 'Press ESC to stop measurement.' + '\033[0m')  # print blue
         reps = 1  # a counter, number of repeats actually made.
 
+        ####     get tt and counts from OPX to python   #####
+
         # Probe_S_handle = self.job.result_handles.get("South_Probe")
         # tt_S_handle = self.job.result_handles.get("South_Probe_TT")
-        Counts_5_handle = self.job.result_handles.get("Det5_Counts")
-        Counts_6_handle = self.job.result_handles.get("Det6_Counts")
-        Counts_7_handle = self.job.result_handles.get("Det7_Counts")
-        Counts_8_handle = self.job.result_handles.get("Det8_Counts")
-        tt_5_handle = self.job.result_handles.get("Det5_Probe_TT")
-        tt_6_handle = self.job.result_handles.get("Det6_Probe_TT")
-        tt_7_handle = self.job.result_handles.get("Det7_Probe_TT")
-        tt_8_handle = self.job.result_handles.get("Det8_Probe_TT")
+        Counts_handle = []
+        tt_handle = []
+        for i in range(Num_Of_dets):
+            Counts_handle.append(self.job.result_handles.get("Det"+str(i+1)+"_Counts"))
+            tt_handle.append(self.job.result_handles.get("Det"+str(i+1)+"_Probe_TT"))
+
         FLR_handle = self.job.result_handles.get("FLR_measure")
 
         # define empty variables
-        self.tt_5_measure_batch = []
-        self.tt_6_measure_batch = []
-        self.tt_7_measure_batch = []
-        self.tt_8_measure_batch = []
-        self.tt_S_measure_batch = []
         tt_S_binning_batch = []
-        tt_S_binning_resonance_batch = []
-        tt_S_binning_detuned_batch = []
+
         all_transits_batch = []
         FLR_measurement = []
         Exp_timestr_batch = []
 
-        tt_S_binning_resonance = np.zeros(histogram_bin_number)
-        tt_S_binning_detuned = np.zeros(histogram_bin_number)
-        tt_S_transit_events = np.zeros(histogram_bin_number)
-        self.tt_S_CRUS_events_batch = np.zeros(histogram_bin_size)
-        Cavity_atom_spectrum = np.zeros(spectrum_bin_number)
-        Cavity_spectrum = np.zeros(spectrum_bin_number)
+        self.tt_S_binning = np.zeros(histogram_bin_number * 2)
+        tt_S_SPRINT_events = np.zeros(histogram_bin_number)
+        self.tt_S_SPRINT_events_batch = np.zeros(histogram_bin_size)
 
         start = True
 
+        # take threshold from npz ( error from resonator lock PID)
+        lock_err = np.load(
+            'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error')  # the error of locking the resontor to Rb line
+
+
         # Place holders for results
         # while (number of photons * 10^-6 [Mcounts] / Measuring time [nsec] * 10^-9 [sec/nsec])  > counts_threshold [Mcounts /sec]:
-        while (((sum(tt_S_binning_resonance) * 1000) / (self.M_window / 2)) > total_counts_threshold) or start:
+        while lock_err < lock_err_threshold or start:
             if self.keyPress == 'ESC':
                 print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
-                self.updateValue("CRUS_Exp_switch", False)
+                self.updateValue("Sprint_Exp_switch", False)
                 self.update_parameters()
                 # Other actions can be added here
                 break
+
             if start:
                 start = False
             else:
                 print('Above Threshold')
 
-            tt_5_handle.wait_for_values(1)
-            tt_6_handle.wait_for_values(1)
-            tt_7_handle.wait_for_values(1)
-            tt_8_handle.wait_for_values(1)
+            # handles wait for values
+            for i in range(Num_Of_dets):
+                tt_handle[i].wait_for_values(1)
             FLR_handle.wait_for_values(1)
 
-            counts_res5 = Counts_5_handle.fetch_all()
-            counts_res6 = Counts_6_handle.fetch_all()
-            counts_res7 = Counts_7_handle.fetch_all()
-            counts_res8 = Counts_8_handle.fetch_all()
-            tt_5_res = tt_5_handle.fetch_all()
-            tt_6_res = tt_6_handle.fetch_all()
-            tt_7_res = tt_7_handle.fetch_all()
-            tt_8_res = tt_8_handle.fetch_all()
+            # add the tt and counts to python vars
+            counts_res = []
+            tt_res = []
+            for i in range(Num_Of_dets):
+                counts_res.append(Counts_handle[i].fetch_all())
+                tt_res.append(tt_handle[i].fetch_all())
             FLR_res = -FLR_handle.fetch_all()
 
-            self.tt_5_measure = [tt_5_res[(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts in
-                                 enumerate(counts_res5)]
-            self.tt_6_measure = [tt_6_res[(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts in
-                                 enumerate(counts_res6)]
-            self.tt_7_measure = [tt_7_res[(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts in
-                                 enumerate(counts_res7)]
-            self.tt_8_measure = [tt_8_res[(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts in
-                                 enumerate(counts_res8)]
-            self.tt_S_measure = self.tt_5_measure[0] + self.tt_6_measure[0] + self.tt_7_measure[0] + self.tt_8_measure[0]
-            self.tt_5_measure.sort()
-            self.tt_6_measure.sort()
-            self.tt_7_measure.sort()
-            self.tt_8_measure.sort()
+            self.tt_measure = []
+            self.tt_S_measure = []
+            for i in range(Num_Of_dets): # for different detectors
+                self.tt_measure.append([tt_res[i][(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts in
+                                        enumerate(counts_res[i])])
+                for window in range(len(self.tt_measure[i])):
+                    self.tt_measure[i][window] = [elem + detector_delay[i] for elem in self.tt_measure[i][window]]
+                self.tt_S_measure += self.tt_measure[i][1]
+                self.tt_measure[i].sort()
             self.tt_S_measure.sort()
+            ####    end get tt and counts from OPX to python   #####
 
             self.tt_S_binning = np.zeros(histogram_bin_number * 2)
-            self.tt_S_CRUS_events = np.zeros(histogram_bin_size)
+            self.tt_S_SPRINT_events = np.zeros(histogram_bin_size)
+            self.tt_S_SPRINT_events_batch = np.zeros(histogram_bin_size)
+            self.tt_Single_det_SPRINT_events = np.zeros((Num_Of_dets,histogram_bin_size))
+            self.tt_Single_det_SPRINT_events_batch = np.zeros((Num_Of_dets,histogram_bin_size))
 
-            for x in [elem for elem in self.tt_S_measure if elem < self.M_window]:
+            # fold South:
+            # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]: - for debugging assaf
+            for x in [elem for elem in self.tt_S_measure]:
                 self.tt_S_binning[x // int(histogram_bin_size / 2)] += 1
-                self.tt_S_CRUS_events[x % histogram_bin_size] += 1
-                self.tt_S_CRUS_events_batch[x % histogram_bin_size] += 1
+                self.tt_S_SPRINT_events[x % histogram_bin_size] += 1
+                self.tt_S_SPRINT_events_batch[x % histogram_bin_size] += 1
 
-            # split the binning vector to odd and even - on and off resonance pulses
-            tt_S_binning_resonance = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if x % 2]  # odd
-            tt_S_binning_detuned = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if not x % 2]  # even
+            # fold for different detectors:
+            for i in range(Num_Of_dets):
+                # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]: - for debugging assaf
+                for x in [elem for elem in self.tt_measure[i][1]]:
+                    self.tt_Single_det_SPRINT_events[i][x % histogram_bin_size] += 1
+                    self.tt_Single_det_SPRINT_events_batch[i][x % histogram_bin_size] += 1
 
         ## record time
         timest = time.strftime("%Y%m%d-%H%M%S")
@@ -1802,60 +1822,61 @@ class OPX:
         FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
         Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
 
-        self.tt_5_measure_batch = self.tt_5_measure_batch[-(N - 1):] + [self.tt_5_measure]
-        self.tt_6_measure_batch = self.tt_6_measure_batch[-(N - 1):] + [self.tt_6_measure]
-        self.tt_7_measure_batch = self.tt_7_measure_batch[-(N - 1):] + [self.tt_7_measure]
-        self.tt_8_measure_batch = self.tt_8_measure_batch[-(N - 1):] + [self.tt_8_measure]
+        self.tt_measure_batch = []
+        self.tt_S_measure_batch = []
+        for i in range(Num_Of_dets):
+            self.tt_measure_batch.append([self.tt_measure[i]])
         self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
         tt_S_binning_batch = tt_S_binning_batch[-(N - 1):] + [self.tt_S_binning]
-        tt_S_binning_resonance_batch = tt_S_binning_resonance_batch[-(N - 1):] + [tt_S_binning_resonance]
-        tt_S_binning_detuned_batch = tt_S_binning_detuned_batch[-(N - 1):] + [tt_S_binning_detuned]
         Counter = 1
-
-        # Find transits and build histogram:
-        current_transit = []
-        all_transits = []
-        all_transits_aligned_first = []
-        t_transit = []
-        t_transit_batch = []
-        transit_histogram = []
-        for index, value in enumerate(tt_S_binning_resonance):
-            if not current_transit and value:  # if the array is empty
-                current_transit.append(index)
-            if value:
-                if ((index - current_transit[0]) * histogram_bin_size) < transit_time_threshold:
-                    current_transit.append(index)
-                elif len(current_transit) > transit_counts_threshold:
-                    all_transits.append(current_transit)
-                    all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
-                    # tt_S_transit_events[tuple(current_transit)] += 1
-                    current_transit = [index]
-                else:
-                    # Finding if there any index that was saved to current transit and is close enough to the new index
-                    t = [i for i, elem in enumerate(current_transit) if ((index - elem) * histogram_bin_size) < transit_time_threshold]
-                    if t:
-                        current_transit = current_transit[t[0]:] + [index]
-                    else:
-                        current_transit = [index]
-
-
-        tt_S_transit_events[[i for i in [vec for elem in all_transits for vec in elem]]] += 1
         #
-        if all_transits:
-            all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
+        # ### Find transits and build histogram:  ###
+        # current_transit = []
+        # all_transits = []
+        # all_transits_aligned_first = []
+        # t_transit = []
+        # t_transit_batch = []
+        # transit_histogram = []
+        # for index, value in enumerate(tt_S_binning_resonance):
+        #     if not current_transit and value:  # if the array is empty
+        #         current_transit.append(index)
+        #     if value:
+        #         if ((index - current_transit[0]) * histogram_bin_size) < transit_time_threshold:
+        #             current_transit.append(index)
+        #         elif len(current_transit) > transit_counts_threshold:
+        #             all_transits.append(current_transit)
+        #             all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
+        #             # tt_S_transit_events[tuple(current_transit)] += 1
+        #             current_transit = [index]
+        #         else:
+        #             # Finding if there any index that was saved to current transit and is close enough to the new index
+        #             t = [i for i, elem in enumerate(current_transit) if ((index - elem) * histogram_bin_size) < transit_time_threshold]
+        #             if t:
+        #                 current_transit = current_transit[t[0]:] + [index]
+        #             else:
+        #                 current_transit = [index]
+        #
+        #
+        # tt_S_transit_events[[i for i in [vec for elem in all_transits for vec in elem]]] += 1
+        # #
+        # if all_transits:
+        #     all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
+        #
+        #
 
-
-
-
-        ## Prepare plots
+        #
+        # ## Prepare plots
         fig = plt.figure()
-        ax1 = plt.subplot2grid((6, 2), (0, 0), colspan=1, rowspan=2)
-        ax2 = plt.subplot2grid((6, 2), (0, 1), colspan=1, rowspan=2)
-        ax3 = plt.subplot2grid((6, 2), (2, 0), colspan=1, rowspan=2)
-        ax4 = plt.subplot2grid((6, 2), (2, 1), colspan=1, rowspan=2)
-        ax5 = plt.subplot2grid((6, 2), (4, 0), colspan=1, rowspan=2)
-        ax6 = plt.subplot2grid((6, 2), (4, 1), colspan=1, rowspan=2)
-
+        # fig2 = plt.figure()
+        #
+        # ax1 =
+        # ax1 = plt.subplot2grid((6, 2), (0, 0), colspan=1, rowspan=2)
+        # ax2 = plt.subplot2grid((6, 2), (0, 1), colspan=1, rowspan=2)
+        # ax3 = plt.subplot2grid((6, 2), (2, 0), colspan=1, rowspan=2)
+        # ax4 = plt.subplot2grid((6, 2), (2, 1), colspan=1, rowspan=2)
+        # # ax5 = plt.subplot2grid((6, 2), (4, 0), colspan=1, rowspan=2)
+        # ax6 = plt.subplot2grid((6, 2), (4, 1), colspan=1, rowspan=2)
+        #
         while True:
             if self.keyPress == 'ESC':
                 print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
@@ -1865,135 +1886,150 @@ class OPX:
                 break
             if reps < N:
                 reps += 1
+            #
+            #     ########################## PLOT!!! ########################################################################
+            #
+            fig.clear()
+            #     ax2.clear()
+            #     ax3.clear()
+            #     ax4.clear()
+            #     ax5.clear()
+            #     ax6.clear()
+            #
+            #     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+            #     textstr_detuned = r'$Probe_N = %.3f$' % ((sum(tt_S_binning_detuned) * 1000) / (self.M_window / 2),) + '[MPhotons/sec]\n' \
+            #                + '$\overline{Probe}_S = %.3f$' % ((np.mean([sum(x) for x in tt_S_binning_detuned_batch]) * 1000)
+            #                                                   / (self.M_window / 2),) + '[MPhotons/sec]'
+            #     textstr_resonance = r'$Probe_S = %.3f$' % ((sum(tt_S_binning_resonance) * 1000) / (self.M_window / 2),) + '[MPhotons/sec]\n' \
+            #                 + '$\overline{Probe}_S = %.3f$' % ((np.mean([sum(x) for x in tt_S_binning_resonance_batch]) * 1000)
+            #                                                    / (self.M_window / 2),) + '[MPhotons/sec]'
+            #     textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (np.mean(FLR_measurement) * 1e5,) + r'$\times 10^{-5}$'
+            #     textstr_No_transits = 'NO TRANSITS YET!!!'
 
-            ########################## PLOT!!! ########################################################################
-
-            ax1.clear()
-            ax2.clear()
-            ax3.clear()
-            ax4.clear()
-            ax5.clear()
-            ax6.clear()
-
-            props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-            textstr_detuned = r'$Probe_N = %.3f$' % ((sum(tt_S_binning_detuned) * 1000) / (self.M_window / 2),) + '[MPhotons/sec]\n' \
-                       + '$\overline{Probe}_S = %.3f$' % ((np.mean([sum(x) for x in tt_S_binning_detuned_batch]) * 1000)
-                                                          / (self.M_window / 2),) + '[MPhotons/sec]'
-            textstr_resonance = r'$Probe_S = %.3f$' % ((sum(tt_S_binning_resonance) * 1000) / (self.M_window / 2),) + '[MPhotons/sec]\n' \
-                        + '$\overline{Probe}_S = %.3f$' % ((np.mean([sum(x) for x in tt_S_binning_resonance_batch]) * 1000)
-                                                           / (self.M_window / 2),) + '[MPhotons/sec]'
-            textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (np.mean(FLR_measurement) * 1e5,) + r'$\times 10^{-5}$'
-            textstr_No_transits = 'NO TRANSITS YET!!!'
-
-            ax1.plot(time_bins, tt_S_binning_detuned_batch[-1], label='Counts histogram', color='b')
-
-            ax1.set_title('Detuned counts', fontweight="bold")
-            ax1.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
-            ax1.text(0.05, 0.95, textstr_detuned, transform=ax1.transAxes, fontsize=12,
-                     verticalalignment='top', bbox=props)
-            ax1.legend(loc='upper right')
-            print('ok')
-            ax2.plot(time_bins, tt_S_binning_resonance_batch[-1], label='Counts histogram', color='b')
-
-            ax2.set_title('On resonant counts', fontweight="bold")
-            ax2.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
-            ax2.text(0.05, 0.95, textstr_resonance, transform=ax2.transAxes, fontsize=12,
-                     verticalalignment='top', bbox=props)
-            ax2.legend(loc='upper right')
-
-            ax3.plot(CRUS_pulse_time, self.tt_S_CRUS_events, label='Folded photon detection events per cycle', color='k')
-            ax3.set(xlabel='Time [nsec]', ylabel='Counts [#Number]')
-            ax3.legend(loc='upper right')
-
-            ax4.plot(CRUS_pulse_time, self.tt_S_CRUS_events_batch, label='Folded photon detection events per run', color='k')
-            ax4.set(xlabel='Time [msec]', ylabel='Counts [#Number]')
-            ax4.legend(loc='upper right')
-
-            if len(all_transits_batch) > 0:
-                if all_transits:
-                    textstr_transit_counts = r'$N_{Transits} = %s $' % (len(all_transits),) + r'$[Counts]$'
-                textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (len([vec for elem in all_transits_batch for vec in elem]),) + r'$[Counts]$'
-
-                ax5.plot(t_transit, transit_histogram, label='Transit profile', color='b')
-                ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-                ax5.text(0.05, 0.95, textstr_transit_counts, transform=ax5.transAxes, fontsize=12,
-                         verticalalignment='top', bbox=props)
-
-                ax6.plot(time_bins, tt_S_transit_events, label='Transit events histogram', marker='*', color='b')
-                ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-                ax6.text(0.05, 0.95, textstr_transit_event_counter, transform=ax6.transAxes, fontsize=12,
-                         verticalalignment='top', bbox=props)
-            else:
-                ax5.plot(t_transit, transit_histogram, label='Transit profile', color='b')
-                ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-                ax5.text(0.25, 0.5, textstr_No_transits, transform=ax5.transAxes, fontsize=24,
-                         verticalalignment='center', bbox=props)
-
-                ax6.plot(time_bins, tt_S_transit_events, label='Transit events histogram', marker='*', color='b')
-                ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-                ax6.text(0.25, 0.5, textstr_No_transits, transform=ax6.transAxes, fontsize=24,
-                         verticalalignment='center', bbox=props)
-
-            ax1.set_ylim(0, 8)
-            ax2.set_ylim(0, 8)
-
-            # plt.tight_layout()
+            # plt.plot(self.tt_S_SPRINT_events_batch, label='Counts histogram', color='b')
+            for i in range(4):
+                plt.plot(self.tt_Single_det_SPRINT_events_batch[i], label='detector'+str(i+1+2*(i//2)))
+            plt.legend(loc='upper right')
             plt.show()
             plt.pause(0.5)
 
-            ###########################################################################################################
+            # fig2.clear()
+            # plt.figure()
+            # plt.plot(tt_S_binning_batch, label='unfolded data')
+            # plt.show()
+            # plt.pause(0.5)
+            # ax1.plot(time_bins, tt_S_binning_batch[-1], label='Counts histogram', color='b')
+            #
+            #     ax1.set_title('Detuned counts', fontweight="bold")
+            #     ax1.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
+            #     ax1.text(0.05, 0.95, textstr_detuned, transform=ax1.transAxes, fontsize=12,
+            #              verticalalignment='top', bbox=props)
+            #     ax1.legend(loc='upper right')
+            #     print('ok')
+            # ax2.plot(time_bins, tt_S_binning_batch[-1], label='Counts histogram', color='b')
+            #
+            #     ax2.set_title('On resonant counts', fontweight="bold")
+            #     ax2.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
+            #     ax2.text(0.05, 0.95, textstr_resonance, transform=ax2.transAxes, fontsize=12,
+            #              verticalalignment='top', bbox=props)
+            #     ax2.legend(loc='upper right')
+            #
+            # ax3.plot(SPRINT_pulse_time, self.tt_S_SPRINT_events, label='Folded photon detection events per cycle', color='k')
+            #     ax3.set(xlabel='Time [nsec]', ylabel='Counts [#Number]')
+            #     ax3.legend(loc='upper right')
+            #
+            # ax4.plot(SPRINT_pulse_time, self.tt_S_SPRINT_events, label='Folded photon detection events per run', color='k')
+            #     ax4.set(xlabel='Time [msec]', ylabel='Counts [#Number]')
+            #     ax4.legend(loc='upper right')
+            #
+            #     if len(all_transits_batch) > 0:
+            #         if all_transits:
+            #             textstr_transit_counts = r'$N_{Transits} = %s $' % (len(all_transits),) + r'$[Counts]$'
+            #         textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (len([vec for elem in all_transits_batch for vec in elem]),) + r'$[Counts]$'
+            #
+            #         ax5.plot(t_transit, transit_histogram, label='Transit profile', color='b')
+            #         ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+            #         ax5.text(0.05, 0.95, textstr_transit_counts, transform=ax5.transAxes, fontsize=12,
+            #                  verticalalignment='top', bbox=props)
+            #
+            #         ax6.plot(time_bins, tt_S_transit_events, label='Transit events histogram', marker='*', color='b')
+            #         ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+            #         ax6.text(0.05, 0.95, textstr_transit_event_counter, transform=ax6.transAxes, fontsize=12,
+            #                  verticalalignment='top', bbox=props)
+            #     else:
+            #         ax5.plot(t_transit, transit_histogram, label='Transit profile', color='b')
+            #         ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+            #         ax5.text(0.25, 0.5, textstr_No_transits, transform=ax5.transAxes, fontsize=24,
+            #                  verticalalignment='center', bbox=props)
+            #
+            #         ax6.plot(time_bins, tt_S_transit_events, label='Transit events histogram', marker='*', color='b')
+            #         ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+            #         ax6.text(0.25, 0.5, textstr_No_transits, transform=ax6.transAxes, fontsize=24,
+            #                  verticalalignment='center', bbox=props)
+            #
+            #     ax1.set_ylim(0, 8)
+            #     ax2.set_ylim(0, 8)
+            #
+            #     # plt.tight_layout()
+
+            # #
+            #     ###########################################################################################################
 
             while True:
                 # record time:
                 timest = time.strftime("%Y%m%d-%H%M%S")
                 datest = time.strftime("%Y%m%d")
 
-                tt_5_handle.wait_for_values(1)
-                tt_6_handle.wait_for_values(1)
-                tt_7_handle.wait_for_values(1)
-                tt_8_handle.wait_for_values(1)
+                # handles wait for values
+                for i in range(Num_Of_dets):
+                    tt_handle[i].wait_for_values(1)
                 FLR_handle.wait_for_values(1)
 
-                counts_res5 = Counts_5_handle.fetch_all()
-                counts_res6 = Counts_6_handle.fetch_all()
-                counts_res7 = Counts_7_handle.fetch_all()
-                counts_res8 = Counts_8_handle.fetch_all()
-                tt_5_res = tt_5_handle.fetch_all()
-                tt_6_res = tt_6_handle.fetch_all()
-                tt_7_res = tt_7_handle.fetch_all()
-                tt_8_res = tt_8_handle.fetch_all()
+                tt_res = []
+                counts_res = []
+                # add the tt and counts to python vars
+                for i in range(Num_Of_dets):
+                    counts_res.append(Counts_handle[i].fetch_all())
+                    tt_res.append(tt_handle[i].fetch_all())
                 FLR_res = -FLR_handle.fetch_all()
 
-                self.tt_5_measure = [tt_5_res[(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts in enumerate(counts_res5)]
-                self.tt_6_measure = [tt_6_res[(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts in enumerate(counts_res6)]
-                self.tt_7_measure = [tt_7_res[(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts in enumerate(counts_res7)]
-                self.tt_8_measure = [tt_8_res[(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts in enumerate(counts_res8)]
-                self.tt_S_measure = self.tt_5_measure[0] + self.tt_6_measure[0] + self.tt_7_measure[0] + self.tt_8_measure[0]
-                self.tt_5_measure.sort()
-                self.tt_6_measure.sort()
-                self.tt_7_measure.sort()
-                self.tt_8_measure.sort()
+                self.tt_S_measure = []
+                self.tt_measure = []
+                for i in range(Num_Of_dets):  # for different detectors
+                    self.tt_measure.append(
+                        [tt_res[i][(index * Config.vec_size):
+                                   (index * Config.vec_size + counts)].tolist() for index, counts in
+                         enumerate(counts_res[i])])
+                    #add delay to a detctors tt's
+                    for window in range(len(self.tt_measure[i])):
+                        self.tt_measure[i][window] = [elem + detector_delay[i] for elem in self.tt_measure[i][window]]
+                    self.tt_S_measure += self.tt_measure[i][1]
+                    self.tt_measure[i].sort()
                 self.tt_S_measure.sort()
 
                 if self.tt_S_measure != self.tt_S_measure_batch[-1]:
                     break
-
-            self.tt_S_binning = np.zeros(histogram_bin_number * 2)
+            # assaf - if x=self.M_window the index is out of range so i added 1
+            self.tt_S_binning = np.zeros(histogram_bin_number * 2) #  self.tt_S_binning = np.zeros(histogram_bin_number * 2)
 
             for x in [elem for elem in self.tt_S_measure if elem < self.M_window]:
                 self.tt_S_binning[x // int(histogram_bin_size / 2)] += 1
 
-            # split the binning vector to odd and even - on and off resonance pulses
-            tt_S_binning_resonance = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if x % 2]  # odd
-            tt_S_binning_detuned = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if not x % 2]  # even
+            if lock_err < lock_err_threshold:
 
-            if ((sum(tt_S_binning_resonance) * 1000) / (self.M_window / 2)) < total_counts_threshold:
+                self.tt_S_SPRINT_events = np.zeros(histogram_bin_size)
+                # for x in [elem for elem in self.tt_S_measure if elem <= self.M_window]:
+                for x in [elem for elem in self.tt_S_measure]:
+                    self.tt_S_SPRINT_events[x % histogram_bin_size] += 1
+                    self.tt_S_SPRINT_events_batch[x % histogram_bin_size] += 1
 
-                self.tt_S_CRUS_events = np.zeros(histogram_bin_size)
-
-                for x in [elem for elem in self.tt_S_measure if elem <= self.M_window]:
-                    self.tt_S_CRUS_events[x % histogram_bin_size] += 1
-                    self.tt_S_CRUS_events_batch[x % histogram_bin_size] += 1
+                self.tt_Single_det_SPRINT_events = np.zeros((Num_Of_dets, histogram_bin_size))
+                # fold for different detectors:
+                for i in range(Num_Of_dets):
+                    # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]:
+                    for x in [elem for elem in self.tt_measure[i][1]]:
+                        self.tt_Single_det_SPRINT_events[i][x % histogram_bin_size] += 1
+                        self.tt_Single_det_SPRINT_events_batch[i][x % histogram_bin_size] += 1
 
                 FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
@@ -2001,46 +2037,42 @@ class OPX:
                     Counter += 1
                 print(timest, Counter)
 
-                self.tt_5_measure_batch = self.tt_5_measure_batch[-(N - 1):] + [self.tt_5_measure]
-                self.tt_6_measure_batch = self.tt_6_measure_batch[-(N - 1):] + [self.tt_6_measure]
-                self.tt_7_measure_batch = self.tt_7_measure_batch[-(N - 1):] + [self.tt_7_measure]
-                self.tt_8_measure_batch = self.tt_8_measure_batch[-(N - 1):] + [self.tt_8_measure]
+                for i in range(Num_Of_dets):
+                    self.tt_measure_batch[i] = self.tt_measure_batch[i][-(N - 1):] + [self.tt_measure[i]]
                 self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
                 tt_S_binning_batch = tt_S_binning_batch[-(N - 1):] + [self.tt_S_binning]
-                tt_S_binning_resonance_batch = tt_S_binning_resonance_batch[-(N - 1):] + [tt_S_binning_resonance]
-                tt_S_binning_detuned_batch = tt_S_binning_detuned_batch[-(N - 1):] + [tt_S_binning_detuned]
 
-
-                # Find transits and build histogram:
-                current_transit = []
-                all_transits = []
-                all_transits_aligned_first = []
-                for index, value in enumerate(tt_S_binning_resonance):
-                    if not current_transit and value:  # if the array is empty
-                        current_transit.append(index)
-                    if value:
-                        if ((index - current_transit[0]) * 480) < transit_time_threshold:
-                            current_transit.append(index)
-                        elif len(current_transit) > transit_counts_threshold:
-                            all_transits.append(current_transit)
-                            all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
-                            current_transit = [index]
-                        else:
-                            # Finding if there any index that was saved to current transit and is close enough to the new index
-                            t = [i for i, elem in enumerate(current_transit) if
-                                 ((index - elem) * 480) < transit_time_threshold]
-                            if t:
-                                current_transit = current_transit[t[0]:] + [index]
-                            else:
-                                current_transit = [index]
-
-                tt_S_transit_events[[i for i in [vec for elem in all_transits for vec in elem]]] += 1
-
-                if all_transits:
-                    all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
-            else:
-                tt_S_binning_resonance = tt_S_binning_resonance_batch[-1]  # odd
-                tt_S_binning_detuned = tt_S_binning_detuned_batch[-1]  # even
+            #
+            #     # Find transits and build histogram:
+            #     current_transit = []
+            #     all_transits = []
+            #     all_transits_aligned_first = []
+            #     for index, value in enumerate(tt_S_binning_resonance):
+            #         if not current_transit and value:  # if the array is empty
+            #             current_transit.append(index)
+            #         if value:
+            #             if ((index - current_transit[0]) * 480) < transit_time_threshold:
+            #                 current_transit.append(index)
+            #             elif len(current_transit) > transit_counts_threshold:
+            #                 all_transits.append(current_transit)
+            #                 all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
+            #                 current_transit = [index]
+            #             else:
+            #                 # Finding if there any index that was saved to current transit and is close enough to the new index
+            #                 t = [i for i, elem in enumerate(current_transit) if
+            #                      ((index - elem) * 480) < transit_time_threshold]
+            #                 if t:
+            #                     current_transit = current_transit[t[0]:] + [index]
+            #                 else:
+            #                     current_transit = [index]
+            #
+            #     tt_S_transit_events[[i for i in [vec for elem in all_transits for vec in elem]]] += 1
+            #
+            #     if all_transits:
+            #         all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
+            # else:
+            #     tt_S_binning_resonance = tt_S_binning_resonance_batch[-1]  # odd
+            #     tt_S_binning_detuned = tt_S_binning_detuned_batch[-1]  # even
 
         ############################################## END WHILE LOOP #################################################
 
@@ -2055,7 +2087,7 @@ class OPX:
 
         #### ------ Save results ------
         #  -------   Create dir
-        root_dirname = f'U:\\Lab_2021-2022\\Experiment_results\\Transits\\{datest}\\'
+        root_dirname = f'U:\\Lab_2021-2022\\Experiment_results\\Sprint\\{datest}\\'
         dirname = root_dirname + f'{timest}_Photon_TimeTags\\'  # Specific experiment dir
         dirname_N = dirname + 'North\\'
         dirname_S = dirname + 'South\\'
@@ -2069,10 +2101,9 @@ class OPX:
         # ----  msmnt files names  -----
         # Counter_str = (Counter)
         filename_N_tt = f'North_timetags.npz'
-        filename_Det5_tt = f'Det5_timetags.npz'
-        filename_Det6_tt = f'Det6_timetags.npz'
-        filename_Det7_tt = f'Det7_timetags.npz'
-        filename_Det8_tt = f'Det8_timetags.npz'
+        filename_Det_tt = []
+        for i in range(Num_Of_dets):
+            filename_Det_tt.append(f'Det'+str(i+1)+f'_timetags.npz')
         filename_S_tt = f'South_timetags.npz'
         filename_S_transits = f'South_Transits.npz'
         filename_S_folded = f'South_timetags_folded_512ns.npz'
@@ -2083,20 +2114,15 @@ class OPX:
             np.savez(dirname + filename_FLR, FLR_measurement)
         if len(Exp_timestr_batch) > 0:
             np.savez(dirname + filename_timestamp, Exp_timestr_batch)
-        if len(self.tt_S_CRUS_events_batch) > 0:
-            np.savez(dirname + filename_S_folded, self.tt_S_CRUS_events_batch)
-        if len(self.tt_5_measure_batch) > 0:
-            np.savez(dirname_S + filename_Det5_tt, self.tt_5_measure_batch)
-        if len(self.tt_6_measure_batch) > 0:
-            np.savez(dirname_S + filename_Det6_tt, self.tt_6_measure_batch)
-        if len(self.tt_7_measure_batch) > 0:
-            np.savez(dirname_S + filename_Det7_tt, self.tt_7_measure_batch)
-        if len(self.tt_8_measure_batch) > 0:
-            np.savez(dirname_S + filename_Det8_tt, self.tt_8_measure_batch)
+        if len(self.tt_S_SPRINT_events_batch) > 0:
+            np.savez(dirname + filename_S_folded, self.tt_S_SPRINT_events_batch)
+        for i in range(Num_Of_dets):
+            if len(self.tt_measure_batch[i]) > 0:
+                np.savez(dirname_S + filename_Det_tt[i], self.tt_measure_batch[i])
         if len(self.tt_S_measure_batch) > 0:
             np.savez(dirname_S + filename_S_tt, self.tt_S_measure_batch)
-        if len(all_transits_batch) > 0:
-            np.savez(dirname_S + filename_S_transits, all_transits_batch)
+        # if len(all_transits_batch) > 0:
+        #     np.savez(dirname_S + filename_S_transits, all_transits_batch)
 
         ### Edit comments file ####
         cmntDir = root_dirname + '\\daily_experiment_comments.txt'
@@ -2141,16 +2167,16 @@ class OPX:
         self.Save_SNSPDs_Transit_Measurement_with_tt(N, Histogram_bin_size, Transit_profile_bin_size, preComment,
                                                      total_counts_threshold, transit_counts_threshold, Max_probe_counts)
 
-    def Start_CRUS_Exp_with_tt(self, N=100, Histogram_bin_size=512,#int(len(Config.CRUS_pulser_samples)),
-                                   Transit_profile_bin_size=100, preComment=None, total_counts_threshold=1,
+    def Start_Sprint_Exp_with_tt(self, N=100, Histogram_bin_size=720,#int(len(Config.CRUS_pulser_samples)),
+                                   Transit_profile_bin_size=100, preComment=None, lock_err_threshold=0.01,
                                    transit_counts_threshold=5, transit_time_threshold=6000, bandwidth=80,
                                    freq_step=4):
         # Max_probe_counts = self.Get_Max_Probe_counts(3)  # return the average maximum probe counts of 3 cycles.
         Max_probe_counts = None  # return the average maximum probe counts of 3 cycles.
-        self.CRUS_Exp_switch(True)
+        self.SPRINT_Exp_switch(True)
         self.update_parameters()
-        self.Save_SNSPDs_CRUS_Measurement_with_tt(N, Histogram_bin_size, Transit_profile_bin_size, preComment,
-                                                      total_counts_threshold, transit_counts_threshold,
+        self.Save_SNSPDs_Sprint_Measurement_with_tt(N, Histogram_bin_size, Transit_profile_bin_size, preComment,
+                                                      lock_err_threshold, transit_counts_threshold,
                                                       transit_time_threshold, bandwidth, freq_step, Max_probe_counts)
 
     ## MW spectroscopy variable update functions: ##
@@ -2244,8 +2270,15 @@ class OPX:
 
 
 if __name__ == "__main__":
-    experiment = OPX(Config.config)
-    # experiment.Start_Spectrum_Exp_with_tt(N=100, preComment='test')
+    try:
+        experiment = OPX(Config.config)
+        experiment.Start_Sprint_Exp_with_tt(N=100, preComment='test')
+    except KeyboardInterrupt:
+        experiment.job.halt()
+        experiment.qmm.reset_data_processing()
+    # finally:
+    #     experiment.job.halt()
+    #     experiment.qmm.reset_data_processing()
     # experiment.updateValue('PrePulse_duration', 5)
     # experiment.update_parameters()
     # experiment.Repeat_Measurement(10)
