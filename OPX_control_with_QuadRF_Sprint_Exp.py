@@ -510,39 +510,43 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
     # play("Const_open", "AOM_S", duration=shutter_open_time)
     wait(shutter_open_time, "AOM_S")
     align("AOM_N", "AOM_S", "Dig_detectors")
-    with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.Sprint_Exp_Gaussian_samples_S))):
-        play("Sprint_experiment_pulses_S", "AOM_S")
-        play("Sprint_experiment_pulses_N", "AOM_N")
+
+    play("OD", "AOM_2-2/3'", duration=m_time)  # CRUS with pulses from AWG and constantly ON-resonance
+
+    # with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.Sprint_Exp_Gaussian_samples_S))): #assaf comment debbuging
+    #     play("Sprint_experiment_pulses_S", "AOM_S")
+    #     play("Sprint_experiment_pulses_N", "AOM_N")
 
     with for_(n, 0, n < m_time * 4, n + m_window):
         measure("readout_SPRINT", "Dig_detectors", None,
-                time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
-                time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
-                time_tagging.digital(tt_vec3, m_window, element_output="out3", targetLen=counts3),
-                time_tagging.digital(tt_vec4, m_window, element_output="out4", targetLen=counts4),
-                # time_tagging.digital(tt_vec5, m_window, element_output="out5", targetLen=counts5),
-                # time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
-                # time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
-                # time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
+                # time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
+                # time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
+                # time_tagging.digital(tt_vec3, m_window, element_output="out3", targetLen=counts3),
+                # time_tagging.digital(tt_vec4, m_window, element_output="out4", targetLen=counts4),
+                time_tagging.digital(tt_vec5, m_window, element_output="out5", targetLen=counts5),
+                time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
+                time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
+                time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
                 )
 
         ## Save Data: ##
 
         # Number of Photons (NOP) Count stream for each detector: ##
-        save(counts1, ON_counts_st1)
-        save(counts2, ON_counts_st2)
-        save(counts3, ON_counts_st3)
-        save(counts4, ON_counts_st4)
-        # save(counts5, ON_counts_st5)
-        # save(counts6, ON_counts_st6)
-        # save(counts7, ON_counts_st7)
-        # save(counts8, ON_counts_st8)
+        # save(counts1, ON_counts_st1)
+        # save(counts2, ON_counts_st2)
+        # save(counts3, ON_counts_st3)
+        # save(counts4, ON_counts_st4)
+        save(counts5, ON_counts_st5)
+        save(counts6, ON_counts_st6)
+        save(counts7, ON_counts_st7)
+        save(counts8, ON_counts_st8)
+
 
         with for_(m1, 0, m1 < vec_size, m1 + 1):
-            save(tt_vec1[m1], tt_st_1)
-            save(tt_vec2[m1], tt_st_2)
-            save(tt_vec3[m1], tt_st_3)
-            save(tt_vec4[m1], tt_st_4)
+            save(tt_vec5[m1], tt_st_5)
+            save(tt_vec6[m1], tt_st_6)
+            save(tt_vec7[m1], tt_st_7)
+            save(tt_vec8[m1], tt_st_8)
         # with for_(m6, 0, m6 < vec_size, m6 + 1):
 
         #     # wait(10)
@@ -808,28 +812,29 @@ def opx_control(obj, qm):
             (ON_counts_st1 + ON_counts_st2 ).buffer(obj.rep).save('North_Probe')
             # (ON_counts_st5 + ON_counts_st6 + ON_counts_st7 + ON_counts_st8).buffer(obj.rep).save('South_Probe')
             (ON_counts_st5 + ON_counts_st6).buffer(obj.rep).save('South_Probe')
-            ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
-            ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
-            ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
-            ON_counts_st4.buffer(obj.rep).save('Det4_Counts')
-            # ON_counts_st5.buffer(obj.rep).save('Det5_Counts') # assaf - renamed to det3 to ease further calculation
-            # ON_counts_st6.buffer(obj.rep).save('Det6_Counts')# assaf - renamed to det4 to ease further calculation
-            # ON_counts_st7.buffer(obj.rep).save('Det7_Counts')
-            # ON_counts_st8.buffer(obj.rep).save('Det8_Counts')
-            (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
-            (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
-            (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
-            (tt_st_4 + rep_st).buffer(obj.vec_size * obj.rep).save('Det4_Probe_TT')
-            # (tt_st_5 + rep_st).buffer(obj.vec_size * obj.rep).save('Det5_Probe_TT') # assaf - renamed to det3 to ease further calculation
-            # (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep).save('Det6_Probe_TT') # assaf - renamed to det4 to ease further calculation
-            # (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det7_Probe_TT')
-            # (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det8_Probe_TT')
+            # ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
+            # ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
+            # ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
+            # ON_counts_st4.buffer(obj.rep).save('Det4_Counts')
+            ON_counts_st5.buffer(obj.rep).save('Det1_Counts') # assaf - renamed to det3 to ease further calculation
+            ON_counts_st6.buffer(obj.rep).save('Det2_Counts')# assaf - renamed to det4 to ease further calculation
+            ON_counts_st7.buffer(obj.rep).save('Det3_Counts')
+            ON_counts_st8.buffer(obj.rep).save('Det4_Counts')
+            # (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
+            # (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
+            # (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
+            # (tt_st_4 + rep_st).buffer(obj.vec_size * obj.rep).save('Det4_Probe_TT')
+            (tt_st_5 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT') # assaf - renamed to det3 to ease further calculation
+            (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT') # assaf - renamed to det4 to ease further calculation
+            (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
+            (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det4_Probe_TT')
             FLR_st.save('FLR_measure')
             AntiHelmholtz_ON_st.save("antihelmholtz_on")
 
     job = qm.execute(opx_control_prog, flags=['auto-element-thread'])
 
     return job
+
 
 
 class bcolors:
@@ -1710,7 +1715,9 @@ class OPX:
         ### saving to file
         ###
         Num_Of_dets = 4
-        detector_delay = [5,0,0,15] # *Num_Of_dets
+        # detector_delay = [5,0,0,15] # For detectors 1-4 "N"
+        detector_delay = [0,0,0,0] # For detectors 5-8 "S"
+
 
         histogram_bin_number = 3*self.M_window // (histogram_bin_size)
         time_bins = np.linspace(0, self.M_window, histogram_bin_number)
@@ -1751,13 +1758,13 @@ class OPX:
         start = True
 
         # take threshold from npz ( error from resonator lock PID)
-        lock_err = np.load(
-            'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error')  # the error of locking the resontor to Rb line
-
+        # lock_err = np.load(
+        #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error')  # the error of locking the resontor to Rb line
+        lock_err = lock_err_threshold/2
 
         # Place holders for results
         # while (number of photons * 10^-6 [Mcounts] / Measuring time [nsec] * 10^-9 [sec/nsec])  > counts_threshold [Mcounts /sec]:
-        while lock_err < lock_err_threshold or start:
+        while lock_err > lock_err_threshold or start:
             if self.keyPress == 'ESC':
                 print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
                 self.updateValue("Sprint_Exp_switch", False)
@@ -1997,7 +2004,7 @@ class OPX:
                 self.tt_measure = []
                 for i in range(Num_Of_dets):  # for different detectors
                     self.tt_measure.append(
-                        [tt_res[i][(index * Config.vec_size):
+                        [wait(10)[i][(index * Config.vec_size):
                                    (index * Config.vec_size + counts)].tolist() for index, counts in
                          enumerate(counts_res[i])])
                     #add delay to a detctors tt's
@@ -2272,7 +2279,7 @@ class OPX:
 if __name__ == "__main__":
     try:
         experiment = OPX(Config.config)
-        experiment.Start_Sprint_Exp_with_tt(N=100, preComment='test')
+        experiment.Start_Sprint_Exp_with_tt(N=500, preComment='test')
     except KeyboardInterrupt:
         experiment.job.halt()
         experiment.qmm.reset_data_processing()

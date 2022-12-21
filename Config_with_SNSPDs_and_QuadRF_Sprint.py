@@ -46,7 +46,7 @@ controller = 'con1'
 # time tags vector size
 
 #parametrs of sizes
-vec_size = 4000
+vec_size = 2000
 num_of_detectors = 4
 opx_max_per_window = vec_size*num_of_detectors
 
@@ -137,11 +137,11 @@ def Sprint_Exp_Gaussian_samples(det_pulses_amp = [0.4]*4,sprint_pulses_amp = [0.
 
 
 Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(det_pulses_amp=[0.45, 0, 0.45, 0],
-                                                            sprint_pulses_amp=[0.2, 0, 0.2, 0], num_init_zeros=10,
+                                                            sprint_pulses_amp=[0.1, 0, 0.1, 0], num_init_zeros=10,
                                                             num_between_zeros=10)
 
 Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(det_pulses_amp=[0, 0.45, 0, 0.45],
-                                                            sprint_pulses_amp=[0, 0.16, 0, 0.16], num_init_zeros=10,
+                                                            sprint_pulses_amp=[0, 0.12, 0, 0.12], num_init_zeros=10,
                                                             num_between_zeros=10)
 
 readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/4)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4

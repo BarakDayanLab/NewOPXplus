@@ -553,7 +553,7 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
 #         save(counts7, ON_counts_st7)
 #         save(counts8, ON_counts_st8)
 #
-#         with for_(m1, 0, m1 < counts1, m1 + 1):
+#         with for_(m, 0, m1 < counts1, m1 + 1):
 #             save(tt_vec1[m1], tt_st_N)
 #         with for_(m2, 0, m2 < counts2, m2 + 1):
 #             save(tt_vec2[m2], tt_st_N)

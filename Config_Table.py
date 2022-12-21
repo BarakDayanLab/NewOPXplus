@@ -27,8 +27,8 @@ Initial_Values = {
     # 'Operation_Mode': 'Depump',
     # 'Operation_Mode': 'Transit_Exp',
     # 'Operation_Mode': 'Spectrum_Exp',
-    # 'Operation_Mode': 'CRUS_Exp',
-    'Operation_Mode': 'SPRINT_Exp',
+    'Operation_Mode': 'CRUS_Exp',
+    # 'Operation_Mode': 'SPRINT_Exp',
     # 'Operation_Mode': 'Continuous',
     'Imaging_Phase': 'Pulse_1',
     'Triggering_Phase': -1,  # Don't change this. Triggering phase should be defined within each operation mode (see below)
@@ -291,7 +291,7 @@ Operation_Modes = {
                                  'M_window': int(Config.readout_CRUS_pulse_len), # [nsec]
                                  # 'M_off_time': 10, # [msec]
                                  'M_off_time': 10, # [msec]
-                                 'M_time': (Config.readout_CRUS_pulse_len) / 1e6,  # [msec]
+                                 'M_time': 3*(Config.readout_CRUS_pulse_len) / 1e6,  # [msec]
                                  'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
                                  'PGC_duration': 5.1 #[msec] EXTREMELY IMOPRTANT for OPX-QuadRF sync
                                  },
@@ -303,7 +303,7 @@ Operation_Modes = {
                                     'Buffer_Cycles': 0,
                                     'Imaging_Phase': 'Pulse_1',
                                     'PrePulse_duration': 10,  # [msec]
-                                    'Shutter_open_time': 3,  # [msec]
+                                    'Shutter_open_time': 6,  # [msec]
                                     'Pulse_1_Repump_amp': 0.000001,
                                     'Pulse_1_duration': int(Config_Sprint.readout_pulse_sprint_len_N) * 3 / 1e6,  # [msec]
                                     ## If with fountain:

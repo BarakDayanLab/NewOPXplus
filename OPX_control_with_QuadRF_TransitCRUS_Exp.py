@@ -453,9 +453,8 @@ def Probe_counts_Measure_SNSPDs(m_off_time, m_time, m_window, shutter_open_time,
 
 
 def CRUS_Experiment(m_off_time, m_time, m_window, shutter_open_time,
-                    ON_counts_st1, ON_counts_st2, ON_counts_st3, ON_counts_st4,
                     ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8,
-                    tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st):# , tt_st_S):
+                    tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st):# , tt_st_S):
     """
        Transit measurement with and without atoms.
 
@@ -477,19 +476,11 @@ def CRUS_Experiment(m_off_time, m_time, m_window, shutter_open_time,
 
     vec_size = Config.vec_size
 
-    counts1 = declare(int)
-    counts2 = declare(int)
-    counts3 = declare(int)
-    counts4 = declare(int)
     counts5 = declare(int)
     counts6 = declare(int)
     counts7 = declare(int)
     counts8 = declare(int)
 
-    tt_vec1 = declare(int, size=vec_size)
-    tt_vec2 = declare(int, size=vec_size)
-    tt_vec3 = declare(int, size=vec_size)
-    tt_vec4 = declare(int, size=vec_size)
     tt_vec5 = declare(int, size=vec_size)
     tt_vec6 = declare(int, size=vec_size)
     tt_vec7 = declare(int, size=vec_size)
@@ -498,59 +489,40 @@ def CRUS_Experiment(m_off_time, m_time, m_window, shutter_open_time,
     n = declare(int)
     t = declare(int)
     m = declare(int)
-    m1 = declare(int)
-    m2 = declare(int)
-    m3 = declare(int)
-    m4 = declare(int)
     m5 = declare(int)
     m6 = declare(int)
     m7 = declare(int)
     m8 = declare(int)
 
-    align("AOM_N", "AOM_S", "Dig_detectors")
-    # play("Const_open", "AOM_S", duration=shutter_open_time)
-    wait(shutter_open_time, "AOM_S")
-    align("AOM_N", "AOM_S", "Dig_detectors")
-    with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.Spectrum_Exp_Gaussian_samples))):
-        play("Sprint_experiment_pulses_S", "AOM_S")
-        play("Sprint_experiment_pulses_N", "AOM_N")
+    align("AOM_2-2/3'", "Pulser_CRUS", "Dig_detectors_spectrum")
+    # play("OD", "AOM_2-2/3'", duration=shutter_open_time)
+    wait(shutter_open_time, "AOM_2-2/3'")
+    align("AOM_2-2/3'", "Pulser_CRUS", "Dig_detectors_spectrum")
+    # wait(50+16, "AOM_2-2/3'", "Pulser_CRUS")
+    # wait(128 + 32, "AOM_2-2/3'", "Pulser_CRUS")
+    # with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.CRUS_pulser_samples))):
+    #     play("CRUS_pulse", "Pulser_CRUS")
+    #     play("CRUS_pulse", "AOM_2-2/3'")
+    play("OD", "AOM_2-2/3'", duration=m_time)  # CRUS with pulses from AWG and constantly ON-resonance
 
-    with for_(n, 0, n < m_time * 4, n + m_window):
-        measure("readout_SPRINT", "Dig_detectors", None,
-                time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
-                time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
-                time_tagging.digital(tt_vec3, m_window, element_output="out3", targetLen=counts3),
-                time_tagging.digital(tt_vec4, m_window, element_output="out4", targetLen=counts4),
+    with for_(n, 0, n < (m_time + m_off_time) * 4, n + m_window + m_off_time * 4):
+        measure("readout_CRUS", "Dig_detectors_spectrum", None,
                 time_tagging.digital(tt_vec5, m_window, element_output="out5", targetLen=counts5),
                 time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
                 time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
-                time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
-                )
+                time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8))
+        with if_(m_off_time > 0):
+            wait(m_off_time, "Dig_detectors_spectrum")
 
         ## Save Data: ##
 
-        # Number of Photons (NOP) Count stream for each detector: ##
-        save(counts1, ON_counts_st1)
-        save(counts2, ON_counts_st2)
-        save(counts3, ON_counts_st3)
-        save(counts4, ON_counts_st4)
+        ## Number of Photons (NOP) Count stream for each detector: ##
+
         save(counts5, ON_counts_st5)
         save(counts6, ON_counts_st6)
         save(counts7, ON_counts_st7)
         save(counts8, ON_counts_st8)
 
-        with for_(m1, 0, m1 < vec_size, m1 + 1):
-            save(tt_vec1[m1], tt_st_1)
-            wait(250)
-        with for_(m2, 0, m2 < vec_size, m2 + 1):
-            save(tt_vec2[m2], tt_st_2)
-            # wait(10)
-        with for_(m3, 0, m3 < vec_size, m3 + 1):
-            save(tt_vec3[m3], tt_st_3)
-            # wait(10)
-        with for_(m4, 0, m4 < vec_size, m4 + 1):
-            save(tt_vec4[m4], tt_st_4)
-            # wait(10)
         with for_(m5, 0, m5 < vec_size, m5 + 1):
             save(tt_vec5[m5], tt_st_5)
         with for_(m6, 0, m6 < vec_size, m6 + 1):
@@ -666,10 +638,6 @@ def opx_control(obj, qm):
         ON_counts_st6 = declare_stream()
         ON_counts_st7 = declare_stream()
         ON_counts_st8 = declare_stream()
-        tt_st_1 = declare_stream()
-        tt_st_2 = declare_stream()
-        tt_st_3 = declare_stream()
-        tt_st_4 = declare_stream()
         tt_st_5 = declare_stream()
         tt_st_6 = declare_stream()
         tt_st_7 = declare_stream()
@@ -736,9 +704,8 @@ def opx_control(obj, qm):
                 with if_(CRUS_Exp_ON):
                     align(*all_elements, "Dig_detectors_spectrum", "AOM_2-2/3'", "Pulser_CRUS")
                     CRUS_Experiment(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
-                                    ON_counts_st1, ON_counts_st2, ON_counts_st3, ON_counts_st4,
                                     ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8,
-                                    tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st) #, tt_st_S)
+                                    tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st) #, tt_st_S)
                     save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
                     with if_(AntiHelmholtz_ON):
                         save(FLR, FLR_st)
@@ -2645,7 +2612,7 @@ class OPX:
         Max_probe_counts = None  # return the average maximum probe counts of 3 cycles.
         self.CRUS_Exp_switch(True)
         self.update_parameters()
-        self.Save_SNSPDs_Sprint_Measurement_with_tt(N, Histogram_bin_size, Transit_profile_bin_size, preComment,
+        self.Save_SNSPDs_CRUS_Measurement_with_tt(N, Histogram_bin_size, Transit_profile_bin_size, preComment,
                                                       total_counts_threshold, transit_counts_threshold,
                                                       transit_time_threshold, bandwidth, freq_step, Max_probe_counts)
 
