@@ -45,7 +45,7 @@ controller = 'con1'
 
 # time tags vector size
 
-vec_size = 16000
+vec_size = 2000
 
 # Pulse_durations
 readout_pulse_len = 10000000

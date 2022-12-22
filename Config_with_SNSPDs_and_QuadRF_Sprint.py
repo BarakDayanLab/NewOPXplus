@@ -46,8 +46,8 @@ controller = 'con1'
 # time tags vector size
 
 #parametrs of sizes
-vec_size = 2000
-num_of_detectors = 4
+vec_size = 3000
+num_of_detectors = 3
 opx_max_per_window = vec_size*num_of_detectors
 
 
@@ -121,7 +121,7 @@ num_of_det_pulses_N = 2
 num_of_sprint_pulses_N = 2
 
 # parametrs for window len
-efficiency = 0.25 # the efficiency of the system
+efficiency = 0.15 # the efficiency of the system
 num_of_photons_per_sequence_S = num_of_photons_det_pulses * num_of_det_pulses_S + num_of_photons_sprint_pulses * num_of_sprint_pulses_S
 num_of_photons_per_sequence_N = num_of_photons_det_pulses * num_of_det_pulses_N + num_of_photons_sprint_pulses * num_of_sprint_pulses_N
 
@@ -144,8 +144,10 @@ Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(det_pulses_amp=[0, 0
                                                             sprint_pulses_amp=[0, 0.12, 0, 0.12], num_init_zeros=10,
                                                             num_between_zeros=10)
 
-readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/4)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
-readout_pulse_sprint_len_S = math.ceil(((opx_max_per_window/4)/(efficiency*1e6*num_of_photons_per_sequence_S))*len(Sprint_Exp_Gaussian_samples_S))*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
+# readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/4)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
+readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
+# readout_pulse_sprint_len_S = math.ceil(((opx_max_per_window/4)/(efficiency*1e6*num_of_photons_per_sequence_S))*len(Sprint_Exp_Gaussian_samples_S))*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
+readout_pulse_sprint_len_S = math.ceil(((opx_max_per_window)/(efficiency*1e6*num_of_photons_per_sequence_S))*len(Sprint_Exp_Gaussian_samples_S))*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
 
 CRUS_probe_samples = [0] * 340 + ([0.4] * (256 * 2 + 10)) + [0] * 162 # twice the 512ns period of the AWG, with scope triggered
 CRUS_pulser_samples = [0] * 128 + ([0.4] * (256 + 128)) + [0] * 128 * 4 # twice the 512ns period of the AWG, with scope triggered
