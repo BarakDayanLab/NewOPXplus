@@ -566,7 +566,8 @@ config = {
             'length': MOT_pulse_len,
             'waveforms': {
                 'single': 'const_wf'
-            }
+            },
+            'digital_marker': 'ON'
         },
 
         "MOT_lock_ON": {

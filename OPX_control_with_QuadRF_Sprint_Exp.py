@@ -402,8 +402,8 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
     m8 = declare(int)
 
     align("AOM_N", "AOM_S", "Dig_detectors")
-    # play("Const_open", "AOM_S", duration=shutter_open_time)
-    wait(shutter_open_time, "AOM_S")
+    play("Const_open", "AOM_S", duration=shutter_open_time)
+    # wait(shutter_open_time, "AOM_S")
     align("AOM_N", "AOM_S", "Dig_detectors")
 
     # play("OD", "AOM_2-2/3'", duration=m_time)  # CRUS with pulses from AWG and constantly ON-resonance
@@ -412,7 +412,7 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
         play("Sprint_experiment_pulses_S", "AOM_S")
         play("Sprint_experiment_pulses_N", "AOM_N")
 
-    wait(int(0.8e6),"Dig_detectors") # TODO - added this delay to measurement so it would be syncronized with the pulses
+    # wait(int(0.8e6),"Dig_detectors") # TODO - added this delay to measurement so it would be syncronized with the pulses
     with for_(n, 0, n < m_time * 4, n + m_window):
         measure("readout_SPRINT", "Dig_detectors", None,
                 # time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
