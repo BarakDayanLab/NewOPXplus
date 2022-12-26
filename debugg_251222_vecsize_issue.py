@@ -280,8 +280,6 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
     play("OD_FS", "AOM_2-2/3'", duration=OD_pulse_duration)
 
 
-
-
 def Probe_counts_Measure_SNSPDs(m_off_time, m_time, m_window, shutter_open_time,
                                 ON_counts_st1, ON_counts_st2, ON_counts_st3, ON_counts_st4,
                                 ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8, ):
@@ -369,7 +367,7 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
        :param counts_st8: The stream array for the number of photons counted at each measuring window for detector 8.
        """
 
-    vec_size = Config.vec_size
+    vec_size = 3000#Config.vec_size
 
     counts1 = declare(int)
     counts2 = declare(int)
@@ -446,20 +444,19 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
         # with for_(m2, 0, m2 < vec_size, m2 + 1):
         # wait(10)
         with for_(m3, 0, m3 < vec_size, m3 + 1):
-            wait(1000)
             save(tt_vec3[m3], tt_st_3)
             # wait(10)
-        # with for_(m4, 0, m4 < vec_size, m4 + 1):
-            save(tt_vec4[m3], tt_st_4)
+        with for_(m4, 0, m4 < vec_size, m4 + 1):
+            save(tt_vec4[m4], tt_st_4)
         #     # wait(10)
-        # with for_(m5, 0, m5 < vec_size, m5 + 1):
-            save(tt_vec5[m3], tt_st_5)
-        # with for_(m6, 0, m6 < vec_size, m6 + 1):
-            save(tt_vec6[m3], tt_st_6)
-        # with for_(m7, 0, m7 < vec_size, m7 + 1):
-            save(tt_vec7[m3], tt_st_7)
-        # with for_(m8, 0, m8 < vec_size, m8 + 1):
-            save(tt_vec8[m3], tt_st_8)
+        with for_(m5, 0, m5 < vec_size, m5 + 1):
+            save(tt_vec5[m5], tt_st_5)
+        with for_(m6, 0, m6 < vec_size, m6 + 1):
+            save(tt_vec6[m6], tt_st_6)
+        with for_(m7, 0, m7 < vec_size, m7 + 1):
+            save(tt_vec7[m7], tt_st_7)
+        with for_(m8, 0, m8 < vec_size, m8 + 1):
+            save(tt_vec8[m8], tt_st_8)
         with for_(m, 0, m < vec_size, m + 1):
             save(n, rep_st)
 
@@ -548,7 +545,7 @@ def opx_control(obj, qm):
         tt_st_8 = declare_stream()
         rep_st = declare_stream()
         AntiHelmholtz_ON_st = declare_stream()
-        FLR_st = declare_stream()
+        #_st = declare_stream()
         x = declare(int)
         assign(IO1, 0)
         assign(IO2, 0)
@@ -563,24 +560,24 @@ def opx_control(obj, qm):
             ##########################
 
             # MOT sequence:
-            FLR = MOT(MOT_Repetitions)
-            play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
+            # FLR = MOT(MOT_Repetitions)
+            # play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
 
             # Delay before fountain:
-            wait(post_MOT_delay, "Cooling_Sequence")
-            align(*all_elements)
+            # wait(post_MOT_delay, "Cooling_Sequence")
+            # align(*all_elements)
 
             # Fountain sequence:
-            wait(fountain_duration, "Cooling_Sequence")
-            Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
-                                       fountain_pulse_duration_0, fountain_pulse_duration_minus,
-                                       fountain_pulse_duration_plus, fountain_aom_chirp_rate,
-                                       fountain_delta_f)
+            #wait(fountain_duration, "Cooling_Sequence")
+            # Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
+              #                         fountain_pulse_duration_0, fountain_pulse_duration_minus,
+               #                        fountain_pulse_duration_plus, fountain_aom_chirp_rate,
+                #                       fountain_delta_f)
 
             # PGC sequence:
-            wait(pgc_duration, "Cooling_Sequence")
-            Pulse_const(pgc_duration)
-            align(*all_elements)
+            #wait(pgc_duration, "Cooling_Sequence")
+            #Pulse_const(pgc_duration)
+            #align(*all_elements)
 
             # FreeFall sequence:
             with if_(SPRINT_Exp_ON):
@@ -615,8 +612,8 @@ def opx_control(obj, qm):
                                ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8,
                                tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st)
                     save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
-                    with if_(AntiHelmholtz_ON):
-                        save(FLR, FLR_st)
+                    #with if_(AntiHelmholtz_ON):
+                     #   save(FLR, FLR_st)
                     align("Dig_detectors", "AOM_N", "AOM_S")
                 with else_():
                     with if_(Probe_max_counts_Exp_ON):
@@ -719,13 +716,12 @@ def opx_control(obj, qm):
             (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT') # assaf - renamed to det4 to ease further calculation
             (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
             (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det4_Probe_TT')
-            FLR_st.save('FLR_measure')
+            # FLR_st.save('FLR_measure')
             AntiHelmholtz_ON_st.save("antihelmholtz_on")
 
     job = qm.execute(opx_control_prog, flags=['auto-element-thread'])
 
     return job
-
 
 
 class bcolors:
@@ -1575,485 +1571,6 @@ class OPX:
     #
     #     self.saveConfigTable(path=dirname)
     #     ## ------------------ end of saving section -------
-    def Save_SNSPDs_CRUS_Measurement_with_tt(self, N, histogram_bin_size, Transit_profile_bin_size, preComment,
-                                             total_counts_threshold, transit_counts_threshold, transit_time_threshold,
-                                             bandwidth, freq_step, max_probe_counts, Mock=False):
-        """
-        Function for analyzing and saving the time tags data measured from the SNSPDs using the OPX. In this specific
-         program we are looking for transits of atoms next to the toroid and record them.
-        :param N: Number of maximum experiments (free throws) saved and displayed.
-        :param histogram_bin_size: The bin size for the general experiment histogram which means - dividing the length
-                                   of the measuring time (m_time) to bins and counting the number of photon detections
-                                   at each bin.
-        :param Transit_profile_bin_size: The bin size for the transit histogram which means - dividing the length of the
-                                         transit time to bins and counting the number of transits for which there has
-                                         been a detection of photon at each bin.
-        :param preComment: The comment added at the start of the experiment, usually consisting of unique experiment
-                           parameters.
-        :param total_counts_threshold: The minimum number of MCounts / sec for which the data will be displayed and collected.
-        :param transit_counts_threshold: The number of photons at each time bin for which suspect we as a transit.
-        :param transit_time_threshold: The maximum time between the start and finish of the transit in [nsec]
-        :param max_probe_counts: The maximum counts probe counts at each direction measured when cavity isn't locked.
-        :return:
-        """
-        # if preComment is True:
-        if not preComment:
-            preComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
-        aftComment = None
-
-        ### fetching data from server
-        ### saving to file
-        ###
-
-        histogram_bin_number = self.M_window // (histogram_bin_size)
-        time_bins = np.linspace(0, self.M_window, histogram_bin_number)
-        spectrum_bin_number = bandwidth // freq_step + 1  # TODO: ask natan how many freq steps he uses
-        freq_bins = np.linspace(-int(bandwidth / 2), int(bandwidth / 2), spectrum_bin_number)
-        CRUS_pulse_time = np.arange(512)
-
-        ## Listen for keyboard
-        listener = keyboard.Listener(on_press=self.on_key_press)
-        listener.start()  # start to listen on a separate thread
-        self.keyPress = None
-        print('\033[94m' + 'Press ESC to stop measurement.' + '\033[0m')  # print blue
-        reps = 1  # a counter, number of repeats actually made.
-
-        # Probe_S_handle = self.job.result_handles.get("South_Probe")
-        # tt_S_handle = self.job.result_handles.get("South_Probe_TT")
-        Counts_5_handle = self.job.result_handles.get("Det1_Counts")
-        Counts_6_handle = self.job.result_handles.get("Det2_Counts")
-        Counts_7_handle = self.job.result_handles.get("Det3_Counts")
-        Counts_8_handle = self.job.result_handles.get("Det4_Counts")
-        tt_5_handle = self.job.result_handles.get("Det1_Probe_TT")
-        tt_6_handle = self.job.result_handles.get("Det2_Probe_TT")
-        tt_7_handle = self.job.result_handles.get("Det3_Probe_TT")
-        tt_8_handle = self.job.result_handles.get("Det4_Probe_TT")
-        FLR_handle = self.job.result_handles.get("FLR_measure")
-
-        # define empty variables
-        self.tt_5_measure_batch = []
-        self.tt_6_measure_batch = []
-        self.tt_7_measure_batch = []
-        self.tt_8_measure_batch = []
-        self.tt_S_measure_batch = []
-        tt_S_binning_batch = []
-        tt_S_binning_resonance_batch = []
-        tt_S_binning_detuned_batch = []
-        all_transits_batch = []
-        FLR_measurement = []
-        Exp_timestr_batch = []
-
-        tt_S_binning_resonance = np.zeros(histogram_bin_number)
-        tt_S_binning_detuned = np.zeros(histogram_bin_number)
-        tt_S_transit_events = np.zeros(histogram_bin_number)
-        self.tt_S_CRUS_events_batch = np.zeros(histogram_bin_size)
-        Cavity_atom_spectrum = np.zeros(spectrum_bin_number)
-        Cavity_spectrum = np.zeros(spectrum_bin_number)
-
-        start = True
-
-        # Place holders for results
-        # while (number of photons * 10^-6 [Mcounts] / Measuring time [nsec] * 10^-9 [sec/nsec])  > counts_threshold [Mcounts /sec]:
-        while (((sum(tt_S_binning_resonance) * 1000) / (self.M_window / 2)) > total_counts_threshold) or start:
-            if self.keyPress == 'ESC':
-                print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
-                self.updateValue("CRUS_Exp_switch", False)
-                self.update_parameters()
-                # Other actions can be added here
-                break
-            if start:
-                start = False
-            else:
-                print('Above Threshold')
-
-            tt_5_handle.wait_for_values(1)
-            tt_6_handle.wait_for_values(1)
-            tt_7_handle.wait_for_values(1)
-            tt_8_handle.wait_for_values(1)
-            FLR_handle.wait_for_values(1)
-
-            counts_res5 = Counts_5_handle.fetch_all()
-            counts_res6 = Counts_6_handle.fetch_all()
-            counts_res7 = Counts_7_handle.fetch_all()
-            counts_res8 = Counts_8_handle.fetch_all()
-            tt_5_res = tt_5_handle.fetch_all()
-            tt_6_res = tt_6_handle.fetch_all()
-            tt_7_res = tt_7_handle.fetch_all()
-            tt_8_res = tt_8_handle.fetch_all()
-            FLR_res = -FLR_handle.fetch_all()
-
-            self.tt_5_measure = [tt_5_res[(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for
-                                 index, counts in
-                                 enumerate(counts_res5)]
-            self.tt_6_measure = [tt_6_res[(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for
-                                 index, counts in
-                                 enumerate(counts_res6)]
-            self.tt_7_measure = [tt_7_res[(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for
-                                 index, counts in
-                                 enumerate(counts_res7)]
-            self.tt_8_measure = [tt_8_res[(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for
-                                 index, counts in
-                                 enumerate(counts_res8)]
-            self.tt_S_measure = self.tt_5_measure[0] + self.tt_6_measure[0] + self.tt_7_measure[0] + self.tt_8_measure[
-                0]
-            self.tt_5_measure.sort()
-            self.tt_6_measure.sort()
-            self.tt_7_measure.sort()
-            self.tt_8_measure.sort()
-            self.tt_S_measure.sort()
-
-            self.tt_S_binning = np.zeros(histogram_bin_number * 2)
-            self.tt_S_CRUS_events = np.zeros(histogram_bin_size)
-
-            for x in [elem for elem in self.tt_S_measure if elem < self.M_window]:
-                self.tt_S_binning[x // int(histogram_bin_size / 2)] += 1
-                self.tt_S_CRUS_events[x % histogram_bin_size] += 1
-                self.tt_S_CRUS_events_batch[x % histogram_bin_size] += 1
-
-            # split the binning vector to odd and even - on and off resonance pulses
-            tt_S_binning_resonance = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if x % 2]  # odd
-            tt_S_binning_detuned = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if not x % 2]  # even
-
-        ## record time
-        timest = time.strftime("%Y%m%d-%H%M%S")
-        datest = time.strftime("%Y%m%d")
-
-        FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
-        Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
-
-        self.tt_5_measure_batch = self.tt_5_measure_batch[-(N - 1):] + [self.tt_5_measure]
-        self.tt_6_measure_batch = self.tt_6_measure_batch[-(N - 1):] + [self.tt_6_measure]
-        self.tt_7_measure_batch = self.tt_7_measure_batch[-(N - 1):] + [self.tt_7_measure]
-        self.tt_8_measure_batch = self.tt_8_measure_batch[-(N - 1):] + [self.tt_8_measure]
-        self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
-        tt_S_binning_batch = tt_S_binning_batch[-(N - 1):] + [self.tt_S_binning]
-        tt_S_binning_resonance_batch = tt_S_binning_resonance_batch[-(N - 1):] + [tt_S_binning_resonance]
-        tt_S_binning_detuned_batch = tt_S_binning_detuned_batch[-(N - 1):] + [tt_S_binning_detuned]
-        Counter = 1
-
-        # Find transits and build histogram:
-        current_transit = []
-        all_transits = []
-        all_transits_aligned_first = []
-        t_transit = []
-        t_transit_batch = []
-        transit_histogram = []
-        for index, value in enumerate(tt_S_binning_resonance):
-            if not current_transit and value:  # if the array is empty
-                current_transit.append(index)
-            if value:
-                if ((index - current_transit[0]) * histogram_bin_size) < transit_time_threshold:
-                    current_transit.append(index)
-                elif len(current_transit) > transit_counts_threshold:
-                    all_transits.append(current_transit)
-                    all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
-                    # tt_S_transit_events[tuple(current_transit)] += 1
-                    current_transit = [index]
-                else:
-                    # Finding if there any index that was saved to current transit and is close enough to the new index
-                    t = [i for i, elem in enumerate(current_transit) if
-                         ((index - elem) * histogram_bin_size) < transit_time_threshold]
-                    if t:
-                        current_transit = current_transit[t[0]:] + [index]
-                    else:
-                        current_transit = [index]
-
-        tt_S_transit_events[[i for i in [vec for elem in all_transits for vec in elem]]] += 1
-        #
-        if all_transits:
-            all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
-
-        ## Prepare plots
-        fig = plt.figure()
-        ax1 = plt.subplot2grid((6, 2), (0, 0), colspan=1, rowspan=2)
-        ax2 = plt.subplot2grid((6, 2), (0, 1), colspan=1, rowspan=2)
-        ax3 = plt.subplot2grid((6, 2), (2, 0), colspan=1, rowspan=2)
-        ax4 = plt.subplot2grid((6, 2), (2, 1), colspan=1, rowspan=2)
-        ax5 = plt.subplot2grid((6, 2), (4, 0), colspan=1, rowspan=2)
-        ax6 = plt.subplot2grid((6, 2), (4, 1), colspan=1, rowspan=2)
-
-        while True:
-            if self.keyPress == 'ESC':
-                print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
-                self.updateValue("CRUS_Exp_switch", False)
-                self.update_parameters()
-                # Other actions can be added here
-                break
-            if reps < N:
-                reps += 1
-
-            ########################## PLOT!!! ########################################################################
-
-            ax1.clear()
-            ax2.clear()
-            ax3.clear()
-            ax4.clear()
-            ax5.clear()
-            ax6.clear()
-
-            props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-            textstr_detuned = r'$Probe_N = %.3f$' % (
-            (sum(tt_S_binning_detuned) * 1000) / (self.M_window / 2),) + '[MPhotons/sec]\n' \
-                              + '$\overline{Probe}_S = %.3f$' % (
-                              (np.mean([sum(x) for x in tt_S_binning_detuned_batch]) * 1000)
-                              / (self.M_window / 2),) + '[MPhotons/sec]'
-            textstr_resonance = r'$Probe_S = %.3f$' % (
-            (sum(tt_S_binning_resonance) * 1000) / (self.M_window / 2),) + '[MPhotons/sec]\n' \
-                                + '$\overline{Probe}_S = %.3f$' % (
-                                (np.mean([sum(x) for x in tt_S_binning_resonance_batch]) * 1000)
-                                / (self.M_window / 2),) + '[MPhotons/sec]'
-            textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (np.mean(FLR_measurement) * 1e5,) + r'$\times 10^{-5}$'
-            textstr_No_transits = 'NO TRANSITS YET!!!'
-
-            ax1.plot(time_bins, tt_S_binning_detuned_batch[-1], label='Counts histogram', color='b')
-
-            ax1.set_title('Detuned counts', fontweight="bold")
-            ax1.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
-            ax1.text(0.05, 0.95, textstr_detuned, transform=ax1.transAxes, fontsize=12,
-                     verticalalignment='top', bbox=props)
-            ax1.legend(loc='upper right')
-            print('ok')
-            ax2.plot(time_bins, tt_S_binning_resonance_batch[-1], label='Counts histogram', color='b')
-
-            ax2.set_title('On resonant counts', fontweight="bold")
-            ax2.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
-            ax2.text(0.05, 0.95, textstr_resonance, transform=ax2.transAxes, fontsize=12,
-                     verticalalignment='top', bbox=props)
-            ax2.legend(loc='upper right')
-
-            ax3.plot(CRUS_pulse_time, self.tt_S_CRUS_events, label='Folded photon detection events per cycle',
-                     color='k')
-            ax3.set(xlabel='Time [nsec]', ylabel='Counts [#Number]')
-            ax3.legend(loc='upper right')
-
-            ax4.plot(CRUS_pulse_time, self.tt_S_CRUS_events_batch, label='Folded photon detection events per run',
-                     color='k')
-            ax4.set(xlabel='Time [msec]', ylabel='Counts [#Number]')
-            ax4.legend(loc='upper right')
-
-            if len(all_transits_batch) > 0:
-                if all_transits:
-                    textstr_transit_counts = r'$N_{Transits} = %s $' % (len(all_transits),) + r'$[Counts]$'
-                textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (
-                len([vec for elem in all_transits_batch for vec in elem]),) + r'$[Counts]$'
-
-                ax5.plot(t_transit, transit_histogram, label='Transit profile', color='b')
-                ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-                ax5.text(0.05, 0.95, textstr_transit_counts, transform=ax5.transAxes, fontsize=12,
-                         verticalalignment='top', bbox=props)
-
-                ax6.plot(time_bins, tt_S_transit_events, label='Transit events histogram', marker='*', color='b')
-                ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-                ax6.text(0.05, 0.95, textstr_transit_event_counter, transform=ax6.transAxes, fontsize=12,
-                         verticalalignment='top', bbox=props)
-            else:
-                ax5.plot(t_transit, transit_histogram, label='Transit profile', color='b')
-                ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-                ax5.text(0.25, 0.5, textstr_No_transits, transform=ax5.transAxes, fontsize=24,
-                         verticalalignment='center', bbox=props)
-
-                ax6.plot(time_bins, tt_S_transit_events, label='Transit events histogram', marker='*', color='b')
-                ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-                ax6.text(0.25, 0.5, textstr_No_transits, transform=ax6.transAxes, fontsize=24,
-                         verticalalignment='center', bbox=props)
-
-            ax1.set_ylim(0, 8)
-            ax2.set_ylim(0, 8)
-
-            # plt.tight_layout()
-            plt.show()
-            plt.pause(0.5)
-
-            ###########################################################################################################
-
-            while True:
-                # record time:
-                timest = time.strftime("%Y%m%d-%H%M%S")
-                datest = time.strftime("%Y%m%d")
-
-                tt_5_handle.wait_for_values(1)
-                tt_6_handle.wait_for_values(1)
-                tt_7_handle.wait_for_values(1)
-                tt_8_handle.wait_for_values(1)
-                FLR_handle.wait_for_values(1)
-
-                counts_res5 = Counts_5_handle.fetch_all()
-                counts_res6 = Counts_6_handle.fetch_all()
-                counts_res7 = Counts_7_handle.fetch_all()
-                counts_res8 = Counts_8_handle.fetch_all()
-                tt_5_res = tt_5_handle.fetch_all()
-                tt_6_res = tt_6_handle.fetch_all()
-                tt_7_res = tt_7_handle.fetch_all()
-                tt_8_res = tt_8_handle.fetch_all()
-                FLR_res = -FLR_handle.fetch_all()
-
-                self.tt_5_measure = [tt_5_res[(index * Config.vec_size): (index * Config.vec_size + counts)].tolist()
-                                     for index, counts in enumerate(counts_res5)]
-                self.tt_6_measure = [tt_6_res[(index * Config.vec_size): (index * Config.vec_size + counts)].tolist()
-                                     for index, counts in enumerate(counts_res6)]
-                self.tt_7_measure = [tt_7_res[(index * Config.vec_size): (index * Config.vec_size + counts)].tolist()
-                                     for index, counts in enumerate(counts_res7)]
-                self.tt_8_measure = [tt_8_res[(index * Config.vec_size): (index * Config.vec_size + counts)].tolist()
-                                     for index, counts in enumerate(counts_res8)]
-                self.tt_S_measure = self.tt_5_measure[0] + self.tt_6_measure[0] + self.tt_7_measure[0] + \
-                                    self.tt_8_measure[0]
-                self.tt_5_measure.sort()
-                self.tt_6_measure.sort()
-                self.tt_7_measure.sort()
-                self.tt_8_measure.sort()
-                self.tt_S_measure.sort()
-
-                if self.tt_S_measure != self.tt_S_measure_batch[-1]:
-                    break
-
-            self.tt_S_binning = np.zeros(histogram_bin_number * 2)
-
-            for x in [elem for elem in self.tt_S_measure if elem < self.M_window]:
-                self.tt_S_binning[x // int(histogram_bin_size / 2)] += 1
-
-            # split the binning vector to odd and even - on and off resonance pulses
-            tt_S_binning_resonance = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if x % 2]  # odd
-            tt_S_binning_detuned = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if not x % 2]  # even
-
-            if ((sum(tt_S_binning_resonance) * 1000) / (self.M_window / 2)) < total_counts_threshold:
-
-                self.tt_S_CRUS_events = np.zeros(histogram_bin_size)
-
-                for x in [elem for elem in self.tt_S_measure if elem <= self.M_window]:
-                    self.tt_S_CRUS_events[x % histogram_bin_size] += 1
-                    self.tt_S_CRUS_events_batch[x % histogram_bin_size] += 1
-
-                FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
-                Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
-                if Counter < N:
-                    Counter += 1
-                print(timest, Counter)
-
-                self.tt_5_measure_batch = self.tt_5_measure_batch[-(N - 1):] + [self.tt_5_measure]
-                self.tt_6_measure_batch = self.tt_6_measure_batch[-(N - 1):] + [self.tt_6_measure]
-                self.tt_7_measure_batch = self.tt_7_measure_batch[-(N - 1):] + [self.tt_7_measure]
-                self.tt_8_measure_batch = self.tt_8_measure_batch[-(N - 1):] + [self.tt_8_measure]
-                self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
-                tt_S_binning_batch = tt_S_binning_batch[-(N - 1):] + [self.tt_S_binning]
-                tt_S_binning_resonance_batch = tt_S_binning_resonance_batch[-(N - 1):] + [tt_S_binning_resonance]
-                tt_S_binning_detuned_batch = tt_S_binning_detuned_batch[-(N - 1):] + [tt_S_binning_detuned]
-
-                # Find transits and build histogram:
-                current_transit = []
-                all_transits = []
-                all_transits_aligned_first = []
-                for index, value in enumerate(tt_S_binning_resonance):
-                    if not current_transit and value:  # if the array is empty
-                        current_transit.append(index)
-                    if value:
-                        if ((index - current_transit[0]) * 480) < transit_time_threshold:
-                            current_transit.append(index)
-                        elif len(current_transit) > transit_counts_threshold:
-                            all_transits.append(current_transit)
-                            all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
-                            current_transit = [index]
-                        else:
-                            # Finding if there any index that was saved to current transit and is close enough to the new index
-                            t = [i for i, elem in enumerate(current_transit) if
-                                 ((index - elem) * 480) < transit_time_threshold]
-                            if t:
-                                current_transit = current_transit[t[0]:] + [index]
-                            else:
-                                current_transit = [index]
-
-                tt_S_transit_events[[i for i in [vec for elem in all_transits for vec in elem]]] += 1
-
-                if all_transits:
-                    all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
-            else:
-                tt_S_binning_resonance = tt_S_binning_resonance_batch[-1]  # odd
-                tt_S_binning_detuned = tt_S_binning_detuned_batch[-1]  # even
-
-        ############################################## END WHILE LOOP #################################################
-
-        ## Adding comment to measurement [prompt whether stopped or finished regularly]
-        aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
-        if aftComment == 'Timeout': aftComment = None
-
-        #### Handle file-names and directories #####
-        ## Saving: np.savez(filedir, data = x) #note: @filedir is string of full directory; data is the queyword used to read @x from the file:
-        ## Loading: file = np.load(f, allow_pickle = True)
-        ##          x = file['data']
-
-        #### ------ Save results ------
-        #  -------   Create dir
-        root_dirname = f'U:\\Lab_2021-2022\\Experiment_results\\Transits\\{datest}\\'
-        dirname = root_dirname + f'{timest}_Photon_TimeTags\\'  # Specific experiment dir
-        dirname_N = dirname + 'North\\'
-        dirname_S = dirname + 'South\\'
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
-        if not os.path.exists(dirname_N):
-            os.makedirs(dirname_N)
-        if not os.path.exists(dirname_S):
-            os.makedirs(dirname_S)
-
-        # ----  msmnt files names  -----
-        # Counter_str = (Counter)
-        filename_N_tt = f'North_timetags.npz'
-        filename_Det5_tt = f'Det5_timetags.npz'
-        filename_Det6_tt = f'Det6_timetags.npz'
-        filename_Det7_tt = f'Det7_timetags.npz'
-        filename_Det8_tt = f'Det8_timetags.npz'
-        filename_S_tt = f'South_timetags.npz'
-        filename_S_transits = f'South_Transits.npz'
-        filename_S_folded = f'South_timetags_folded_512ns.npz'
-        filename_FLR = f'Flouresence.npz'
-        filename_timestamp = f'Drops_time_stamps.npz'
-
-        if len(FLR_measurement) > 0:
-            np.savez(dirname + filename_FLR, FLR_measurement)
-        if len(Exp_timestr_batch) > 0:
-            np.savez(dirname + filename_timestamp, Exp_timestr_batch)
-        if len(self.tt_S_CRUS_events_batch) > 0:
-            np.savez(dirname + filename_S_folded, self.tt_S_CRUS_events_batch)
-        if len(self.tt_5_measure_batch) > 0:
-            np.savez(dirname_S + filename_Det5_tt, self.tt_5_measure_batch)
-        if len(self.tt_6_measure_batch) > 0:
-            np.savez(dirname_S + filename_Det6_tt, self.tt_6_measure_batch)
-        if len(self.tt_7_measure_batch) > 0:
-            np.savez(dirname_S + filename_Det7_tt, self.tt_7_measure_batch)
-        if len(self.tt_8_measure_batch) > 0:
-            np.savez(dirname_S + filename_Det8_tt, self.tt_8_measure_batch)
-        if len(self.tt_S_measure_batch) > 0:
-            np.savez(dirname_S + filename_S_tt, self.tt_S_measure_batch)
-        if len(all_transits_batch) > 0:
-            np.savez(dirname_S + filename_S_transits, all_transits_batch)
-
-        ### Edit comments file ####
-        cmntDir = root_dirname + '\\daily_experiment_comments.txt'
-        cmnt = timest + ' - ' + 'max probe counts:'  # +max_probe_counts+'-'
-        if preComment is not None: cmnt = cmnt + preComment + '; '
-        if aftComment is not None: cmnt = cmnt + aftComment
-        if preComment is None and aftComment is None: cmnt = cmnt + 'No comment. '
-        try:
-            with open(cmntDir, "a") as commentsFile:
-                commentsFile.write(cmnt + '\n')
-        except:
-            print('Could not save comments, error writing to comments-file.')
-            print(cmnt)
-
-        comments = {'comments': cmnt}
-        try:
-            with open(f'{dirname}experiment_comments.txt', 'w') as file:
-                json.dump(comments, file, indent=4)
-        except Exception:
-            pass
-
-        self.saveConfigTable(path=dirname)
-        try:
-            with open(f'{dirname}max_probe_counts.txt', 'w') as file:
-                json.dump(max_probe_counts, file, indent=4)
-        except Exception as e:
-            print(e)
-        for qrdCtrl in self.QuadRFControllers:
-            qrdCtrl.saveLinesAsCSV(f'{dirname}QuadRF_table.csv')
-        ## ------------------ end of saving section -------
 
     def  Save_SNSPDs_Sprint_Measurement_with_tt(self, N, histogram_bin_size, Transit_profile_bin_size, preComment,
                                                  lock_err_threshold, transit_counts_threshold, transit_time_threshold,
@@ -2112,13 +1629,13 @@ class OPX:
             Counts_handle.append(self.job.result_handles.get("Det"+str(i+1)+"_Counts"))
             tt_handle.append(self.job.result_handles.get("Det"+str(i+1)+"_Probe_TT"))
 
-        FLR_handle = self.job.result_handles.get("FLR_measure")
+        #_handle = self.job.result_handles.get("FLR_measure")
 
         # define empty variables
         tt_S_binning_batch = []
 
         all_transits_batch = []
-        FLR_measurement = []
+        #FLR_measurement = []
         Exp_timestr_batch = []
 
         self.tt_S_binning = np.zeros(histogram_bin_number * 2)
@@ -2150,7 +1667,7 @@ class OPX:
             # handles wait for values
             for i in range(Num_Of_dets):
                 tt_handle[i].wait_for_values(1)
-            FLR_handle.wait_for_values(1)
+            # FLR_handle.wait_for_values(1)
 
             # add the tt and counts to python vars
             counts_res = []
@@ -2158,7 +1675,7 @@ class OPX:
             for i in range(Num_Of_dets):
                 counts_res.append(Counts_handle[i].fetch_all())
                 tt_res.append(tt_handle[i].fetch_all())
-            FLR_res = -FLR_handle.fetch_all()
+            # FLR_res = -FLR_handle.fetch_all()
 
             self.tt_measure = []
             self.tt_S_measure = []
@@ -2167,7 +1684,7 @@ class OPX:
                                         enumerate(counts_res[i])])
                 # for window in range(len(self.tt_measure[i])):
                 #     self.tt_measure[i][window] = [elem + detector_delay[i] for elem in self.tt_measure[i][window]]
-                self.tt_S_measure += self.tt_measure[i][-1]
+                self.tt_S_measure += self.tt_measure[i][1]
                 self.tt_measure[i].sort()
             self.tt_S_measure.sort()
             ####    end get tt and counts from OPX to python   #####
@@ -2196,7 +1713,7 @@ class OPX:
         timest = time.strftime("%Y%m%d-%H%M%S")
         datest = time.strftime("%Y%m%d")
 
-        FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
+        # FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
         Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
 
         self.tt_measure_batch = []
@@ -2254,6 +1771,7 @@ class OPX:
         # # ax5 = plt.subplot2grid((6, 2), (4, 0), colspan=1, rowspan=2)
         # ax6 = plt.subplot2grid((6, 2), (4, 1), colspan=1, rowspan=2)
         #
+        print('1')
         while True:
             if self.keyPress == 'ESC':
                 print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
@@ -2351,8 +1869,9 @@ class OPX:
 
             # #
             #     ###########################################################################################################
-
+            print('2')
             while True:
+
                 # record time:
                 timest = time.strftime("%Y%m%d-%H%M%S")
                 datest = time.strftime("%Y%m%d")
@@ -2360,7 +1879,7 @@ class OPX:
                 # handles wait for values
                 for i in range(Num_Of_dets):
                     tt_handle[i].wait_for_values(1)
-                FLR_handle.wait_for_values(1)
+                #_handle.wait_for_values(1)
 
                 tt_res = []
                 counts_res = []
@@ -2368,7 +1887,7 @@ class OPX:
                 for i in range(Num_Of_dets):
                     counts_res.append(Counts_handle[i].fetch_all())
                     tt_res.append(tt_handle[i].fetch_all())
-                FLR_res = -FLR_handle.fetch_all()
+                # FLR_res = -FLR_handle.fetch_all()
 
                 self.tt_S_measure = []
                 self.tt_measure = []
@@ -2380,9 +1899,10 @@ class OPX:
                     #add delay to a detctors tt's
                     # for window in range(len(self.tt_measure[i])):
                     #     self.tt_measure[i][window] = [elem + detector_delay[i] for elem in self.tt_measure[i][window]]
-                    self.tt_S_measure += self.tt_measure[i][-1]
+                    self.tt_S_measure += self.tt_measure[i][1]
                     self.tt_measure[i].sort()
                 self.tt_S_measure.sort()
+                print(counts_res)
 
                 if self.tt_S_measure != self.tt_S_measure_batch[-1]:
                     break
@@ -2408,7 +1928,7 @@ class OPX:
                         self.tt_Single_det_SPRINT_events[i][x % histogram_bin_size] += 1
                         self.tt_Single_det_SPRINT_events_batch[i][x % histogram_bin_size] += 1
 
-                FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
+                # FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
                 if Counter < N:
                     Counter += 1
@@ -2487,8 +2007,8 @@ class OPX:
         filename_FLR = f'Flouresence.npz'
         filename_timestamp = f'Drops_time_stamps.npz'
 
-        if len(FLR_measurement) > 0:
-            np.savez(dirname + filename_FLR, FLR_measurement)
+        # if len(FLR_measurement) > 0:
+        #     np.savez(dirname + filename_FLR, FLR_measurement)
         if len(Exp_timestr_batch) > 0:
             np.savez(dirname + filename_timestamp, Exp_timestr_batch)
         if len(self.tt_S_SPRINT_events_batch) > 0:

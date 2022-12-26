@@ -45,8 +45,8 @@ controller = 'con1'
 
 # time tags vector size
 
-#parametrs of sizes
-vec_size = 3000
+# parameters of sizes
+vec_size = 6000
 num_of_detectors = 3
 opx_max_per_window = vec_size*num_of_detectors
 

@@ -305,12 +305,12 @@ Operation_Modes = {
                                     'PrePulse_duration': 10,  # [msec]
                                     'Shutter_open_time': 3,  # [msec]
                                     'Pulse_1_Repump_amp': 0.000001,
-                                    'Pulse_1_duration': 3*int(Config_Sprint.readout_pulse_sprint_len_N)/ 1e6,  # [msec]
+                                    'Pulse_1_duration': int(Config_Sprint.readout_pulse_sprint_len_N)/ 1e6,  # [msec]
                                     ## If with fountain:
                                     'Fountain_duration': 0.5,  # [msec]
                                     'Fountain_prep_duration': 0.5,  # [msec], Can't be zero!!!
                                     'M_window': int(Config_Sprint.readout_pulse_sprint_len_N), # [nsec]
-                                    'M_time': 3*int(Config_Sprint.readout_pulse_sprint_len_N) / 1e6,  # Pulse_length[nsec] * 1000 repetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
+                                    'M_time': int(Config_Sprint.readout_pulse_sprint_len_N) / 1e6,  # Pulse_length[nsec] * 1000 repetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
                                     'M_off_time': 5,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
                                    },
                     'PrePGC_Fountain': {'Triggering_Phase': 'Pulse_1',
