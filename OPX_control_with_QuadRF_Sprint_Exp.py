@@ -412,7 +412,6 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
         play("Sprint_experiment_pulses_S", "AOM_S")
         play("Sprint_experiment_pulses_N", "AOM_N")
 
-    # wait(int(0.8e6),"Dig_detectors") # TODO - added this delay to measurement so it would be syncronized with the pulses
     with for_(n, 0, n < m_time * 4, n + m_window):
         measure("readout_SPRINT", "Dig_detectors", None,
                 # time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
@@ -585,7 +584,7 @@ def opx_control(obj, qm):
 
             # FreeFall sequence:
             with if_(SPRINT_Exp_ON):
-                assign(x, (656000 * 2) // 4)
+                assign(x, (23000000+656000 * 2) // 4) # TODO -  added 23000000 to fix new delay due to wait(1000) in saving sprint data, should be fixed as well
             with else_():
                 assign(x, 0)
             FreeFall(FreeFall_duration - x, coils_timing)
