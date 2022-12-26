@@ -412,6 +412,7 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
         play("Sprint_experiment_pulses_S", "AOM_S")
         play("Sprint_experiment_pulses_N", "AOM_N")
 
+    wait(int(0.8e6),"Dig_detectors") # TODO - added this delay to measurement so it would be syncronized with the pulses
     with for_(n, 0, n < m_time * 4, n + m_window):
         measure("readout_SPRINT", "Dig_detectors", None,
                 # time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
@@ -2089,7 +2090,7 @@ class OPX:
         detector_delay = [0,0,0,0] # For detectors 5-8 "S"
 
 
-        histogram_bin_number = 3*self.M_window // (histogram_bin_size)
+        histogram_bin_number = self.M_window // (histogram_bin_size)
         time_bins = np.linspace(0, self.M_window, histogram_bin_number)
         spectrum_bin_number = bandwidth // freq_step + 1  # TODO: ask natan how many freq steps he uses
         freq_bins = np.linspace(-int(bandwidth / 2), int(bandwidth / 2), spectrum_bin_number)
@@ -2121,7 +2122,6 @@ class OPX:
         FLR_measurement = []
         Exp_timestr_batch = []
 
-        self.tt_S_binning = np.zeros(histogram_bin_number * 2)
         tt_S_SPRINT_events = np.zeros(histogram_bin_number)
         self.tt_S_SPRINT_events_batch = np.zeros(histogram_bin_size)
 
@@ -2172,7 +2172,7 @@ class OPX:
             self.tt_S_measure.sort()
             ####    end get tt and counts from OPX to python   #####
 
-            self.tt_S_binning = np.zeros(histogram_bin_number * 2)
+            self.tt_S_binning = np.zeros(histogram_bin_number +1)
             self.tt_S_SPRINT_events = np.zeros(histogram_bin_size)
             self.tt_S_SPRINT_events_batch = np.zeros(histogram_bin_size)
             self.tt_Single_det_SPRINT_events = np.zeros((Num_Of_dets,histogram_bin_size))
@@ -2181,7 +2181,7 @@ class OPX:
             # fold South:
             # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]: - for debugging assaf
             for x in [elem for elem in self.tt_S_measure]:
-                self.tt_S_binning[x // int(histogram_bin_size / 2)] += 1
+                self.tt_S_binning[x // int(histogram_bin_size)] += 1
                 self.tt_S_SPRINT_events[x % histogram_bin_size] += 1
                 self.tt_S_SPRINT_events_batch[x % histogram_bin_size] += 1
 
@@ -2387,10 +2387,10 @@ class OPX:
                 if self.tt_S_measure != self.tt_S_measure_batch[-1]:
                     break
             # assaf - if x=self.M_window the index is out of range so i added 1
-            self.tt_S_binning = np.zeros(histogram_bin_number * 2) #  self.tt_S_binning = np.zeros(histogram_bin_number * 2)
+            self.tt_S_binning = np.zeros(histogram_bin_number+1) #  self.tt_S_binning = np.zeros(histogram_bin_number * 2)
 
             for x in [elem for elem in self.tt_S_measure if elem < self.M_window]:
-                self.tt_S_binning[x // int(histogram_bin_size / 2)] += 1
+                self.tt_S_binning[x // int(histogram_bin_size)] += 1
 
             if lock_err < lock_err_threshold:
 
