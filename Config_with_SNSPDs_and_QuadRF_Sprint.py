@@ -46,8 +46,8 @@ controller = 'con1'
 # time tags vector size
 
 # parameters of sizes
-vec_size = 10000
-num_of_detectors = 3
+vec_size = 6000
+num_of_detectors = 5
 opx_max_per_window = vec_size*num_of_detectors
 
 
@@ -199,6 +199,7 @@ wf_samples = [confargs['wf_samples']['wf1'], confargs['wf_samples']['wf2']]
 correction_matrix = calc_cmat([confargs['correction_vars']['theta'], confargs['correction_vars']['k']])
 pulse_time = confargs['pulse_time']
 
+
 config = {
 
     'version': 1,
@@ -247,6 +248,8 @@ config = {
                 6: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
                 7: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
                 8: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                9: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                10: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
             },
         }
     },
@@ -268,7 +271,7 @@ config = {
 
         "MOT_AOM_0": {
             'singleInput': {
-                "port": (controller, 3)
+                "port": (controller, 2)
             },
             'operations': {
                 'MOT': "MOT_lock",
@@ -280,7 +283,7 @@ config = {
 
         "MOT_AOM_-": {
             'singleInput': {
-                "port": (controller, 2)
+                "port": (controller, 3)
             },
             'operations': {
                 'MOT': "MOT_lock",
@@ -369,7 +372,7 @@ config = {
         "Dig_detectors": {
             ## fake port ##
             "singleInput": {
-                "port": (controller, 6)
+                "port": (controller, 1)
             },
             'digitalInputs': {
                 "AWG_Switch": {
@@ -388,6 +391,8 @@ config = {
                 "out6": (controller, 6),
                 "out7": (controller, 7),
                 "out8": (controller, 8),
+                "out9": (controller, 9),
+                "out10": (controller, 10),
             },
             'outputs': {
                   'out1': (controller, 1)
@@ -404,7 +409,7 @@ config = {
         "Dig_detectors_spectrum": {
             ## fake port ##
             "singleInput": {
-                "port": (controller, 6)
+                "port": (controller, 1)
             },
             'digitalInputs': {
                 "AWG_Switch": {
@@ -437,7 +442,7 @@ config = {
         "FLR_detection": {
             # open fake:#
             "singleInput": {
-                "port": (controller, 7)
+                "port": (controller, 1)
             },
             #############
             "outputs": {
@@ -481,22 +486,43 @@ config = {
                 'ZeemanOFF': "Zeeman_off",
             },
         },
-
-        # 'antena1': {
-        #     "thread": "j",
-        #     'mixInputs': {
-        #         'I': ('con1', i_port),
-        #         'Q': ('con1', q_port),
-        #         'mixer': 'my_mixer',
-        #         'lo_frequency': lo_freq
-        #     },
-        #     'intermediate_frequency': im_freq,
-        #     'operations': {
-        #         'pulse1': 'pulse1_in',
-        #         'gaus': 'pulse_gaus',
-        #     }
-        # },
-
+        "AOM_ANALYZER_N": {
+            "singleInput": {
+                "port": (controller, 6),
+            },
+            'operations': {
+                'Const_open': "MOT_lock",
+                'Detection_pulses': "Square_detection_pulses",
+                'Homodyne_Pulse': "Homodyne_Pulse",
+                'Sprint_experiment_pulses_N': "Gaussian_Sprint_pulse_N"
+            },
+            'intermediate_frequency': IF_AOM_N,
+        },
+        "AOM_ANALYZER_S": {
+            "singleInput": {
+                "port": (controller, 7),
+            },
+            'operations': {
+                'Const_open': "MOT_lock",
+                'Detection_pulses': "Square_detection_pulses",
+                'Homodyne_Pulse': "Homodyne_Pulse",
+                'Sprint_experiment_pulses_N': "Gaussian_Sprint_pulse_N"
+            },
+            'intermediate_frequency': IF_AOM_N,
+        },
+        # for bell-experiment
+        "PULSER_ANCILLA": {
+            "singleInput": {
+                "port": (controller, 8),
+            },
+            'operations': {
+                'Const_open': "MOT_lock",
+                'Detection_pulses': "Square_detection_pulses",
+                'Homodyne_Pulse': "Homodyne_Pulse",
+                'Sprint_experiment_pulses_N': "Gaussian_Sprint_pulse_N"
+            },
+            'intermediate_frequency': IF_AOM_N,
+        },
         "PULSER_N": {
             "singleInput": {
                 "port": (controller, 9),
@@ -531,24 +557,6 @@ config = {
             },
             'intermediate_frequency': IF_AOM_S,
         },
-
-        # "AOM_LO": {
-        #     "singleInput": {
-        #         "port": (controller, 10)
-        #     },
-        #     'operations': {
-        #         'Const_open': "MOT_lock",
-        #         'Detection_pulses': "Square_detection_pulses",
-        #         'Homodyne_Pulse': "Homodyne_Pulse",
-        #         'Homodyne_Det_pulse': 'Homodyne_Det_pulse',
-        #     },
-        #     # 'outputs': {
-        #     #     'out1': (controller, 2)
-        #     # },
-        #     # 'time_of_flight': 0,
-        #     # 'smearing': 0,
-        #     'intermediate_frequency': IF_AOM_LO,
-        # },
     },
 
     "pulses": {

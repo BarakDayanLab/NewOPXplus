@@ -284,7 +284,7 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
 
 def Probe_counts_Measure_SNSPDs(m_off_time, m_time, m_window, shutter_open_time,
                                 ON_counts_st1, ON_counts_st2, ON_counts_st3, ON_counts_st4,
-                                ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8, ):
+                                ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8 ):
     """
     Measuring the OD with and without atoms.
 
@@ -345,10 +345,12 @@ def Probe_counts_Measure_SNSPDs(m_off_time, m_time, m_window, shutter_open_time,
         save(counts7, ON_counts_st7)
         save(counts8, ON_counts_st8)
 
+
+
 def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
                ON_counts_st1, ON_counts_st2, ON_counts_st3, ON_counts_st4,
-               ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8,
-               tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st):
+               ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8, ON_counts_st9, ON_counts_st10,
+               tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8,tt_st_9, tt_st_10, rep_st):
     """
      Generates train of 8 pulses (to be configured from config if each of thenm is north ore south)
      for SPRINT experiments
@@ -379,6 +381,8 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
     counts6 = declare(int)
     counts7 = declare(int)
     counts8 = declare(int)
+    counts9 = declare(int)
+    counts10 = declare(int)
 
     tt_vec1 = declare(int, size=vec_size)
     tt_vec2 = declare(int, size=vec_size)
@@ -388,6 +392,8 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
     tt_vec6 = declare(int, size=vec_size)
     tt_vec7 = declare(int, size=vec_size)
     tt_vec8 = declare(int, size=vec_size)
+    tt_vec9 = declare(int, size=vec_size)
+    tt_vec10 = declare(int, size=vec_size)
 
     n = declare(int)
     t = declare(int)
@@ -414,6 +420,8 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
                 time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
                 time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
                 time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
+                time_tagging.digital(tt_vec9, m_window, element_output="out8", targetLen=counts9),
+                time_tagging.digital(tt_vec10, m_window, element_output="out8", targetLen=counts10),
                 )
 
         ## Save Data: ##
@@ -427,15 +435,21 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
         save(counts6, ON_counts_st6)
         save(counts7, ON_counts_st7)
         save(counts8, ON_counts_st8)
+        save(counts9, ON_counts_st9)
+        save(counts10, ON_counts_st10)
 
         with for_(m, 0, m < vec_size, m + 1):
             wait(1000)
+            save(tt_vec1[m], tt_st_1)
+            save(tt_vec2[m], tt_st_2)
             save(tt_vec3[m], tt_st_3)
             save(tt_vec4[m], tt_st_4)
             save(tt_vec5[m], tt_st_5)
             save(tt_vec6[m], tt_st_6)
             save(tt_vec7[m], tt_st_7)
             save(tt_vec8[m], tt_st_8)
+            save(tt_vec9[m], tt_st_9)
+            save(tt_vec10[m], tt_st_10)
             save(n, rep_st)
 
 
@@ -513,6 +527,8 @@ def opx_control(obj, qm):
         ON_counts_st6 = declare_stream()
         ON_counts_st7 = declare_stream()
         ON_counts_st8 = declare_stream()
+        ON_counts_st9 = declare_stream()
+        ON_counts_st10 = declare_stream()
         tt_st_1 = declare_stream()
         tt_st_2 = declare_stream()
         tt_st_3 = declare_stream()
@@ -521,6 +537,8 @@ def opx_control(obj, qm):
         tt_st_6 = declare_stream()
         tt_st_7 = declare_stream()
         tt_st_8 = declare_stream()
+        tt_st_9 = declare_stream()
+        tt_st_10 = declare_stream()
         rep_st = declare_stream()
         AntiHelmholtz_ON_st = declare_stream()
         FLR_st = declare_stream()
@@ -587,8 +605,8 @@ def opx_control(obj, qm):
                     align("Dig_detectors", "PULSER_N", "PULSER_S")
                     Sprint_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
                                ON_counts_st1, ON_counts_st2, ON_counts_st3, ON_counts_st4,
-                               ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8,
-                               tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st)
+                               ON_counts_st5, ON_counts_st6, ON_counts_st7,ON_counts_st8, ON_counts_st9, ON_counts_st10,
+                               tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, tt_st_9, tt_st_10, rep_st)
                     save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
                     with if_(AntiHelmholtz_ON):
                         save(FLR, FLR_st)
