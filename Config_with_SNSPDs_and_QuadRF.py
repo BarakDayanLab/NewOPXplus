@@ -547,7 +547,7 @@ config = {
         #     'intermediate_frequency': 0,
         # },
 
-        # "AOM_N": {
+        # "PULSER_N": {
         #     "singleInput": {
         #         "port": (controller, 9),
         #     },

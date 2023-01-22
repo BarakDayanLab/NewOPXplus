@@ -252,7 +252,7 @@ Super_Sprint_Config = {
             },
         },
 
-        "AOM_N": {
+        "PULSER_N": {
             "singleInput": {
                 "port": (controller, 9),
             },
@@ -404,7 +404,7 @@ with program() as dig:
         # play("MOT", "AOM_TOP_1")
     with infinite_loop_():
         with for_(n, 0, n < rep, n+1):
-            play("Const_open", "AOM_N")
+            play("Const_open", "PULSER_N")
             play("Const_open", "AOM_S")
             # play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
             # play("CRUS_pulse", "Pulser_CRUS")

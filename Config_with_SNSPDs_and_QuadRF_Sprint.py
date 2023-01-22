@@ -46,7 +46,7 @@ controller = 'con1'
 # time tags vector size
 
 # parameters of sizes
-vec_size = 6000
+vec_size = 10000
 num_of_detectors = 3
 opx_max_per_window = vec_size*num_of_detectors
 
@@ -497,7 +497,7 @@ config = {
         #     }
         # },
 
-        "AOM_N": {
+        "PULSER_N": {
             "singleInput": {
                 "port": (controller, 9),
             },
