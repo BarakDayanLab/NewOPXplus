@@ -262,7 +262,7 @@ Super_Sprint_Config = {
             'intermediate_frequency': IF_AOM_N,
         },
 
-        "AOM_S": {
+        "PULSER_S": {
             "singleInput": {
                 "port": (controller, 10),
             },
@@ -405,7 +405,7 @@ with program() as dig:
     with infinite_loop_():
         with for_(n, 0, n < rep, n+1):
             play("Const_open", "PULSER_N")
-            play("Const_open", "AOM_S")
+            play("Const_open", "PULSER_S")
             # play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
             # play("CRUS_pulse", "Pulser_CRUS")
 

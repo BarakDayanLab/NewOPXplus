@@ -57,7 +57,7 @@ def MOT(mot_repetitions):
     """
     FLR = declare(fixed)
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-3'_for_interference", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors_spectrum", "Dig_detectors") # , "PULSER_N", "AOM_S")
+          "AOM_2-2/3'", "AOM_2-3'_for_interference", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors_spectrum", "Dig_detectors") # , "PULSER_N", "PULSER_S")
 
     ## MOT build-up ##
     n = declare(int)
@@ -74,7 +74,7 @@ def MOT(mot_repetitions):
         # play("OD_FS" * amp(0.1), "AOM_2-3'_for_interference")
 
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors", "Dig_detectors_spectrum") #, "PULSER_N", "AOM_S")
+          "AOM_2-2/3'", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors", "Dig_detectors_spectrum") #, "PULSER_N", "PULSER_S")
 
     return FLR
 
@@ -222,7 +222,7 @@ def FreeFall(freefall_duration, coils_timing):
 
     ## Aligning all the different elements used during the freefall time of the experiment ##
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'", "AOM_2-2'",
-          "Measurement", "PULSER_N", "AOM_S") # , "Dig_detectors", "Dig_detectors_spectrum")
+          "Measurement", "PULSER_N", "PULSER_S") # , "Dig_detectors", "Dig_detectors_spectrum")
 
     ## Zeeman Coils turn-on sequence ##
     wait(coils_timing, "Zeeman_Coils")
@@ -393,15 +393,15 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
     t = declare(int)
     m = declare(int)
 
-    align("PULSER_N", "AOM_S", "Dig_detectors")
-    play("Const_open", "AOM_S", duration=shutter_open_time)
-    # wait(shutter_open_time, "AOM_S")
-    align("PULSER_N", "AOM_S", "Dig_detectors")
+    align("PULSER_N", "PULSER_S", "Dig_detectors")
+    play("Const_open", "PULSER_S", duration=shutter_open_time)
+    # wait(shutter_open_time, "PULSER_S")
+    align("PULSER_N", "PULSER_S", "Dig_detectors")
 
     # play("OD", "AOM_2-2/3'", duration=m_time)  # CRUS with pulses from AWG and constantly ON-resonance
 
     with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.Sprint_Exp_Gaussian_samples_S))): #assaf comment debbuging
-        play("Sprint_experiment_pulses_S", "AOM_S")
+        play("Sprint_experiment_pulses_S", "PULSER_S")
         play("Sprint_experiment_pulses_N", "PULSER_N")
 
     with for_(n, 0, n < m_time * 4, n + m_window):
@@ -576,7 +576,7 @@ def opx_control(obj, qm):
                 play("Depump", "AOM_2-2'", duration=(PrePulse_duration - shutter_open_time))
             with else_():
                 wait(PrePulse_duration, "Cooling_Sequence")
-            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "PULSER_N", "AOM_S" , "Dig_detectors")
+            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "PULSER_N", "PULSER_S" , "Dig_detectors")
 
             with if_(Trigger_Phase == 4):  # when trigger on pulse 1
                 ## Trigger QuadRF Sequence #####################
@@ -584,7 +584,7 @@ def opx_control(obj, qm):
                 ################################################
             with if_((Imaging_Phase == 4) & (Pulse_1_duration > 0)):  # 4 means imaging phase on pulse_1
                 with if_(SPRINT_Exp_ON):
-                    align("Dig_detectors", "PULSER_N", "AOM_S")
+                    align("Dig_detectors", "PULSER_N", "PULSER_S")
                     Sprint_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
                                ON_counts_st1, ON_counts_st2, ON_counts_st3, ON_counts_st4,
                                ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8,
@@ -592,7 +592,7 @@ def opx_control(obj, qm):
                     save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
                     with if_(AntiHelmholtz_ON):
                         save(FLR, FLR_st)
-                    align("Dig_detectors", "PULSER_N", "AOM_S")
+                    align("Dig_detectors", "PULSER_N", "PULSER_S")
                 with else_():
                     with if_(Probe_max_counts_Exp_ON):
                         align("Dig_detectors", "AOM_2-2/3'")

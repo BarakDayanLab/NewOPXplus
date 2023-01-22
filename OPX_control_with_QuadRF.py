@@ -42,7 +42,7 @@ def find_nearest(array, value):
 
 
 all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils",
-                "FLR_detection", "Measurement", "AOM_2-2/3'", "AOM_2-2/3'_detuned", "AOM_2-3'_for_interference"]  #, "PULSER_N", "AOM_S", "AOM_LO")
+                "FLR_detection", "Measurement", "AOM_2-2/3'", "AOM_2-2/3'_detuned", "AOM_2-3'_for_interference"]  #, "PULSER_N", "PULSER_S", "AOM_LO")
 
 
 def MOT(mot_repetitions):
@@ -56,7 +56,7 @@ def MOT(mot_repetitions):
     FLR = declare(fixed)
     # update_frequency("AOM_2-2/3'", 180e6)
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-3'_for_interference", "FLR_detection", "Measurement")  #, "PULSER_N", "AOM_S", "AOM_LO")
+          "AOM_2-2/3'", "AOM_2-3'_for_interference", "FLR_detection", "Measurement")  #, "PULSER_N", "PULSER_S", "AOM_LO")
 
     ## MOT build-up ##
     n = declare(int)
@@ -72,7 +72,7 @@ def MOT(mot_repetitions):
     #     # play("OD_FS" * amp(0.03), "AOM_2-3'_for_interference")
 
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-3'_for_interference", "FLR_detection", "Measurement")  #, "PULSER_N", "AOM_S", "AOM_LO")
+          "AOM_2-2/3'", "AOM_2-3'_for_interference", "FLR_detection", "Measurement")  #, "PULSER_N", "PULSER_S", "AOM_LO")
 
     return FLR
 
@@ -88,7 +88,7 @@ def MOT_no_Antihelmholtz(mot_repetitions):
     FLR_OFF = declare(fixed)
 
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-2/3'_detuned", "FLR_detection", "Measurement", "Dig_detectors")  #, "PULSER_N", "AOM_S")
+          "AOM_2-2/3'", "AOM_2-2/3'_detuned", "FLR_detection", "Measurement", "Dig_detectors")  #, "PULSER_N", "PULSER_S")
 
     ## MOT build-up ##
     n = declare(int)
@@ -103,7 +103,7 @@ def MOT_no_Antihelmholtz(mot_repetitions):
         play("OD_FS" * amp(0.05), "AOM_2-3'_for_interference")
 
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-2/3'_detuned", "FLR_detection", "Measurement", "Dig_detectors")  #, "PULSER_N", "AOM_S")
+          "AOM_2-2/3'", "AOM_2-2/3'_detuned", "FLR_detection", "Measurement", "Dig_detectors")  #, "PULSER_N", "PULSER_S")
 
     return FLR_OFF
 
@@ -257,7 +257,7 @@ def FreeFall(freefall_duration, coils_timing):
 
     ## Aligning all the different elements used during the freefall time of the experiment ##
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'",
-          "AOM_2-2/3'_detuned", "Measurement")  #, "PULSER_N", "AOM_S")
+          "AOM_2-2/3'_detuned", "Measurement")  #, "PULSER_N", "PULSER_S")
 
     ## Zeeman Coils turn-on sequence ##
     wait(coils_timing, "Zeeman_Coils")
@@ -731,7 +731,7 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
 #     n = declare(int)
 #     frac = declare(fixed, value=0.5 / NREP)
 #
-#     align("PULSER_N", "AOM_S", "AOM_LO", "Pulse_EOM")
+#     align("PULSER_N", "PULSER_S", "AOM_LO", "Pulse_EOM")
 #     play("Detection_pulses", "Pulse_EOM")
 #
 #     # First pulse, phase = 0

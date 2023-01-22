@@ -512,7 +512,7 @@ config = {
             # 'smearing': 0,
         },
 
-        "AOM_S": {
+        "PULSER_S": {
             "singleInput": {
                 "port": (controller, 10),
             },
