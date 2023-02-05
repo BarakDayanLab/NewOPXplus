@@ -44,7 +44,7 @@ def find_nearest(array, value):
 
 
 all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils",
-                "FLR_detection", "Measurement", "AOM_2-2/3'", "AOM_2-2/3'_detuned", "AOM_2-3'_for_interference"]  #, "PULSER_N", "PULSER_S", "AOM_LO")
+                "FLR_detection", "Measurement", "AOM_2-2/3'", "AOM_2-2/3'_detuned", "AOM_2-3'_for_interference"]  #, "PULSER_N", "PULSER_S", "AOM_ANALYZER_N", "AOM_ANALYZER_S"  , "AOM_LO")
 
 
 def MOT(mot_repetitions):
@@ -58,7 +58,7 @@ def MOT(mot_repetitions):
     FLR = declare(fixed)
     # update_frequency("AOM_2-2/3'", 180e6)
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-3'_for_interference", "FLR_detection", "Measurement")  #, "PULSER_N", "PULSER_S", "AOM_LO")
+          "AOM_2-2/3'", "AOM_2-3'_for_interference", "FLR_detection", "Measurement")  #, "PULSER_N", "PULSER_S", "AOM_ANALYZER_N", "AOM_ANALYZER_S"  , "AOM_LO")
 
     ## MOT build-up ##
     n = declare(int)
@@ -74,7 +74,7 @@ def MOT(mot_repetitions):
     #     # play("OD_FS" * amp(0.03), "AOM_2-3'_for_interference")
 
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-3'_for_interference", "FLR_detection", "Measurement")  #, "PULSER_N", "PULSER_S", "AOM_LO")
+          "AOM_2-2/3'", "AOM_2-3'_for_interference", "FLR_detection", "Measurement")  #, "PULSER_N", "PULSER_S", "AOM_ANALYZER_N", "AOM_ANALYZER_S"  , "AOM_LO")
 
     return FLR
 

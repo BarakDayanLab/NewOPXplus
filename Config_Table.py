@@ -22,13 +22,13 @@ calibrationData = None
 Initial_Values = {
     # 'Operation_Mode': 'Magnetic_fountain',
     # 'Operation_Mode': 'Imaging',
-    # 'Operation_Mode': 'PrePGC_Fountain',
+    'Operation_Mode': 'PrePGC_Fountain',
     # 'Operation_Mode': 'OD_FS',
     # 'Operation_Mode': 'Depump',
     # 'Operation_Mode': 'Transit_Exp',
     # 'Operation_Mode': 'Spectrum_Exp',
     # 'Operation_Mode': 'CRUS_Exp',
-    'Operation_Mode': 'SPRINT_Exp',
+    # 'Operation_Mode': 'SPRINT_Exp',
     # 'Operation_Mode': 'Continuous',
     'Imaging_Phase': 'Pulse_1',
     'Triggering_Phase': -1,  # Don't change this. Triggering phase should be defined within each operation mode (see below)

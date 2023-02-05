@@ -57,7 +57,7 @@ def MOT(mot_repetitions):
     """
     FLR = declare(fixed)
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-3'_for_interference", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors_spectrum", "Dig_detectors") # , "PULSER_N", "PULSER_S")
+          "AOM_2-2/3'", "AOM_2-3'_for_interference", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors_spectrum", "Dig_detectors") # , "PULSER_N", "PULSER_S", "AOM_ANALYZER_N", "AOM_ANALYZER_S"  )
 
     ## MOT build-up ##
     n = declare(int)
@@ -81,7 +81,7 @@ def MOT(mot_repetitions):
 
 def Pulse_const(total_pulse_duration):
     """
-    This pulse id devided to two parts:
+    This pulse is divided into two parts:
         1) Preparation sequence where different parameters changes such as the RF amplitudes to the 0 - + AOMs (scan each separately)
         2) Part where we keep the different values constant for the 0 - + AOMs
 
@@ -222,7 +222,7 @@ def FreeFall(freefall_duration, coils_timing):
 
     ## Aligning all the different elements used during the freefall time of the experiment ##
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'", "AOM_2-2'",
-          "Measurement", "PULSER_N", "PULSER_S") # , "Dig_detectors", "Dig_detectors_spectrum")
+          "Measurement", "PULSER_N", "PULSER_S", "AOM_ANALYZER_N", "AOM_ANALYZER_S","PULSER_ANCILLA") # , "Dig_detectors", "Dig_detectors_spectrum")
 
     ## Zeeman Coils turn-on sequence ##
     wait(coils_timing, "Zeeman_Coils")
@@ -280,6 +280,8 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
     play("OD_FS", "AOM_2-2/3'", duration=OD_pulse_duration)
 
 
+
+
 def Probe_counts_Measure_SNSPDs(m_off_time, m_time, m_window, shutter_open_time,
                                 ON_counts_st1, ON_counts_st2, ON_counts_st3, ON_counts_st4,
                                 ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8 ):
@@ -322,8 +324,8 @@ def Probe_counts_Measure_SNSPDs(m_off_time, m_time, m_window, shutter_open_time,
                 counting.digital(counts1, m_window, element_outputs="out1"),
                 counting.digital(counts2, m_window, element_outputs="out2"),
                 counting.digital(counts3, m_window, element_outputs="out3"),
-                # counting.digital(counts4, m_window, element_outputs="out4"),
-                # counting.digital(counts5, m_window, element_outputs="out5"),
+                counting.digital(counts4, m_window, element_outputs="out4"),
+                counting.digital(counts5, m_window, element_outputs="out5"),
                 counting.digital(counts6, m_window, element_outputs="out6"),
                 counting.digital(counts7, m_window, element_outputs="out7"),
                 counting.digital(counts8, m_window, element_outputs="out8"),
@@ -337,11 +339,12 @@ def Probe_counts_Measure_SNSPDs(m_off_time, m_time, m_window, shutter_open_time,
         save(counts1, ON_counts_st1)
         save(counts2, ON_counts_st2)
         save(counts3, ON_counts_st3)
-        # save(counts4, ON_counts_st4)
-        # save(counts5, ON_counts_st5)
+        save(counts4, ON_counts_st4)
+        save(counts5, ON_counts_st5)
         save(counts6, ON_counts_st6)
         save(counts7, ON_counts_st7)
         save(counts8, ON_counts_st8)
+
 
 
 def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
@@ -396,29 +399,32 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
     t = declare(int)
     m = declare(int)
 
-    align("PULSER_N", "PULSER_S", "Dig_detectors")
+    align("PULSER_N", "PULSER_S", "AOM_ANALYZER_N", "AOM_ANALYZER_S","PULSER_ANCILLA", "Dig_detectors")
     play("Const_open", "PULSER_S", duration=shutter_open_time)
     # wait(shutter_open_time, "PULSER_S")
-    align("PULSER_N", "PULSER_S", "Dig_detectors")
+    align("PULSER_N", "PULSER_S", "AOM_ANALYZER_N", "AOM_ANALYZER_S","PULSER_ANCILLA", "Dig_detectors")
 
     # play("OD", "AOM_2-2/3'", duration=m_time)  # CRUS with pulses from AWG and constantly ON-resonance
 
     with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.Sprint_Exp_Gaussian_samples_S))): #assaf comment debbuging
         play("Sprint_experiment_pulses_S", "PULSER_S")
         play("Sprint_experiment_pulses_N", "PULSER_N")
+        play("Sprint_experiment_pulses_S", "AOM_ANALYZER_S")
+        play("Sprint_experiment_pulses_N", "AOM_ANALYZER_N")
+        play("Sprint_experiment_pulses_N", "PULSER_ANCILLA")
 
     with for_(n, 0, n < m_time * 4, n + m_window):
         measure("readout_SPRINT", "Dig_detectors", None,
                 time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
                 time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
                 time_tagging.digital(tt_vec3, m_window, element_output="out3", targetLen=counts3),
-                # time_tagging.digital(tt_vec4, m_window, element_output="out4", targetLen=counts4),
-                # time_tagging.digital(tt_vec5, m_window, element_output="out5", targetLen=counts5),
+                time_tagging.digital(tt_vec4, m_window, element_output="out4", targetLen=counts4),
+                time_tagging.digital(tt_vec5, m_window, element_output="out5", targetLen=counts5),
                 time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
                 time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
                 time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
-                # time_tagging.digital(tt_vec9, m_window, element_output="out8", targetLen=counts9),
-                # time_tagging.digital(tt_vec10, m_window, element_output="out8", targetLen=counts10),
+                time_tagging.digital(tt_vec9, m_window, element_output="out9", targetLen=counts9),
+                time_tagging.digital(tt_vec10, m_window, element_output="out10", targetLen=counts10),
                 )
 
         ## Save Data: ##
@@ -427,26 +433,26 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
         save(counts1, ON_counts_st1)
         save(counts2, ON_counts_st2)
         save(counts3, ON_counts_st3)
-        # save(counts4, ON_counts_st4)
-        # save(counts5, ON_counts_st5)
+        save(counts4, ON_counts_st4)
+        save(counts5, ON_counts_st5)
         save(counts6, ON_counts_st6)
         save(counts7, ON_counts_st7)
         save(counts8, ON_counts_st8)
-        # save(counts9, ON_counts_st9)
-        # save(counts10, ON_counts_st10)
+        save(counts9, ON_counts_st9)
+        save(counts10, ON_counts_st10)
 
         with for_(m, 0, m < vec_size, m + 1):
             wait(1000)
             save(tt_vec1[m], tt_st_1)
             save(tt_vec2[m], tt_st_2)
             save(tt_vec3[m], tt_st_3)
-            # save(tt_vec4[m], tt_st_4)
-            # save(tt_vec5[m], tt_st_5)
+            save(tt_vec4[m], tt_st_4)
+            save(tt_vec5[m], tt_st_5)
             save(tt_vec6[m], tt_st_6)
             save(tt_vec7[m], tt_st_7)
             save(tt_vec8[m], tt_st_8)
-            # save(tt_vec9[m], tt_st_9)
-            # save(tt_vec10[m], tt_st_10)
+            save(tt_vec9[m], tt_st_9)
+            save(tt_vec10[m], tt_st_10)
             save(n, rep_st)
 
 
@@ -591,7 +597,7 @@ def opx_control(obj, qm):
                 play("Depump", "AOM_2-2'", duration=(PrePulse_duration - shutter_open_time))
             with else_():
                 wait(PrePulse_duration, "Cooling_Sequence")
-            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "PULSER_N", "PULSER_S" , "Dig_detectors")
+            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "PULSER_N", "PULSER_S", "AOM_ANALYZER_N", "AOM_ANALYZER_S", "PULSER_ANCILLA", "Dig_detectors")
 
             with if_(Trigger_Phase == 4):  # when trigger on pulse 1
                 ## Trigger QuadRF Sequence #####################
@@ -599,7 +605,7 @@ def opx_control(obj, qm):
                 ################################################
             with if_((Imaging_Phase == 4) & (Pulse_1_duration > 0)):  # 4 means imaging phase on pulse_1
                 with if_(SPRINT_Exp_ON):
-                    align("Dig_detectors", "PULSER_N", "PULSER_S")
+                    align("Dig_detectors", "PULSER_N", "PULSER_S", "AOM_ANALYZER_N", "AOM_ANALYZER_S","PULSER_ANCILLA")
                     Sprint_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
                                ON_counts_st1, ON_counts_st2, ON_counts_st3, ON_counts_st4,
                                ON_counts_st5, ON_counts_st6, ON_counts_st7,ON_counts_st8, ON_counts_st9, ON_counts_st10,
@@ -607,7 +613,7 @@ def opx_control(obj, qm):
                     save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
                     with if_(AntiHelmholtz_ON):
                         save(FLR, FLR_st)
-                    align("Dig_detectors", "PULSER_N", "PULSER_S")
+                    align("Dig_detectors", "PULSER_N", "PULSER_S", "AOM_ANALYZER_N", "AOM_ANALYZER_S","PULSER_ANCILLA")
                 with else_():
                     with if_(Probe_max_counts_Exp_ON):
                         align("Dig_detectors", "AOM_2-2/3'")
@@ -693,22 +699,22 @@ def opx_control(obj, qm):
             # (ON_counts_st1 + ON_counts_st2 ).buffer(obj.rep).save('North_Probe')
             # (ON_counts_st5 + ON_counts_st6 + ON_counts_st7 + ON_counts_st8).buffer(obj.rep).save('South_Probe')
             # (ON_counts_st5 + ON_counts_st6+ ON_counts_st7 + ON_counts_st8).buffer(obj.rep).save('South_Probe')
-            ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
-            ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
+            # ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
+            # ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
             ON_counts_st3.buffer(obj.rep).save('Det6_Counts')
-            # ON_counts_st4.buffer(obj.rep).save('Det5_Counts')
-            # ON_counts_st5.buffer(obj.rep).save('Det1_Counts') # assaf - renamed to det3 to ease further calculation
-            ON_counts_st6.buffer(obj.rep).save('Det6_Counts')
-            ON_counts_st7.buffer(obj.rep).save('Det7_Counts')
-            ON_counts_st8.buffer(obj.rep).save('Det8_Counts')
-            (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
-            (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
-            (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
-            # (tt_st_4 + rep_st).buffer(obj.vec_size * obj.rep).save('Det5_Probe_TT')
-            # (tt_st_5 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT') # assaf - renamed to det3 to ease further calculation
-            (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep).save('Det6_Probe_TT')
-            (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det7_Probe_TT')
-            (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det8_Probe_TT')
+            ON_counts_st4.buffer(obj.rep).save('Det5_Counts')
+            ON_counts_st5.buffer(obj.rep).save('Det1_Counts') # assaf - renamed to det3 to ease further calculation
+            ON_counts_st6.buffer(obj.rep).save('Det2_Counts') # assaf - renamed to det4 to ease further calculation
+            ON_counts_st7.buffer(obj.rep).save('Det3_Counts')
+            ON_counts_st8.buffer(obj.rep).save('Det4_Counts')
+            # (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
+            # (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
+            (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det6_Probe_TT')
+            (tt_st_4 + rep_st).buffer(obj.vec_size * obj.rep).save('Det5_Probe_TT')
+            (tt_st_5 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT') # assaf - renamed to det3 to ease further calculation
+            (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT') # assaf - renamed to det4 to ease further calculation
+            (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
+            (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det4_Probe_TT')
             FLR_st.save('FLR_measure')
             AntiHelmholtz_ON_st.save("antihelmholtz_on")
 
@@ -2076,7 +2082,7 @@ class OPX:
         ###
         Num_Of_dets = 6
         # detector_delay = [5,0,0,15] # For detectors 1-4 "N"
-        detector_delay = [0, 0, 0, 0] # For detectors 5-8 "S"
+        detector_delay = [0,0,0,0] # For detectors 5-8 "S"
 
 
         histogram_bin_number = self.M_window // (histogram_bin_size)
@@ -2098,8 +2104,7 @@ class OPX:
         # tt_S_handle = self.job.result_handles.get("South_Probe_TT")
         Counts_handle = []
         tt_handle = []
-        Num_Of_dets = [1, 2, 3, 6, 7, 8]
-        for i in Num_Of_dets:
+        for i in range(Num_Of_dets):
             Counts_handle.append(self.job.result_handles.get("Det"+str(i+1)+"_Counts"))
             tt_handle.append(self.job.result_handles.get("Det"+str(i+1)+"_Probe_TT"))
 
