@@ -407,6 +407,7 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
         play("Sprint_experiment_pulses_S", "PULSER_S")
         play("Sprint_experiment_pulses_N", "PULSER_N")
 
+    wait(100, "Dig_detectors")
     with for_(n, 0, n < m_time * 4, n + m_window):
         measure("readout_SPRINT", "Dig_detectors", None,
                 time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
@@ -2534,7 +2535,7 @@ class OPX:
         self.Save_SNSPDs_Transit_Measurement_with_tt(N, Histogram_bin_size, Transit_profile_bin_size, preComment,
                                                      total_counts_threshold, transit_counts_threshold, Max_probe_counts)
 
-    def Start_Sprint_Exp_with_tt(self, N=100, Histogram_bin_size=720,#int(len(Config.CRUS_pulser_samples)),
+    def Start_Sprint_Exp_with_tt(self, N=100, Histogram_bin_size=int(len(Config.Sprint_Exp_Gaussian_samples_S)),
                                    Transit_profile_bin_size=100, preComment=None, lock_err_threshold=1,
                                    transit_counts_threshold=5, transit_time_threshold=6000, bandwidth=80,
                                    freq_step=4):
