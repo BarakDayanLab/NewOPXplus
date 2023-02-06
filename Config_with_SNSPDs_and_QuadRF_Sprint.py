@@ -386,13 +386,9 @@ config = {
                 "out1": (controller, 1),
                 "out2": (controller, 2),
                 "out3": (controller, 3),
-                # "out4": (controller, 4),
-                # "out5": (controller, 5),
                 "out6": (controller, 6),
                 "out7": (controller, 7),
                 "out8": (controller, 8),
-                # "out9": (controller, 9),
-                # "out10": (controller, 10),
             },
             'outputs': {
                   'out1': (controller, 1)
