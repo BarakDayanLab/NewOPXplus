@@ -125,11 +125,11 @@ efficiency = 0.5 # the efficiency of the system
 num_of_photons_per_sequence_S = num_of_photons_det_pulses * num_of_det_pulses_S + num_of_photons_sprint_pulses * num_of_sprint_pulses_S
 num_of_photons_per_sequence_N = num_of_photons_det_pulses * num_of_det_pulses_N + num_of_photons_sprint_pulses * num_of_sprint_pulses_N
 
-def Sprint_Exp_Gaussian_samples(det_pulses_amp = [0.4]*6,sprint_pulses_amp = [0.4]*4,num_init_zeros = 10,num_between_zeros = 10, num_fin_zeros = 0):
+def Sprint_Exp_Gaussian_samples(det_pulse_len = 30, det_pulses_amp = [0.4]*6,sprint_pulses_amp = [0.4]*4 ,num_init_zeros = 10,num_between_zeros = 10, num_fin_zeros = 0):
     Sprint_Exp_Gaussian_samples = [0] * num_init_zeros
     for n in det_pulses_amp:
         # Sprint_Exp_Gaussian_samples += [n] * 50 + [0] * num_between_zeros
-        Sprint_Exp_Gaussian_samples += (signal.gaussian(det_pulse_len_S, std=(30 / 2.355)) * n).tolist() + [0] * num_between_zeros
+        Sprint_Exp_Gaussian_samples += (signal.gaussian(det_pulse_len, std=(det_pulse_len / 2.355)) * n).tolist() + [0] * num_between_zeros
     for m in sprint_pulses_amp:
         # Sprint_Exp_Gaussian_samples += [m] * 110 + [0] * num_between_zeros
         Sprint_Exp_Gaussian_samples += (signal.gaussian(110, std=(110 / 2.355)) * m).tolist() + [0] * num_between_zeros

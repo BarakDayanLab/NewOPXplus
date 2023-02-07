@@ -586,21 +586,21 @@ def opx_control(obj, qm):
                 pause()
                 assign(i, IO1)
 
-        # with stream_processing():
-        #     ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
-        #     ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
-        #     ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
-        #     ON_counts_st6.buffer(obj.rep).save('Det6_Counts')
-        #     ON_counts_st7.buffer(obj.rep).save('Det7_Counts')
-        #     ON_counts_st8.buffer(obj.rep).save('Det8_Counts')
-        #     (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
-        #     (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
-        #     (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
-        #     (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep).save('Det6_Probe_TT')
-        #     (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det7_Probe_TT')
-        #     (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det8_Probe_TT')
-        #     FLR_st.save('FLR_measure')
-        #     AntiHelmholtz_ON_st.save("antihelmholtz_on")
+        with stream_processing():
+            ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
+            ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
+            ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
+            ON_counts_st6.buffer(obj.rep).save('Det6_Counts')
+            ON_counts_st7.buffer(obj.rep).save('Det7_Counts')
+            ON_counts_st8.buffer(obj.rep).save('Det8_Counts')
+            (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
+            (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
+            (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
+            (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep).save('Det6_Probe_TT')
+            (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det7_Probe_TT')
+            (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det8_Probe_TT')
+            FLR_st.save('FLR_measure')
+            AntiHelmholtz_ON_st.save("antihelmholtz_on")
 
     job = qm.execute(opx_control_prog, flags=['auto-element-thread'])
 
@@ -642,7 +642,7 @@ class OPX:
         qrfContr = QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 4), topticaLockWhenUpdating=False,
                                         debugging=False, continuous=False)
         self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
-        self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev, initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '100MHz', 'CH3_amp': '31dbm'},
+        self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev, initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
                                                           updateChannels=[3], debugging=False, continuous=False))  # updates values on QuadRF (uploads table)
         #self.QuadRFControllers.append(QuadRFFrequencyScannerController(MOGdevice = qrfContr.dev, channel=2, debugging=False))  # updates values on QuadRF (uploads table)
 
@@ -1167,11 +1167,11 @@ class OPX:
                     self.tt_Single_det_SPRINT_events_batch[i][x % exp_sequence_len] += 1
 
         # get the average number of photons in detection pulse
-        delay= 10 # choose the correct delay in samples to the first detection pulse
+        delay = 30 # choose the correct delay in samples to the first detection pulse
         self.get_avg_num_of_photons_in_det_pulse(det_pulse_len=(Config.det_pulse_len+Config.num_between_zeros),
                                                  delay=delay, num_of_det_pulses=len(Config.det_pulse_amp),
                                                  number_of_exp_sequences=number_of_exp_sequences)
-        print('average number of photons in detection pulses is:',self.avg_num_of_photons_in_det_pulse)
+        print('average number of photons in detection pulses is:', self.avg_num_of_photons_in_det_pulse)
         ## record time
         timest = time.strftime("%Y%m%d-%H%M%S")
         datest = time.strftime("%Y%m%d")
