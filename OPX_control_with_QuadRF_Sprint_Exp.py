@@ -1124,10 +1124,55 @@ class OPX:
         return [(np.average(Probe_counts_North) * 1000) / self.M_time,
                 (np.average(Probe_counts_South) * 1000) / self.M_time]
 
+    def find_transits(self):
+        current_transit = []
+        all_transits = []
+        all_transits_aligned_first = []
+        t_transit = []
+        t_transit_batch = []
+        transit_histogram = []
+        for index, value in enumerate(tt_S_binning_resonance):
+            if not current_transit and value:  # if the array is empty
+                current_transit.append(index)
+            if value:
+                if ((index - current_transit[0]) * histogram_bin_size) < transit_time_threshold:
+                    current_transit.append(index)
+                elif len(current_transit) > transit_counts_threshold:
+                    all_transits.append(current_transit)
+                    all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
+                    # tt_S_transit_events[tuple(current_transit)] += 1
+                    current_transit = [index]
+                else:
+                    # Finding if there any index that was saved to current transit and is close enough to the new index
+                    t = [i for i, elem in enumerate(current_transit) if ((index - elem) * histogram_bin_size) < transit_time_threshold]
+                    if t:
+                        current_transit = current_transit[t[0]:] + [index]
+                    else:
+                        current_transit = [index]
 
-    def Save_SNSPDs_Sprint_Measurement_with_tt(self, N, histogram_bin_size, Transit_profile_bin_size, preComment,
-                                                 lock_err_threshold, transit_counts_threshold, transit_time_threshold,
-                                                 bandwidth, freq_step, max_probe_counts, Mock = False):
+
+        tt_S_transit_events[[i for i in [vec for elem in all_transits for vec in elem]]] += 1
+        #
+        if all_transits:
+            all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
+
+    def get_handles_from_OPX_Server(self,Num_Of_dets):
+        '''
+         gets handles of timetags and counts from OPX
+        :return:
+        '''
+        Counts_handle = []
+        tt_handle = []
+
+        for i in Num_Of_dets:
+            Counts_handle.append(self.job.result_handles.get("Det"+str(i)+"_Counts"))
+            tt_handle.append(self.job.result_handles.get("Det"+str(i)+"_Probe_TT"))
+
+        FLR_handle = self.job.result_handles.get("FLR_measure")
+        return Counts_handle,tt_handle,FLR_handle
+
+    def Save_SNSPDs_Sprint_Measurement_with_tt(self, N, histogram_bin_size, preComment, lock_err_threshold,
+                                                 bandwidth, freq_step, max_probe_counts):
         """
         Function for analyzing and saving the time tags data measured from the SNSPDs using the OPX. In this specific
          program we are looking for transits of atoms next to the toroid and record them.
@@ -1149,21 +1194,26 @@ class OPX:
         # if preComment is True:
         if not preComment:
             preComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
-        aftComment = None
 
-        ### fetching data from server
-        ### saving to file
-        ###
+        # set parameters
         Num_Of_dets = [1, 2, 3, 6, 7, 8]
         # detector_delay = [5,0,0,15] # For detectors 1-4 "N"
         detector_delay = [0, 0, 0, 0] # For detectors 5-8 "S"
 
-
+        # define empty variables
         histogram_bin_number = self.M_window // (histogram_bin_size)
         time_bins = np.linspace(0, self.M_window, histogram_bin_number)
-        spectrum_bin_number = bandwidth // freq_step + 1  # TODO: ask natan how many freq steps he uses
-        freq_bins = np.linspace(-int(bandwidth / 2), int(bandwidth / 2), spectrum_bin_number)
+
+        tt_S_SPRINT_events = np.zeros(histogram_bin_number)
+        self.tt_S_SPRINT_events_batch = np.zeros(histogram_bin_size)
         SPRINT_pulse_time = np.arange(512)
+
+        #
+        tt_S_binning_batch = []
+
+        all_transits_batch = []
+        FLR_measurement = []
+        Exp_timestr_batch = []
 
         ## Listen for keyboard
         listener = keyboard.Listener(on_press=self.on_key_press)
@@ -1173,26 +1223,10 @@ class OPX:
         reps = 1  # a counter, number of repeats actually made.
 
         ####     get tt and counts from OPX to python   #####
-        Counts_handle = []
-        tt_handle = []
-        for i in Num_Of_dets:
-            Counts_handle.append(self.job.result_handles.get("Det"+str(i)+"_Counts"))
-            tt_handle.append(self.job.result_handles.get("Det"+str(i)+"_Probe_TT"))
+        Counts_handle,tt_handle,FLR_handle = self.get_handles_from_OPX_Server(Num_Of_dets)
 
-        FLR_handle = self.job.result_handles.get("FLR_measure")
-
-        # define empty variables
-        tt_S_binning_batch = []
-
-        all_transits_batch = []
-        FLR_measurement = []
-        Exp_timestr_batch = []
-
-        tt_S_SPRINT_events = np.zeros(histogram_bin_number)
-        self.tt_S_SPRINT_events_batch = np.zeros(histogram_bin_size)
-
+        ## take data only if
         start = True
-
         # take threshold from npz ( error from resonator lock PID)
         # lock_err = np.load(
         #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy')  # the error of locking the resontor to Rb line
@@ -1374,11 +1408,11 @@ class OPX:
                 ax2.plot(self.tt_Single_det_SPRINT_events[i], label='detector' + str(Num_Of_dets[i]))
             ax2.set_title('binned timetags from all detectors folded (Live)', fontweight="bold")
 
-                # ax2.set_title('On resonant counts', fontweight="bold")
-                # ax2.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
-                # ax2.text(0.05, 0.95, textstr_resonance, transform=ax2.transAxes, fontsize=12,
-                #          verticalalignment='top', bbox=props)
-                # ax2.legend(loc='upper right')
+            # ax2.set_title('On resonant counts', fontweight="bold")
+            # ax2.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
+            # ax2.text(0.05, 0.95, textstr_resonance, transform=ax2.transAxes, fontsize=12,
+            #          verticalalignment='top', bbox=props)
+            # ax2.legend(loc='upper right')
             #
             # ax3.plot(SPRINT_pulse_time, self.tt_S_SPRINT_events, label='Folded photon detection events per cycle', color='k')
             #     ax3.set(xlabel='Time [nsec]', ylabel='Counts [#Number]')
