@@ -1025,15 +1025,21 @@ class OPX:
         return [(np.average(Probe_counts_North) * 1000) / self.M_time,
                 (np.average(Probe_counts_South) * 1000) / self.M_time]
 
+    def get_avg_num_of_photons_in_det_pulse(self, det_pulse_len, delay, num_of_det_pulses, number_of_exp_sequences):
+        self.avg_num_of_photons_in_det_pulse = np.zeros(num_of_det_pulses)
+        for i in range(num_of_det_pulses):
+            self.avg_num_of_photons_in_det_pulse[i] = \
+                np.sum(self.tt_S_SPRINT_events[delay+i*det_pulse_len:delay+(i+1)*det_pulse_len]) / number_of_exp_sequences
 
-    def Save_SNSPDs_Sprint_Measurement_with_tt(self, N, histogram_bin_size, Transit_profile_bin_size, preComment,
-                                                 lock_err_threshold, transit_counts_threshold, transit_time_threshold,
-                                                 bandwidth, freq_step, max_probe_counts, Mock = False):
+
+    def Save_SNSPDs_Sprint_Measurement_with_tt(self, N, exp_sequence_len, Transit_profile_bin_size, preComment,
+                                               lock_err_threshold, transit_counts_threshold, transit_time_threshold,
+                                               bandwidth, freq_step, max_probe_counts, Mock = False):
         """
         Function for analyzing and saving the time tags data measured from the SNSPDs using the OPX. In this specific
          program we are looking for transits of atoms next to the toroid and record them.
         :param N: Number of maximum experiments (free throws) saved and displayed.
-        :param histogram_bin_size: The bin size for the general experiment histogram which means - dividing the length
+        :param exp_sequence_len: The bin size for the general experiment histogram which means - dividing the length
                                    of the measuring time (m_time) to bins and counting the number of photon detections
                                    at each bin.
         :param Transit_profile_bin_size: The bin size for the transit histogram which means - dividing the length of the
@@ -1060,8 +1066,8 @@ class OPX:
         detector_delay = [0, 0, 0, 0] # For detectors 5-8 "S"
 
 
-        histogram_bin_number = self.M_window // (histogram_bin_size)
-        time_bins = np.linspace(0, self.M_window, histogram_bin_number)
+        number_of_exp_sequences = self.M_window // (exp_sequence_len)
+        time_bins = np.linspace(0, self.M_window, number_of_exp_sequences)
         spectrum_bin_number = bandwidth // freq_step + 1  # TODO: ask natan how many freq steps he uses
         freq_bins = np.linspace(-int(bandwidth / 2), int(bandwidth / 2), spectrum_bin_number)
         SPRINT_pulse_time = np.arange(512)
@@ -1089,8 +1095,8 @@ class OPX:
         FLR_measurement = []
         Exp_timestr_batch = []
 
-        tt_S_SPRINT_events = np.zeros(histogram_bin_number)
-        self.tt_S_SPRINT_events_batch = np.zeros(histogram_bin_size)
+        tt_S_SPRINT_events = np.zeros(number_of_exp_sequences)
+        self.tt_S_SPRINT_events_batch = np.zeros(exp_sequence_len)
 
         start = True
 
@@ -1140,26 +1146,32 @@ class OPX:
             self.tt_S_measure.sort()
             ####    end get tt and counts from OPX to python   #####
 
-            self.tt_S_binning = np.zeros(histogram_bin_number + 1)
-            self.tt_S_SPRINT_events = np.zeros(histogram_bin_size)
-            self.tt_S_SPRINT_events_batch = np.zeros(histogram_bin_size)
-            self.tt_Single_det_SPRINT_events = np.zeros((len(Num_Of_dets), histogram_bin_size))
-            self.tt_Single_det_SPRINT_events_batch = np.zeros((len(Num_Of_dets), histogram_bin_size))
+            self.tt_S_binning = np.zeros(number_of_exp_sequences + 1)
+            self.tt_S_SPRINT_events = np.zeros(exp_sequence_len)
+            self.tt_S_SPRINT_events_batch = np.zeros(exp_sequence_len)
+            self.tt_Single_det_SPRINT_events = np.zeros((len(Num_Of_dets), exp_sequence_len))
+            self.tt_Single_det_SPRINT_events_batch = np.zeros((len(Num_Of_dets), exp_sequence_len))
 
             # fold South:
             # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]: - for debugging assaf
             for x in [elem for elem in self.tt_S_measure]:
-                self.tt_S_binning[x // int(histogram_bin_size)] += 1
-                self.tt_S_SPRINT_events[x % histogram_bin_size] += 1
-                self.tt_S_SPRINT_events_batch[x % histogram_bin_size] += 1
+                self.tt_S_binning[x // int(exp_sequence_len)] += 1
+                self.tt_S_SPRINT_events[x % exp_sequence_len] += 1
+                self.tt_S_SPRINT_events_batch[x % exp_sequence_len] += 1
 
             # fold for different detectors:
             for i in range(len(Num_Of_dets)):
                 # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]: - for debugging assaf
                 for x in [elem for elem in self.tt_measure[i][-1]]:
-                    self.tt_Single_det_SPRINT_events[i][x % histogram_bin_size] += 1
-                    self.tt_Single_det_SPRINT_events_batch[i][x % histogram_bin_size] += 1
+                    self.tt_Single_det_SPRINT_events[i][x % exp_sequence_len] += 1
+                    self.tt_Single_det_SPRINT_events_batch[i][x % exp_sequence_len] += 1
 
+        # get the average number of photons in detection pulse
+        delay= 10 # choose the correct delay in samples to the first detection pulse
+        self.get_avg_num_of_photons_in_det_pulse(det_pulse_len=(Config.det_pulse_len+Config.num_between_zeros),
+                                                 delay=delay, num_of_det_pulses=len(Config.det_pulse_amp),
+                                                 number_of_exp_sequences=number_of_exp_sequences)
+        print('average number of photons in detection pulses is:',self.avg_num_of_photons_in_det_pulse)
         ## record time
         timest = time.strftime("%Y%m%d-%H%M%S")
         datest = time.strftime("%Y%m%d")
@@ -1274,8 +1286,7 @@ class OPX:
             for i in range(len(Num_Of_dets)):
                 ax2.plot(self.tt_Single_det_SPRINT_events[i], label='detector' + str(Num_Of_dets[i]))
             ax2.set_title('binned timetags from all detectors folded (Live)', fontweight="bold")
-
-                # ax2.set_title('On resonant counts', fontweight="bold")
+            # ax2.set_title('On resonant counts', fontweight="bold")
                 # ax2.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
                 # ax2.text(0.05, 0.95, textstr_resonance, transform=ax2.transAxes, fontsize=12,
                 #          verticalalignment='top', bbox=props)
@@ -1317,6 +1328,8 @@ class OPX:
             #     ax1.set_ylim(0, 8)
             #     ax2.set_ylim(0, 8)
             #
+
+
             plt.tight_layout()
             # plt.show()
             plt.pause(0.5)
@@ -1358,26 +1371,32 @@ class OPX:
                 if self.tt_S_measure != self.tt_S_measure_batch[-1]:
                     break
             # assaf - if x=self.M_window the index is out of range so i added 1
-            self.tt_S_binning = np.zeros(histogram_bin_number+1) #  self.tt_S_binning = np.zeros(histogram_bin_number * 2)
+            self.tt_S_binning = np.zeros(number_of_exp_sequences + 1) #  self.tt_S_binning = np.zeros(histogram_bin_number * 2)
 
             for x in [elem for elem in self.tt_S_measure if elem < self.M_window]:
-                self.tt_S_binning[x // int(histogram_bin_size)] += 1
+                self.tt_S_binning[x // int(exp_sequence_len)] += 1
 
             if lock_err < lock_err_threshold:
 
-                self.tt_S_SPRINT_events = np.zeros(histogram_bin_size)
+                self.tt_S_SPRINT_events = np.zeros(exp_sequence_len)
                 # for x in [elem for elem in self.tt_S_measure if elem <= self.M_window]:
                 for x in [elem for elem in self.tt_S_measure]:
-                    self.tt_S_SPRINT_events[x % histogram_bin_size] += 1
-                    self.tt_S_SPRINT_events_batch[x % histogram_bin_size] += 1
+                    self.tt_S_SPRINT_events[x % exp_sequence_len] += 1
+                    self.tt_S_SPRINT_events_batch[x % exp_sequence_len] += 1
 
-                self.tt_Single_det_SPRINT_events = np.zeros((len(Num_Of_dets), histogram_bin_size))
+                self.tt_Single_det_SPRINT_events = np.zeros((len(Num_Of_dets), exp_sequence_len))
                 # fold for different detectors:
                 for i in range(len(Num_Of_dets)):
                     # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]:
                     for x in [elem for elem in self.tt_measure[i][-1]]:
-                        self.tt_Single_det_SPRINT_events[i][x % histogram_bin_size] += 1
-                        self.tt_Single_det_SPRINT_events_batch[i][x % histogram_bin_size] += 1
+                        self.tt_Single_det_SPRINT_events[i][x % exp_sequence_len] += 1
+                        self.tt_Single_det_SPRINT_events_batch[i][x % exp_sequence_len] += 1
+
+                self.get_avg_num_of_photons_in_det_pulse(
+                    det_pulse_len=(Config.det_pulse_len + Config.num_between_zeros),
+                    delay=delay, num_of_det_pulses=len(Config.det_pulse_amp),
+                    number_of_exp_sequences=number_of_exp_sequences)
+                print('average number of photons in detection pulses is:', self.avg_num_of_photons_in_det_pulse)
 
                 FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
