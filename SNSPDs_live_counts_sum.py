@@ -71,7 +71,7 @@ AntiHelmholtz_pulse_len = 60
 IF_TOP1_MOT = 113e6
 IF_TOP1_PGC = 103e6
 IF_TOP1_Flash = 121.6625e6
-IF_TOP2 = 89e6
+IF_TOP2 = 90e6
 IF_AOM_MOT = 110e6
 # IF_AOM_OD = 133.325e6
 IF_AOM_OD = 136.325e6
@@ -366,7 +366,7 @@ with program() as dig:
     # QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH1_freq': '113MHz', 'CH1_amp': '10.074226808222061dbm'},
     # QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH1_freq': '113MHz', 'CH1_amp': '16.95dbm'},
     #                     updateChannels=[1], debugging=False, continuous=False)  # updates values on QuadRF (uploads table) #
-    QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '100MHz', 'CH3_amp': '31dbm'},
+    QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
                         updateChannels=[3], debugging=False, continuous=False)  # updates values on QuadRF (uploads table) #
 
     counts1 = declare(int)
