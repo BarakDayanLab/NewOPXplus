@@ -1058,11 +1058,13 @@ class OPX:
             all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
 
 
-    def get_avg_num_of_photons_in_det_pulse(self, det_pulse_len, delay, num_of_det_pulses, number_of_exp_sequences):
+    def get_avg_num_of_photons_in_det_pulse(self, det_pulse_len, sprint_sequence_delay, num_of_det_pulses, num_of_sprint_sequences):
         self.avg_num_of_photons_in_det_pulse = np.zeros(num_of_det_pulses)
         for i in range(num_of_det_pulses):
+            detection_puls_ind =
+            [sprint_sequence_delay + i * det_pulse_len:sprint_sequence_delay + (i + 1) * det_pulse_len]
             self.avg_num_of_photons_in_det_pulse[i] = \
-                np.sum(self.tt_S_SPRINT_events[delay+i*det_pulse_len:delay+(i+1)*det_pulse_len]) / number_of_exp_sequences
+                np.sum(self.tt_S_SPRINT_events[detection_puls_ind]) / num_of_sprint_sequences
 
     def get_handles_from_OPX_Server(self,Num_Of_dets):
         '''
@@ -1102,8 +1104,47 @@ class OPX:
         self.tt_N_measure = sorted(sum(self.tt_measure[:3][0],[])) # unify detectors 1-3
         self.tt_S_measure = sorted(sum(self.tt_measure[3:][0],[])) # unify detectors 6-8
 
-    def divide_to_reflection_trans(self):
-        
+    def divide_to_reflection_trans(self,sprint_sequence_delay,num_of_det_pulses,num_of_sprint_pulses,num_of_sprint_sequences):
+        '''
+        dividing south and north tt's vectros into reflection and transmission vectors, by:
+        1. converting them into counts vector in same time spacing as the initial pulse.
+        2. taking the relevant pulses from the sequence to each vector (reflection/transmission)
+        :return:
+        '''
+        # create histogram with self.M_window bins
+        self.tt_histogram_N = np.histogram(self.tt_N_measure,self.M_window)
+        self.tt_histogram_S = np.histogram(self.tt_S_measure,self.M_window)
+
+        ### build reflection and transmission pulses indices, by setting non zero at indices elements ###
+        # build transmission South indices
+        transmission_indices_S = sprint_sequence_delay*[0]
+        # add detection pulses indices
+        for i in range(num_of_det_pulses):
+            transmission_indices_S += np.repeat(Config.det_pulse_amp_S,Config.det_pulse_len).tolist()
+        # add detection prep pulse indices
+        transmission_indices_S+=[Config.prep_pulse_amp_S]*Config.prep_pulse_len
+        # add SPRINT pulse indices
+        for i in range(num_of_sprint_pulses):
+            transmission_indices_S += np.repeat(Config.sprint_pulse_amp,Config.det_pulse_len).tolist()
+        # repeat indices of sequence "num_of_sprint_sequences" times
+        transmission_indices_S = transmission_indices_S*num_of_sprint_sequences
+        # get indices by taking the nonzero elements
+        transmission_indices_S = np.nonzero(transmission_indices_S)
+
+        # get transmission indices by decreasing the South indices from total
+        transmission_indices_N = list(set(range(self.M_window))-set(transmission_indices_S))
+
+        # get transmission indices by decreasing the South indices from total
+        reflection_indices_N = transmission_indices_S
+        reflection_indices_S = transmission_indices_N
+
+        tt_histogram_reflection = list(map(lambda x: self.tt_histogram_N[x],reflection_indices_N))+\
+                                       list(map(lambda x: self.tt_histogram_S[x], reflection_indices_S))
+
+        tt_histogram_transmission = list(map(lambda x: self.tt_histogram_N[x],transmission_indices_N))+\
+                                       list(map(lambda x: self.tt_histogram_S[x], transmission_indices_S))
+
+        return tt_histogram_transmission,tt_histogram_reflection
 
     def Save_SNSPDs_Sprint_Measurement_with_tt(self, N, exp_sequence_len, Transit_profile_bin_size, preComment, lock_err_threshold,
                                                  bandwidth, freq_step, max_probe_counts):
@@ -1130,6 +1171,8 @@ class OPX:
         Num_Of_dets = [1, 2, 3, 6, 7, 8]
         # detector_delay = [5,0,0,15] # For detectors 1-4 "N"
         detector_delay = [0, 0, 0, 0] # For detectors 5-8 "S"
+        delay = 30 # choose the correct delay in samples to the first detection pulse
+
 
 
         # define empty variables
@@ -1191,7 +1234,12 @@ class OPX:
             else:
                 print('Above Threshold')
             self.get_tt_from_handles(Num_Of_dets,Counts_handle,tt_handle,FLR_handle)
-            self.divide_to_reflection_trans()
+            self.tt_histogram_transmission,self.tt_histogram_transmission = \
+            self.divide_to_reflection_trans(sprint_sequence_delay=delay,num_of_det_pulses=len(Config.det_pulse_amp_S),
+                                            num_of_sprint_pulses=len(Config.sprint_pulse_amp_S),
+                                            num_of_sprint_sequences=number_of_exp_sequences)
+
+            # fold reflections and transmission
 
             ####    end get tt and counts from OPX to python   #####
             # fold South:
@@ -1209,10 +1257,9 @@ class OPX:
                     self.tt_Single_det_SPRINT_events_batch[i][x % exp_sequence_len] += 1
 
         # get the average number of photons in detection pulse
-        delay = 30 # choose the correct delay in samples to the first detection pulse
         self.get_avg_num_of_photons_in_det_pulse(det_pulse_len=(Config.det_pulse_len+Config.num_between_zeros),
-                                                 delay=delay, num_of_det_pulses=len(Config.det_pulse_amp),
-                                                 number_of_exp_sequences=number_of_exp_sequences)
+                                                 sprint_sequence_delay=delay, num_of_det_pulses=len(Config.det_pulse_amp_S),
+                                                 num_of_sprint_sequences=number_of_exp_sequences)
         print('average number of photons in detection pulses is:', self.avg_num_of_photons_in_det_pulse)
         ## record time
         timest = time.strftime("%Y%m%d-%H%M%S")
@@ -1435,8 +1482,8 @@ class OPX:
 
                 self.get_avg_num_of_photons_in_det_pulse(
                     det_pulse_len=(Config.det_pulse_len + Config.num_between_zeros),
-                    delay=delay, num_of_det_pulses=len(Config.det_pulse_amp),
-                    number_of_exp_sequences=number_of_exp_sequences)
+                    sprint_sequence_delay=delay, num_of_det_pulses=len(Config.det_pulse_amp_S),
+                    num_of_sprint_sequences=number_of_exp_sequences)
                 print('average number of photons in detection pulses is:', self.avg_num_of_photons_in_det_pulse)
 
                 FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
