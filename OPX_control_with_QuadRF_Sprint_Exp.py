@@ -1034,17 +1034,20 @@ class OPX:
     def get_avg_num_of_photons_in_seq_pulse(self, delay, seq=Config.Sprint_Exp_Gaussian_samples_S):
         seq_filter = (np.array(seq) > 0).astype(int)
         seq_filter = np.append(np.zeros(delay), seq_filter[delay:])
-        seq_indx = np.where(seq_filter > 0)
+        seq_indx = np.where(seq_filter > 0)[0]
         self.avg_num_of_photons_in_seq_pulse = []
-        for i in range(seq_indx):
+        self.pulse_loc =[]
+        start_indx = seq_indx[0]
+        number_of_photons_in_current_pulse = self.tt_N_det_SPRINT_events_batch[seq_indx[0]] + self.tt_S_det_SPRINT_events_batch[seq_indx[0]]
+        for i in range(1, len(seq_indx)):
             if seq_indx[i] - seq_indx[i-1] > 1:
-                self.avg_num_of_photons_in_seq_pulse += 1
-
-
-                # self.avg_num_of_photons_in_det_pulse = np.zeros(num_of_det_pulses)
-        # for i in range(num_of_det_pulses):
-        #     self.avg_num_of_photons_in_det_pulse[i] = \
-        #         np.sum(self.tt_S_SPRINT_events[delay+i*det_pulse_len:delay+(i+1)*det_pulse_len]) / number_of_exp_sequences
+                self.avg_num_of_photons_in_seq_pulse.append(number_of_photons_in_current_pulse)
+                self.pulse_loc.append((start_indx, seq_indx[i-1]))
+                start_indx = seq_indx[i]
+                number_of_photons_in_current_pulse = 0
+            number_of_photons_in_current_pulse += self.tt_N_det_SPRINT_events_batch[seq_indx[i]] + self.tt_S_det_SPRINT_events_batch[seq_indx[i]]
+        self.avg_num_of_photons_in_seq_pulse.append(number_of_photons_in_current_pulse)
+        self.pulse_loc.append((start_indx, seq_indx[-1]))
 
 
     def Save_SNSPDs_Sprint_Measurement_with_tt(self, N, exp_sequence_len, Transit_profile_bin_size, preComment,
