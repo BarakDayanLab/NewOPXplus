@@ -1031,6 +1031,21 @@ class OPX:
             self.avg_num_of_photons_in_det_pulse[i] = \
                 np.sum(self.tt_S_SPRINT_events[delay+i*det_pulse_len:delay+(i+1)*det_pulse_len]) / number_of_exp_sequences
 
+    def get_avg_num_of_photons_in_seq_pulse(self, delay, seq=Config.Sprint_Exp_Gaussian_samples_S):
+        seq_filter = (np.array(seq) > 0).astype(int)
+        seq_filter = np.append(np.zeros(delay), seq_filter[delay:])
+        seq_indx = np.where(seq_filter > 0)
+        self.avg_num_of_photons_in_seq_pulse = []
+        for i in range(seq_indx):
+            if seq_indx[i] - seq_indx[i-1] > 1:
+                self.avg_num_of_photons_in_seq_pulse += 1
+
+
+                # self.avg_num_of_photons_in_det_pulse = np.zeros(num_of_det_pulses)
+        # for i in range(num_of_det_pulses):
+        #     self.avg_num_of_photons_in_det_pulse[i] = \
+        #         np.sum(self.tt_S_SPRINT_events[delay+i*det_pulse_len:delay+(i+1)*det_pulse_len]) / number_of_exp_sequences
+
 
     def Save_SNSPDs_Sprint_Measurement_with_tt(self, N, exp_sequence_len, Transit_profile_bin_size, preComment,
                                                lock_err_threshold, transit_counts_threshold, transit_time_threshold,
@@ -1151,6 +1166,8 @@ class OPX:
             self.tt_S_SPRINT_events_batch = np.zeros(exp_sequence_len)
             self.tt_Single_det_SPRINT_events = np.zeros((len(Num_Of_dets), exp_sequence_len))
             self.tt_Single_det_SPRINT_events_batch = np.zeros((len(Num_Of_dets), exp_sequence_len))
+            self.tt_N_det_SPRINT_events_batch = np.zeros(exp_sequence_len)
+            self.tt_S_det_SPRINT_events_batch = np.zeros(exp_sequence_len)
 
             # fold South:
             # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]: - for debugging assaf
@@ -1277,6 +1294,12 @@ class OPX:
             # plt.pause(0.5)
             for i in range(len(Num_Of_dets)):
                 ax1.plot(self.tt_Single_det_SPRINT_events_batch[i], label='detector'+str(Num_Of_dets[i]))
+                if i < len(Num_Of_dets)/2:
+                    self.tt_N_det_SPRINT_events_batch += self.tt_Single_det_SPRINT_events_batch[i]
+                else:
+                    self.tt_S_det_SPRINT_events_batch += self.tt_Single_det_SPRINT_events_batch[i]
+            ax1.plot(self.tt_N_det_SPRINT_events_batch, label='"N" detectors')
+            ax1.plot(self.tt_S_det_SPRINT_events_batch, label='"S" detectors')
             ax1.set_title('binned timetags from all detectors folded (batch)', fontweight="bold")
             # ax1.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
             #     ax1.text(0.05, 0.95, textstr_detuned, transform=ax1.transAxes, fontsize=12,
@@ -1385,6 +1408,8 @@ class OPX:
                     self.tt_S_SPRINT_events_batch[x % exp_sequence_len] += 1
 
                 self.tt_Single_det_SPRINT_events = np.zeros((len(Num_Of_dets), exp_sequence_len))
+                self.tt_N_det_SPRINT_events_batch = np.zeros(exp_sequence_len)
+                self.tt_S_det_SPRINT_events_batch = np.zeros(exp_sequence_len)
                 # fold for different detectors:
                 for i in range(len(Num_Of_dets)):
                     # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]:
