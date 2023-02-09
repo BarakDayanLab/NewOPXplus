@@ -1145,6 +1145,7 @@ class OPX:
         atom_detect_data = [transit_sequences,num_of_detected_atom]
         return atom_detect_data,sprints_data
 
+
     def get_pulse_location_in_seq(self, delay, seq=Config.Sprint_Exp_Gaussian_samples_S):
         seq_filter = (np.array(seq) > 0).astype(int)
         seq_filter = np.append(np.zeros(delay), seq_filter[delay:])
@@ -1157,23 +1158,33 @@ class OPX:
                 start_indx = seq_indx[i]
         self.pulse_loc.append([start_indx, seq_indx[-1]])
 
-    def get_avg_num_of_photons_in_seq_pulse(self, delay, seq=Config.Sprint_Exp_Gaussian_samples_S):
-        seq_filter = (np.array(seq) > 0).astype(int)
-        seq_filter = np.append(np.zeros(delay), seq_filter[delay:])
-        seq_indx = np.where(seq_filter > 0)[0]
+
+    def get_avg_num_of_photons_in_seq_pulse(self, seq=Config.Sprint_Exp_Gaussian_samples_S):
         self.avg_num_of_photons_in_seq_pulse = []
-        self.pulse_loc = []
-        start_indx = seq_indx[0]
-        number_of_photons_in_current_pulse = self.tt_N_det_SPRINT_events_batch[seq_indx[0]] + self.tt_S_det_SPRINT_events_batch[seq_indx[0]]
-        for i in range(1, len(seq_indx)):
-            if seq_indx[i] - seq_indx[i-1] > 1:
-                self.avg_num_of_photons_in_seq_pulse.append(number_of_photons_in_current_pulse)
-                self.pulse_loc.append((start_indx, seq_indx[i-1]))
-                start_indx = seq_indx[i]
-                number_of_photons_in_current_pulse = 0
-            number_of_photons_in_current_pulse += self.tt_N_det_SPRINT_events_batch[seq_indx[i]] + self.tt_S_det_SPRINT_events_batch[seq_indx[i]]
-        self.avg_num_of_photons_in_seq_pulse.append(number_of_photons_in_current_pulse)
-        self.pulse_loc.append((start_indx, seq_indx[-1]))
+        for t in self.pulse_loc:
+            self.avg_num_of_photons_in_seq_pulse.append(np.sum(seq[t[0]:t[1]]) + seq[1])
+
+    def num_of_photons_txt_box_loc(self):
+        return [(np.sum(self.pulse_loc, axis=1)/2).astype(int)]
+
+
+    # def get_avg_num_of_photons_in_seq_pulse(self, delay, seq=Config.Sprint_Exp_Gaussian_samples_S):
+    #     seq_filter = (np.array(seq) > 0).astype(int)
+    #     seq_filter = np.append(np.zeros(delay), seq_filter[delay:])
+    #     seq_indx = np.where(seq_filter > 0)[0]
+    #     self.avg_num_of_photons_in_seq_pulse = []
+    #     self.pulse_loc = []
+    #     start_indx = seq_indx[0]
+    #     number_of_photons_in_current_pulse = self.tt_N_det_SPRINT_events_batch[seq_indx[0]] + self.tt_S_det_SPRINT_events_batch[seq_indx[0]]
+    #     for i in range(1, len(seq_indx)):
+    #         if seq_indx[i] - seq_indx[i-1] > 1:
+    #             self.avg_num_of_photons_in_seq_pulse.append(number_of_photons_in_current_pulse)
+    #             self.pulse_loc.append((start_indx, seq_indx[i-1]))
+    #             start_indx = seq_indx[i]
+    #             number_of_photons_in_current_pulse = 0
+    #         number_of_photons_in_current_pulse += self.tt_N_det_SPRINT_events_batch[seq_indx[i]] + self.tt_S_det_SPRINT_events_batch[seq_indx[i]]
+    #     self.avg_num_of_photons_in_seq_pulse.append(number_of_photons_in_current_pulse)
+    #     self.pulse_loc.append((start_indx, seq_indx[-1]))
 
 
     def fold_tt_histogram(self,folded_transmission,folded_reflection):
