@@ -125,13 +125,13 @@ efficiency = 0.5 # the efficiency of the system
 num_of_photons_per_sequence_S = num_of_photons_det_pulses * num_of_det_pulses_S + num_of_photons_sprint_pulses * num_of_sprint_pulses_S
 num_of_photons_per_sequence_N = num_of_photons_det_pulses * num_of_det_pulses_N + num_of_photons_sprint_pulses * num_of_sprint_pulses_N
 
-def Sprint_Exp_Gaussian_samples(sprint_pulse_len=110,prep_pulse_len = 60,prep_pulse_amp = 0.4,det_pulse_len = 30, det_pulses_amp = [0.4]*6,sprint_pulses_amp = [0.4]*4
+def Sprint_Exp_Gaussian_samples(sprint_pulse_len=110,det_pulse_len = 30, det_pulses_amp = [0.4]*6,sprint_pulses_amp = [0.4]*4
                                 ,num_init_zeros = 10,num_between_zeros = 10, num_fin_zeros = 0):
     Sprint_Exp_Gaussian_samples = [0] * num_init_zeros
     for n in det_pulses_amp:
         # Sprint_Exp_Gaussian_samples += [n] * 50 + [0] * num_between_zeros
         Sprint_Exp_Gaussian_samples += (signal.gaussian(det_pulse_len, std=(det_pulse_len / 2.355)) * n).tolist() + [0] * num_between_zeros
-    Sprint_Exp_Gaussian_samples += (signal.gaussian(prep_pulse_len, std=(prep_pulse_len / 2.355)) * prep_pulse_amp).tolist() + [0] * num_between_zeros
+    # Sprint_Exp_Gaussian_samples += (signal.gaussian(prep_pulse_len, std=(prep_pulse_len / 2.355)) * prep_pulse_amp).tolist() + [0] * num_between_zeros
     for m in sprint_pulses_amp:
         # Sprint_Exp_Gaussian_samples += [m] * 110 + [0] * num_between_zeros
         Sprint_Exp_Gaussian_samples += (signal.gaussian(sprint_pulse_len, std=(sprint_pulse_len / 2.355)) * m).tolist() + [0] * num_between_zeros
@@ -139,26 +139,26 @@ def Sprint_Exp_Gaussian_samples(sprint_pulse_len=110,prep_pulse_len = 60,prep_pu
     return Sprint_Exp_Gaussian_samples[:-num_between_zeros]
 
 det_pulse_len = 30
+num_init_zeros = 50
+num_fin_zeros = 0
 num_between_zeros = 10
-det_pulse_amp_S = [0.45, 0, 0, 0, 0, 0]
+det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.45]
 prep_pulse_amp_S = 0.4
-prep_pulse_len = 60
-sprint_pulse_amp_S=[0, 0.1, 0]
+prep_pulse_len = 50
+sprint_pulse_amp_S = [0, 0.45, 0]
 sprint_pulse_len = 110
 Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
-                                                            prep_pulse_len=prep_pulse_len,
-                                                            prep_pulse_amp=prep_pulse_amp_S,
                                                             det_pulse_len=det_pulse_len,
                                                             det_pulses_amp=det_pulse_amp_S,
-                                                            sprint_pulses_amp=sprint_pulse_amp_S, num_init_zeros=50,
-                                                            num_between_zeros=num_between_zeros, num_fin_zeros=0)
+                                                            sprint_pulses_amp=sprint_pulse_amp_S, num_init_zeros=num_init_zeros,
+                                                            num_between_zeros=num_between_zeros, num_fin_zeros=num_fin_zeros)
 
 
-det_pulse_amp_N = [0, 0.45, 0, 0, 0, 0]
-Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(prep_pulse_len=prep_pulse_len, prep_pulse_amp=0,
+det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
+Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
                                                             det_pulse_len=det_pulse_len,
                                                             det_pulses_amp=det_pulse_amp_N,
-                                                            sprint_pulses_amp=[0, 0.1, 0], num_init_zeros=38,
+                                                            sprint_pulses_amp=[0.45, 0, 0.45], num_init_zeros=38,
                                                             num_between_zeros=num_between_zeros, num_fin_zeros=12)
 
 # readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/4)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4

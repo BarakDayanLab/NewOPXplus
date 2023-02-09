@@ -1079,24 +1079,27 @@ class OPX:
         :return:
         '''
         # create histogram with self.M_window bins
-        self.tt_histogram_N = np.histogram(self.tt_N_measure,self.M_window)
-        self.tt_histogram_S = np.histogram(self.tt_S_measure,self.M_window)
+        self.tt_histogram_N,_ = np.histogram(self.tt_N_measure,self.M_window)
+        self.tt_histogram_S,_ = np.histogram(self.tt_S_measure,self.M_window)
 
         ### build reflection and transmission pulses indices, by setting non zero at indices elements ###
         # build transmission South indices
-        transmission_indices_S = sprint_sequence_delay*[0]
+        transmission_indices_S =[0] * Config.num_init_zeros
         # add detection pulses indices
         for i in range(num_of_det_pulses):
-            transmission_indices_S += np.repeat(Config.det_pulse_amp_S,Config.det_pulse_len).tolist()
+            transmission_indices_S +=\
+                np.repeat(Config.det_pulse_amp_S,Config.det_pulse_len+Config.num_between_zeros).tolist()
         # add detection prep pulse indices
-        transmission_indices_S+=[Config.prep_pulse_amp_S]*Config.prep_pulse_len
+        transmission_indices_S+=[Config.prep_pulse_amp_S]*(Config.prep_pulse_len+Config.num_between_zeros)
         # add SPRINT pulse indices
         for i in range(num_of_sprint_pulses):
-            transmission_indices_S += np.repeat(Config.sprint_pulse_amp,Config.det_pulse_len).tolist()
+            transmission_indices_S += np.repeat(Config.sprint_pulse_amp_S,(Config.sprint_pulse_len+Config.num_between_zeros)).tolist()
+        #add final zeros
+        transmission_indices_S += [0] * Config.num_fin_zeros
         # repeat indices of sequence "num_of_sprint_sequences" times
-        transmission_indices_S = transmission_indices_S*num_of_sprint_sequences
-        # get indices by taking the nonzero elements
-        transmission_indices_S = np.nonzero(transmission_indices_S)
+        transmission_indices_S = sprint_sequence_delay*[0]+transmission_indices_S*num_of_sprint_sequences
+       # get indices by taking the nonzero elements
+        transmission_indices_S = np.nonzero(transmission_indices_S)[0].tolist()
 
         # get transmission indices by decreasing the South indices from total
         transmission_indices_N = list(set(range(self.M_window))-set(transmission_indices_S))
@@ -1142,12 +1145,24 @@ class OPX:
         atom_detect_data = [transit_sequences,num_of_detected_atom]
         return atom_detect_data,sprints_data
 
+    def get_pulse_location_in_seq(self, delay, seq=Config.Sprint_Exp_Gaussian_samples_S):
+        seq_filter = (np.array(seq) > 0).astype(int)
+        seq_filter = np.append(np.zeros(delay), seq_filter[delay:])
+        seq_indx = np.where(seq_filter > 0)[0]
+        self.pulse_loc = []
+        start_indx = seq_indx[0]
+        for i in range(1, len(seq_indx)):
+            if seq_indx[i] - seq_indx[i-1] > 1:
+                self.pulse_loc.append([start_indx, seq_indx[i-1]])
+                start_indx = seq_indx[i]
+        self.pulse_loc.append([start_indx, seq_indx[-1]])
+
     def get_avg_num_of_photons_in_seq_pulse(self, delay, seq=Config.Sprint_Exp_Gaussian_samples_S):
         seq_filter = (np.array(seq) > 0).astype(int)
         seq_filter = np.append(np.zeros(delay), seq_filter[delay:])
         seq_indx = np.where(seq_filter > 0)[0]
         self.avg_num_of_photons_in_seq_pulse = []
-        self.pulse_loc =[]
+        self.pulse_loc = []
         start_indx = seq_indx[0]
         number_of_photons_in_current_pulse = self.tt_N_det_SPRINT_events_batch[seq_indx[0]] + self.tt_S_det_SPRINT_events_batch[seq_indx[0]]
         for i in range(1, len(seq_indx)):
@@ -1652,7 +1667,7 @@ class OPX:
             qrdCtrl.saveLinesAsCSV(f'{dirname}QuadRF_table.csv')
         ## ------------------ end of saving section -------
 
-    def Start_Sprint_Exp_with_tt(self, N=100, self.exp_sequence_len=int(len(Config.Sprint_Exp_Gaussian_samples_S)),
+    def Start_Sprint_Exp_with_tt(self, N=100, exp_sequence_len=int(len(Config.Sprint_Exp_Gaussian_samples_S)),
                                    Transit_profile_bin_size=100, preComment=None, lock_err_threshold=1,
                                    transit_counts_threshold=5, transit_time_threshold=6000, bandwidth=80,
                                    freq_step=4):
@@ -1660,9 +1675,9 @@ class OPX:
         Max_probe_counts = None  # return the average maximum probe counts of 3 cycles.
         self.SPRINT_Exp_switch(True)
         self.update_parameters()
-        self.Save_SNSPDs_Sprint_Measurement_with_tt(N, self.exp_sequence_len, Transit_profile_bin_size, preComment,
+        self.Save_SNSPDs_Sprint_Measurement_with_tt(N, exp_sequence_len, Transit_profile_bin_size, preComment,
                                                       lock_err_threshold, transit_counts_threshold,
-                                                      transit_time_threshold, bandwidth, freq_step, Max_probe_counts)
+                                                      transit_time_threshold, bandwidth)
 
     ## MW spectroscopy variable update functions: ##
 
@@ -1757,7 +1772,7 @@ class OPX:
 if __name__ == "__main__":
     # try:
         experiment = OPX(Config.config)
-        # experiment.Start_Sprint_Exp_with_tt(N=500, preComment='test')
+        experiment.Start_Sprint_Exp_with_tt(N=500, preComment='test')
     # except KeyboardInterrupt:
     #     experiment.job.halt()
     #     experiment.qmm.reset_data_processing()
