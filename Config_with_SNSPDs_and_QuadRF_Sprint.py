@@ -125,7 +125,7 @@ efficiency = 0.5 # the efficiency of the system
 num_of_photons_per_sequence_S = num_of_photons_det_pulses * num_of_det_pulses_S + num_of_photons_sprint_pulses * num_of_sprint_pulses_S
 num_of_photons_per_sequence_N = num_of_photons_det_pulses * num_of_det_pulses_N + num_of_photons_sprint_pulses * num_of_sprint_pulses_N
 
-def Sprint_Exp_Gaussian_samples(prep_pulse_len = 60,prep_pulse_amp = 0.4,det_pulse_len = 30, det_pulses_amp = [0.4]*6,sprint_pulses_amp = [0.4]*4
+def Sprint_Exp_Gaussian_samples(sprint_pulse_len=110,prep_pulse_len = 60,prep_pulse_amp = 0.4,det_pulse_len = 30, det_pulses_amp = [0.4]*6,sprint_pulses_amp = [0.4]*4
                                 ,num_init_zeros = 10,num_between_zeros = 10, num_fin_zeros = 0):
     Sprint_Exp_Gaussian_samples = [0] * num_init_zeros
     for n in det_pulses_amp:
@@ -134,7 +134,7 @@ def Sprint_Exp_Gaussian_samples(prep_pulse_len = 60,prep_pulse_amp = 0.4,det_pul
     Sprint_Exp_Gaussian_samples += (signal.gaussian(prep_pulse_len, std=(prep_pulse_len / 2.355)) * prep_pulse_amp).tolist() + [0] * num_between_zeros
     for m in sprint_pulses_amp:
         # Sprint_Exp_Gaussian_samples += [m] * 110 + [0] * num_between_zeros
-        Sprint_Exp_Gaussian_samples += (signal.gaussian(110, std=(110 / 2.355)) * m).tolist() + [0] * num_between_zeros
+        Sprint_Exp_Gaussian_samples += (signal.gaussian(sprint_pulse_len, std=(sprint_pulse_len / 2.355)) * m).tolist() + [0] * num_between_zeros
     Sprint_Exp_Gaussian_samples += [0] * num_fin_zeros
     return Sprint_Exp_Gaussian_samples[:-num_between_zeros]
 
@@ -144,7 +144,10 @@ det_pulse_amp_S = [0.45, 0, 0, 0, 0, 0]
 prep_pulse_amp_S = 0.4
 prep_pulse_len = 60
 sprint_pulse_amp_S=[0, 0.1, 0]
-Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(prep_pulse_len=prep_pulse_len, prep_pulse_amp=prep_pulse_amp_S,
+sprint_pulse_len = 110
+Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
+                                                            prep_pulse_len=prep_pulse_len,
+                                                            prep_pulse_amp=prep_pulse_amp_S,
                                                             det_pulse_len=det_pulse_len,
                                                             det_pulses_amp=det_pulse_amp_S,
                                                             sprint_pulses_amp=sprint_pulse_amp_S, num_init_zeros=50,
