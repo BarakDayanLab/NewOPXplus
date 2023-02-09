@@ -1025,9 +1025,7 @@ class OPX:
         return [(np.average(Probe_counts_North) * 1000) / self.M_time,
                 (np.average(Probe_counts_South) * 1000) / self.M_time]
 
-
-
-    def get_avg_num_of_photons_in_det_pulse(self, det_pulse_len, sprint_sequence_delay, num_of_det_pulses, num_of_sprint_sequences):
+    def get_avg_num_of_photons_in_det_pulse(self, det_pulse_len, delay, num_of_det_pulses, number_of_exp_sequences):
         self.avg_num_of_photons_in_det_pulse = np.zeros(num_of_det_pulses)
         for i in range(num_of_det_pulses):
             detection_puls_ind =\
@@ -1144,6 +1142,24 @@ class OPX:
         atom_detect_data = [transit_sequences,num_of_detected_atom]
         return atom_detect_data,sprints_data
 
+    def get_avg_num_of_photons_in_seq_pulse(self, delay, seq=Config.Sprint_Exp_Gaussian_samples_S):
+        seq_filter = (np.array(seq) > 0).astype(int)
+        seq_filter = np.append(np.zeros(delay), seq_filter[delay:])
+        seq_indx = np.where(seq_filter > 0)[0]
+        self.avg_num_of_photons_in_seq_pulse = []
+        self.pulse_loc =[]
+        start_indx = seq_indx[0]
+        number_of_photons_in_current_pulse = self.tt_N_det_SPRINT_events_batch[seq_indx[0]] + self.tt_S_det_SPRINT_events_batch[seq_indx[0]]
+        for i in range(1, len(seq_indx)):
+            if seq_indx[i] - seq_indx[i-1] > 1:
+                self.avg_num_of_photons_in_seq_pulse.append(number_of_photons_in_current_pulse)
+                self.pulse_loc.append((start_indx, seq_indx[i-1]))
+                start_indx = seq_indx[i]
+                number_of_photons_in_current_pulse = 0
+            number_of_photons_in_current_pulse += self.tt_N_det_SPRINT_events_batch[seq_indx[i]] + self.tt_S_det_SPRINT_events_batch[seq_indx[i]]
+        self.avg_num_of_photons_in_seq_pulse.append(number_of_photons_in_current_pulse)
+        self.pulse_loc.append((start_indx, seq_indx[-1]))
+
 
     def fold_tt_histogram(self,folded_transmission,folded_reflection):
         for i in range(self.M_window):
@@ -1171,6 +1187,10 @@ class OPX:
         :param max_probe_counts: The maximum counts probe counts at each direction measured when cavity isn't locked.
         :return:
         """
+        # if preComment is True:
+        if not preComment:
+            preComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
+        aftComment = None
 
         # set parameters
         Num_Of_dets = [1, 2, 3, 6, 7, 8]
@@ -1251,6 +1271,15 @@ class OPX:
                                             num_of_sprint_pulses=len(Config.sprint_pulse_amp_S),
                                             num_of_sprint_sequences=self.number_of_exp_sequences)
 
+            self.tt_S_binning = np.zeros(number_of_exp_sequences + 1)
+            self.tt_S_SPRINT_events = np.zeros(exp_sequence_len)
+            self.tt_S_SPRINT_events_batch = np.zeros(exp_sequence_len)
+            self.tt_Single_det_SPRINT_events = np.zeros((len(Num_Of_dets), exp_sequence_len))
+            self.tt_Single_det_SPRINT_events_batch = np.zeros((len(Num_Of_dets), exp_sequence_len))
+            self.tt_N_det_SPRINT_events_batch = np.zeros(exp_sequence_len)
+            self.tt_S_det_SPRINT_events_batch = np.zeros(exp_sequence_len)
+
+
             # fold reflections and transmission
             self.folded_transmission, self.folded_reflection = \
                 self.fold_tt_histogram(self.folded_transmission, self.folded_reflection)
@@ -1275,13 +1304,18 @@ class OPX:
 
         FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
         Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
+
         self.tt_measure_batch = []
+        self.tt_S_measure_batch = []
         for i in range(len(Num_Of_dets)):
             self.tt_measure_batch.append([self.tt_measure[i]])
+        self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
+        tt_S_binning_batch = tt_S_binning_batch[-(N - 1):] + [self.tt_S_binning]
+        Counter = 1
         #
         # ### Find transits and build histogram:  ###
         [self.atom_detect_data,self.sprints_data]=self.find_transits_and_sprint_events(delay,detection_condition=[2,2])
-        
+
         # current_transit = []
         # all_transits = []
         # all_transits_aligned_first = []
@@ -1292,7 +1326,7 @@ class OPX:
         #     if not current_transit and value:  # if the array is empty
         #         current_transit.append(index)
         #     if value:
-        #         if ((index - current_transit[0]) * self.exp_sequence_len) < transit_time_threshold:
+        #         if ((index - current_transit[0]) * histogram_bin_size) < transit_time_threshold:
         #             current_transit.append(index)
         #         elif len(current_transit) > transit_counts_threshold:
         #             all_transits.append(current_transit)
@@ -1301,7 +1335,7 @@ class OPX:
         #             current_transit = [index]
         #         else:
         #             # Finding if there any index that was saved to current transit and is close enough to the new index
-        #             t = [i for i, elem in enumerate(current_transit) if ((index - elem) * self.exp_sequence_len) < transit_time_threshold]
+        #             t = [i for i, elem in enumerate(current_transit) if ((index - elem) * histogram_bin_size) < transit_time_threshold]
         #             if t:
         #                 current_transit = current_transit[t[0]:] + [index]
         #             else:
@@ -1370,7 +1404,7 @@ class OPX:
             # plt.show()
             # plt.pause(0.5)
             for i in range(len(Num_Of_dets)):
-                ax1.plot(self.single_det_folded_accumulated[i], label='detector' + str(Num_Of_dets[i]))
+                ax1.plot(self.tt_Single_det_SPRINT_events_batch[i], label='detector'+str(Num_Of_dets[i]))
             ax1.set_title('binned timetags from all detectors folded (batch)', fontweight="bold")
             # ax1.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
             #     ax1.text(0.05, 0.95, textstr_detuned, transform=ax1.transAxes, fontsize=12,
@@ -1423,6 +1457,8 @@ class OPX:
             #     ax1.set_ylim(0, 8)
             #     ax2.set_ylim(0, 8)
             #
+
+
             plt.tight_layout()
             # plt.show()
             plt.pause(0.5)
@@ -1478,6 +1514,9 @@ class OPX:
                     self.tt_S_SPRINT_events_batch[x % self.exp_sequence_len] += 1
 
                 self.Single_det_foldeded = np.zeros((len(Num_Of_dets), self.exp_sequence_len))
+                self.tt_N_det_SPRINT_events_batch = np.zeros(exp_sequence_len)
+                self.tt_S_det_SPRINT_events_batch = np.zeros(exp_sequence_len)
+
                 # fold for different detectors:
                 for i in range(len(Num_Of_dets)):
                     # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]:
