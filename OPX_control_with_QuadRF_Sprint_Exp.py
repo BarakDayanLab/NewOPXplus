@@ -1070,8 +1070,26 @@ class OPX:
             self.tt_measure[i].sort()
         self.tt_N_measure = sorted(sum(self.tt_measure[:3][0],[])) # unify detectors 1-3
         self.tt_S_measure = sorted(sum(self.tt_measure[3:][0],[])) # unify detectors 6-8
-
-    def divide_to_reflection_trans(self,sprint_sequence_delay,num_of_det_pulses,num_of_sprint_pulses,num_of_sprint_sequences):
+    def get_pulses_bins(self,det_pulse_len,sprint_pulse_len,num_of_det_pulses,num_of_sprint_pulses,
+                        sprint_sequence_delay,num_of_sprint_sequences,num_init_zeros,num_fin_zeros):
+        '''
+        generating bin vwctor with edges at the efges of pulses (such that the histogram would give the number of
+        clicks within pulse).
+        :param det_pulse_len:
+        :param sprint_pulse_len:
+        :param num_of_det_pulses:
+        :param num_of_sprint_pulses:
+        :param sprint_sequence_delay:
+        :return:
+        '''
+        pulses_bins = [sprint_sequence_delay+Config.num_init_zeros]
+        for i in range(num_of_sprint_sequences):
+            pulses_bins += (pulses_bins[-1]+np.arange(0,num_of_det_pulses*det_pulse_len,det_pulse_len)).tolist()
+            pulses_bins += (pulses_bins[-1]+np.arange(0,num_of_sprint_pulses*sprint_pulse_len,num_of_sprint_pulses)).tolist()
+            pulses_bins[-1] += Config.num_fin_zeros+Config.num_init_zeros
+        return pulses_bins
+    def divide_to_reflection_trans(self,det_pulse_len,sprint_pulse_len,sprint_sequence_delay,num_of_det_pulses,
+                                   num_of_sprint_pulses,num_of_sprint_sequences):
         '''
         dividing south and north tt's vectros into reflection and transmission vectors, by:
         1. converting them into counts vector in same time spacing as the initial pulse.
@@ -1079,46 +1097,27 @@ class OPX:
         :return:
         '''
         # create histogram with self.M_window bins
-        self.tt_histogram_N,_ = np.histogram(self.tt_N_measure,self.M_window)
-        self.tt_histogram_S,_ = np.histogram(self.tt_S_measure,self.M_window)
+        self.pulses_bins_S = self.get_pulses_bins(det_pulse_len,sprint_pulse_len,num_of_det_pulses,num_of_sprint_pulses
+                             ,sprint_sequence_delay,num_of_sprint_sequences,Config.num_init_zeros_S,Config.num_fin_zeros_S)
+        self.pulses_bins_N = self.get_pulses_bins(det_pulse_len,sprint_pulse_len,num_of_det_pulses,num_of_sprint_pulses
+                             ,sprint_sequence_delay,num_of_sprint_sequences,Config.num_init_zeros_N,Config.num_fin_zeros_N)
+        pulses_bins =
+        self.tt_histogram_N,_ = np.histogram(self.tt_N_measure,self.pulses_bins)
+        self.tt_histogram_S,_ = np.histogram(self.tt_S_measure,self.pulses_bins)
 
         ### build reflection and transmission pulses indices, by setting non zero at indices elements ###
         # build transmission South indices
-        transmission_indices_S =[0] * Config.num_init_zeros
-        # add detection pulses indices
-        for i in range(num_of_det_pulses):
-            transmission_indices_S +=\
-                np.repeat(Config.det_pulse_amp_S,Config.det_pulse_len+Config.num_between_zeros).tolist()
-        # add detection prep pulse indices
-        transmission_indices_S+=[Config.prep_pulse_amp_S]*(Config.prep_pulse_len+Config.num_between_zeros)
-        # add SPRINT pulse indices
-        for i in range(num_of_sprint_pulses):
-            transmission_indices_S += np.repeat(Config.sprint_pulse_amp_S,(Config.sprint_pulse_len+Config.num_between_zeros)).tolist()
-        #add final zeros
-        transmission_indices_S += [0] * Config.num_fin_zeros
-        # repeat indices of sequence "num_of_sprint_sequences" times
-        transmission_indices_S = sprint_sequence_delay*[0]+transmission_indices_S*num_of_sprint_sequences
-       # get indices by taking the nonzero elements
-        transmission_indices_S = np.nonzero(transmission_indices_S)[0].tolist()
-
-        # get transmission indices by decreasing the South indices from total
-        transmission_indices_N = list(set(range(self.M_window))-set(transmission_indices_S))
-
-        # get transmission indices by decreasing the South indices from total
-        reflection_indices_N = transmission_indices_S
-        reflection_indices_S = transmission_indices_N
-
-        tt_histogram_reflection = list(map(lambda x: self.tt_histogram_N[x],reflection_indices_N))+\
-                                       list(map(lambda x: self.tt_histogram_S[x], reflection_indices_S))
-
-        tt_histogram_transmission = list(map(lambda x: self.tt_histogram_N[x],transmission_indices_N))+\
-                                       list(map(lambda x: self.tt_histogram_S[x], transmission_indices_S))
-
+        first_pulse_S = np.nonzero(Config.det_pulse_amp_S)[0][0]
+        first_pulse_N = np.nonzero(Config.det_pulse_amp_N)[0][0]
+        tt_histogram_transmission = self.tt_histogram_S[(1+first_pulse_S)::2] + self.tt_histogram_N[(1+first_pulse_N)::2]
+        tt_histogram_reflection = self.tt_histogram_S[(1+first_pulse_N)::2] + self.tt_histogram_N[(1+first_pulse_S)::2]
         return tt_histogram_transmission,tt_histogram_reflection
 
     def find_transits_and_sprint_events(self,delay,detection_condition):
         transit_sequences=[]
         sprints_events=[]
+        num_of_pulses = num_of_det_pulses + num_of_sprint_pulses
+
         num_of_detected_atom=0
         num_of_sprints = 0
         detection_pulse_range=np.zeros(self.number_of_exp_sequences,Config.det_pulse_len)
@@ -1127,18 +1126,17 @@ class OPX:
         #define ranges
         for i in range(self.number_of_exp_sequences):
             detection_pulse_range[i] =\
-            list(range(i*self.exp_sequence_len+delay,i*self.exp_sequence_len+delay+Config.det_pulse_len))
-            prep_pulse_range[i] =\
-            list(range(detection_pulse_range[-1],detection_pulse_range[-1]+Config.prep_pulse_len))
+            list(range(i*num_of_pulses,i*num_of_pulses+Config.num_of_det_pulses))
             sprint_pulse_range[i] = \
-                list(range(prep_pulse_range[-1],prep_pulse_range[-1]+Config.sprint_puse_len))
+                list(range(detection_pulse_range[-1],detection_pulse_range[-1]+Config.num_of_sprint_pulses))
         # find transits and sprint events
         for j in range(self.number_of_exp_sequences-1):
-            if sum(self.tt_histogram_reflection[detection_pulse_range[j]])>=detection_condition[0] and\
+            if \
+                    sum(self.tt_histogram_reflection[detection_pulse_range[j]])>=detection_condition[0] and\
                 sum(self.tt_histogram_reflection[detection_pulse_range[j+1]])>=detection_condition[1]:
                 num_of_detected_atom+=1
                 transit_sequences.append(j*self.exp_sequence_len)
-                if sum(self.tt_histogram_reflection[prep_pulse_range[j]])>=1:
+                if self.tt_histogram_reflection[sprint_pulse_range[j][0]]:
                     num_of_sprints+=1
                     sprints_events.append(self.tt_histogram_reflection[sprint_pulse_range[j]])
         sprints_data = [sprints_events,num_of_sprints]
@@ -1223,7 +1221,8 @@ class OPX:
         # detector_delay = [5,0,0,15] # For detectors 1-4 "N"
         detector_delay = [0, 0, 0, 0] # For detectors 5-8 "S"
         delay = 30 # choose the correct delay in samples to the first detection pulse
-
+        det_pulse_len = Config.det_pulse_len+Config.num_between_zeros
+        sprint_pulse_len = Config.sprint_pulse_len+Config.num_between_zeros
 
 
         # define empty variables
@@ -1293,7 +1292,8 @@ class OPX:
 
             # divide south and north into reflection and transmission
             self.tt_histogram_transmission,self.tt_histogram_reflection = \
-            self.divide_to_reflection_trans(sprint_sequence_delay=delay,num_of_det_pulses=len(Config.det_pulse_amp_S),
+            self.divide_to_reflection_trans(det_pulse_len=det_pulse_len,sprint_pulse_len=sprint_pulse_len,
+                                            sprint_sequence_delay=delay,num_of_det_pulses=len(Config.det_pulse_amp_S),
                                             num_of_sprint_pulses=len(Config.sprint_pulse_amp_S),
                                             num_of_sprint_sequences=self.number_of_exp_sequences)
 
