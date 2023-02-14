@@ -303,7 +303,7 @@ Operation_Modes = {
                                     'Buffer_Cycles': 0,
                                     'Imaging_Phase': 'Pulse_1',
                                     'PrePulse_duration': 10,  # [msec]
-                                    'Shutter_open_time': 3,  # [msec]
+                                    'Shutter_open_time': 5,  # [msec]
                                     'Pulse_1_Repump_amp': 0.000001,
                                     'Pulse_1_duration': int(Config_Sprint.readout_pulse_sprint_len_N)/ 1e6,  # [msec]
                                     ## If with fountain:
