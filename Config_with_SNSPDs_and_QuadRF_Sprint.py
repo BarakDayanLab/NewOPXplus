@@ -146,7 +146,7 @@ det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.45]
 # det_pulse_amp_S = [0, 0, 0, 0, 0, 0]
 prep_pulse_amp_S = 0.4
 prep_pulse_len = 50
-sprint_pulse_amp_S = [0, 0.45, 0]
+sprint_pulse_amp_S = [0, 0.1, 0]
 sprint_pulse_len = 110
 Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
                                                             det_pulse_len=det_pulse_len,
@@ -161,7 +161,7 @@ det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
 Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
                                                             det_pulse_len=det_pulse_len,
                                                             det_pulses_amp=det_pulse_amp_N,
-                                                            sprint_pulses_amp=[0.45, 0, 0.45], num_init_zeros=num_init_zeros_N,
+                                                            sprint_pulses_amp=[0.1, 0, 0.1], num_init_zeros=num_init_zeros_N,
                                                             num_between_zeros=num_between_zeros, num_fin_zeros=num_fin_zeros_N)
 
 # readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/4)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
