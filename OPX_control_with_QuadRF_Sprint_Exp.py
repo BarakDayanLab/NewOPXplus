@@ -14,6 +14,7 @@ import numpy as np
 import time, json
 import sys
 import os
+import math
 from pynput import keyboard
 import logging
 from logging import StreamHandler, Formatter, INFO, WARN, ERROR
@@ -333,7 +334,7 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
         play("Sprint_experiment_pulses_S", "PULSER_S")
         play("Sprint_experiment_pulses_N", "PULSER_N")
 
-    wait(84, "Dig_detectors")
+    wait(86, "Dig_detectors")
     with for_(n, 0, n < m_time * 4, n + m_window):
         measure("readout_SPRINT", "Dig_detectors", None,
                 time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
@@ -1189,33 +1190,48 @@ class OPX:
         return atom_detect_data, sprints_data
 
 
-    def get_pulses_location_in_seq(self, delay, seq=Config.Sprint_Exp_Gaussian_samples_S):
+    def get_pulses_location_in_seq(self, delay, seq=Config.Sprint_Exp_Gaussian_samples_S, smearing = int(Config.num_between_zeros/2)):
+        '''
+        A function that uses the original sequence samples that the OPX uses, in order to obtain the location of the
+        pulses in the sequence and build a filter. The user may add smearing which is the value that is added before and
+        after each pulse in the sequence to match the filter to the performance of the physical system (AOMs).
+        :param delay: Between the actual sequence pulse location to the location of the folded data
+        :param seq: The sequence of pulses from which the filter is generated.
+        :param smearing: The value that is added to the filter before and after the each pulse in the sequence.
+        :return:
+        '''
         seq_filter = (np.array(seq) > 0).astype(int)
         # seq_filter = np.append(np.zeros(delay), seq_filter[delay:])
         seq_filter = np.roll(seq_filter, delay)
         seq_indx = np.where(seq_filter > 0)[0]
+        seq_filter_with_smearing = seq_filter
         pulses_loc = []
         start_indx = seq_indx[0]
         for i in range(1, len(seq_indx)):
             if seq_indx[i] - seq_indx[i-1] > 1:
-                pulses_loc.append((start_indx - int(Config.num_between_zeros/2),
-                                  seq_indx[i-1] + int(Config.num_between_zeros/2)))
+                pulses_loc.append((start_indx - int(smearing), seq_indx[i-1] + int(smearing)))
+                for j in range(start_indx, seq_indx[i-1]):
+                    seq_filter_with_smearing[j] = 1
                 start_indx = seq_indx[i]
         pulses_loc.append((start_indx, seq_indx[-1]))
-        return pulses_loc
+        return pulses_loc,  seq_filter_with_smearing
 
 
     def get_avg_num_of_photons_in_seq_pulses(self, seq, pulse_loc):
         avg_num_of_photons_in_seq_pulses = []
+        real_number_of_seq = math.ceil(max(self.tt_S_measure)/len(Config.Sprint_Exp_Gaussian_samples_S))
         for t in pulse_loc:
-            avg_num_of_photons_in_seq_pulses.append((sum(seq[t[0]:t[1]]) + seq[t[1]]) / self.number_of_sprint_sequences)
+            avg_num_of_photons_in_seq_pulses.append((sum(seq[t[0]:t[1]]) + seq[t[1]]) / (real_number_of_seq * 0.37))
         return avg_num_of_photons_in_seq_pulses
 
 
     def get_max_value_in_seq_pulses(self, seq, pulse_loc):
         max_value_in_seq_pulses = []
         for t in pulse_loc:
-            max_value_in_seq_pulses.append(max(seq[t[0]:t[1]]))
+            if t[1] < (len(seq) + 1):
+                max_value_in_seq_pulses.append(max(seq[t[0]:t[1]]))
+            else:
+                max_value_in_seq_pulses.append(max(seq[t[0]:]))
         return max_value_in_seq_pulses
 
     def num_of_photons_txt_box_loc(self, pulse_loc):
@@ -1241,15 +1257,17 @@ class OPX:
     #     self.pulse_loc.append((start_indx, seq_indx[-1]))
 
 
-    def fold_tt_histogram(self,exp_sequence_len,delay_S,delay_N):
+    def fold_tt_histogram(self, exp_sequence_len, delay_S,delay_N):
         # fold north and south
-        self.folded_tt_S = np.zeros(exp_sequence_len,dtype=int)
-        self.folded_tt_N= np.zeros(exp_sequence_len,dtype=int)
+        self.folded_tt_S = np.zeros(exp_sequence_len, dtype=int)
+        self.folded_tt_N= np.zeros(exp_sequence_len, dtype=int)
 
         for x in [elem for elem in self.tt_S_measure]:
             self.folded_tt_S[x % exp_sequence_len] += 1
         for x in [elem for elem in self.tt_N_measure]:
             self.folded_tt_N[x % exp_sequence_len] += 1
+
+
 
         # a vector of ones at pulses inexes and zeros else, used to take only pulses location
         S_pulses_location = np.asarray(Config.Sprint_Exp_Gaussian_samples_S).astype(bool).astype(int)
@@ -1302,6 +1320,7 @@ class OPX:
         # plt.plot(tt_S_binning_batch, label='unfolded data')
         # plt.show()
         # plt.pause(0.5)
+
         # for i in range(len(Num_Of_dets)):
         #     ax[0].plot(self.tt_Single_det_SPRINT_events_batch[i], label='detector' + str(Num_Of_dets[i]))
         # ax[0].set_title('binned timetags from all detectors folded (batch)', fontweight="bold")
@@ -1312,11 +1331,23 @@ class OPX:
         #     print('ok')
         # for i in range(len(Num_Of_dets)):
         #     ax[1].plot(self.Single_det_foldeded[i], label='detector' + str(Num_Of_dets[i]))
+
+        ax[0].plot(self.folded_tt_N_batch, label='"N" detectors')
+        ax[0].plot(self.folded_tt_S_batch, label='"S" detectors')
+        ax[0].plot((self.filter_N + self.filter_S) * max(self.folded_tt_N_batch + self.folded_tt_S_batch), '--k', label='Filter')
+        for i in range(len(self.Num_of_photons_txt_box_y_loc)):
+            ax[0].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc[i],
+                     '%.2f' % self.avg_num_of_photons_per_pulse[i],
+                     horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
+        ax[0].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
+        ax[0].legend(loc='upper right')
+
         ax[1].plot(self.folded_tt_N, label='"N" detectors')
         ax[1].plot(self.folded_tt_S, label='"S" detectors')
-        for i in range(len(self.Num_of_photons_txt_box_y_loc)):
-            ax[1].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc[i],
-                     '%.2f' % self.avg_num_of_photons_per_pulse[i],
+        ax[1].plot((self.filter_N + self.filter_S) * max(self.folded_tt_N + self.folded_tt_S), '--k', label='Filter')
+        for i in range(len(self.Num_of_photons_txt_box_y_loc_live)):
+            ax[1].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc_live[i],
+                     '%.2f' % self.avg_num_of_photons_per_pulse_live[i],
                      horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
         ax[1].set_title('binned timetags from all detectors folded (Live)', fontweight="bold")
         ax[1].legend(loc='upper right')
@@ -1332,8 +1363,8 @@ class OPX:
         ax[3].set_title('folded reflection and transmission(accumulated)', fontweight="bold")
         ax[3].legend(loc='upper right')
 
-        ax[4].plot(np.histogram(self.transit_sequences,bins=self.number_of_sprint_sequences
-                                ,range=(0,self.M_window))[0], label='transits(Live)')
+        ax[4].plot(np.histogram(self.transit_sequences,bins=self.number_of_sprint_sequences,
+                                range=(0, self.M_window))[0], label='transits(Live)')
         ax[4].set_title('transit histogram(live)', fontweight="bold")
         ax[4].legend(loc='upper right')
         ax[4].text(0.5,0.5,'number of transits='+str(self.atom_detect_data[1]))
@@ -1424,8 +1455,8 @@ class OPX:
         det_pulse_len = Config.det_pulse_len+Config.num_between_zeros
         sprint_pulse_len = Config.sprint_pulse_len+Config.num_between_zeros
 
-        self.pulses_location_in_seq_S = self.get_pulses_location_in_seq(0, Config.Sprint_Exp_Gaussian_samples_S)
-        self.pulses_location_in_seq_N = self.get_pulses_location_in_seq(0, Config.Sprint_Exp_Gaussian_samples_N)
+        self.pulses_location_in_seq_S, self.filter_S = self.get_pulses_location_in_seq(0, Config.Sprint_Exp_Gaussian_samples_S, smearing=int(Config.num_between_zeros/2))
+        self.pulses_location_in_seq_N, self.filter_N = self.get_pulses_location_in_seq(0, Config.Sprint_Exp_Gaussian_samples_N, smearing=int(Config.num_between_zeros/2))
 
         self.Num_of_photons_txt_box_x_loc = np.concatenate((self.num_of_photons_txt_box_loc(self.pulses_location_in_seq_S),
                                                            self.num_of_photons_txt_box_loc(self.pulses_location_in_seq_N)))
@@ -1452,10 +1483,8 @@ class OPX:
         self.tt_N_measure_batch = []
         self.transit_sequences_batch = []
 
-
         self.folded_transmission = np.zeros(len(Config.Sprint_Exp_Gaussian_samples_S))
         self.folded_reflection = np.zeros(len(Config.Sprint_Exp_Gaussian_samples_S))
-
 
         self.tt_S_binning = np.zeros(self.number_of_sprint_sequences + 1)
         self.tt_S_SPRINT_events = np.zeros(self.sprint_sequence_len)
@@ -1531,20 +1560,26 @@ class OPX:
                     self.Single_det_foldeded[i][x % self.sprint_sequence_len] += 1
                     self.single_det_folded_accumulated[i][x % self.sprint_sequence_len] += 1
 
+        # Batch folded tt "N" and "S"
+        self.folded_tt_N_batch = self.folded_tt_N
+        self.folded_tt_S_batch = self.folded_tt_S
+
         # get the average number of photons in detection pulse
-        self.avg_num_of_photons_per_pulse_S = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S, self.pulses_location_in_seq_S)
-        self.avg_num_of_photons_per_pulse_N = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N, self.pulses_location_in_seq_N)
-        self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_S + self.avg_num_of_photons_per_pulse_N
+        self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S, self.pulses_location_in_seq_S)
+        self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N, self.pulses_location_in_seq_N)
+        self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + self.avg_num_of_photons_per_pulse_N_live
+        self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_live
 
         # get box location on the y-axis:
-        self.max_value_per_pulse_S = self.get_max_value_in_seq_pulses(self.folded_tt_S, self.pulses_location_in_seq_S)
-        self.max_value_per_pulse_N = self.get_max_value_in_seq_pulses(self.folded_tt_N, self.pulses_location_in_seq_N)
-        self.Num_of_photons_txt_box_y_loc = self.max_value_per_pulse_S + self.max_value_per_pulse_N
+        self.max_value_per_pulse_S_live = self.get_max_value_in_seq_pulses(self.folded_tt_S, self.pulses_location_in_seq_S)
+        self.max_value_per_pulse_N_live = self.get_max_value_in_seq_pulses(self.folded_tt_N, self.pulses_location_in_seq_N)
+        self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + self.max_value_per_pulse_N_live
+        self.Num_of_photons_txt_box_y_loc = self.Num_of_photons_txt_box_y_loc_live
 
-        self.get_avg_num_of_photons_in_det_pulse(det_pulse_len=(Config.det_pulse_len+Config.num_between_zeros),
-                                                 sprint_sequence_delay=delay_in_detection_S, num_of_det_pulses=len(Config.det_pulse_amp_S),
-                                                 num_of_sprint_sequences=self.number_of_sprint_sequences)
-        print('average number of photons in detection pulses is:', self.avg_num_of_photons_in_det_pulse)
+        # self.get_avg_num_of_photons_in_det_pulse(det_pulse_len=(Config.det_pulse_len+Config.num_between_zeros),
+        #                                          sprint_sequence_delay=delay_in_detection_S, num_of_det_pulses=len(Config.det_pulse_amp_S),
+        #                                          num_of_sprint_sequences=self.number_of_sprint_sequences)
+        # print('average number of photons in detection pulses is:', self.avg_num_of_photons_in_det_pulse)
 
         ## record time
         timest = time.strftime("%Y%m%d-%H%M%S")
@@ -1621,14 +1656,24 @@ class OPX:
                                                          num_of_sprint_pulses=len(Config.sprint_pulse_amp_S))
                 self.transit_sequences = self.atom_detect_data[0]
 
+                # Batch folded tt "N" and "S"
+                self.folded_tt_N_batch = (self.folded_tt_N_batch * (Counter - 1) + self.folded_tt_N) / Counter
+                self.folded_tt_S_batch = (self.folded_tt_S_batch * (Counter - 1) + self.folded_tt_S) / Counter
+
                 # get the average number of photons in detection pulse
-                self.avg_num_of_photons_per_pulse_S = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S, self.pulses_location_in_seq_S)
-                self.avg_num_of_photons_per_pulse_N = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N, self.pulses_location_in_seq_N)
+                self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S, self.pulses_location_in_seq_S)
+                self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N, self.pulses_location_in_seq_N)
+                self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + self.avg_num_of_photons_per_pulse_N_live
+                self.avg_num_of_photons_per_pulse_S = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S_batch, self.pulses_location_in_seq_S)
+                self.avg_num_of_photons_per_pulse_N = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N_batch, self.pulses_location_in_seq_N)
                 self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_S + self.avg_num_of_photons_per_pulse_N
 
                 # get box location on the y-axis:
-                self.max_value_per_pulse_S = self.get_max_value_in_seq_pulses(self.folded_tt_S, self.pulses_location_in_seq_S)
-                self.max_value_per_pulse_N = self.get_max_value_in_seq_pulses(self.folded_tt_N, self.pulses_location_in_seq_N)
+                self.max_value_per_pulse_S_live = self.get_max_value_in_seq_pulses(self.folded_tt_S, self.pulses_location_in_seq_S)
+                self.max_value_per_pulse_N_live = self.get_max_value_in_seq_pulses(self.folded_tt_N, self.pulses_location_in_seq_N)
+                self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + self.max_value_per_pulse_N_live
+                self.max_value_per_pulse_S = self.get_max_value_in_seq_pulses(self.folded_tt_S_batch, self.pulses_location_in_seq_S)
+                self.max_value_per_pulse_N = self.get_max_value_in_seq_pulses(self.folded_tt_N_batch, self.pulses_location_in_seq_N)
                 self.Num_of_photons_txt_box_y_loc = self.max_value_per_pulse_S + self.max_value_per_pulse_N
 
                 # fold for different detectors: # TODO: delete after everything works
@@ -1637,12 +1682,6 @@ class OPX:
                     for x in [elem for elem in self.tt_measure[i][-1]]:
                         self.Single_det_foldeded[i][x % self.sprint_sequence_len] += 1
                         self.single_det_folded_accumulated[i][x % self.sprint_sequence_len] += 1
-
-                # self.get_avg_num_of_photons_in_det_pulse(
-                #     det_pulse_len=(Config.det_pulse_len + Config.num_between_zeros),
-                #     sprint_sequence_delay=detector_delay, num_of_det_pulses=len(Config.det_pulse_amp_S),
-                #     num_of_sprint_sequences=self.number_of_exp_sequences)
-                # print('average number of photons in detection pulses is:', self.avg_num_of_photons_in_det_pulse)
 
                 FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
