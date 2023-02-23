@@ -440,89 +440,74 @@ def opx_control(obj, qm):
 
         with infinite_loop_():
             assign(i, IO1)
-            with for_(k, 1, k <= N_Snaps + Buffer_Cycles, k + 1):
-                with for_(j, 1, j <= filler, j + 1):
-                    ##########################
-                    ## Cooling Sequence ##
-                    ##########################
+            ##########################
+            ## Cooling Sequence ##
+            ##########################
 
-                    with if_(MOT_ON & AntiHelmholtz_ON):
-                        FLR = MOT(MOT_Repetitions)
-                        save(FLR, FLR_st)
-                        align(*all_elements)
-                    with if_(antihelmholtz_delay > 0):
-                        play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
-                    with if_(Trigger_Phase == 1):  # Trigger on PGC
-                        ## Trigger QuadRF Sequence #####################
-                        play("C_Seq", "Cooling_Sequence", duration=2500)
-                        ################################################
-                    # align(*all_elements, "AOM_2-2/3'")
-                    with if_(post_MOT_delay > 0):
-                        wait(post_MOT_delay, "Cooling_Sequence")
-                        align(*all_elements, "Zeeman_Coils", "AOM_2-2/3'")
-                    with if_(fountain_duration > 0):
-                        wait(fountain_duration, "Cooling_Sequence")
-                        Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
-                                                   fountain_initial_amp_0,
-                                                   fountain_initial_amp_minus, fountain_initial_amp_plus,
-                                                   fountain_final_amp_0,
-                                                   fountain_final_amp_minus, fountain_final_amp_plus,
-                                                   fountain_pulse_duration_0,
-                                                   fountain_pulse_duration_minus, fountain_pulse_duration_plus,
-                                                   fountain_aom_chirp_rate, fountain_delta_f)
-                        align(*all_elements, "Zeeman_Coils", "AOM_2-2/3'")
-                    with if_(pgc_duration > 0):
-                        wait(pgc_duration, "Cooling_Sequence")
-                        with if_(pgc_initial_amp_minus == pgc_final_amp_minus):
-                            Pulse_const(pgc_duration, pgc_final_amp_0, pgc_final_amp_minus, pgc_final_amp_plus)
-                        with else_():
-                            Pulse_with_prep(pgc_duration, pgc_prep_time, pgc_initial_amp_0, pgc_initial_amp_minus,
-                                            pgc_initial_amp_plus, pgc_final_amp_0, pgc_final_amp_minus, pgc_final_amp_plus,
-                                            pgc_pulse_duration_0, pgc_pulse_duration_minus, pgc_pulse_duration_plus)
-                        align(*all_elements, "Zeeman_Coils", "AOM_2-2/3'")
-                    with if_((k >= 1) & (Imaging_Phase == 4)):  # 4 means imaging phase on pulse_1
-                        with if_(k <= Buffer_Cycles):
-                            FreeFall(FreeFall_duration, coils_timing)
-                        with else_():
-                            FreeFall(FreeFall_duration + PrePulse_duration * (k - 1 - Buffer_Cycles), coils_timing)
+            FLR = MOT(MOT_Repetitions)
+            save(FLR, FLR_st)
+            align(*all_elements)
 
-                    ##########################
-                    ## Measurement Sequence ##
-                    ##########################
+            # Post MOT delay:
+            play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
+            wait(post_MOT_delay, "Cooling_Sequence")
+            align(*all_elements, "Zeeman_Coils", "AOM_2-2/3'")
 
-                    ## Measurement start time:
-                    with if_((k > Buffer_Cycles) & (Imaging_Phase == 4)):  # 4 means imaging phase on pulse_1
-                        wait(PrePulse_duration * (k - Buffer_Cycles), "Cooling_Sequence", "Measurement")
-                    with else_():
-                        wait(PrePulse_duration, "Cooling_Sequence", "Measurement")
-                    align(*all_elements)
+            # Fountain:
+            Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
+                                       fountain_initial_amp_0,
+                                       fountain_initial_amp_minus, fountain_initial_amp_plus,
+                                       fountain_final_amp_0,
+                                       fountain_final_amp_minus, fountain_final_amp_plus,
+                                       fountain_pulse_duration_0,
+                                       fountain_pulse_duration_minus, fountain_pulse_duration_plus,
+                                       fountain_aom_chirp_rate, fountain_delta_f)
+            align(*all_elements, "Zeeman_Coils", "AOM_2-2/3'")
 
-                    with if_(Trigger_Phase == 4):  # when trigger on pulse 1
-                        ## Trigger QuadRF Sequence #####################
-                        play("C_Seq", "Cooling_Sequence", duration=250)
-                        ################################################
-                        with if_((Imaging_Phase == 4) & (Pulse_1_duration > 0)):  # 4 means imaging phase on pulse_1
-                            ## For Depump measurement:
-                            with if_(Depump_pulse_duration > 0):
-                                wait(Depump_start + 4, "AOM_2-2/3'")
-                                Depump_Measure(Depump_pulse_duration, Depump_pulses_spacing)
-                                align(*all_elements, "AOM_2-2/3'")
-                            with else_():
-                                ## For free-space OD measurement:
-                                with if_(OD_FS_pulse_duration > 0):
-                                    wait(OD_FS_start + 4, "AOM_2-2/3'")
-                                    OD_Measure(OD_FS_pulse_duration, OD_FS_pulses_spacing, OD_FS_sleep)
-                                    align(*all_elements, "AOM_2-2/3'")
-                                with else_():
-                                    align(*all_elements, "AOM_2-2/3'")
-                                    Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_initial_amp_0,
-                                                    pulse_1_initial_amp_minus, pulse_1_initial_amp_plus,
-                                                    pulse_1_final_amp_0, pulse_1_final_amp_minus,
-                                                    pulse_1_final_amp_plus, pulse_1_duration_0,
-                                                    pulse_1_duration_minus, pulse_1_duration_plus)
-                                    Measure(Pulse_1_duration)  # This triggers camera (Control 7)
-                                    align(*all_elements, "AOM_2-2/3'")
-                        align(*all_elements, "AOM_2-2/3'")
+            # PGC:
+            Pulse_const(pgc_duration, pgc_final_amp_0, pgc_final_amp_minus, pgc_final_amp_plus)
+            align(*all_elements, "Zeeman_Coils", "AOM_2-2/3'")
+
+            # Freefall
+            align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'",
+                  "AOM_2-2/3'_detuned", "Measurement")
+            FreeFall(FreeFall_duration, coils_timing)
+
+            ##########################
+            ## Measurement Sequence ##
+            ##########################
+
+            ## Measurement start time:
+            # wait(PrePulse_duration, "Cooling_Sequence", "Measurement")
+            wait(PrePulse_duration, "Measurement")
+            # align(*all_elements)
+
+            # with if_(Trigger_Phase == 4):  # when trigger on pulse 1
+            #     ## Trigger QuadRF Sequence #####################
+            #     play("C_Seq", "Cooling_Sequence", duration=250)
+            #     ################################################
+            #     with if_((Imaging_Phase == 4) & (Pulse_1_duration > 0)):  # 4 means imaging phase on pulse_1
+            #         ## For Depump measurement:
+            #         with if_(Depump_pulse_duration > 0):
+            #             wait(Depump_start + 4, "AOM_2-2/3'")
+            #             Depump_Measure(Depump_pulse_duration, Depump_pulses_spacing)
+            #             align(*all_elements, "AOM_2-2/3'")
+            #         with else_():
+            #             ## For free-space OD measurement:
+            #             with if_(OD_FS_pulse_duration > 0):
+            #                 wait(OD_FS_start + 4, "AOM_2-2/3'")
+            #                 OD_Measure(OD_FS_pulse_duration, OD_FS_pulses_spacing, OD_FS_sleep)
+            #                 align(*all_elements, "AOM_2-2/3'")
+            #             with else_():
+            align("Measurement", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+")
+            Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_initial_amp_0,
+                            pulse_1_initial_amp_minus, pulse_1_initial_amp_plus,
+                            pulse_1_final_amp_0, pulse_1_final_amp_minus,
+                            pulse_1_final_amp_plus, pulse_1_duration_0,
+                            pulse_1_duration_minus, pulse_1_duration_plus)
+            Measure(Pulse_1_duration)  # This triggers camera (Control 7)
+            align(*all_elements, "AOM_2-2/3'")
+                # align(*all_elements, "AOM_2-2/3'")
 
             with if_(~(AntiHelmholtz_ON | Transits_Exp_ON)):
                 assign(AntiHelmholtz_ON, True)
@@ -1197,8 +1182,6 @@ class OPX:
 
 if __name__ == "__main__":
     experiment = OPX(Config.config)
-    sourceFile = open('debug.py', 'w')
-    print(generate_qua_script(experiment.opx_control_prog, Config.config), file=sourceFile)
-    sourceFile.close()
+
 
 

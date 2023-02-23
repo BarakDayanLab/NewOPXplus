@@ -86,7 +86,7 @@ Initial_Values = {
     # Free-Fall parameters:
     # The time take the atoms to reach the Toroids and fall back = 2 * sqrt(2 * (Toroid height[m] - MOT height[m]) / g[m/sec^2]) * 1e3[msec]
     # 'FreeFall_duration': 1.4 * np.sqrt(2 * 0.01 / 9.8) * 1e3,  # We use 1.4 because there is a limit for the pulse duration = 63ms
-    'FreeFall_duration': 90,  # We use 1.4 because there is a limit for the pulse duration = 63ms
+    'FreeFall_duration': 84,  # We use 1.4 because there is a limit for the pulse duration = 63ms
     'Coil_timing': 30,             # Zeeman coils turn on time from start of free fall[msec]
     'AOM_Off_Detuning': 80e6,      # [Hz]; Frequency for essentially turnning light coming from AONs off
 
@@ -128,7 +128,7 @@ Initial_Values = {
     'Pulse_1_CH_2_3_Freq': -1,     # [Hz], usually should be equal to MOT_AOM_freq
     'Pulse_1_CH4_Freq': -1,         # [Hz], usually should be equal to Repump_PGC_freq
 
-    'Pulse_1_duration': 0.2,       # [msec]
+    'Pulse_1_duration': 5,       # [msec]
     'Pulse_1_decay_duration': 0,   # [msec] # by default, pulse 1 is sharp (no decay)
     'Pulse_1_final_amp_0': 1,         # Relative AOM amplitude between 0 to 1 - (0.12 yields 3.5 mW)
     'Pulse_1_final_amp_minus': 1,         # Relative AOM amplitude between 0 to 1 - (0.12 yields 3.5 mW)

@@ -470,7 +470,7 @@ config = {
             'digitalInputs': {
                 "AntiHelmholtz": {
                     "port": (controller, 3),
-                    "delay": 0,
+                    "delay": 136,
                     "buffer": 0,
                 },
             },

@@ -66,7 +66,10 @@ class DPO7254Visa():
 
             # First we get back a few acquistion parameters
             aParams = self.ask('WFMOutpre?').split(';')
-            assert aParams[8] == '"s"' and aParams[-5] == '"V"'  # make sure we are working with seconds and volts scale; if this line raises an error, scope must be returning other units
+            try:
+                assert aParams[8] == '"s"' and aParams[-5] == '"V"'  # make sure we are working with seconds and volts scale; if this line raises an error, scope must be returning other units
+            except Exception:
+                printError('Error reading from scope. make sure all the required channels are on.')
             nDataPoints, xMulti = int(aParams[6]), float(aParams[9])  # number of points in WVFM; Time scale multiplier
             yMult, yDigOff, yOffset = float(aParams[-4]), float(aParams[-3]), float(aParams[-2])  # Digital (arbitrary) scale to volts. multiplier, arbitrary offset, offset in volts
             self.write('DATA:STOP {}'.format(nDataPoints * 2))  # make sure we bring back entire data
@@ -97,7 +100,7 @@ class DPO7254Visa():
             filename = str(filename) + ' - '
         now = datetime.now()
         today = date.today()
-        datadir = os.path.join("U:\\", "Lab_2021-2022", "DATA", str(self.scopeType))
+        datadir = os.path.join("Z:\\", "Lab_2021-2022", "DATA", str(self.scopeType))
         todayformated = today.strftime("%B-%d-%Y")
         todaydatadir = os.path.join(datadir, todayformated)
         nowformated = now.strftime("%Hh%Mm%Ss")
@@ -136,7 +139,6 @@ class DPO7254Visa():
             filename = ' - ' + str(filename)
         plt.clf()  # clear all existing figures.
         # ------ Data acquire ------
-        self.acquireData(chns=[1,2])
         dataFilePath = self.saveData(filename = filename)
 
         # ------ Plot ------------
@@ -159,13 +161,15 @@ class DPO7254Visa():
             plt.savefig(figPath, dpi=300, format='png', pad_inches=0.1)
             plt.close('all')
 
-
-scope1 = DPO7254Visa(ip='132.77.54.241')
-scope2 = DPO7254Visa(ip = '132.77.54.149')
-# accDelay = 3 * 60  # 1 minutes
-for i in range(15000):
+if __name__ == '__main__':
+    scope1 = DPO7254Visa(ip='132.77.54.241')
+    # scope2 = DPO7254Visa(ip = '132.77.54.149')
+    # accDelay = 3 * 60  # 1 minutes
+    # for i in range(15000):
+    # for i in range(1):
+    scope1.acquireData(chns=[1, 2, 3, 4])
     scope1.savePlotsAndData('CRUS Experiment, VORTEX spectrum', saveFig= False)
-    scope2.savePlotsAndData('CRUS Experiment, CRUS pulses', saveFig= False)
+    # scope2.savePlotsAndData('CRUS Experiment, CRUS pulses', saveFig= False)
     time.sleep(2)
 
 

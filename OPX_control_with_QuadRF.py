@@ -62,12 +62,12 @@ def MOT(mot_repetitions):
     n = declare(int)
     m = declare(int)
     play("Detection" * amp(FLR * 0), "FLR_detection", duration=4)  # we dont know why this works, but Yoav from QM made us write this line to solve an alignment problem we had in the next 2 for loops
-    with for_(n, 1, n <= mot_repetitions, n + 1):
+    with for_(n, 1, n <= 1, n + 1):
         play("MOT" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0")
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
         play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
-    with for_(m, 1, m <= mot_repetitions, m + 1):
+    with for_(m, 1, m <= 1, m + 1):
         measure("Detection", "FLR_detection", None, integration.full("Detection_opt", FLR, "out1"))
     #     # play("OD_FS" * amp(0.03), "AOM_2-3'_for_interference")
 
@@ -952,39 +952,39 @@ def opx_control(obj, qm):
                     ##########################
 
                     ## Measurement start time:
-                    with if_((k > Buffer_Cycles) & (Imaging_Phase == 4)):  # 4 means imaging phase on pulse_1
-                        wait(PrePulse_duration * (k - Buffer_Cycles), "Cooling_Sequence", "Measurement")
-                    with else_():
-                        wait(PrePulse_duration, "Cooling_Sequence", "Measurement")
+                    # with if_((k > Buffer_Cycles) & (Imaging_Phase == 4)):  # 4 means imaging phase on pulse_1
+                    #     wait(PrePulse_duration * (k - Buffer_Cycles), "Cooling_Sequence", "Measurement")
+                    # with else_():
+                    wait(PrePulse_duration, "Cooling_Sequence", "Measurement")
                     align(*all_elements)
 
-                    with if_(Trigger_Phase == 4):  # when trigger on pulse 1
-                        ## Trigger QuadRF Sequence #####################
-                        play("C_Seq", "Cooling_Sequence", duration=250)
-                        ################################################
-                        with if_((Imaging_Phase == 4) & (Pulse_1_duration > 0)):  # 4 means imaging phase on pulse_1
-                            ## For Depump measurement:
-                            with if_(Depump_pulse_duration > 0):
-                                wait(Depump_start + 4, "AOM_2-2/3'")
-                                Depump_Measure(Depump_pulse_duration, Depump_pulses_spacing)
-                                align(*all_elements, "AOM_2-2/3'")
-                            with else_():
-                                ## For free-space OD measurement:
-                                with if_(OD_FS_pulse_duration > 0):
-                                    wait(OD_FS_start + 4, "AOM_2-2/3'")
-                                    OD_Measure(OD_FS_pulse_duration, OD_FS_pulses_spacing, OD_FS_sleep)
-                                    align(*all_elements, "AOM_2-2/3'")
-                                with else_():
-                                    align(*all_elements, "AOM_2-2/3'")
-                                    Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_initial_amp_0,
-                                                    pulse_1_initial_amp_minus, pulse_1_initial_amp_plus,
-                                                    pulse_1_final_amp_0, pulse_1_final_amp_minus,
-                                                    pulse_1_final_amp_plus, pulse_1_duration_0,
-                                                    pulse_1_duration_minus, pulse_1_duration_plus)
-                                    # play("OD", "AOM_2-2/3'", duration=Pulse_1_duration)
-                                    Measure(Pulse_1_duration)  # This triggers camera (Control 7)
-                                    align(*all_elements, "AOM_2-2/3'")
-                        align(*all_elements, "AOM_2-2/3'")
+                    # with if_(Trigger_Phase == 4):  # when trigger on pulse 1
+                    #     ## Trigger QuadRF Sequence #####################
+                    #     play("C_Seq", "Cooling_Sequence", duration=250)
+                    #     ################################################
+                    #     with if_((Imaging_Phase == 4) & (Pulse_1_duration > 0)):  # 4 means imaging phase on pulse_1
+                    #         ## For Depump measurement:
+                    #         with if_(Depump_pulse_duration > 0):
+                    #             wait(Depump_start + 4, "AOM_2-2/3'")
+                    #             Depump_Measure(Depump_pulse_duration, Depump_pulses_spacing)
+                    #             align(*all_elements, "AOM_2-2/3'")
+                    #         with else_():
+                    #             ## For free-space OD measurement:
+                    #             with if_(OD_FS_pulse_duration > 0):
+                    #                 wait(OD_FS_start + 4, "AOM_2-2/3'")
+                    #                 OD_Measure(OD_FS_pulse_duration, OD_FS_pulses_spacing, OD_FS_sleep)
+                    #                 align(*all_elements, "AOM_2-2/3'")
+                    #             with else_():
+                    align(*all_elements, "AOM_2-2/3'")
+                    Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_initial_amp_0,
+                                    pulse_1_initial_amp_minus, pulse_1_initial_amp_plus,
+                                    pulse_1_final_amp_0, pulse_1_final_amp_minus,
+                                    pulse_1_final_amp_plus, pulse_1_duration_0,
+                                    pulse_1_duration_minus, pulse_1_duration_plus)
+                    # play("OD", "AOM_2-2/3'", duration=Pulse_1_duration)
+                    Measure(Pulse_1_duration)  # This triggers camera (Control 7)
+                    align(*all_elements, "AOM_2-2/3'")
+                        # align(*all_elements, "AOM_2-2/3'")
 
             with if_(~(AntiHelmholtz_ON | Transits_Exp_ON)):
                 assign(AntiHelmholtz_ON, True)
