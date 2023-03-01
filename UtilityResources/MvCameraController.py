@@ -7,7 +7,7 @@ import cv2
 import scipy.optimize as opt
 import matplotlib.pyplot as mtl
 import pylab as plt
-
+import time
 
 from mvIMPACT import acquire
 
@@ -160,6 +160,6 @@ class MvCameraController:
                                            + c * ((y - yo) ** 2)))
         return g.ravel()
 #
-# c = MvCameraController(deviceSerial = 'VD000001') #deviceSerial='FF006524')
+# c = MvCameraController()#(deviceSerial = 'VD000001') #deviceSerial='FF006524')
 # path = 'C:\\Users\\orelb\\Downloads\\NATANPGC\\1'
 # p = c.gaussianFitAllPicturesInPath(path, backgroundPath= 'C:\\Users\\orelb\\Downloads\\NATANPGC\\1\\b\\background.png')

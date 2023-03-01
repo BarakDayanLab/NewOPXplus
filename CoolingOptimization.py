@@ -28,7 +28,7 @@ class CoolingSequenceOptimizer(OPX):
         self.NAvg = 1
         self.NThrow = 3
         self.imgBounds = (580,200,1600,1450) # bounds to crop out of the taken pictures
-        self.mm_to_pxl = 8/(832-128) # measured using ruler in focus 13/11/2022
+        self.mm_to_pxl = 8/(857-153) # measured using ruler in focus 13/11/2022
         self.sigma_bounds = (15,100) # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
 
     def connectCamera(self):
@@ -103,7 +103,7 @@ class CoolingSequenceOptimizer(OPX):
                                 ylabel=f'Sigma_y [mm]', saveFilePath=extraFilesPath + 'Y_temp_fit.png', show=False)
         return (T_x, T_y)
 
-    def measureTemperature(self,path = None, PrePulseDurations = np.arange(1,9), createVideo = False, fit_for_alpha = False):
+    def measureTemperature(self, path = None, PrePulseDurations = np.arange(1,9), createVideo = False, fit_for_alpha = False):
         extraFilesPath = ''
         if path:
             # if received path, assume there's no need to take new pictures and analyze these photos.
@@ -395,4 +395,5 @@ class CoolingSequenceOptimizer(OPX):
 #r = optimizePGC(c)
 if __name__ == "__main__":
     experiment = CoolingSequenceOptimizer(Config.config)
+    # experiment.measureTemperature()
     #experiment.optimizePGC()
