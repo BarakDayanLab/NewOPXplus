@@ -1248,6 +1248,12 @@ class OPX:
             elif cond_check[1:].all():
                 current_transit = np.unique(current_transit + [*range(i + 1, (i + len(cond)))]).tolist()
             elif len(current_transit) > 1:
+                if self.all_transits_seq_indx:
+                    if bool(set(current_transit) & set(self.all_transits_seq_indx[-1])):
+                        current_transit = self.all_transits_seq_indx[-1] + current_transit[1:]
+                        self.all_transits_seq_indx = self.all_transits_seq_indx[:-1]
+                        self.reflection_SPRINT_data_per_transit = self.reflection_SPRINT_data_per_transit[:-1]
+                        self.transmission_SPRINT_data_per_transit = self.transmission_SPRINT_data_per_transit[:-1]
                 self.all_transits_seq_indx.append(current_transit)
                 self.reflection_SPRINT_data_per_transit.append([self.num_of_SPRINT_reflections_per_seq[elem].tolist()
                                                                 for elem in current_transit])
@@ -1255,6 +1261,12 @@ class OPX:
                                                                   for elem in current_transit])
                 current_transit = []
         if len(current_transit) > 1:
+            if self.all_transits_seq_indx:
+                if bool(set(current_transit) & set(self.all_transits_seq_indx[-1])):
+                    current_transit = self.all_transits_seq_indx[-1] + current_transit[1:]
+                    self.all_transits_seq_indx = self.all_transits_seq_indx[:-1]
+                    self.reflection_SPRINT_data_per_transit = self.reflection_SPRINT_data_per_transit[:-1]
+                    self.transmission_SPRINT_data_per_transit = self.transmission_SPRINT_data_per_transit[:-1]
             self.all_transits_seq_indx.append(current_transit)
             self.reflection_SPRINT_data_per_transit.append([self.num_of_SPRINT_reflections_per_seq[elem].tolist()
                                                             for elem in current_transit])
