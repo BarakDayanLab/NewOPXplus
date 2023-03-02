@@ -1135,7 +1135,14 @@ class OPX:
         return tt_histogram_transmission, tt_histogram_reflection
 
     def divide_tt_to_reflection_trans(self, sprint_pulse_len, num_of_det_pulses):
-
+        '''
+        A function designed to count the number of photons reflected or transmitted for each sequence, such that,
+        for the detection pulses the number of photons will be accumulated for each sequence and for the SPRINT
+        pulses there will be number of reflected or transmitted photons for each SPRINT pulse.
+        :param sprint_pulse_len: the length in [ns] of the SPRINT pulses in the sequence.
+        :param num_of_det_pulses: the number of detection pulses in the sequence.
+        :return:
+        '''
         self.num_of_det_reflections_per_seq_S = np.zeros(self.number_of_sprint_sequences)
         self.num_of_det_reflections_per_seq_N = np.zeros(self.number_of_sprint_sequences)
         self.num_of_det_transmissions_per_seq_S = np.zeros(self.number_of_sprint_sequences)
@@ -1151,10 +1158,10 @@ class OPX:
 
         for element in self.tt_N_measure:
             tt_inseq = element % self.sprint_sequence_len
-            if tt_inseq <= end_of_det_pulse_in_seq:
+            if tt_inseq <= end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
                 self.num_of_det_reflections_per_seq_S[element//self.sprint_sequence_len] += self.filter_S[tt_inseq]
                 self.num_of_det_transmissions_per_seq_N[element//self.sprint_sequence_len] += self.filter_N[tt_inseq]
-            else:
+            else:  # The part of the SPRINT pulses in the sequence
                 SPRINT_pulse_num = (tt_inseq - end_of_det_pulse_in_seq) // (sprint_pulse_len + Config.num_between_zeros)
                 if SPRINT_pulse_num < self.number_of_SPRINT_pulses_per_seq:
                     self.num_of_SPRINT_reflections_per_seq_S[element // self.sprint_sequence_len][SPRINT_pulse_num] += self.filter_S[tt_inseq]
@@ -1162,18 +1169,17 @@ class OPX:
 
         for element in self.tt_S_measure:
             tt_inseq = element % self.sprint_sequence_len
-            if tt_inseq <= end_of_det_pulse_in_seq:
+            if tt_inseq <= end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
                 self.num_of_det_reflections_per_seq_N[element//self.sprint_sequence_len] += self.filter_N[tt_inseq]
                 self.num_of_det_transmissions_per_seq_S[element//self.sprint_sequence_len] += self.filter_S[tt_inseq]
-            else:
+            else:  # The part of the SPRINT pulses in the sequence
                 SPRINT_pulse_num = (tt_inseq - end_of_det_pulse_in_seq) // (sprint_pulse_len + Config.num_between_zeros)
                 if SPRINT_pulse_num < self.number_of_SPRINT_pulses_per_seq:
                     self.num_of_SPRINT_reflections_per_seq_N[element // self.sprint_sequence_len][SPRINT_pulse_num] += self.filter_N[tt_inseq]
                     self.num_of_SPRINT_transmissions_per_seq_S[element // self.sprint_sequence_len][SPRINT_pulse_num] += self.filter_S[tt_inseq]
 
-
-
     def plot_folded_tt_histogram(self):
+
         plt.figure()
         plt.plot(sum(np.reshape(self.tt_histogram_N,[int(len(self.tt_histogram_N)/9),9])),label='tt_hist_N')
         plt.plot(sum(np.reshape(self.tt_histogram_S,[int(len(self.tt_histogram_S)/9),9])),label='tt_hist_S')
@@ -1218,6 +1224,42 @@ class OPX:
         atom_detect_data = [transit_sequences_init_tt, num_of_detected_atom]
         return atom_detect_data, sprints_data
 
+    def find_transits_and_sprint_events_changed(self, cond):
+        '''
+        find transits of atoms by searching events with detection_condition[0] photons before
+        the sprint sequence and detection_condition[1] after.
+        :param detection_condition:
+        :param num_of_det_pulses:
+        :param num_of_sprint_pulses:
+        :return:
+        '''
+
+        current_transit = []
+        self.all_transits_seq_indx = []
+        self.reflection_SPRINT_data_per_transit = []
+        self.transmission_SPRINT_data_per_transit = []
+
+        for i in range(len(self.num_of_det_reflections_per_seq) - len(cond) + 1):
+            cond_check = (self.num_of_det_reflections_per_seq[i:(i + len(cond))] >= cond).astype(int)
+            if cond_check.all() | (cond_check[0] & cond_check[-1]):
+                current_transit = np.unique(current_transit + [*range(i, (i + len(cond)))]).tolist()
+            elif cond_check[:-1].all():
+                current_transit = np.unique(current_transit + [*range(i, (i - 1 + len(cond)))]).tolist()
+            elif cond_check[1:].all():
+                current_transit = np.unique(current_transit + [*range(i + 1, (i + len(cond)))]).tolist()
+            elif len(current_transit) > 1:
+                self.all_transits_seq_indx.append(current_transit)
+                self.reflection_SPRINT_data_per_transit.append([self.num_of_SPRINT_reflections_per_seq[elem].tolist()
+                                                                for elem in current_transit])
+                self.transmission_SPRINT_data_per_transit.append([self.num_of_SPRINT_transmissions_per_seq[elem].tolist()
+                                                                  for elem in current_transit])
+                current_transit = []
+        if len(current_transit) > 1:
+            self.all_transits_seq_indx.append(current_transit)
+            self.reflection_SPRINT_data_per_transit.append([self.num_of_SPRINT_reflections_per_seq[elem].tolist()
+                                                            for elem in current_transit])
+            self.transmission_SPRINT_data_per_transit.append([self.num_of_SPRINT_transmissions_per_seq[elem].tolist()
+                                                              for elem in current_transit])
 
     def get_pulses_location_in_seq(self, delay, seq=Config.Sprint_Exp_Gaussian_samples_S, smearing = int(Config.num_between_zeros/2)):
         '''
@@ -1473,8 +1515,8 @@ class OPX:
         # #
         #     ###########################################################################################################
 
-    def Save_SNSPDs_Sprint_Measurement_with_tt(self, N, sprint_sequence_len, preComment, lock_err_threshold
-                                               , max_probe_counts):
+    def Save_SNSPDs_Sprint_Measurement_with_tt(self, N, sprint_sequence_len, preComment, lock_err_threshold, transit_condition,
+                                               max_probe_counts):
         """
         Function for analyzing,saving and displaying data from sprint experiment.
         :param N: Number of maximum experiments (free throws) saved and displayed.
@@ -1533,6 +1575,7 @@ class OPX:
         self.tt_S_SPRINT_events_batch = np.zeros(self.sprint_sequence_len)
         self.Single_det_foldeded = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
         self.single_det_folded_accumulated = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
+        self.num_of_det_reflections_per_seq_accumulated = np.zeros(self.number_of_sprint_sequences)
 
         # if preComment is True:
         if not preComment:
@@ -1582,6 +1625,10 @@ class OPX:
                                         num_of_sprint_pulses=len(Config.sprint_pulse_amp_S),
                                         num_of_sprint_sequences=self.number_of_sprint_sequences)
         self.divide_tt_to_reflection_trans(sprint_pulse_len, len(Config.det_pulse_amp_S))
+        self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
+                                              + self.num_of_det_reflections_per_seq_N
+        self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
+                                                           + self.num_of_det_reflections_per_seq_N
 
         # TODO: needed?
         self.tt_S_SPRINT_events = np.zeros(sprint_sequence_len)
@@ -1634,7 +1681,8 @@ class OPX:
 
         # ### Find transits and build histogram:  ###
         [self.atom_detect_data, self.sprints_data] = \
-            self.find_transits_and_sprint_events(detection_condition=[1, 1], num_of_det_pulses=len(Config.det_pulse_amp_S),
+            self.find_transits_and_sprint_events(detection_condition=transit_condition,
+                                                 num_of_det_pulses=len(Config.det_pulse_amp_S),
                                                  num_of_sprint_pulses=len(Config.sprint_pulse_amp_S))
         self.transit_sequences = self.atom_detect_data[0]
 
@@ -1688,6 +1736,14 @@ class OPX:
                                                     num_of_sprint_pulses=len(Config.sprint_pulse_amp_S),
                                                     num_of_sprint_sequences=self.number_of_sprint_sequences)
                 self.divide_tt_to_reflection_trans(sprint_pulse_len, len(Config.det_pulse_amp_S))
+                self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
+                                                      + self.num_of_det_reflections_per_seq_N
+                self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
+                                                                   + self.num_of_det_reflections_per_seq_N
+                self.num_of_SPRINT_reflections_per_seq = self.num_of_SPRINT_reflections_per_seq_N \
+                                                           + self.num_of_SPRINT_reflections_per_seq_S
+                self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_N \
+                                                           + self.num_of_SPRINT_transmissions_per_seq_S
 
                 # fold reflections and transmission
                 self.folded_transmission, self.folded_reflection = \
@@ -1696,9 +1752,9 @@ class OPX:
                 self.folded_transmission_accumulated += self.folded_transmission
                 self.folded_reflection_accumulated += self.folded_reflection
 
-                # ### Find transits and build histogram:  ###
+                ### Find transits and build histogram:  ###
                 [self.atom_detect_data, self.sprints_data] = \
-                    self.find_transits_and_sprint_events(detection_condition=[2, 2],
+                    self.find_transits_and_sprint_events(detection_condition=transit_condition,
                                                          num_of_det_pulses=len(Config.det_pulse_amp_S),
                                                          num_of_sprint_pulses=len(Config.sprint_pulse_amp_S))
                 self.transit_sequences = self.atom_detect_data[0]
@@ -1816,14 +1872,14 @@ class OPX:
             qrdCtrl.saveLinesAsCSV(f'{dirname}QuadRF_table.csv')
         ## ------------------ end of saving section -------
 
-    def Start_Sprint_Exp_with_tt(self, N=100, sprint_sequence_len=int(len(Config.Sprint_Exp_Gaussian_samples_S))
-                                 , preComment=None, lock_err_threshold=0.01):
+    def Start_Sprint_Exp_with_tt(self, N=100, sprint_sequence_len=int(len(Config.Sprint_Exp_Gaussian_samples_S)),
+                                 transit_condition=[2,2], preComment=None, lock_err_threshold=0.01):
         # Max_probe_counts = self.Get_Max_Probe_counts(3)  # return the average maximum probe counts of 3 cycles.
         Max_probe_counts = None  # return the average maximum probe counts of 3 cycles.
         self.SPRINT_Exp_switch(True)
         self.update_parameters()
-        self.Save_SNSPDs_Sprint_Measurement_with_tt(N, sprint_sequence_len, preComment,
-                                                    lock_err_threshold, Max_probe_counts)
+        self.Save_SNSPDs_Sprint_Measurement_with_tt(N, sprint_sequence_len, preComment,lock_err_threshold,
+                                                    transit_condition, Max_probe_counts)
 
     ## MW spectroscopy variable update functions: ##
 
