@@ -68,6 +68,10 @@ def MOT(mot_repetitions):
         play("MOT" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0")
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
+        ###
+        # TODO: debbuging remove! - added depump during MOT
+        play("Depump", "AOM_2-2'")
+        ###
         play("Const_open", "PULSER_N")
         # play("OD_FS" * amp(0.5), "AOM_2-2/3'")
         play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
