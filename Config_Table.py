@@ -120,6 +120,7 @@ Initial_Values = {
     # Measuring pulses parameters:
     'PrePulse_duration': 1,        # [msec]
     'Shutter_open_time': 0,  # [msec]
+    'PrePulse_Repump_amp': 1,  # relative
 
     'Pulse_1_amp_i': 1,              # relative amplitude 0 to 1 (change in db is calculated by script)
     'Pulse_1_amp_f': 1,              # relative amplitude 0 to 1 (change in db is calculated by script)
@@ -297,14 +298,15 @@ Operation_Modes = {
                                  },
                     'SPRINT_Exp':  {'Triggering_Phase': 'Free_Fall',
                                     'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
+                                    'PrePulse_Repump_amp': 0.000001,  # relative
                                     'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],
                                     'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'] + 30e6,
+                                    'Pulse_1_Repump_amp': 0.000001,
                                     'N_Snaps': 1,
                                     'Buffer_Cycles': 0,
                                     'Imaging_Phase': 'Pulse_1',
                                     'PrePulse_duration': 13,  # [msec]
                                     'Shutter_open_time': 5,  # [msec]
-                                    'Pulse_1_Repump_amp': 0.000001,
                                     'Pulse_1_duration': int(min(Config_Sprint.readout_pulse_sprint_len_N,
                                                                 Config_Sprint.readout_pulse_sprint_len_S)) / 1e6,  # [msec]
                                     ## If with fountain:
@@ -326,6 +328,7 @@ Operation_Modes = {
                                         # Imaging
                                         'Imaging_Phase': 'Pulse_1',
                                         'PrePulse_duration': 1,  # [msec]
+                                        'Pulse_1_duration': 0.2,       # [msec]
                                         },
                     'Fountain': {
                         # 'PGC_duration': 20,

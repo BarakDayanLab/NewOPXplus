@@ -114,13 +114,14 @@ class QuadRFMOTController(QuadRFController):
                                                     (values['MOT_AOM_freq'] - values['Fountain_final_Delta_freq'], self.Amp_Ch3 + Fountain_final_delta_amp_plus),
                                                     (values['Repump_PGC_freq'], self.Amp_Ch4)))
         # ----------------- Free-fall -----------------
+        PrePulse_delta_amp_Repump = float(self.amplitudeMultiplierToDBm(values['PrePulse_Repump_amp']))
         # Free fall - before pulses
         # self.Free_Fall = QuadRFPhase(duration=values['PrePulse_duration'], initial_values=((values['MOT_freq'], self.Amp_Ch1), (AOMOffFreq, self.Amp_Ch2),
         #                                                                                   (AOMOffFreq, self.Amp_Ch3), (AOMOffFreq, self.Amp_Ch4)))
         # self.Free_Fall = QuadRFPhase(duration=values['PrePulse_duration'], initial_values=((values['Pulse_1_CH1_Freq_f'], self.Amp_Ch1), (AOMOffFreq, self.Amp_Ch2),
         #                                                                                    (AOMOffFreq, self.Amp_Ch3), (values['AOM_Repump_freq'], self.Amp_Ch4)))
         self.Free_Fall = QuadRFPhase(duration=values['PrePulse_duration'], initial_values=((values['PGC_final_freq'], self.Amp_Ch1 + PGC_final_amp_delta), (AOMOffFreq, self.Amp_Ch2),
-        (AOMOffFreq, self.Amp_Ch3), (values['AOM_Repump_freq'], self.Amp_Ch4)))
+        (AOMOffFreq, self.Amp_Ch3), (values['Pulse_1_CH4_Freq'], self.Amp_Ch4 + PrePulse_delta_amp_Repump)))
 
         # ----------------- Pulse 1 -----------------
         Pulse_1_delta_amp_i = float(self.amplitudeMultiplierToDBm(values['Pulse_1_amp_i']))
