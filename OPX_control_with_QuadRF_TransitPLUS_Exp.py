@@ -284,7 +284,7 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
 def Transits_Exp_TT(m_off_time, m_time, m_window, shutter_open_time,
                     ON_counts_st1, ON_counts_st2, ON_counts_st3,
                     ON_counts_st6, ON_counts_st7, ON_counts_st8,
-                    tt_st_N, tt_st_S, rep_st):
+                    tt_st_1, tt_st_2, tt_st_3, tt_st_6, tt_st_7, tt_st_8, rep_st):
     """
      Transit measurement with and without atoms.
 
@@ -303,6 +303,8 @@ def Transits_Exp_TT(m_off_time, m_time, m_window, shutter_open_time,
      :param counts_st7: The stream array for the number of photons counted at each measuring window for detector 7.
      :param counts_st8: The stream array for the number of photons counted at each measuring window for detector 8.
      """
+    vec_size = Config.vec_size
+
     counts1 = declare(int)
     counts2 = declare(int)
     counts3 = declare(int)
@@ -310,24 +312,16 @@ def Transits_Exp_TT(m_off_time, m_time, m_window, shutter_open_time,
     counts7 = declare(int)
     counts8 = declare(int)
 
-    tt_vec1 = declare(int, size=2000)
-    tt_vec2 = declare(int, size=2000)
-    tt_vec3 = declare(int, size=2000)
-    tt_vec6 = declare(int, size=2000)
-    tt_vec7 = declare(int, size=2000)
-    tt_vec8 = declare(int, size=2000)
+    tt_vec1 = declare(int, size=vec_size)
+    tt_vec2 = declare(int, size=vec_size)
+    tt_vec3 = declare(int, size=vec_size)
+    tt_vec6 = declare(int, size=vec_size)
+    tt_vec7 = declare(int, size=vec_size)
+    tt_vec8 = declare(int, size=vec_size)
 
     n = declare(int)
+    t = declare(int)
     m = declare(int)
-    i = declare(int)
-    j = declare(int)
-    m1 = declare(int)
-    m2 = declare(int)
-    m3 = declare(int)
-    m6 = declare(int)
-    m7 = declare(int)
-    m8 = declare(int)
-    zero = declare(int, value=0)
 
     align("AOM_2-2/3'", "Dig_detectors")
     play("OD", "AOM_2-2/3'", duration=shutter_open_time)
@@ -353,23 +347,14 @@ def Transits_Exp_TT(m_off_time, m_time, m_window, shutter_open_time,
         save(counts7, ON_counts_st7)
         save(counts8, ON_counts_st8)
 
-        with for_(m1, 0, m1 < counts1, m1 + 1):
-            save(tt_vec1[m1], tt_st_S)
-        with for_(m2, 0, m2 < counts2, m2 + 1):
-            save(tt_vec2[m2], tt_st_S)
-        with for_(m3, 0, m3 < counts3, m3 + 1):
-            save(tt_vec3[m3], tt_st_S)
-        with for_(m6, 0, m6 < counts6, m6 + 1):
-            save(tt_vec6[m6], tt_st_N)
-        with for_(m7, 0, m7 < counts7, m7 + 1):
-            save(tt_vec7[m7], tt_st_N)
-        with for_(m8, 0, m8 < counts8, m8 + 1):
-            save(tt_vec8[m8], tt_st_N)
-        with for_(i, 0, i < (6000 - counts1 - counts2 - counts3), i + 1):
-            save(zero, tt_st_N)
-        with for_(j, 0, j < (6000 - counts6 - counts7 - counts8), j + 1):
-            save(zero, tt_st_S)
-        with for_(m, 0, m < 6000, m + 1):
+        with for_(m, 0, m < vec_size, m + 1):
+            wait(1000)
+            save(tt_vec1[m], tt_st_1)
+            save(tt_vec2[m], tt_st_2)
+            save(tt_vec3[m], tt_st_3)
+            save(tt_vec6[m], tt_st_6)
+            save(tt_vec7[m], tt_st_7)
+            save(tt_vec8[m], tt_st_8)
             save(n, rep_st)
 
 
@@ -537,8 +522,12 @@ def opx_control(obj, qm):
         ON_counts_st6 = declare_stream()
         ON_counts_st7 = declare_stream()
         ON_counts_st8 = declare_stream()
-        tt_st_N = declare_stream()
-        tt_st_S = declare_stream()
+        tt_st_1 = declare_stream()
+        tt_st_2 = declare_stream()
+        tt_st_3 = declare_stream()
+        tt_st_6 = declare_stream()
+        tt_st_7 = declare_stream()
+        tt_st_8 = declare_stream()
         rep_st = declare_stream()
         AntiHelmholtz_ON_st = declare_stream()
         FLR_st = declare_stream()
@@ -603,7 +592,7 @@ def opx_control(obj, qm):
                     Transits_Exp_TT(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
                                     ON_counts_st1, ON_counts_st2, ON_counts_st3,
                                     ON_counts_st6, ON_counts_st7, ON_counts_st8,
-                                    tt_st_N, tt_st_S, rep_st)
+                                    tt_st_1, tt_st_2, tt_st_3, tt_st_6, tt_st_7, tt_st_8, rep_st)
                     save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
                     with if_(AntiHelmholtz_ON):
                         save(FLR, FLR_st)
@@ -721,10 +710,18 @@ def opx_control(obj, qm):
                 assign(i, IO1)
 
         with stream_processing():
-            (ON_counts_st1 + ON_counts_st2 + ON_counts_st3).buffer(obj.rep).save('North_Probe')
-            (ON_counts_st6 + ON_counts_st7 + ON_counts_st8).buffer(obj.rep).save('South_Probe')
-            (tt_st_N + rep_st).buffer(6000 * obj.rep).save('North_Probe_TT')
-            (tt_st_S + rep_st).buffer(6000 * obj.rep).save('South_Probe_TT')
+            ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
+            ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
+            ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
+            ON_counts_st6.buffer(obj.rep).save('Det6_Counts')
+            ON_counts_st7.buffer(obj.rep).save('Det7_Counts')
+            ON_counts_st8.buffer(obj.rep).save('Det8_Counts')\
+            (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
+            (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
+            (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
+            (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep).save('Det6_Probe_TT')
+            (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det7_Probe_TT')
+            (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det8_Probe_TT')
             FLR_st.save('FLR_measure')
             AntiHelmholtz_ON_st.save("antihelmholtz_on")
 
@@ -1141,6 +1138,52 @@ class OPX:
         return [(np.average(Probe_counts_North) * 1000) / self.M_time,
                 (np.average(Probe_counts_South) * 1000) / self.M_time]
 
+    def get_handles_from_OPX_Server(self, Num_Of_dets):
+        '''
+         gets handles of timetags and counts from OPX
+        :return:
+        '''
+        Counts_handle = []
+        tt_handle = []
+
+        for i in Num_Of_dets:
+            Counts_handle.append(self.job.result_handles.get("Det" + str(i) + "_Counts"))
+            tt_handle.append(self.job.result_handles.get("Det" + str(i) + "_Probe_TT"))
+        FLR_handle = self.job.result_handles.get("FLR_measure")
+        return Counts_handle, tt_handle, FLR_handle
+
+    def get_tt_from_handles(self, Num_Of_dets, Counts_handle, tt_handle, FLR_handle):
+        counts_res = []
+        tt_res = []
+
+        # handles wait for values
+        for i in range(len(Num_Of_dets)):
+            tt_handle[i].wait_for_values(1)
+        FLR_handle.wait_for_values(1)
+
+        # add the tt and counts to python vars
+        for i in range(len(Num_Of_dets)):
+            counts_res.append(Counts_handle[i].fetch_all())
+            tt_res.append(tt_handle[i].fetch_all())
+        self.FLR_res = -FLR_handle.fetch_all()
+
+        # clear tt's vecs from last data
+        self.tt_measure = []
+        self.tt_N_measure = []
+        self.tt_S_measure = []
+
+        # remove zero-padding from tt-res and append into tt_measure
+        for i in range(len(Num_Of_dets)):  # for different detectors
+            self.tt_measure.append(
+                [tt_res[i][(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts in
+                 enumerate(counts_res[i])])
+            self.tt_measure[i].sort()
+        # create vector of tt's for each direction (north and south) and sort them
+        self.tt_S_measure = sorted(
+            sum(sum(self.tt_measure[:3], []), []))  # unify detectors 1-3 and windows within detectors
+        self.tt_N_measure = sorted(
+            sum(sum(self.tt_measure[3:], []), []))  # unify detectors 6-8 and windows within detectors
+
     def Save_SNSPDs_Transit_Measurement_with_tt(self, N, histogram_bin_size, Transit_profile_bin_size, preComment,
                                                 total_counts_threshold,  transit_counts_threshold, max_probe_counts):
         """
@@ -1181,29 +1224,9 @@ class OPX:
         self.keyPress = None
         print('\033[94m' + 'Press ESC to stop measurement.' + '\033[0m')  # print blue
         reps = 1  # a counter, number of repeats actually made.
-
-        Probe_N_handle = self.job.result_handles.get("North_Probe")
-        Probe_S_handle = self.job.result_handles.get("South_Probe")
-        tt_N_handle = self.job.result_handles.get("North_Probe_TT")
-        tt_S_handle = self.job.result_handles.get("South_Probe_TT")
-        FLR_handle = self.job.result_handles.get("FLR_measure")
-
-        Probe_N_handle.wait_for_values(1)
-        Probe_S_handle.wait_for_values(1)
-        tt_N_handle.wait_for_values(1)
-        tt_S_handle.wait_for_values(1)
-        FLR_handle.wait_for_values(1)
-
-        Probe_N_res = Probe_N_handle.fetch_all()
-        Probe_S_res = Probe_S_handle.fetch_all()
-        tt_N_res = tt_N_handle.fetch_all()
-        tt_S_res = tt_S_handle.fetch_all()
-        FLR_res = -FLR_handle.fetch_all()
-
-        tt_N_measure = [i for i in tt_N_res if (i % self.M_window) != 0]
-        self.tt_S_measure = [i for i in tt_S_res if (i % self.M_window) != 0]
-        tt_N_measure.sort()
-        self.tt_S_measure.sort()
+        ####     get tt and counts from OPX to python   #####
+        Num_Of_dets = [1, 2, 3, 6, 7, 8]
+        Counts_handle, tt_handle, FLR_handle = self.get_handles_from_OPX_Server(Num_Of_dets)
 
         tt_N_measure_batch = []
         tt_N_binning_batch = []
@@ -1236,26 +1259,16 @@ class OPX:
             else:
                 print('Above Threshold')
 
-            Probe_N_res = Probe_N_handle.fetch_all()
-            Probe_S_res = Probe_S_handle.fetch_all()
-            tt_N_res = tt_N_handle.fetch_all()
-            tt_S_res = tt_S_handle.fetch_all()
-            FLR_res = -FLR_handle.fetch_all()
+            self.get_tt_from_handles(Num_Of_dets, Counts_handle, tt_handle, FLR_handle)
 
-            tt_N_measure = [i for i in tt_N_res if (i % self.M_window) != 0]
-            self.tt_S_measure = [i for i in tt_S_res if (i % self.M_window) != 0]
-            tt_N_measure.sort()
-            self.tt_S_measure.sort()
-
-        self.tt_S_measure = self.tt_S_measure
         ## record time
         timest = time.strftime("%Y%m%d-%H%M%S")
         datest = time.strftime("%Y%m%d")
 
-        FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
+        FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
         Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
 
-        for x in tt_N_measure:
+        for x in self.tt_N_measure:
             tt_N_binning[(x-1) // histogram_bin_size] += 1
         for x in self.tt_S_measure:
             tt_S_binning[(x-1) // histogram_bin_size] += 1
@@ -1264,7 +1277,7 @@ class OPX:
             tt_N_transit_events[[i for i, x in enumerate(tt_N_binning_batch[0]) if x > transit_counts_threshold]] -= 1
             tt_S_transit_events[[i for i, x in enumerate(tt_S_binning_batch[0]) if x > transit_counts_threshold]] -= 1
 
-        tt_N_measure_batch = tt_N_measure_batch[-(N - 1):] + [tt_N_measure]
+        tt_N_measure_batch = tt_N_measure_batch[-(N - 1):] + [self.tt_N_measure]
         tt_N_binning_batch = tt_N_binning_batch[-(N - 1):] + [tt_N_binning]
         self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
         tt_S_binning_batch = tt_S_binning_batch[-(N - 1):] + [tt_S_binning]
@@ -1444,16 +1457,7 @@ class OPX:
                 datest = time.strftime("%Y%m%d")
 
                 # get measures:
-                Probe_N_res = Probe_N_handle.fetch_all()
-                Probe_S_res = Probe_S_handle.fetch_all()
-                tt_N_res = tt_N_handle.fetch_all()
-                tt_S_res = tt_S_handle.fetch_all()
-                FLR_res = -FLR_handle.fetch_all()
-
-                tt_N_measure = [i for i in tt_N_res if (i % self.M_window) != 0]
-                self.tt_S_measure = [i for i in tt_S_res if (i % self.M_window) != 0]
-                tt_N_measure.sort()
-                self.tt_S_measure.sort()
+                self.get_tt_from_handles(Num_Of_dets, Counts_handle, tt_handle, FLR_handle)
 
             if ((len(self.tt_S_measure) * 1000) / self.M_time) < total_counts_threshold:
 
@@ -1465,7 +1469,7 @@ class OPX:
                 tt_N_binning = np.zeros(histogram_bin_number)
                 tt_S_binning = np.zeros(histogram_bin_number)
 
-                for x in tt_N_measure:
+                for x in self.tt_N_measure:
                     tt_N_binning[(x-1) // histogram_bin_size] += 1
                 for x in self.tt_S_measure:
                     tt_S_binning[(x-1) // histogram_bin_size] += 1
