@@ -407,7 +407,7 @@ config = {
             },
             'operations': {
                 'readout': "digital_readout",
-                # 'readout_CRUS': "digital_readout_CRUS",
+                'readout_CRUS': "digital_readout_CRUS",
             },
             'time_of_flight': 36,
             'smearing': 0,

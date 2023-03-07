@@ -25,10 +25,10 @@ Initial_Values = {
     # 'Operation_Mode': 'PrePGC_Fountain',
     # 'Operation_Mode': 'OD_FS',
     # 'Operation_Mode': 'Depump',
-    # 'Operation_Mode': 'Transit_Exp',
+    'Operation_Mode': 'Transit_Exp',
     # 'Operation_Mode': 'Spectrum_Exp',
     # 'Operation_Mode': 'CRUS_Exp',
-    'Operation_Mode': 'SPRINT_Exp',
+    # 'Operation_Mode': 'SPRINT_Exp',
     # 'Operation_Mode': 'Continuous',
     'Imaging_Phase': 'Pulse_1',
     'Triggering_Phase': -1,  # Don't change this. Triggering phase should be defined within each operation mode (see below)
@@ -242,22 +242,23 @@ Operation_Modes = {
                                'Fountain_final_amp_plus': 1  # Relative amplitude between 0 to 1;
                                },
                     'Transit_Exp': {'Triggering_Phase': 'Free_Fall',
+                                    'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
                                     'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],
                                     'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'] + 30e6,
+                                    'Pulse_1_Repump_amp': 0.000001,
                                     'N_Snaps': 1,
                                     'Buffer_Cycles': 0,
                                     'Imaging_Phase': 'Pulse_1',
                                     'PrePulse_duration': 10,  # [msec]
-                                    'Shutter_open_time': 4,  # [msec]
-                                    'Pulse_1_Repump_amp': 0.000001,
-                                    'Pulse_1_duration': 60,  # [msec]
-                                    'M_time': 60,  # [msec]
-                                    'M_off_time': 1,  # [msec]
+                                    'Shutter_open_time': 5,  # [msec]
+                                    'Pulse_1_duration': (Config.readout_CRUS_pulse_len) / 1e6,  # [msec]
+                                    'M_time': (Config.readout_CRUS_pulse_len) / 1e6,  # [msec]
+                                    'M_off_time': 5,  # [msec]
                                     ## If with fountain:
                                     'Fountain_duration': 0.5,  # [msec]
                                     'Fountain_prep_duration': 0.5,  # [msec], Can't be zero!!!
-                                    'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
-                                    'PGC_duration': 5.1  # [msec] EXTREMELY IMOPRTANT for OPX-QuadRF sync
+                                    'M_window': int(Config.readout_CRUS_pulse_len),  # [nsec]
+                                    # 'PGC_duration': 5  # [msec] EXTREMELY IMOPRTANT for OPX-QuadRF sync
                                     },
                     'Spectrum_Exp': {'Triggering_Phase': 'Free_Fall',
                                     'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],

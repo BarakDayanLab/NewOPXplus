@@ -1,5 +1,5 @@
 # from Config import config
-import Config_with_SNSPDs_and_QuadRF_Sprint as Config
+import Config_with_SNSPDs_and_QuadRF as Config
 from Config_Table import Initial_Values, Phases_Names  # , Values_Factor
 from quadRFMOTController import QuadRFMOTController
 from quadRFFrequencyScannerController import QuadRFFrequencyScannerController
@@ -14,7 +14,6 @@ import numpy as np
 import time, json
 import sys
 import os
-import math
 from pynput import keyboard
 import logging
 from logging import StreamHandler, Formatter, INFO, WARN, ERROR
@@ -68,12 +67,11 @@ def MOT(mot_repetitions):
         play("MOT" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0")
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
-        play("Const_open", "PULSER_N")
         # play("OD_FS" * amp(0.5), "AOM_2-2/3'")
         play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
     with for_(m, 1, m <= (mot_repetitions - 1), m + 1):
         measure("Detection", "FLR_detection", None, integration.full("Detection_opt", FLR, "out1"))
-        # play("OD_FS" * amp(0.1), "AOM_2-3'_for_interference")
+        # play("OD_FS" * amp(0.5), "AOM_2-3'_for_interference")
 
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
           "AOM_2-2/3'", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors", "Dig_detectors_spectrum") #, "PULSER_N", "PULSER_S")
@@ -196,6 +194,7 @@ def Pulse_with_prep_with_chirp(total_pulse_duration, prep_duration, zero_pulse_d
 
     ## Playing the pulses to the AOMs for the constant part. (Qua) ##
     align("MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+")
+    # align("MOT_AOM_-", "MOT_AOM_+")
     update_frequency("MOT_AOM_-", Config.IF_AOM_MOT + delta_f)
     update_frequency("MOT_AOM_+", Config.IF_AOM_MOT - delta_f)
     with if_(total_pulse_duration > prep_duration):
@@ -224,7 +223,7 @@ def FreeFall(freefall_duration, coils_timing):
 
     ## Aligning all the different elements used during the freefall time of the experiment ##
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'", "AOM_2-2'",
-          "Measurement", "PULSER_N", "PULSER_S") # , "Dig_detectors", "Dig_detectors_spectrum")
+          "Measurement") # , "Dig_detectors", "Dig_detectors_spectrum")
 
     ## Zeeman Coils turn-on sequence ##
     wait(coils_timing, "Zeeman_Coils")
@@ -282,32 +281,28 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
     play("OD_FS", "AOM_2-2/3'", duration=OD_pulse_duration)
 
 
-def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
-               ON_counts_st1, ON_counts_st2, ON_counts_st3,
-               ON_counts_st6, ON_counts_st7, ON_counts_st8,
-               tt_st_1, tt_st_2, tt_st_3, tt_st_6, tt_st_7, tt_st_8, rep_st):
+def Transits_Exp_TT(m_off_time, m_time, m_window, shutter_open_time,
+                    ON_counts_st1, ON_counts_st2, ON_counts_st3,
+                    ON_counts_st6, ON_counts_st7, ON_counts_st8,
+                    tt_st_N, tt_st_S, rep_st):
     """
-     Generates train of 8 pulses (to be configured from config if each of thenm is north ore south)
-     for SPRINT experiments
+     Transit measurement with and without atoms.
 
-       Parameters
-       ----------
-       :param M_delay: The time delay from end of PGC until the first 2-3' pulse (OD + trigger).
-       :param rep: The number of measuring window repetitions, derived from OD measuring duration (M_time/M_window).
-       :param m_time: The duration of the entire measurement time.
-       :param m_window: The duration of each measuring window - fpr each window there is 28 nsec "deadtime".
-       :param counts_st1: The stream array for the number of photons counted at each measuring window for detector 1.
-       :param counts_st2: The stream array for the number of photons counted at each measuring window for detector 2.
-       :param counts_st3: The stream array for the number of photons counted at each measuring window for detector 3.
-       :param counts_st4: The stream array for the number of photons counted at each measuring window for detector 4.
-       :param counts_st5: The stream array for the number of photons counted at each measuring window for detector 5.
-       :param counts_st6: The stream array for the number of photons counted at each measuring window for detector 6.
-       :param counts_st7: The stream array for the number of photons counted at each measuring window for detector 7.
-       :param counts_st8: The stream array for the number of photons counted at each measuring window for detector 8.
-       """
-
-    vec_size = Config.vec_size
-
+     Parameters
+     ----------
+     :param M_delay: The time delay from end of PGC until the first 2-3' pulse (OD + trigger).
+     :param rep: The number of measuring window repetitions, derived from OD measuring duration (M_time/M_window).
+     :param m_time: The duration of the entire measurement time.
+     :param m_window: The duration of each measuring window - fpr each window there is 28 nsec "deadtime".
+     :param counts_st1: The stream array for the number of photons counted at each measuring window for detector 1.
+     :param counts_st2: The stream array for the number of photons counted at each measuring window for detector 2.
+     :param counts_st3: The stream array for the number of photons counted at each measuring window for detector 3.
+     :param counts_st4: The stream array for the number of photons counted at each measuring window for detector 4.
+     :param counts_st5: The stream array for the number of photons counted at each measuring window for detector 5.
+     :param counts_st6: The stream array for the number of photons counted at each measuring window for detector 6.
+     :param counts_st7: The stream array for the number of photons counted at each measuring window for detector 7.
+     :param counts_st8: The stream array for the number of photons counted at each measuring window for detector 8.
+     """
     counts1 = declare(int)
     counts2 = declare(int)
     counts3 = declare(int)
@@ -315,39 +310,42 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
     counts7 = declare(int)
     counts8 = declare(int)
 
-    tt_vec1 = declare(int, size=vec_size)
-    tt_vec2 = declare(int, size=vec_size)
-    tt_vec3 = declare(int, size=vec_size)
-    tt_vec6 = declare(int, size=vec_size)
-    tt_vec7 = declare(int, size=vec_size)
-    tt_vec8 = declare(int, size=vec_size)
+    tt_vec1 = declare(int, size=2000)
+    tt_vec2 = declare(int, size=2000)
+    tt_vec3 = declare(int, size=2000)
+    tt_vec6 = declare(int, size=2000)
+    tt_vec7 = declare(int, size=2000)
+    tt_vec8 = declare(int, size=2000)
 
     n = declare(int)
-    t = declare(int)
     m = declare(int)
+    i = declare(int)
+    j = declare(int)
+    m1 = declare(int)
+    m2 = declare(int)
+    m3 = declare(int)
+    m6 = declare(int)
+    m7 = declare(int)
+    m8 = declare(int)
+    zero = declare(int, value=0)
 
-    align("PULSER_N", "PULSER_S", "Dig_detectors")
-    play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
-    align("PULSER_N", "PULSER_S", "Dig_detectors")
-
-    with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.Sprint_Exp_Gaussian_samples_S))): #assaf comment debbuging
-        play("Sprint_experiment_pulses_S", "PULSER_S")
-        play("Sprint_experiment_pulses_N", "PULSER_N")
-
-    wait(86, "Dig_detectors")
-    with for_(n, 0, n < m_time * 4, n + m_window):
-        measure("readout_SPRINT", "Dig_detectors", None,
+    align("AOM_2-2/3'", "Dig_detectors")
+    play("OD", "AOM_2-2/3'", duration=shutter_open_time)
+    align("AOM_2-2/3'", "Dig_detectors")
+    play("OD", "AOM_2-2/3'", duration=(m_time + m_off_time))
+    with for_(n, 0, n < (m_time * 4), n + m_window):
+        measure("readout_CRUS", "Dig_detectors", None,
                 time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
                 time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
                 time_tagging.digital(tt_vec3, m_window, element_output="out3", targetLen=counts3),
                 time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
                 time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
                 time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
-                 )
+                )
 
         ## Save Data: ##
 
-        # Number of Photons (NOP) Count stream for each detector: ##
+        ## Number of Photons (NOP) Count stream for each detector: ##
         save(counts1, ON_counts_st1)
         save(counts2, ON_counts_st2)
         save(counts3, ON_counts_st3)
@@ -355,29 +353,108 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
         save(counts7, ON_counts_st7)
         save(counts8, ON_counts_st8)
 
-
-        with for_(m, 0, m < vec_size, m + 1):
-            wait(1000)
-            save(tt_vec1[m], tt_st_1)
-            save(tt_vec2[m], tt_st_2)
-            save(tt_vec3[m], tt_st_3)
-            save(tt_vec6[m], tt_st_6)
-            save(tt_vec7[m], tt_st_7)
-            save(tt_vec8[m], tt_st_8)
+        with for_(m1, 0, m1 < counts1, m1 + 1):
+            save(tt_vec1[m1], tt_st_S)
+        with for_(m2, 0, m2 < counts2, m2 + 1):
+            save(tt_vec2[m2], tt_st_S)
+        with for_(m3, 0, m3 < counts3, m3 + 1):
+            save(tt_vec3[m3], tt_st_S)
+        with for_(m6, 0, m6 < counts6, m6 + 1):
+            save(tt_vec6[m6], tt_st_N)
+        with for_(m7, 0, m7 < counts7, m7 + 1):
+            save(tt_vec7[m7], tt_st_N)
+        with for_(m8, 0, m8 < counts8, m8 + 1):
+            save(tt_vec8[m8], tt_st_N)
+        with for_(i, 0, i < (6000 - counts1 - counts2 - counts3), i + 1):
+            save(zero, tt_st_N)
+        with for_(j, 0, j < (6000 - counts6 - counts7 - counts8), j + 1):
+            save(zero, tt_st_S)
+        with for_(m, 0, m < 6000, m + 1):
             save(n, rep_st)
+
+
+def Probe_counts_Measure_SNSPDs(m_off_time, m_time, m_window, shutter_open_time,
+                                ON_counts_st1, ON_counts_st2, ON_counts_st3, ON_counts_st4,
+                                ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8, ):
+    """
+    Measuring the OD with and without atoms.
+
+    Parameters
+    ----------
+    :param M_delay: The time delay from end of PGC until the first Probe pulse.
+    :param rep: The number of measuring window repetitions, derived from OD measuring duration (M_time/M_window).
+    :param m_time: The duration of the entire measurement time.
+    :param m_window: The duration of each measuring window - fpr each window there is 28 nsec "deadtime".
+    :param counts_st1: The stream array for the number of photons counted at each measuring window for detector 1.
+    :param counts_st2: The stream array for the number of photons counted at each measuring window for detector 2.
+    :param counts_st3: The stream array for the number of photons counted at each measuring window for detector 3.
+    :param counts_st4: The stream array for the number of photons counted at each measuring window for detector 4.
+    :param counts_st5: The stream array for the number of photons counted at each measuring window for detector 5.
+    :param counts_st6: The stream array for the number of photons counted at each measuring window for detector 6.
+    :param counts_st7: The stream array for the number of photons counted at each measuring window for detector 7.
+    :param counts_st8: The stream array for the number of photons counted at each measuring window for detector 8.
+    """
+    counts1 = declare(int)
+    counts2 = declare(int)
+    counts3 = declare(int)
+    counts4 = declare(int)
+    counts5 = declare(int)
+    counts6 = declare(int)
+    counts7 = declare(int)
+    counts8 = declare(int)
+
+    n = declare(int)
+
+    align("AOM_2-2/3'", "Dig_detectors")
+    # wait(M_delay - shutter_open_time, "Dig_detectors", "AOM_2-2/3'")
+    play("OD", "AOM_2-2/3'", duration=shutter_open_time)
+    align("AOM_2-2/3'", "Dig_detectors")
+    play("OD", "AOM_2-2/3'", duration=m_time)
+    with for_(n, 0, n < (m_time * 4), n + m_window):
+        measure("readout", "Dig_detectors", None,
+                counting.digital(counts1, m_window, element_outputs="out1"),
+                counting.digital(counts2, m_window, element_outputs="out2"),
+                counting.digital(counts3, m_window, element_outputs="out3"),
+                counting.digital(counts4, m_window, element_outputs="out4"),
+                counting.digital(counts5, m_window, element_outputs="out5"),
+                counting.digital(counts6, m_window, element_outputs="out6"),
+                counting.digital(counts7, m_window, element_outputs="out7"),
+                counting.digital(counts8, m_window, element_outputs="out8"),
+                )
+        # wait(m_off_time, "Dig_detectors")
+
+        ## Save Data: ##
+
+        ## Number of Photons (NOP) Count stream for each detector: ##
+
+        save(counts1, ON_counts_st1)
+        save(counts2, ON_counts_st2)
+        save(counts3, ON_counts_st3)
+        save(counts4, ON_counts_st4)
+        save(counts5, ON_counts_st5)
+        save(counts6, ON_counts_st6)
+        save(counts7, ON_counts_st7)
+        save(counts8, ON_counts_st8)
 
 
 def opx_control(obj, qm):
     with program() as opx_control_prog:
         ## declaring program variables: ##
         i = declare(int)
+        k = declare(int)
+        j = declare(int)
+        filler = declare(int, value=1)
         Trigger_Phase = declare(int, value=Phases_Names.index(obj.Exp_Values['Triggering_Phase']))
         Imaging_Phase = declare(int, value=Phases_Names.index(obj.Exp_Values['Imaging_Phase']))
-        x = declare(int)
 
         # Boolean variables:
+        MOT_ON = declare(bool, value=True)
+        AntiHelmholtz_delay_ON = declare(bool, value=False)
         AntiHelmholtz_ON = declare(bool, value=True)
-        SPRINT_Exp_ON = declare(bool, value=False)
+        Linear_PGC_ON = declare(bool, value=True)
+        Transits_Exp_ON = declare(bool, value=False)
+        CRUS_Exp_ON = declare(bool, value=False)
+        Probe_max_counts_Exp_ON = declare(bool, value=False)
 
         # MOT variables
         MOT_Repetitions = declare(int, value=obj.Exp_Values['MOT_rep'])
@@ -388,10 +465,15 @@ def opx_control(obj, qm):
 
         # PGC variables:
         pgc_duration = declare(int, value=int(obj.pgc_duration))
+        pgc_prep_time = declare(int, value=int(obj.pgc_prep_duration))
+        pgc_pulse_duration_0 = declare(int, value=int(obj.pgc_pulse_duration_0))  # The relative duration to reach the desired amplitude
+        pgc_pulse_duration_minus = declare(int, value=int(obj.pgc_pulse_duration_minus))  # The relative duration to reach the desired amplitude
+        pgc_pulse_duration_plus = declare(int, value=int(obj.pgc_pulse_duration_plus))  # The relative duration to reach the desired amplitude
 
         # Fountain variables:
         fountain_duration = declare(int, value=int(obj.fountain_duration))
         # TODO: pre_PGC_fountain_duration = declare(int, value=int(obj.pre_PGC_fountain_duration))
+        fountain_prep_time = declare(int, value=int(obj.fountain_prep_duration))  # Can't be used with Chirp!!!
         fountain_pulse_duration_0 = declare(int, value=int(obj.fountain_pulse_duration_0))  # The relative duration to reach the desired amplitude
         fountain_pulse_duration_minus = declare(int, value=int(obj.fountain_pulse_duration_minus))  # The relative duration to reach the desired amplitude
         fountain_pulse_duration_plus = declare(int, value=int(obj.fountain_pulse_duration_plus))  # The relative duration to reach the desired amplitude
@@ -407,6 +489,7 @@ def opx_control(obj, qm):
         Buffer_Cycles = declare(int, value=obj.Exp_Values['Buffer_Cycles'])
 
         # General measurements variables:
+        Trigger_delay = declare(int, value=int(obj.Exp_Values['Trigger_delay'] * 1e6 / 4))
         PrePulse_duration = declare(int, value=int(obj.Exp_Values['PrePulse_duration'] * 1e6 / 4))
 
         # Pulse_1_parameters:
@@ -428,9 +511,24 @@ def opx_control(obj, qm):
         Depump_start = declare(int, value=int(obj.Depump_Start * 1e6 / 4))
 
         # OD measurement variables:
+        ## Free Space:
+        OD_FS_pulse_duration = declare(int, value=int(obj.OD_FS_pulse_duration * 1e6 / 4))
+        OD_FS_pulses_spacing = declare(int, value=int(obj.OD_FS_pulses_spacing * 1e6 / 4))
+        OD_FS_start = declare(int, value=int(obj.OD_FS_Start * 1e6 / 4))
+        OD_FS_sleep = declare(int, value=int(obj.OD_FS_sleep * 1e6 / 4))
         ## In fiber:
+        M_duration = declare(int, value=int(obj.M_time / 4))  # From [nsec] to [4 nsec]
         M_off_time = declare(int, value=int(obj.M_off_time / 4))
+        OD_Delay = declare(int, value=int(obj.OD_delay * 1e6 / 4))
         shutter_open_time = declare(int, value=int(obj.Shutter_open_time * 1e6 / 4))
+        Rep = declare(int, value=obj.rep)
+
+        # MW spectroscopy variables:
+        MW_freq = declare(int, value=obj.MW_start_frequency)
+        pulse_length_MW = declare(int, value=(obj.Pulse_Length_MW * int(1e3 / 4)))
+        pulse_length_OD = declare(int, value=(obj.Pulse_Length_OD * int(1e3 / 4)))
+        Repetitions = declare(int, value=1)
+        Delta_f = declare(int, value=0)
 
         # Stream processing:
         ON_counts_st1 = declare_stream()
@@ -439,15 +537,12 @@ def opx_control(obj, qm):
         ON_counts_st6 = declare_stream()
         ON_counts_st7 = declare_stream()
         ON_counts_st8 = declare_stream()
-        tt_st_1 = declare_stream()
-        tt_st_2 = declare_stream()
-        tt_st_3 = declare_stream()
-        tt_st_6 = declare_stream()
-        tt_st_7 = declare_stream()
-        tt_st_8 = declare_stream()
+        tt_st_N = declare_stream()
+        tt_st_S = declare_stream()
         rep_st = declare_stream()
         AntiHelmholtz_ON_st = declare_stream()
         FLR_st = declare_stream()
+        x = declare(int)
         assign(IO1, 0)
         assign(IO2, 0)
 
@@ -481,12 +576,11 @@ def opx_control(obj, qm):
             align(*all_elements)
 
             # FreeFall sequence:
-            with if_(SPRINT_Exp_ON):
-                assign(x, (38688900 + 656000 * 2) // 4) # TODO -  added 38688900 to fix new delay due to wait(1000) in saving sprint data with vector size 10000, should be fixed as well
+            with if_(Transits_Exp_ON):
+                assign(x, 766000 // 4)
             with else_():
                 assign(x, 0)
             FreeFall(FreeFall_duration - x, coils_timing)
-
             ##########################
             ## Measurement Sequence ##
             ##########################
@@ -496,34 +590,29 @@ def opx_control(obj, qm):
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
 
-            with if_(SPRINT_Exp_ON):
-                play("Depump", "AOM_2-2'", duration=(PrePulse_duration - shutter_open_time))
-            with else_():
-                wait(PrePulse_duration, "Cooling_Sequence")
-            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "PULSER_N", "PULSER_S", "Dig_detectors")
+            wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
+            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'") # , "Dig_detectors"
 
             with if_(Trigger_Phase == 4):  # when trigger on pulse 1
                 ## Trigger QuadRF Sequence #####################
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
-            ## For taking an image:
-            with if_((Pulse_1_duration > 0) & ~SPRINT_Exp_ON):
-                align(*all_elements)
-                Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
-                                pulse_1_duration_minus, pulse_1_duration_plus)
-                Measure(Pulse_1_duration)  # This triggers camera (Control 7)
-                align(*all_elements)
-
-            with if_((Pulse_1_duration > 0) & SPRINT_Exp_ON):
-                align("Dig_detectors", "PULSER_N", "PULSER_S")
-                Sprint_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
-                           ON_counts_st1, ON_counts_st2, ON_counts_st3,
-                           ON_counts_st6, ON_counts_st7, ON_counts_st8,
-                           tt_st_1, tt_st_2, tt_st_3, tt_st_6, tt_st_7, tt_st_8, rep_st)
-                save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
-                with if_(AntiHelmholtz_ON):
-                    save(FLR, FLR_st)
-                align("Dig_detectors", "PULSER_N", "PULSER_S")
+            with if_((Imaging_Phase == 4) & (Pulse_1_duration > 0)):  # 4 means imaging phase on pulse_1
+                with if_(Transits_Exp_ON):
+                    align(*all_elements, "Dig_detectors_spectrum", "AOM_2-2/3'", "Pulser_CRUS")
+                    Transits_Exp_TT(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
+                                    ON_counts_st1, ON_counts_st2, ON_counts_st3,
+                                    ON_counts_st6, ON_counts_st7, ON_counts_st8,
+                                    tt_st_N, tt_st_S, rep_st)
+                    save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
+                    with if_(AntiHelmholtz_ON):
+                        save(FLR, FLR_st)
+                with else_():
+                    align(*all_elements)
+                    Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
+                                    pulse_1_duration_minus, pulse_1_duration_plus)
+                    Measure(Pulse_1_duration)  # This triggers camera (Control 7)
+                    align(*all_elements)
 
             assign(N_Snaps, 1)
             assign(Buffer_Cycles, 0)
@@ -534,8 +623,20 @@ def opx_control(obj, qm):
                 pause()
             with while_(i > 0):
                 ## Boolean variables control: ##
+                with if_(i == 1):
+                    assign(MOT_ON, IO2)
+                with if_(i == 2):
+                    assign(Linear_PGC_ON, IO2)
+                with if_(i == 3):
+                    assign(Transits_Exp_ON, IO2)
                 with if_(i == 4):
-                    assign(SPRINT_Exp_ON, IO2)
+                    assign(CRUS_Exp_ON, IO2)
+                with if_(i == 5):
+                    assign(AntiHelmholtz_delay_ON, IO2)
+                with if_(i == 6):
+                    assign(Probe_max_counts_Exp_ON, IO2)
+                with if_(i == 7):
+                    assign(filler, IO2)
                 ## AntiHelmholtz control ##
                 with if_(i == 10):
                     assign(antihelmholtz_delay, IO2)
@@ -548,10 +649,20 @@ def opx_control(obj, qm):
                 ## PGC variables control ##
                 with if_(i == 20):  # Live control over the PGC duration
                     assign(pgc_duration, IO2)
+                with if_(i == 21):  # Live control over the preparation time of the PGC
+                    assign(pgc_prep_time, IO2)
+                with if_(i == 28):  # Live control over the final amplitude of the PGC AOM 0
+                    assign(pgc_pulse_duration_0, IO2)
+                with if_(i == 29):  # Live control over the final amplitude of the PGC AOM -
+                    assign(pgc_pulse_duration_minus, IO2)
+                with if_(i == 30):  # Live control over the final amplitude of the PGC AOM +
+                    assign(pgc_pulse_duration_plus, IO2)
 
                 ## Fountain variables control: ##
                 with if_(i == 31):  # Live control over the fountain duration
                     assign(fountain_duration, IO2)
+                with if_(i == 32):  # Live control over the preparation time of the Fountain
+                    assign(fountain_prep_time, IO2)
                 with if_(i == 36):  # Live control over the final amplitude of the fountain AOM 0
                     assign(fountain_pulse_duration_0, IO2)
                 with if_(i == 37):  # Live control over the final amplitude of the fountain AOM -
@@ -562,6 +673,8 @@ def opx_control(obj, qm):
                     assign(fountain_aom_chirp_rate, IO2)
 
                 ## Measurement variables control: ##
+                with if_(i == 41):
+                    assign(Trigger_delay, IO2)
                 with if_(i == 42):
                     assign(PrePulse_duration, IO2)
                 with if_(i == 43):
@@ -574,6 +687,16 @@ def opx_control(obj, qm):
                     assign(Buffer_Cycles, IO2)
 
                 ## OD and N_atoms measuring variable control ##
+                with if_(i == 51):  # Live control of the Free Space OD measurement start time
+                    assign(OD_FS_start, IO2)
+                with if_(i == 52):  # Live control of the Free Space OD measurement pulses duration
+                    assign(OD_FS_pulse_duration, IO2)
+                with if_(i == 53):  # Live control of the Free Space OD measurement wait duration between the 2 pulses
+                    assign(OD_FS_pulses_spacing, IO2)
+                with if_(i == 54):  # Live control of the SNSPDs OD measurement start time
+                    assign(OD_Delay, IO2)
+                with if_(i == 55):  # Live control of the SNSPDs OD measurement duration
+                    assign(Rep, IO2)
                 with if_(i == 56):  # Live control of the Depump measurement start time
                     assign(Depump_start, IO2)
                 with if_(i == 57):  # Live control of the Depump measurement pulses duration
@@ -582,31 +705,32 @@ def opx_control(obj, qm):
                     assign(Depump_pulses_spacing, IO2)
                 with if_(i == 59):  # Live control of the delay due to shutter opening time.
                     assign(shutter_open_time, IO2)
-
+                ## MW spectroscopy control ##
+                with if_(i == 61):  # Live control of the MW spectroscopy MW frequency
+                    assign(MW_freq, IO2)
+                with if_(i == 62):  # Live control of the MW spectroscopy MW pulse length
+                    assign(pulse_length_MW, IO2)
+                with if_(i == 63):  # Live control of the MW spectroscopy OD pulse length
+                    assign(pulse_length_OD, IO2)
+                with if_(i == 64):  # Live control of the MW spectroscopy MW pulse repetitions
+                    assign(Repetitions, IO2)
+                with if_(i == 65):  # Live control of the MW spectroscopy MW pulse frequency change
+                    assign(Delta_f, IO2)
 
                 pause()
                 assign(i, IO1)
 
         with stream_processing():
-            ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
-            ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
-            ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
-            ON_counts_st6.buffer(obj.rep).save('Det6_Counts')
-            ON_counts_st7.buffer(obj.rep).save('Det7_Counts')
-            ON_counts_st8.buffer(obj.rep).save('Det8_Counts')
-            (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
-            (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
-            (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
-            (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep).save('Det6_Probe_TT')
-            (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det7_Probe_TT')
-            (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det8_Probe_TT')
+            (ON_counts_st1 + ON_counts_st2 + ON_counts_st3).buffer(obj.rep).save('North_Probe')
+            (ON_counts_st6 + ON_counts_st7 + ON_counts_st8).buffer(obj.rep).save('South_Probe')
+            (tt_st_N + rep_st).buffer(6000 * obj.rep).save('North_Probe_TT')
+            (tt_st_S + rep_st).buffer(6000 * obj.rep).save('South_Probe_TT')
             FLR_st.save('FLR_measure')
             AntiHelmholtz_ON_st.save("antihelmholtz_on")
 
     job = qm.execute(opx_control_prog, flags=['auto-element-thread'])
 
     return job
-
 
 
 class bcolors:
@@ -641,9 +765,9 @@ class OPX:
         # we hold this connection until update is finished, the we close the connection.
         # we do still hold the QuadRFController objects, for access to the table (read only!) when the experiment is running.
         qrfContr = QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 4), topticaLockWhenUpdating=False,
-                                        debugging=False, continuous=False)
+                                        debugging=True, continuous=False)
         self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
-        self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev, initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
+        self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev, initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '100MHz', 'CH3_amp': '31dbm'},
                                                           updateChannels=[3], debugging=False, continuous=False))  # updates values on QuadRF (uploads table)
         #self.QuadRFControllers.append(QuadRFFrequencyScannerController(MOGdevice = qrfContr.dev, channel=2, debugging=False))  # updates values on QuadRF (uploads table)
 
@@ -762,16 +886,10 @@ class OPX:
         self.TOP2_pulse_len = int(Config.Probe_pulse_len / 4)  # [nsec]
         self.Calibration_time = 10  # [msec]
 
-        try:
-            self.qmm = QuantumMachinesManager(host='132.77.54.230', port='80')
-            self.qmm.clear_all_job_results()
-            self.qmm.reset_data_processing()
-            self.qmm.close_all_quantum_machines()
-            self.qm = self.qmm.open_qm(config)
-            self.job = opx_control(self, self.qm)
-        except KeyboardInterrupt:
-            self.job.halt()
-            self.qmm.reset_data_processing()
+        self.qmm = QuantumMachinesManager(host='132.77.54.230', port='80')
+        self.qmm.clear_all_job_results()
+        self.qm = self.qmm.open_qm(config)
+        self.job = opx_control(self, self.qm)
 
         self.io1_list = []
         self.io2_list = []
@@ -944,9 +1062,6 @@ class OPX:
     def Spectrum_Exp_switch(self, Bool):
         self.update_io_parameter(4, Bool)
 
-    def SPRINT_Exp_switch(self, Bool):
-        self.update_io_parameter(4, Bool)
-
     def AntiHelmholtz_Delay_switch(self, Bool):
         self.update_io_parameter(5, Bool)
 
@@ -1026,575 +1141,496 @@ class OPX:
         return [(np.average(Probe_counts_North) * 1000) / self.M_time,
                 (np.average(Probe_counts_South) * 1000) / self.M_time]
 
-    def get_avg_num_of_photons_in_det_pulse(self, det_pulse_len, sprint_sequence_delay, num_of_det_pulses, num_of_sprint_sequences):
-        self.avg_num_of_photons_in_det_pulse = np.zeros(num_of_det_pulses)
-        for i in range(num_of_det_pulses):
-            detection_puls_ind =\
-            list(np.arange((sprint_sequence_delay + i * det_pulse_len),(sprint_sequence_delay + (i + 1) * det_pulse_len)))
-            self.avg_num_of_photons_in_det_pulse[i] = \
-                np.sum(self.tt_S_SPRINT_events[detection_puls_ind]) / num_of_sprint_sequences
-
-    def get_handles_from_OPX_Server(self,Num_Of_dets):
-        '''
-         gets handles of timetags and counts from OPX
-        :return:
-        '''
-        Counts_handle = []
-        tt_handle = []
-
-        for i in Num_Of_dets:
-            Counts_handle.append(self.job.result_handles.get("Det"+str(i)+"_Counts"))
-            tt_handle.append(self.job.result_handles.get("Det"+str(i)+"_Probe_TT"))
-        FLR_handle = self.job.result_handles.get("FLR_measure")
-        return Counts_handle,tt_handle,FLR_handle
-
-    def get_tt_from_handles(self,Num_Of_dets,Counts_handle,tt_handle,FLR_handle):
-        counts_res = []
-        tt_res = []
-
-        # handles wait for values
-        for i in range(len(Num_Of_dets)):
-            tt_handle[i].wait_for_values(1)
-        FLR_handle.wait_for_values(1)
-
-        # add the tt and counts to python vars
-        for i in range(len(Num_Of_dets)):
-            counts_res.append(Counts_handle[i].fetch_all())
-            tt_res.append(tt_handle[i].fetch_all())
-        self.FLR_res = -FLR_handle.fetch_all()
-
-        # clear tt's vecs from last data
-        self.tt_measure = []
-        self.tt_N_measure = []
-        self.tt_S_measure = []
-
-        # remove zero-padding from tt-res and append into tt_measure
-        for i in range(len(Num_Of_dets)): # for different detectors
-            self.tt_measure.append([tt_res[i][(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts in
-                                    enumerate(counts_res[i])])
-            self.tt_measure[i].sort()
-        # create vector of tt's for each direction (north and south) and sort them
-        self.tt_S_measure = sorted(sum(sum(self.tt_measure[:3],[]),[])) # unify detectors 1-3 and windows within detectors
-        self.tt_N_measure = sorted(sum(sum(self.tt_measure[3:],[]),[])) # unify detectors 6-8 and windows within detectors
-
-
-    def get_pulses_bins(self,det_pulse_len,sprint_pulse_len,num_of_det_pulses,num_of_sprint_pulses,
-                        sprint_sequence_delay,num_of_sprint_sequences,num_init_zeros,num_fin_zeros,num_between_zeros):
-        '''
-        generating bin vwctor with edges at the efges of pulses (such that the histogram would give the number of
-        clicks within pulse).
-        :param det_pulse_len:
-        :param sprint_pulse_len:
-        :param num_of_det_pulses:
-        :param num_of_sprint_pulses:
-        :param sprint_sequence_delay:
-        :return:
-        '''
-        pulses_bins = [np.maximum(sprint_sequence_delay,0)]
-        for i in range(num_of_sprint_sequences):
-            pulses_bins += (pulses_bins[-1]+np.arange(det_pulse_len,(num_of_det_pulses+1)*det_pulse_len,det_pulse_len)).tolist()
-            pulses_bins += (pulses_bins[-1]+np.arange(sprint_pulse_len,(num_of_sprint_pulses+1)*sprint_pulse_len,sprint_pulse_len)).tolist()
-            pulses_bins[-1] += num_fin_zeros+num_init_zeros-num_between_zeros
-        return pulses_bins
-
-
-    def divide_to_reflection_trans(self,det_pulse_len,sprint_pulse_len,sprint_sequence_delay_S,sprint_sequence_delay_N,
-                                   num_of_det_pulses,
-                                   num_of_sprint_pulses,num_of_sprint_sequences):
-        '''
-        dividing south and north tt's vectros into reflection and transmission vectors, by:
-        1. converting them into counts vector in same time spacing as the initial pulse.
-        2. taking the relevant pulses from the sequence to each vector (reflection/transmission)
-        :return:
-        '''
-        # create histogram with self.M_window bins
-        self.pulses_bins_S = self.get_pulses_bins(det_pulse_len,sprint_pulse_len,num_of_det_pulses,num_of_sprint_pulses
-                             ,sprint_sequence_delay_S,num_of_sprint_sequences,Config.num_init_zeros_S
-                                                  ,Config.num_fin_zeros_S,Config.num_between_zeros)
-        self.pulses_bins_N = self.get_pulses_bins(det_pulse_len,sprint_pulse_len,num_of_det_pulses,num_of_sprint_pulses
-                             ,sprint_sequence_delay_N,num_of_sprint_sequences,Config.num_init_zeros_N
-                                                  ,Config.num_fin_zeros_N,Config.num_between_zeros)
-        self.tt_histogram_N,_ = np.histogram(self.tt_N_measure, self.pulses_bins_N)
-        self.tt_histogram_S,_ = np.histogram(self.tt_S_measure, self.pulses_bins_S)
-
-        ### build reflection and transmission pulses indices, by setting non zero at indices elements ###
-        # build transmission South indices
-
-        # transmission and reflection would take alternately reflection and transmission pulses
-        # transmission
-        tt_histogram_transmission = np.zeros(np.size(self.tt_histogram_S))
-        tt_histogram_reflection = np.zeros(np.size(self.tt_histogram_S))
-        for i in range(len(self.tt_histogram_S)):
-            if i % (num_of_det_pulses + num_of_sprint_pulses) % 2 == 0:
-                tt_histogram_transmission[i] = self.tt_histogram_S[i]
-                tt_histogram_reflection[i] = self.tt_histogram_N[i]
-            else:
-                tt_histogram_transmission[i] = self.tt_histogram_N[i]
-                tt_histogram_reflection[i] = self.tt_histogram_S[i]
-
-        return tt_histogram_transmission, tt_histogram_reflection
-
-    def divide_tt_to_reflection_trans(self, sprint_pulse_len, num_of_det_pulses):
-        '''
-        A function designed to count the number of photons reflected or transmitted for each sequence, such that,
-        for the detection pulses the number of photons will be accumulated for each sequence and for the SPRINT
-        pulses there will be number of reflected or transmitted photons for each SPRINT pulse.
-        :param sprint_pulse_len: the length in [ns] of the SPRINT pulses in the sequence.
-        :param num_of_det_pulses: the number of detection pulses in the sequence.
-        :return:
-        '''
-        self.num_of_det_reflections_per_seq_S = np.zeros(self.number_of_sprint_sequences)
-        self.num_of_det_reflections_per_seq_N = np.zeros(self.number_of_sprint_sequences)
-        self.num_of_det_transmissions_per_seq_S = np.zeros(self.number_of_sprint_sequences)
-        self.num_of_det_transmissions_per_seq_N = np.zeros(self.number_of_sprint_sequences)
-
-        self.num_of_SPRINT_reflections_per_seq_S = np.zeros([self.number_of_sprint_sequences, self.number_of_SPRINT_pulses_per_seq])
-        self.num_of_SPRINT_reflections_per_seq_N = np.zeros([self.number_of_sprint_sequences, self.number_of_SPRINT_pulses_per_seq])
-        self.num_of_SPRINT_transmissions_per_seq_S = np.zeros([self.number_of_sprint_sequences, self.number_of_SPRINT_pulses_per_seq])
-        self.num_of_SPRINT_transmissions_per_seq_N = np.zeros([self.number_of_sprint_sequences, self.number_of_SPRINT_pulses_per_seq])
-
-        end_of_det_pulse_in_seq = max(self.pulses_location_in_seq_N[num_of_det_pulses - 1][1],
-                                      self.pulses_location_in_seq_S[num_of_det_pulses - 1][1])
-
-        for element in self.tt_N_measure:
-            tt_inseq = element % self.sprint_sequence_len
-            if tt_inseq <= end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
-                self.num_of_det_reflections_per_seq_S[(element-1)//self.sprint_sequence_len] += self.filter_S[tt_inseq]
-                self.num_of_det_transmissions_per_seq_N[(element-1)//self.sprint_sequence_len] += self.filter_N[tt_inseq]
-            else:  # The part of the SPRINT pulses in the sequence
-                SPRINT_pulse_num = (tt_inseq - end_of_det_pulse_in_seq) // (sprint_pulse_len + Config.num_between_zeros)
-                if SPRINT_pulse_num < self.number_of_SPRINT_pulses_per_seq:
-                    self.num_of_SPRINT_reflections_per_seq_S[(element-1) // self.sprint_sequence_len][SPRINT_pulse_num] += self.filter_S[tt_inseq]
-                    self.num_of_SPRINT_transmissions_per_seq_N[(element-1) // self.sprint_sequence_len][SPRINT_pulse_num] += self.filter_N[tt_inseq]
-
-        for element in self.tt_S_measure:
-            tt_inseq = element % self.sprint_sequence_len
-            if tt_inseq <= end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
-                self.num_of_det_reflections_per_seq_N[(element-1)//self.sprint_sequence_len] += self.filter_N[tt_inseq]
-                self.num_of_det_transmissions_per_seq_S[(element-1)//self.sprint_sequence_len] += self.filter_S[tt_inseq]
-            else:  # The part of the SPRINT pulses in the sequence
-                SPRINT_pulse_num = (tt_inseq - end_of_det_pulse_in_seq) // (sprint_pulse_len + Config.num_between_zeros)
-                if SPRINT_pulse_num < self.number_of_SPRINT_pulses_per_seq:
-                    self.num_of_SPRINT_reflections_per_seq_N[(element-1) // self.sprint_sequence_len][SPRINT_pulse_num] += self.filter_N[tt_inseq]
-                    self.num_of_SPRINT_transmissions_per_seq_S[(element-1) // self.sprint_sequence_len][SPRINT_pulse_num] += self.filter_S[tt_inseq]
-
-    def plot_folded_tt_histogram(self):
-
-        plt.figure()
-        plt.plot(sum(np.reshape(self.tt_histogram_N,[int(len(self.tt_histogram_N)/9),9])),label='tt_hist_N')
-        plt.plot(sum(np.reshape(self.tt_histogram_S,[int(len(self.tt_histogram_S)/9),9])),label='tt_hist_S')
-        plt.legend()
-
-    def find_transits_and_sprint_events(self, detection_condition, num_of_det_pulses, num_of_sprint_pulses):
-        '''
-        find transits of atoms by searching events with detection_condition[0] photons before
-        the sprint sequence and detection_condition[1] after.
-        :param detection_condition:
-        :param num_of_det_pulses:
-        :param num_of_sprint_pulses:
-        :return:
-        '''
-        transit_sequences_init_tt = []
-        sprints_events = []
-        num_of_pulses = num_of_det_pulses + num_of_sprint_pulses
-
-        num_of_detected_atom = 0
-        num_of_sprints = 0
-        detection_pulse_range = np.zeros([self.number_of_sprint_sequences, num_of_det_pulses], dtype=int)
-        sprint_pulse_range = np.zeros([self.number_of_sprint_sequences, num_of_sprint_pulses], dtype=int)
-
-        #define ranges for tt_histogram (a vector that counts number of photons in each pulse)
-        for i in range(self.number_of_sprint_sequences):
-            detection_pulse_range[i] =\
-                list(range(i*num_of_pulses, i*num_of_pulses+num_of_det_pulses))
-            # sprint pulse range starts from last detection pulse andfo num_of_sprint_pulses
-            sprint_pulse_range[i] = \
-                list(range(int(detection_pulse_range[i][-1])+1, int(detection_pulse_range[i][-1])+1+num_of_sprint_pulses))
-        # find transits and sprint events
-        for j in range(self.number_of_sprint_sequences - 2):
-            if \
-                sum(self.tt_histogram_reflection[detection_pulse_range[j]]) >= detection_condition[0] and \
-                        sum(self.tt_histogram_reflection[detection_pulse_range[j + 1]]) >= detection_condition[1]:
-                    num_of_detected_atom += 1
-                    transit_sequences_init_tt.append(j * self.sprint_sequence_len)
-                    if self.tt_histogram_reflection[sprint_pulse_range[j][0]]:
-                        num_of_sprints += 1
-                        sprints_events.append(self.tt_histogram_reflection[sprint_pulse_range[j]])
-        sprints_data = [sprints_events, num_of_sprints]
-        atom_detect_data = [transit_sequences_init_tt, num_of_detected_atom]
-        return atom_detect_data, sprints_data
-
-    def find_transits_and_sprint_events_changed(self, cond):
-        '''
-        find transits of atoms by searching events with detection_condition[0] photons before
-        the sprint sequence and detection_condition[1] after.
-        :param detection_condition:
-        :param num_of_det_pulses:
-        :param num_of_sprint_pulses:
-        :return:
-        '''
-
-        current_transit = []
-        self.all_transits_seq_indx = []
-        self.reflection_SPRINT_data_per_transit = []
-        self.transmission_SPRINT_data_per_transit = []
-
-        for i in range(len(self.num_of_det_reflections_per_seq) - len(cond) + 1):
-            cond_check = (self.num_of_det_reflections_per_seq[i:(i + len(cond))] >= cond).astype(int)
-            if cond_check.all() | (cond_check[0] & cond_check[-1]):
-                current_transit = np.unique(current_transit + [*range(i, (i + len(cond)))]).tolist()
-            elif cond_check[:-1].all():
-                current_transit = np.unique(current_transit + [*range(i, (i - 1 + len(cond)))]).tolist()
-            elif cond_check[1:].all():
-                current_transit = np.unique(current_transit + [*range(i + 1, (i + len(cond)))]).tolist()
-            elif len(current_transit) > 1:
-                if self.all_transits_seq_indx:
-                    if bool(set(current_transit) & set(self.all_transits_seq_indx[-1])):
-                        current_transit = self.all_transits_seq_indx[-1] + current_transit[1:]
-                        self.all_transits_seq_indx = self.all_transits_seq_indx[:-1]
-                        self.reflection_SPRINT_data_per_transit = self.reflection_SPRINT_data_per_transit[:-1]
-                        self.transmission_SPRINT_data_per_transit = self.transmission_SPRINT_data_per_transit[:-1]
-                self.all_transits_seq_indx.append(current_transit)
-                self.reflection_SPRINT_data_per_transit.append([self.num_of_SPRINT_reflections_per_seq[elem].tolist()
-                                                                for elem in current_transit])
-                self.transmission_SPRINT_data_per_transit.append([self.num_of_SPRINT_transmissions_per_seq[elem].tolist()
-                                                                  for elem in current_transit])
-                current_transit = []
-        if len(current_transit) > 1:
-            if self.all_transits_seq_indx:
-                if bool(set(current_transit) & set(self.all_transits_seq_indx[-1])):
-                    current_transit = self.all_transits_seq_indx[-1] + current_transit[1:]
-                    self.all_transits_seq_indx = self.all_transits_seq_indx[:-1]
-                    self.reflection_SPRINT_data_per_transit = self.reflection_SPRINT_data_per_transit[:-1]
-                    self.transmission_SPRINT_data_per_transit = self.transmission_SPRINT_data_per_transit[:-1]
-            self.all_transits_seq_indx.append(current_transit)
-            self.reflection_SPRINT_data_per_transit.append([self.num_of_SPRINT_reflections_per_seq[elem].tolist()
-                                                            for elem in current_transit])
-            self.transmission_SPRINT_data_per_transit.append([self.num_of_SPRINT_transmissions_per_seq[elem].tolist()
-                                                              for elem in current_transit])
-
-    def get_pulses_location_in_seq(self, delay, seq=Config.Sprint_Exp_Gaussian_samples_S, smearing = int(Config.num_between_zeros/2)):
-        '''
-        A function that uses the original sequence samples that the OPX uses, in order to obtain the location of the
-        pulses in the sequence and build a filter. The user may add smearing which is the value that is added before and
-        after each pulse in the sequence to match the filter to the performance of the physical system (AOMs).
-        :param delay: Between the actual sequence pulse location to the location of the folded data
-        :param seq: The sequence of pulses from which the filter is generated.
-        :param smearing: The value that is added to the filter before and after the each pulse in the sequence.
-        :return:
-        '''
-        seq_filter = (np.array(seq) > 0).astype(int)
-        # seq_filter = np.append(np.zeros(delay), seq_filter[delay:])
-        seq_filter = np.roll(seq_filter, delay)
-        seq_indx = np.where(seq_filter > 0)[0]
-        seq_filter_with_smearing = seq_filter
-        pulses_loc = []
-        start_indx = seq_indx[0]
-        for i in range(1, len(seq_indx)):
-            if seq_indx[i] - seq_indx[i-1] > 1:
-                pulses_loc.append((start_indx - int(smearing), seq_indx[i-1] + int(smearing)))
-                for j in range(start_indx - int(smearing), seq_indx[i-1] + int(smearing)):
-                    seq_filter_with_smearing[j] = 1
-                start_indx = seq_indx[i]
-        pulses_loc.append((start_indx - int(smearing), seq_indx[-1] + int(smearing)))
-        return pulses_loc,  seq_filter_with_smearing
-
-
-    def get_avg_num_of_photons_in_seq_pulses(self, seq, pulse_loc):
-        avg_num_of_photons_in_seq_pulses = []
-        real_number_of_seq = math.ceil(max(self.tt_S_measure)/len(Config.Sprint_Exp_Gaussian_samples_S))
-        for t in pulse_loc:
-            avg_num_of_photons_in_seq_pulses.append((sum(seq[t[0]:t[1]]) + seq[t[1]]) / (real_number_of_seq * 0.37))
-        return avg_num_of_photons_in_seq_pulses
-
-
-    def get_max_value_in_seq_pulses(self, seq, pulse_loc):
-        max_value_in_seq_pulses = []
-        for t in pulse_loc:
-            if t[1] < (len(seq) + 1):
-                max_value_in_seq_pulses.append(max(seq[t[0]:t[1]]))
-            else:
-                max_value_in_seq_pulses.append(max(seq[t[0]:]))
-        return max_value_in_seq_pulses
-
-    def num_of_photons_txt_box_loc(self, pulse_loc):
-        return (np.sum(pulse_loc, axis=1)/2).astype(int)
-
-
-    # def get_avg_num_of_photons_in_seq_pulse(self, delay, seq=Config.Sprint_Exp_Gaussian_samples_S):
-    #     seq_filter = (np.array(seq) > 0).astype(int)
-    #     seq_filter = np.append(np.zeros(delay), seq_filter[delay:])
-    #     seq_indx = np.where(seq_filter > 0)[0]
-    #     self.avg_num_of_photons_in_seq_pulse = []
-    #     self.pulse_loc = []
-    #     start_indx = seq_indx[0]
-    #     number_of_photons_in_current_pulse = self.tt_N_det_SPRINT_events_batch[seq_indx[0]] + self.tt_S_det_SPRINT_events_batch[seq_indx[0]]
-    #     for i in range(1, len(seq_indx)):
-    #         if seq_indx[i] - seq_indx[i-1] > 1:
-    #             self.avg_num_of_photons_in_seq_pulse.append(number_of_photons_in_current_pulse)
-    #             self.pulse_loc.append((start_indx, seq_indx[i-1]))
-    #             start_indx = seq_indx[i]
-    #             number_of_photons_in_current_pulse = 0
-    #         number_of_photons_in_current_pulse += self.tt_N_det_SPRINT_events_batch[seq_indx[i]] + self.tt_S_det_SPRINT_events_batch[seq_indx[i]]
-    #     self.avg_num_of_photons_in_seq_pulse.append(number_of_photons_in_current_pulse)
-    #     self.pulse_loc.append((start_indx, seq_indx[-1]))
-
-
-    def fold_tt_histogram(self, exp_sequence_len, delay_S,delay_N,delay_det_N=11,delay_det_S=6,delay_rf_N=15,delay_rf_S=13):
-        # fold north and south
-        self.folded_tt_S = np.zeros(exp_sequence_len, dtype=int)
-        self.folded_tt_N= np.zeros(exp_sequence_len, dtype=int)
-
-        for x in [elem for elem in self.tt_S_measure]:
-            self.folded_tt_S[x % exp_sequence_len] += 1
-        for x in [elem for elem in self.tt_N_measure]:
-            self.folded_tt_N[x % exp_sequence_len] += 1
-
-
-
-        # a vector of ones at pulses inexes and zeros else, used to take only pulses location
-        S_pulses_location = np.asarray(Config.Sprint_Exp_Gaussian_samples_S).astype(bool).astype(int)
-        N_pulses_location = np.asarray(Config.Sprint_Exp_Gaussian_samples_N).astype(bool).astype(int)
-        self.S_pulses_loc_delayed = np.roll(S_pulses_location,delay_rf_S)
-        self.N_pulses_loc_delayed = np.roll(N_pulses_location,delay_rf_N)
-
-
-        self.folded_tt_S_delayed = np.roll(self.folded_tt_S, Config.num_init_zeros_S - delay_S+delay_det_S)
-        self.folded_tt_N_delayed = np.roll(self.folded_tt_N, Config.num_init_zeros_N - delay_N+delay_det_N)
-
-        folded_transmission = self.folded_tt_S_delayed*self.S_pulses_loc_delayed + self.folded_tt_N_delayed *self.N_pulses_loc_delayed
-        folded_reflection = self.N_pulses_loc_delayed*self.folded_tt_S_delayed + self.S_pulses_loc_delayed*self.folded_tt_N_delayed
-        return folded_transmission, folded_reflection
-
-    def plt_pulses_roll(self, delay_det_N, delay_det_S, delay_rf_N, delay_rf_S):
-        plt.figure()
-        plt.plot(np.roll(self.folded_tt_S_delayed, delay_det_S), label='folded_S')
-        plt.plot(np.roll(self.folded_tt_N_delayed, delay_det_N), label='folded_N')
-        plt.plot(np.roll(self.S_pulses_loc_delayed, delay_rf_S), label='sent_S')
-        plt.plot(np.roll(self.N_pulses_loc_delayed, delay_rf_N), label='sent_N')
-        plt.legend()
-        plt.title([delay_det_N, delay_det_S, delay_rf_N, delay_rf_S])
-
-    def save_tt_to_batch(self,Num_Of_dets,N):
-        for i in range(len(Num_Of_dets)):
-            self.tt_measure_batch.append([self.tt_measure[i]])
-        self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
-        self.tt_N_measure_batch = self.tt_N_measure_batch[-(N - 1):] + [self.tt_N_measure]
-
-        self.transit_sequences_batch += self.transit_sequences
-
-
-    def plot_sprint_figures(self,ax,Num_Of_dets):
-
-        ax[0].clear()
-        ax[1].clear()
-        ax[2].clear()
-        ax[3].clear()
-        ax[4].clear()
-        ax[5].clear()
-        #
-        #     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        #     textstr_detuned = r'$Probe_N = %.3f$' % ((sum(tt_S_binning_detuned) * 1000) / (self.M_window / 2),) + '[MPhotons/sec]\n' \
-        #                + '$\overline{Probe}_S = %.3f$' % ((np.mean([sum(x) for x in tt_S_binning_detuned_batch]) * 1000)
-        #                                                   / (self.M_window / 2),) + '[MPhotons/sec]'
-        #     textstr_resonance = r'$Probe_S = %.3f$' % ((sum(tt_S_binning_resonance) * 1000) / (self.M_window / 2),) + '[MPhotons/sec]\n' \
-        #                 + '$\overline{Probe}_S = %.3f$' % ((np.mean([sum(x) for x in tt_S_binning_resonance_batch]) * 1000)
-        #                                                    / (self.M_window / 2),) + '[MPhotons/sec]'
-        #     textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (np.mean(FLR_measurement) * 1e5,) + r'$\times 10^{-5}$'
-        #     textstr_No_transits = 'NO TRANSITS YET!!!'
-
-        # plt.plot(self.tt_S_SPRINT_events_batch, label='Counts histogram', color='b')
-        # for i in range(len(Num_Of_dets)):
-        #     plt.plot(self.tt_Single_det_SPRINT_events_batch[i], label='detector'+str(Num_Of_dets[i]))
-        # plt.legend(loc='upper right')
-        # plt.show()
-        # plt.pause(0.5)
-
-        # fig2.clear()
-        # plt.figure()
-        # plt.plot(tt_S_binning_batch, label='unfolded data')
-        # plt.show()
-        # plt.pause(0.5)
-
-        # for i in range(len(Num_Of_dets)):
-        #     ax[0].plot(self.tt_Single_det_SPRINT_events_batch[i], label='detector' + str(Num_Of_dets[i]))
-        # ax[0].set_title('binned timetags from all detectors folded (batch)', fontweight="bold")
-        # # ax1.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
-        # #     ax1.text(0.05, 0.95, textstr_detuned, transform=ax1.transAxes, fontsize=12,
-        # #              verticalalignment='top', bbox=props)
-        # ax[0].legend(loc='upper right')
-        #     print('ok')
-        # for i in range(len(Num_Of_dets)):
-        #     ax[1].plot(self.Single_det_foldeded[i], label='detector' + str(Num_Of_dets[i]))
-
-        ax[0].plot(self.folded_tt_N_batch, label='"N" detectors')
-        ax[0].plot(self.folded_tt_S_batch, label='"S" detectors')
-        ax[0].plot((self.filter_N) * max(self.folded_tt_N_batch + self.folded_tt_S_batch), '--k', label='Filter')
-        for i in range(len(self.Num_of_photons_txt_box_y_loc)):
-            ax[0].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc[i],
-                     '%.2f' % self.avg_num_of_photons_per_pulse[i],
-                     horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
-        ax[0].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
-        ax[0].legend(loc='upper right')
-
-        ax[1].plot(self.folded_tt_N, label='"N" detectors')
-        ax[1].plot(self.folded_tt_S, label='"S" detectors')
-        ax[1].plot((self.filter_S) * max(self.folded_tt_N + self.folded_tt_S), '--k', label='Filter')
-        for i in range(len(self.Num_of_photons_txt_box_y_loc_live)):
-            ax[1].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc_live[i],
-                     '%.2f' % self.avg_num_of_photons_per_pulse_live[i],
-                     horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
-        ax[1].set_title('binned timetags from all detectors folded (Live)', fontweight="bold")
-        ax[1].legend(loc='upper right')
-
-        ax[2].plot(self.folded_transmission, label='folded transmission')
-        ax[2].plot(self.folded_reflection, label='folded reflection')
-        ax[2].set_title('folded reflection and transmission(Live)', fontweight="bold")
-        ax[2].legend(loc='upper right')
-
-        ax[3].plot(self.num_of_det_reflections_per_seq, label='Num of reflections per sequence (accumulated)')
-        # ax[3].plot(self.folded_transmission_accumulated, label='folded transmission')
-        # ax[3].plot(self.folded_reflection_accumulated, label='folded reflection')
-
-        ax[3].set_title('Num of reflections per sequence (accumulated)', fontweight="bold")
-        # ax[3].set_title('folded reflection and transmission(accumulated)', fontweight="bold")
-        # ax[3].legend(loc='upper right')
-
-        ax[4].plot(np.histogram(self.transit_sequences,bins=self.number_of_sprint_sequences,
-                                range=(0, self.M_window))[0], label='transits(Live)')
-        ax[4].set_title('transit histogram(live)', fontweight="bold")
-        ax[4].legend(loc='upper right')
-        ax[4].text(0.5,0.5,'number of transits='+str(self.atom_detect_data[1]))
-
-        ax[5].plot(np.histogram(self.transit_sequences_batch,bins=self.number_of_sprint_sequences
-                                ,range=(0,self.M_window))[0], label='transits(Live)')
-        ax[5].set_title('transit histogram(accumulated)', fontweight="bold")
-        ax[5].legend(loc='upper right')
-
-
-        # DONT ERASE!!!!!######################################################################################
-        # # How to add the text to the graph(Dor)
-        # pulse_loc = experiment.num_of_photons_txt_box_loc()
-        # for i in range(len(experiment.max_value_in_seq_pulses)):
-        #     ax2.text(pulse_loc[0][i], experiment.max_value_in_seq_pulses[i],
-        #              '%.1f' % experiment.avg_num_of_photons_in_seq_pulse[i],
-        #              horizontalalignment='center', fontsize=20, fontweight='bold', family=['Comic Sans MS'])
-        # #####################################################################################################
-        # ax2.set_title('On resonant counts', fontweight="bold")
-        # ax2.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
-        # ax2.text(0.05, 0.95, textstr_resonance, transform=ax2.transAxes, fontsize=12,
-        #          verticalalignment='top', bbox=props)
-        # ax2.legend(loc='upper right')
-        #
-        # ax3.plot(SPRINT_pulse_time, self.tt_S_SPRINT_events, label='Folded photon detection events per cycle', color='k')
-        #     ax3.set(xlabel='Time [nsec]', ylabel='Counts [#Number]')
-        #     ax3.legend(loc='upper right')
-        #
-        # ax4.plot(SPRINT_pulse_time, self.tt_S_SPRINT_events, label='Folded photon detection events per run', color='k')
-        #     ax4.set(xlabel='Time [msec]', ylabel='Counts [#Number]')
-        #     ax4.legend(loc='upper right')
-        #
-        #     if len(all_transits_batch) > 0:
-        #         if all_transits:
-        #             textstr_transit_counts = r'$N_{Transits} = %s $' % (len(all_transits),) + r'$[Counts]$'
-        #         textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (len([vec for elem in all_transits_batch for vec in elem]),) + r'$[Counts]$'
-        #
-        #         ax5.plot(t_transit, transit_histogram, label='Transit profile', color='b')
-        #         ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-        #         ax5.text(0.05, 0.95, textstr_transit_counts, transform=ax5.transAxes, fontsize=12,
-        #                  verticalalignment='top', bbox=props)
-        #
-        #         ax6.plot(time_bins, tt_S_transit_events, label='Transit events histogram', marker='*', color='b')
-        #         ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-        #         ax6.text(0.05, 0.95, textstr_transit_event_counter, transform=ax6.transAxes, fontsize=12,
-        #                  verticalalignment='top', bbox=props)
-        #     else:
-        #         ax5.plot(t_transit, transit_histogram, label='Transit profile', color='b')
-        #         ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-        #         ax5.text(0.25, 0.5, textstr_No_transits, transform=ax5.transAxes, fontsize=24,
-        #                  verticalalignment='center', bbox=props)
-        #
-        #         ax6.plot(time_bins, tt_S_transit_events, label='Transit events histogram', marker='*', color='b')
-        #         ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-        #         ax6.text(0.25, 0.5, textstr_No_transits, transform=ax6.transAxes, fontsize=24,
-        #                  verticalalignment='center', bbox=props)
-        #
-        #     ax1.set_ylim(0, 8)
-        #     ax2.set_ylim(0, 8)
-        #
-
-        # plt.tight_layout()
-        # plt.show()
-        plt.pause(0.5)
-        # #
-        #     ###########################################################################################################
-
-    def Save_SNSPDs_Sprint_Measurement_with_tt(self, N, sprint_sequence_len, preComment, lock_err_threshold, transit_condition,
-                                               max_probe_counts):
+    def Save_SNSPDs_Transit_Measurement_with_tt(self, N, histogram_bin_size, Transit_profile_bin_size, preComment,
+                                                total_counts_threshold,  transit_counts_threshold, max_probe_counts):
         """
-        Function for analyzing,saving and displaying data from sprint experiment.
+        Function for analyzing and saving the time tags data measured from the SNSPDs using the OPX. In this specific
+         program we are looking for transits of atoms next to the toroid and record them.
         :param N: Number of maximum experiments (free throws) saved and displayed.
-                 program we are looking for transits of atoms next to the toroid and record them.
-        :param sprint_sequence_len: the number of sprint sequences (detection and sprint pulses combination)
+        :param histogram_bin_size: The bin size for the general experiment histogram which means - dividing the length
+                                   of the measuring time (m_time) to bins and counting the number of photon detections
+                                   at each bin.
+        :param Transit_profile_bin_size: The bin size for the transit histogram which means - dividing the length of the
+                                         transit time to bins and counting the number of transits for which there has
+                                         been a detection of photon at each bin.
         :param preComment: The comment added at the start of the experiment, usually consisting of unique experiment
                            parameters.
-        :param lock_err_threshold: The maximal error in locking resonator to rb line (in ms, depends on the scan width/vpp)
+        :param total_counts_threshold: The minimum number of MCounts / sec for which the data will be displayed and collected.
+        :param intensity_threshold: The number of photons at each time bin for which suspect we as a transit.
         :param max_probe_counts: The maximum counts probe counts at each direction measured when cavity isn't locked.
         :return:
         """
-        if not preComment:
-            preComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
-
-        ## set parameters ##
-        Num_Of_dets = [1, 2, 3, 6, 7, 8]
-        delay_in_detection_N = 25 # choose the correct delay in samples to the first detection pulse # TODO: 40?
-        delay_in_detection_S = 32 # choose the correct delay in samples to the first detection pulse # TODO: 40?
-        det_pulse_len = Config.det_pulse_len+Config.num_between_zeros
-        sprint_pulse_len = Config.sprint_pulse_len+Config.num_between_zeros
-
-        self.pulses_location_in_seq_S, self.filter_S = self.get_pulses_location_in_seq(7, Config.Sprint_Exp_Gaussian_samples_S, smearing=int(Config.num_between_zeros/2))
-        self.pulses_location_in_seq_N, self.filter_N = self.get_pulses_location_in_seq(8, Config.Sprint_Exp_Gaussian_samples_N, smearing=int(Config.num_between_zeros/2))
-
-        self.Num_of_photons_txt_box_x_loc = np.concatenate((self.num_of_photons_txt_box_loc(self.pulses_location_in_seq_S),
-                                                           self.num_of_photons_txt_box_loc(self.pulses_location_in_seq_N)))
-
-        # define empty variables
-        self.sprint_sequence_len=sprint_sequence_len
-        self.number_of_sprint_sequences = self.M_window // (self.sprint_sequence_len)
-        self.number_of_SPRINT_pulses_per_seq = len(Config.sprint_pulse_amp_S)
-        time_bins = np.linspace(0, self.M_window, self.number_of_sprint_sequences)
-
-        tt_S_SPRINT_events = np.zeros(self.number_of_sprint_sequences)
-        self.tt_S_SPRINT_events_batch = np.zeros(self.sprint_sequence_len)
-        SPRINT_pulse_time = np.arange(512)
-
-        #
-        tt_S_binning_batch = []
-
-        all_transits_batch = []
-        FLR_measurement = []
-        Exp_timestr_batch = []
-        self.tt_measure = []
-        self.tt_S_measure = []
-        self.tt_measure_batch = []
-        self.tt_S_measure_batch = []
-        self.tt_N_measure_batch = []
-        self.transit_sequences_batch = []
-
-        self.folded_transmission = np.zeros(len(Config.Sprint_Exp_Gaussian_samples_S))
-        self.folded_reflection = np.zeros(len(Config.Sprint_Exp_Gaussian_samples_S))
-
-        self.tt_S_binning = np.zeros(self.number_of_sprint_sequences + 1)
-        self.tt_S_SPRINT_events = np.zeros(self.sprint_sequence_len)
-        self.tt_S_SPRINT_events_batch = np.zeros(self.sprint_sequence_len)
-        self.Single_det_foldeded = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
-        self.single_det_folded_accumulated = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
-        self.num_of_det_reflections_per_seq_accumulated = np.zeros(self.number_of_sprint_sequences)
-
         # if preComment is True:
         if not preComment:
             preComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
+        aftComment = None
 
+        ### fetching data from server
+        ### saving to file
+        ###
+
+        histogram_bin_number = self.M_time // histogram_bin_size
+        time_bins = np.linspace(0, self.M_time, histogram_bin_number)
+        # time_threshold = int(histogram_bin_size / intensity_threshold)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
+        time_threshold = int(
+            histogram_bin_size * 0.8)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
+
+        ## Listen for keyboard
+        listener = keyboard.Listener(on_press=self.on_key_press)
+        listener.start()  # start to listen on a separate thread
+        self.keyPress = None
+        print('\033[94m' + 'Press ESC to stop measurement.' + '\033[0m')  # print blue
+        reps = 1  # a counter, number of repeats actually made.
+
+        Probe_N_handle = self.job.result_handles.get("North_Probe")
+        Probe_S_handle = self.job.result_handles.get("South_Probe")
+        tt_N_handle = self.job.result_handles.get("North_Probe_TT")
+        tt_S_handle = self.job.result_handles.get("South_Probe_TT")
+        FLR_handle = self.job.result_handles.get("FLR_measure")
+
+        Probe_N_handle.wait_for_values(1)
+        Probe_S_handle.wait_for_values(1)
+        tt_N_handle.wait_for_values(1)
+        tt_S_handle.wait_for_values(1)
+        FLR_handle.wait_for_values(1)
+
+        Probe_N_res = Probe_N_handle.fetch_all()
+        Probe_S_res = Probe_S_handle.fetch_all()
+        tt_N_res = tt_N_handle.fetch_all()
+        tt_S_res = tt_S_handle.fetch_all()
+        FLR_res = -FLR_handle.fetch_all()
+
+        tt_N_measure = [i for i in tt_N_res if (i % self.M_window) != 0]
+        self.tt_S_measure = [i for i in tt_S_res if (i % self.M_window) != 0]
+        tt_N_measure.sort()
+        self.tt_S_measure.sort()
+
+        tt_N_measure_batch = []
+        tt_N_binning_batch = []
+        self.tt_S_measure_batch = []
+        tt_S_binning_batch = []
+        all_transits_batch = []
+        all_transits_aligned_first_batch = []
+        transit_histogram_batch = []
+        FLR_measurement = []
+        Exp_timestr_batch = []
+
+        tt_N_binning = np.zeros(histogram_bin_number)
+        tt_S_binning = np.zeros(histogram_bin_number)
+        tt_N_transit_events = np.zeros(histogram_bin_number)
+        tt_S_transit_events = np.zeros(histogram_bin_number)
+
+        start = True
+
+        # Place holders for results
+        # while (number of photons * 10^-6 [Mcounts] / Measuring time [nsec] * 10^-9 [sec/nsec])  > total_counts_threshold [Mcounts /sec]:
+        while ((len(self.tt_S_measure) * 1000) / self.M_time) > total_counts_threshold or start:
+            if self.keyPress == 'ESC':
+                print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
+                self.updateValue("Transit_Exp_switch", False)
+                self.update_parameters()
+                # Other actions can be added here
+                break
+            if start:
+                start = False
+            else:
+                print('Above Threshold')
+
+            Probe_N_res = Probe_N_handle.fetch_all()
+            Probe_S_res = Probe_S_handle.fetch_all()
+            tt_N_res = tt_N_handle.fetch_all()
+            tt_S_res = tt_S_handle.fetch_all()
+            FLR_res = -FLR_handle.fetch_all()
+
+            tt_N_measure = [i for i in tt_N_res if (i % self.M_window) != 0]
+            self.tt_S_measure = [i for i in tt_S_res if (i % self.M_window) != 0]
+            tt_N_measure.sort()
+            self.tt_S_measure.sort()
+
+        self.tt_S_measure = self.tt_S_measure
+        ## record time
+        timest = time.strftime("%Y%m%d-%H%M%S")
+        datest = time.strftime("%Y%m%d")
+
+        FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
+        Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
+
+        for x in tt_N_measure:
+            tt_N_binning[(x-1) // histogram_bin_size] += 1
+        for x in self.tt_S_measure:
+            tt_S_binning[(x-1) // histogram_bin_size] += 1
+
+        if len(self.tt_S_measure_batch) == N:
+            tt_N_transit_events[[i for i, x in enumerate(tt_N_binning_batch[0]) if x > transit_counts_threshold]] -= 1
+            tt_S_transit_events[[i for i, x in enumerate(tt_S_binning_batch[0]) if x > transit_counts_threshold]] -= 1
+
+        tt_N_measure_batch = tt_N_measure_batch[-(N - 1):] + [tt_N_measure]
+        tt_N_binning_batch = tt_N_binning_batch[-(N - 1):] + [tt_N_binning]
+        self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
+        tt_S_binning_batch = tt_S_binning_batch[-(N - 1):] + [tt_S_binning]
+        Counter = 1
+
+        tt_N_transit_events[[i for i, x in enumerate(tt_N_binning) if x > transit_counts_threshold]] += 1
+        tt_S_transit_events[[i for i, x in enumerate(tt_S_binning) if x > transit_counts_threshold]] += 1
+
+        # Find transits and build histogram:
+        current_transit = []
+        all_transits = []
+        all_transits_aligned_first = []
+        t_transit = []
+        t_transit_batch = []
+        transit_histogram = []
+        for t in self.tt_S_measure:
+            if not current_transit:  # if the array is empty
+                current_transit.append(t)
+            elif (t - current_transit[-1]) < time_threshold:
+                current_transit.append(t)
+            elif len(current_transit) > transit_counts_threshold:
+                all_transits.append(current_transit)
+                all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
+                current_transit = [t]
+            else:
+                current_transit = [t]
+
+        if all_transits:
+            if len(all_transits_aligned_first_batch) == N:
+                for n in range(len(all_transits_aligned_first_batch[0])):
+                    for m in range(len(all_transits_aligned_first_batch[0][n]) - 1):
+                        transit_histogram_batch[
+                            all_transits_aligned_first_batch[0][n][m + 1] // Transit_profile_bin_size] -= 1
+
+            all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
+            all_transits_aligned_first_batch = all_transits_aligned_first_batch[-(N - 1):] + [
+                all_transits_aligned_first]
+            transit_histogram = np.zeros((max([vec for elem in all_transits_aligned_first for vec in elem])
+                                          + histogram_bin_size) // Transit_profile_bin_size)
+            t_transit = np.linspace(0, len(transit_histogram) * Transit_profile_bin_size, len(transit_histogram))
+            transit_histogram_batch = np.zeros((max(
+                [vec for elem in [vec for elem in all_transits_aligned_first_batch for vec in elem] for vec in
+                 elem]) + histogram_bin_size) // Transit_profile_bin_size)
+            t_transit_batch = np.linspace(0, len(transit_histogram_batch) * Transit_profile_bin_size,
+                                          len(transit_histogram_batch))
+            for n in range(len(all_transits_aligned_first)):
+                for m in range(len(all_transits_aligned_first[n]) - 1):
+                    transit_histogram[all_transits_aligned_first[n][m + 1] // Transit_profile_bin_size] += 1
+                    transit_histogram_batch[all_transits_aligned_first[n][m + 1] // Transit_profile_bin_size] += 1
+
+        ## Prepare plots
+        fig = plt.figure()
+        ax1 = plt.subplot2grid((6, 2), (0, 0), colspan=1, rowspan=2)
+        ax2 = plt.subplot2grid((6, 2), (0, 1), colspan=1, rowspan=2)
+        ax3 = plt.subplot2grid((6, 2), (2, 0), colspan=1, rowspan=2)
+        ax4 = plt.subplot2grid((6, 2), (2, 1), colspan=1, rowspan=2)
+        ax5 = plt.subplot2grid((6, 2), (4, 0), colspan=1, rowspan=2)
+        ax6 = plt.subplot2grid((6, 2), (4, 1), colspan=1, rowspan=2)
+
+        while True:
+            if self.keyPress == 'ESC':
+                print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
+                self.updateValue("Transit_Exp_switch", False)
+                self.update_parameters()
+                # Other actions can be added here
+                break
+            if reps < N:
+                reps += 1
+
+            ########################## PLOT!!! ########################################################################
+
+            ax1.clear()
+            ax2.clear()
+            ax3.clear()
+            ax4.clear()
+            ax5.clear()
+            ax6.clear()
+
+            props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+            textstr_N = r'$Probe_N = %.3f$' % ((len(tt_N_measure) * 1000) / self.M_time,) + '[MPhotons/sec]\n' \
+                        + '$\overline{Probe}_N = %.3f$' % ((np.mean([len(x) for x in tt_N_measure_batch]) * 1000)
+                                                           / self.M_time,) + '[MPhotons/sec]'
+            textstr_S = r'$Probe_S = %.3f$' % ((len(self.tt_S_measure) * 1000) / self.M_time,) + '[MPhotons/sec]\n' \
+                        + '$\overline{Probe}_S = %.3f$' % ((np.mean([len(x) for x in self.tt_S_measure_batch]) * 1000)
+                                                           / self.M_time,) + '[MPhotons/sec]'
+            textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (np.mean(FLR_measurement) * 1e5,) + r'$\times 10^{-5}$'
+            textstr_No_transits = 'NO TRANSITS YET!!!'
+
+            ax1.plot(time_bins, tt_N_binning, label='Counts histogram', color='b')
+            ax1.set_title('North', fontweight="bold")
+            ax1.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
+            ax1.text(0.05, 0.95, textstr_N, transform=ax1.transAxes, fontsize=12,
+                     verticalalignment='top', bbox=props)
+            ax1.legend(loc='upper right')
+
+            ax2.plot(time_bins, tt_S_binning, label='Counts histogram', color='b')
+            ax2.set_title('South', fontweight="bold")
+            ax2.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
+            ax2.text(0.05, 0.95, textstr_S, transform=ax2.transAxes, fontsize=12,
+                     verticalalignment='top', bbox=props)
+            ax2.legend(loc='upper right')
+
+            ax3.plot(time_bins, tt_N_transit_events, label='Transit events histogram', marker='*', color='k')
+            ax3.set(xlabel='Time [msec]', ylabel='Transits events [#Number]')
+            ax3.legend(loc='upper right')
+
+            ax4.plot(time_bins, tt_S_transit_events, label='Transit events histogram', marker='*', color='k')
+            ax4.set(xlabel='Time [msec]', ylabel='Transits events [#Number]')
+            ax4.legend(loc='upper right')
+
+            if len(all_transits_batch) > 0:
+                if all_transits:
+                    textstr_transit_counts = r'$N_{Transits} = %s $' % (len(all_transits),) + r'$[Counts]$'
+                textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (len([vec for elem in all_transits_batch for vec in elem]),) + r'$[Counts]$'
+
+                ax5.plot(t_transit, transit_histogram, label='Transit profile', color='b')
+                ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+                ax5.text(0.05, 0.95, textstr_transit_counts, transform=ax5.transAxes, fontsize=12,
+                         verticalalignment='top', bbox=props)
+
+                ax6.plot(time_bins, tt_S_transit_events, label='Transit events histogram', marker='*', color='b')
+                ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+                ax6.text(0.05, 0.95, textstr_transit_event_counter, transform=ax6.transAxes, fontsize=12,
+                         verticalalignment='top', bbox=props)
+            else:
+                ax5.plot(t_transit, transit_histogram, label='Transit profile', color='b')
+                ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+                ax5.text(0.25, 0.5, textstr_No_transits, transform=ax5.transAxes, fontsize=24,
+                         verticalalignment='center', bbox=props)
+
+                ax6.plot(time_bins, tt_S_transit_events, label='Transit events histogram', marker='*', color='b')
+                ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+                ax6.text(0.25, 0.5, textstr_No_transits, transform=ax6.transAxes, fontsize=24,
+                         verticalalignment='center', bbox=props)
+
+            # if len(transit_histogram) > 0:
+            #     textstr_transit_counts = r'$N_{Transits} = %s $' % (len(all_transits_aligned_first),) + r'$[Counts]$'
+            #     textstr_avg_transit_counts = r'$\overline{N}_{Transits} = %.1f $' % (
+            #     np.average([len(vec) for vec in all_transits_aligned_first]),) + r'$[Counts]$'
+            #
+            #     ax5.plot(t_transit, transit_histogram, color='b')
+            #     ax5.set_title('Drop transits profile', fontweight="bold")
+            #     ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+            #     ax5.text(0.05, 0.95, textstr_transit_counts, transform=ax5.transAxes, fontsize=12,
+            #              verticalalignment='top', bbox=props)
+            #
+            #     ax6.plot(t_transit_batch, transit_histogram_batch, color='b')
+            #     ax6.set_title('Accumulated drop transits profile', fontweight="bold")
+            #     ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+            #     ax6.text(0.05, 0.95, textstr_avg_transit_counts, transform=ax6.transAxes, fontsize=12,
+            #              verticalalignment='top', bbox=props)
+            # else:
+            #     ax5.plot(t_transit, transit_histogram, color='b')
+            #     ax5.set_title('Drop transits profile', fontweight="bold")
+            #     ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+            #     ax5.text(0.25, 0.5, textstr_No_transits, transform=ax5.transAxes, fontsize=24,
+            #              verticalalignment='center', bbox=props)
+            #
+            #     ax6.plot(t_transit_batch, transit_histogram_batch, color='b')
+            #     ax6.set_title('Accumulated drop transits profile', fontweight="bold")
+            #     ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+            #     ax6.text(0.25, 0.5, textstr_No_transits, transform=ax6.transAxes, fontsize=24,
+            #              verticalalignment='center', bbox=props)
+
+            ax1.set_ylim(0, 8)
+            ax2.set_ylim(0, 8)
+
+            # plt.tight_layout()
+            plt.show()
+            plt.pause(1)
+
+            ###########################################################################################################
+
+            while self.tt_S_measure == self.tt_S_measure_batch[-1]:
+                # record time:
+                timest = time.strftime("%Y%m%d-%H%M%S")
+                datest = time.strftime("%Y%m%d")
+
+                # get measures:
+                Probe_N_res = Probe_N_handle.fetch_all()
+                Probe_S_res = Probe_S_handle.fetch_all()
+                tt_N_res = tt_N_handle.fetch_all()
+                tt_S_res = tt_S_handle.fetch_all()
+                FLR_res = -FLR_handle.fetch_all()
+
+                tt_N_measure = [i for i in tt_N_res if (i % self.M_window) != 0]
+                self.tt_S_measure = [i for i in tt_S_res if (i % self.M_window) != 0]
+                tt_N_measure.sort()
+                self.tt_S_measure.sort()
+
+            if ((len(self.tt_S_measure) * 1000) / self.M_time) < total_counts_threshold:
+
+                FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
+                Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
+                Counter += 1
+                print(timest, Counter)
+
+                tt_N_binning = np.zeros(histogram_bin_number)
+                tt_S_binning = np.zeros(histogram_bin_number)
+
+                for x in tt_N_measure:
+                    tt_N_binning[(x-1) // histogram_bin_size] += 1
+                for x in self.tt_S_measure:
+                    tt_S_binning[(x-1) // histogram_bin_size] += 1
+
+                if len(self.tt_S_measure_batch) == N:
+                    tt_N_transit_events[
+                        [i for i, x in enumerate(tt_N_binning_batch[0]) if x > transit_counts_threshold]] -= 1
+                    tt_S_transit_events[
+                        [i for i, x in enumerate(tt_S_binning_batch[0]) if x > transit_counts_threshold]] -= 1
+
+                tt_N_measure_batch = tt_N_measure_batch[-(N - 1):] + [tt_N_measure]
+                tt_N_binning_batch = tt_N_binning_batch[-(N - 1):] + [tt_N_binning]
+                self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
+                tt_S_binning_batch = tt_S_binning_batch[-(N - 1):] + [tt_S_binning]
+
+                tt_N_transit_events[[i for i, x in enumerate(tt_N_binning) if x > transit_counts_threshold]] += 1
+                tt_S_transit_events[[i for i, x in enumerate(tt_S_binning) if x > transit_counts_threshold]] += 1
+
+                # Find transits and build histogram:
+                current_transit = []
+                all_transits = []
+                all_transits_aligned_first = []
+                for t in self.tt_S_measure:
+                    if not current_transit:  # if the array is empty
+                        current_transit.append(t)
+                    elif (t - current_transit[-1]) < time_threshold:
+                        current_transit.append(t)
+                    elif len(current_transit) > transit_counts_threshold:
+                        all_transits.append(current_transit)
+                        all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
+                        current_transit = [t]
+                    else:
+                        current_transit = [t]
+
+                if all_transits:
+                    if len(all_transits_aligned_first_batch) == N:
+                        for n in range(len(all_transits_aligned_first_batch[0])):
+                            for m in range(len(all_transits_aligned_first_batch[0][n]) - 1):
+                                transit_histogram_batch[
+                                    all_transits_aligned_first_batch[0][n][m + 1] // Transit_profile_bin_size] -= 1
+
+                    all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
+                    all_transits_aligned_first_batch = all_transits_aligned_first_batch[-(N - 1):] + [
+                        all_transits_aligned_first]
+
+                    transit_histogram = np.zeros((max([vec for elem in all_transits_aligned_first for vec in elem])
+                                                  + histogram_bin_size) // Transit_profile_bin_size)
+                    t_transit = np.linspace(0, len(transit_histogram) * Transit_profile_bin_size,
+                                            len(transit_histogram))
+                    # transit_histogram_batch = np.zeros((max(
+                    #     [vec for elem in [vec for elem in all_transits_aligned_first_batch for vec in elem] for vec in
+                    #      elem]) + histogram_bin_size) // Transit_profile_bin_size)
+                    transit_histogram_batch = np.pad(transit_histogram_batch, (0, (max(
+                        [vec for elem in [vec for elem in all_transits_aligned_first_batch for vec in elem] for vec in
+                         elem]) + histogram_bin_size) // Transit_profile_bin_size - len(transit_histogram_batch)),
+                           'constant')
+                    t_transit_batch = np.linspace(0, len(transit_histogram_batch) * Transit_profile_bin_size,
+                                                  len(transit_histogram_batch))
+                    for n in range(len(all_transits_aligned_first)):
+                        for m in range(len(all_transits_aligned_first[n]) - 1):
+                            transit_histogram[all_transits_aligned_first[n][m + 1] // Transit_profile_bin_size] += 1
+                            transit_histogram_batch[
+                                all_transits_aligned_first[n][m + 1] // Transit_profile_bin_size] += 1
+
+        ############################################## END WHILE LOOP #################################################
+
+        ## Adding comment to measurement [prompt whether stopped or finished regularly]
+        aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
+        if aftComment == 'Timeout': aftComment = None
+
+        #### Handle file-names and directories #####
+        ## Saving: np.savez(filedir, data = x) #note: @filedir is string of full directory; data is the queyword used to read @x from the file:
+        ## Loading: file = np.load(f, allow_pickle = True)
+        ##          x = file['data']
+
+        #### ------ Save results ------
+        #  -------   Create dir
+        root_dirname = f'U:\\Lab_2021-2022\\Experiment_results\\Transits\\{datest}\\'
+        dirname = root_dirname + f'{timest}_Photon_TimeTags\\'  # Specific experiment dir
+        dirname_N = dirname + 'North\\'
+        dirname_S = dirname + 'South\\'
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+        if not os.path.exists(dirname_N):
+            os.makedirs(dirname_N)
+        if not os.path.exists(dirname_S):
+            os.makedirs(dirname_S)
+
+        # ----  msmnt files names  -----
+        # Counter_str = (Counter)
+        filename_N_tt = f'North_timetags.npz'
+        filename_S_tt = f'South_timetags.npz'
+        filename_S_transits = f'South_Transits.npz'
+        filename_FLR = f'Flouresence.npz'
+        filename_timestamp = f'Drops_time_stamps.npz'
+
+        if len(FLR_measurement) > 0:
+            np.savez(dirname + filename_FLR, FLR_measurement)
+        if len(Exp_timestr_batch) > 0:
+            np.savez(dirname + filename_timestamp, Exp_timestr_batch)
+        if len(tt_N_measure_batch) > 0:
+            np.savez(dirname_N + filename_N_tt, tt_N_measure_batch)
+        if len(self.tt_S_measure_batch) > 0:
+            np.savez(dirname_S + filename_S_tt, self.tt_S_measure_batch)
+        if len(all_transits_batch) > 0:
+            np.savez(dirname_S + filename_S_transits, all_transits_batch)
+
+        ### Edit comments file ####
+        cmntDir = root_dirname + '\\daily_experiment_comments.txt'
+        cmnt = timest + ' - '
+        if preComment is not None: cmnt = cmnt + preComment + '; '
+        if aftComment is not None: cmnt = cmnt + aftComment
+        if preComment is None and aftComment is None: cmnt = cmnt + 'No comment. '
+        try:
+            with open(cmntDir, "a") as commentsFile:
+                commentsFile.write(cmnt + '\n')
+        except:
+            print('Could not save comments, error writing to comments-file.')
+            print(cmnt)
+
+        comments = {'comments': cmnt}
+        try:
+            with open(f'{dirname}experiment_comments.txt', 'w') as file:
+                json.dump(comments, file, indent=4)
+        except Exception:
+            pass
+
+        self.saveConfigTable(path=dirname)
+        ## ------------------ end of saving section -------
+
+    def Save_SNSPDs_Sprint_Measurement_with_tt(self, N, histogram_bin_size, Transit_profile_bin_size, preComment,
+                                               total_counts_threshold, transit_counts_threshold, transit_time_threshold,
+                                               bandwidth, freq_step, max_probe_counts, Mock=False):
+        """
+        Function for analyzing and saving the time tags data measured from the SNSPDs using the OPX. In this specific
+         program we are looking for transits of atoms next to the toroid and record them.
+        :param N: Number of maximum experiments (free throws) saved and displayed.
+        :param histogram_bin_size: The bin size for the general experiment histogram which means - dividing the length
+                                   of the measuring time (m_time) to bins and counting the number of photon detections
+                                   at each bin.
+        :param Transit_profile_bin_size: The bin size for the transit histogram which means - dividing the length of the
+                                         transit time to bins and counting the number of transits for which there has
+                                         been a detection of photon at each bin.
+        :param preComment: The comment added at the start of the experiment, usually consisting of unique experiment
+                           parameters.
+        :param total_counts_threshold: The minimum number of MCounts / sec for which the data will be displayed and collected.
+        :param transit_counts_threshold: The number of photons at each time bin for which suspect we as a transit.
+        :param transit_time_threshold: The maximum time between the start and finish of the transit in [nsec]
+        :param max_probe_counts: The maximum counts probe counts at each direction measured when cavity isn't locked.
+        :return:
+        """
+        # if preComment is True:
+        if not preComment:
+            preComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
+        aftComment = None
+
+        ### fetching data from server
+        ### saving to file
+        ###
+
+        histogram_bin_number = self.M_window // (histogram_bin_size)
+        time_bins = np.linspace(0, self.M_window, histogram_bin_number)
+        spectrum_bin_number = bandwidth // freq_step + 1  # TODO: ask natan how many freq steps he uses
+        freq_bins = np.linspace(-int(bandwidth / 2), int(bandwidth / 2), spectrum_bin_number)
+        SPRINT_pulse_time = np.arange(512)
 
         ## Listen for keyboard
         listener = keyboard.Listener(on_press=self.on_key_press)
@@ -1604,20 +1640,35 @@ class OPX:
         reps = 1  # a counter, number of repeats actually made.
 
         ####     get tt and counts from OPX to python   #####
-        Counts_handle, tt_handle, FLR_handle = self.get_handles_from_OPX_Server(Num_Of_dets)
 
-        ## take data only if
+        # Probe_S_handle = self.job.result_handles.get("South_Probe")
+        # tt_S_handle = self.job.result_handles.get("South_Probe_TT")
+        Counts_handle = []
+        tt_handle = []
+        for i in range(4):
+            Counts_handle.append(self.job.result_handles.get("Det" + str(i + 5) + "_Counts"))
+            tt_handle_temp = self.job.result_handles.get("Det" + str(i + 5) + "_Probe_TT")
+            tt_handle.append(tt_handle_temp)
+
+        FLR_handle = self.job.result_handles.get("FLR_measure")
+
+        # define empty variables
+        tt_S_binning_batch = []
+
+        all_transits_batch = []
+        FLR_measurement = []
+        Exp_timestr_batch = []
+
+        self.tt_S_binning = np.zeros(histogram_bin_number * 2)
+        tt_S_SPRINT_events = np.zeros(histogram_bin_number)
+        self.tt_S_SPRINT_events_batch = np.zeros(histogram_bin_size)
+
         start = True
-        # take threshold from npz ( error from resonator lock PID)
-        # lock_err = np.abs(np.load(
-        #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy', allow_pickle=True)) # the error of locking the resontor to Rb line
-        lock_err = lock_err_threshold/2
 
         # Place holders for results
         # while (number of photons * 10^-6 [Mcounts] / Measuring time [nsec] * 10^-9 [sec/nsec])  > counts_threshold [Mcounts /sec]:
-        while lock_err > lock_err_threshold or start:
-            # lock_err = np.abs(np.load(
-            #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
+        while (((sum(self.tt_S_binning) * 1000)
+                / (self.M_window / 2)) > total_counts_threshold) or start:
             if self.keyPress == 'ESC':
                 print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
                 self.updateValue("Sprint_Exp_switch", False)
@@ -1628,88 +1679,99 @@ class OPX:
                 start = False
             else:
                 print('Above Threshold')
-            self.get_tt_from_handles(Num_Of_dets, Counts_handle, tt_handle, FLR_handle)
-        ####    end get tt and counts from OPX to python   #####
 
-        # divide south and north into reflection and transmission
-        self.tt_histogram_transmission, self.tt_histogram_reflection = \
-        self.divide_to_reflection_trans(det_pulse_len=det_pulse_len, sprint_pulse_len=sprint_pulse_len,
-                                        sprint_sequence_delay_S=delay_in_detection_S, sprint_sequence_delay_N=delay_in_detection_N,
-                                        num_of_det_pulses=len(Config.det_pulse_amp_S),
-                                        num_of_sprint_pulses=len(Config.sprint_pulse_amp_S),
-                                        num_of_sprint_sequences=self.number_of_sprint_sequences)
-        self.divide_tt_to_reflection_trans(sprint_pulse_len, len([x for x in Config.det_pulse_amp_S if x > 0]))
-        self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
-                                              + self.num_of_det_reflections_per_seq_N
-        self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
-                                                           + self.num_of_det_reflections_per_seq_N
+            # handles wait for values
+            for i in range(4):
+                tt_handle[i].wait_for_values(1)
+            FLR_handle.wait_for_values(1)
 
-        # TODO: needed?
-        self.tt_S_SPRINT_events = np.zeros(sprint_sequence_len)
-        self.tt_S_SPRINT_events_batch = np.zeros(sprint_sequence_len)
-        self.tt_Single_det_SPRINT_events = np.zeros((len(Num_Of_dets), sprint_sequence_len))
-        self.tt_Single_det_SPRINT_events_batch = np.zeros((len(Num_Of_dets), sprint_sequence_len))
-        self.tt_N_det_SPRINT_events_batch = np.zeros(sprint_sequence_len)
-        self.tt_S_det_SPRINT_events_batch = np.zeros(sprint_sequence_len)
+            # add the tt and counts to python vars
+            counts_res = []
+            tt_res = []
+            for i in range(4):
+                counts_res.append(Counts_handle[i].fetch_all())
+                tt_res.append(tt_handle[i].fetch_all())
+            FLR_res = -FLR_handle.fetch_all()
 
-        # fold reflections and transmission
-        self.folded_transmission, self.folded_reflection = \
-            self.fold_tt_histogram(exp_sequence_len=self.sprint_sequence_len, delay_S=delay_in_detection_S, delay_N=delay_in_detection_N)
-        self.folded_transmission_accumulated,self.folded_reflection_accumulated = \
-            self.folded_transmission, self.folded_reflection
+            self.tt_measure = []
+            self.tt_S_measure = []
+            for i in range(4):  # for different detectors
+                self.tt_measure.append(
+                    [tt_res[i][(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts
+                     in
+                     enumerate(counts_res[i])])
+                self.tt_S_measure += self.tt_measure[i][0]
+                self.tt_measure[i].sort()
+            self.tt_S_measure.sort()
+            ####    end get tt and counts from OPX to python   #####
 
-        # fold data from different detectors: # TODO: is needed? @Dor
-        for i in range(len(Num_Of_dets)):
-            # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]: - for debugging assaf
-            for x in [elem for elem in self.tt_measure[i][-1]]:
-                self.Single_det_foldeded[i][x % self.sprint_sequence_len] += 1
-                self.single_det_folded_accumulated[i][x % self.sprint_sequence_len] += 1
-
-        # Batch folded tt "N" and "S"
-        self.folded_tt_N_batch = self.folded_tt_N
-        self.folded_tt_S_batch = self.folded_tt_S
-
-        # get the average number of photons in detection pulse
-        self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S, self.pulses_location_in_seq_S)
-        self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N, self.pulses_location_in_seq_N)
-        self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + self.avg_num_of_photons_per_pulse_N_live
-        self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_live
-
-        # get box location on the y-axis:
-        self.max_value_per_pulse_S_live = self.get_max_value_in_seq_pulses(self.folded_tt_S, self.pulses_location_in_seq_S)
-        self.max_value_per_pulse_N_live = self.get_max_value_in_seq_pulses(self.folded_tt_N, self.pulses_location_in_seq_N)
-        self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + self.max_value_per_pulse_N_live
-        self.Num_of_photons_txt_box_y_loc = self.Num_of_photons_txt_box_y_loc_live
-
-        # self.get_avg_num_of_photons_in_det_pulse(det_pulse_len=(Config.det_pulse_len+Config.num_between_zeros),
-        #                                          sprint_sequence_delay=delay_in_detection_S, num_of_det_pulses=len(Config.det_pulse_amp_S),
-        #                                          num_of_sprint_sequences=self.number_of_sprint_sequences)
-        # print('average number of photons in detection pulses is:', self.avg_num_of_photons_in_det_pulse)
+            self.tt_S_binning = np.zeros(histogram_bin_number * 2)
+            self.tt_S_SPRINT_events = np.zeros(histogram_bin_size)
+            self.tt_S_SPRINT_events_batch = np.zeros(histogram_bin_size)
+            for x in [elem for elem in self.tt_S_measure if elem < self.M_window]:
+                self.tt_S_binning[x // int(histogram_bin_size / 2)] += 1
+                self.tt_S_SPRINT_events[x % histogram_bin_size] += 1
+                self.tt_S_SPRINT_events_batch[x % histogram_bin_size] += 1
 
         ## record time
         timest = time.strftime("%Y%m%d-%H%M%S")
         datest = time.strftime("%Y%m%d")
 
-        FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
+        FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
         Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
 
-        # ### Find transits and build histogram:  ###
-        [self.atom_detect_data, self.sprints_data] = \
-            self.find_transits_and_sprint_events(detection_condition=transit_condition,
-                                                 num_of_det_pulses=len(Config.det_pulse_amp_S),
-                                                 num_of_sprint_pulses=len(Config.sprint_pulse_amp_S))
-        self.transit_sequences = self.atom_detect_data[0]
-
-        self.save_tt_to_batch(Num_Of_dets, N)
-        Counter = 1 # TODO: needed?
+        self.tt_measure_batch = []
+        self.tt_S_measure_batch = []
+        for i in range(4):
+            self.tt_measure_batch.append([self.tt_measure[i]])
+        self.tt_S_measure_batch.append(self.tt_S_measure)
+        tt_S_binning_batch = tt_S_binning_batch[-(N - 1):] + [self.tt_S_binning]
+        Counter = 1
         #
-        # create figures template
-        ax1 = plt.subplot2grid((3, 2), (0, 0), colspan=1, rowspan=1)
-        ax2 = plt.subplot2grid((3, 2), (0, 1), colspan=1, rowspan=1)
-        ax3 = plt.subplot2grid((3, 2), (1, 0), colspan=1, rowspan=1)
-        ax4 = plt.subplot2grid((3, 2), (1, 1), colspan=1, rowspan=1)
-        ax5 = plt.subplot2grid((3, 2), (2, 0), colspan=1, rowspan=1)
-        ax6 = plt.subplot2grid((3, 2), (2, 1), colspan=1, rowspan=1)
+        # ### Find transits and build histogram:  ###
+        # current_transit = []
+        # all_transits = []
+        # all_transits_aligned_first = []
+        # t_transit = []
+        # t_transit_batch = []
+        # transit_histogram = []
+        # for index, value in enumerate(tt_S_binning_resonance):
+        #     if not current_transit and value:  # if the array is empty
+        #         current_transit.append(index)
+        #     if value:
+        #         if ((index - current_transit[0]) * histogram_bin_size) < transit_time_threshold:
+        #             current_transit.append(index)
+        #         elif len(current_transit) > transit_counts_threshold:
+        #             all_transits.append(current_transit)
+        #             all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
+        #             # tt_S_transit_events[tuple(current_transit)] += 1
+        #             current_transit = [index]
+        #         else:
+        #             # Finding if there any index that was saved to current transit and is close enough to the new index
+        #             t = [i for i, elem in enumerate(current_transit) if ((index - elem) * histogram_bin_size) < transit_time_threshold]
+        #             if t:
+        #                 current_transit = current_transit[t[0]:] + [index]
+        #             else:
+        #                 current_transit = [index]
+        #
+        #
+        # tt_S_transit_events[[i for i in [vec for elem in all_transits for vec in elem]]] += 1
+        # #
+        # if all_transits:
+        #     all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
+        #
+        #
+
+        #
+        # ## Prepare plots
+        # fig = plt.figure()
+        #
+        # ax1 = plt.subplot2grid((6, 2), (0, 0), colspan=1, rowspan=2)
+        # ax2 = plt.subplot2grid((6, 2), (0, 1), colspan=1, rowspan=2)
+        # ax3 = plt.subplot2grid((6, 2), (2, 0), colspan=1, rowspan=2)
+        # ax4 = plt.subplot2grid((6, 2), (2, 1), colspan=1, rowspan=2)
+        # # ax5 = plt.subplot2grid((6, 2), (4, 0), colspan=1, rowspan=2)
+        # ax6 = plt.subplot2grid((6, 2), (4, 1), colspan=1, rowspan=2)
         #
         while True:
             if self.keyPress == 'ESC':
@@ -1722,91 +1784,176 @@ class OPX:
                 reps += 1
             #
             #     ########################## PLOT!!! ########################################################################
-            ax = [ax1, ax2, ax3, ax4,ax5,ax6]
-            self.plot_sprint_figures(ax, Num_Of_dets)
+            #
+            # ax1.clear()
+            #     ax2.clear()
+            #     ax3.clear()
+            #     ax4.clear()
+            #     ax5.clear()
+            #     ax6.clear()
+            #
+            #     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+            #     textstr_detuned = r'$Probe_N = %.3f$' % ((sum(tt_S_binning_detuned) * 1000) / (self.M_window / 2),) + '[MPhotons/sec]\n' \
+            #                + '$\overline{Probe}_S = %.3f$' % ((np.mean([sum(x) for x in tt_S_binning_detuned_batch]) * 1000)
+            #                                                   / (self.M_window / 2),) + '[MPhotons/sec]'
+            #     textstr_resonance = r'$Probe_S = %.3f$' % ((sum(tt_S_binning_resonance) * 1000) / (self.M_window / 2),) + '[MPhotons/sec]\n' \
+            #                 + '$\overline{Probe}_S = %.3f$' % ((np.mean([sum(x) for x in tt_S_binning_resonance_batch]) * 1000)
+            #                                                    / (self.M_window / 2),) + '[MPhotons/sec]'
+            #     textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (np.mean(FLR_measurement) * 1e5,) + r'$\times 10^{-5}$'
+            #     textstr_No_transits = 'NO TRANSITS YET!!!'
+            #
+            # ax1.plot(time_bins, tt_S_binning_batch[-1], label='Counts histogram', color='b')
+            #
+            #     ax1.set_title('Detuned counts', fontweight="bold")
+            #     ax1.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
+            #     ax1.text(0.05, 0.95, textstr_detuned, transform=ax1.transAxes, fontsize=12,
+            #              verticalalignment='top', bbox=props)
+            #     ax1.legend(loc='upper right')
+            #     print('ok')
+            # ax2.plot(time_bins, tt_S_binning_batch[-1], label='Counts histogram', color='b')
+            #
+            #     ax2.set_title('On resonant counts', fontweight="bold")
+            #     ax2.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
+            #     ax2.text(0.05, 0.95, textstr_resonance, transform=ax2.transAxes, fontsize=12,
+            #              verticalalignment='top', bbox=props)
+            #     ax2.legend(loc='upper right')
+            #
+            # ax3.plot(SPRINT_pulse_time, self.tt_S_SPRINT_events, label='Folded photon detection events per cycle', color='k')
+            #     ax3.set(xlabel='Time [nsec]', ylabel='Counts [#Number]')
+            #     ax3.legend(loc='upper right')
+            #
+            # ax4.plot(SPRINT_pulse_time, self.tt_S_SPRINT_events, label='Folded photon detection events per run', color='k')
+            #     ax4.set(xlabel='Time [msec]', ylabel='Counts [#Number]')
+            #     ax4.legend(loc='upper right')
+            #
+            #     if len(all_transits_batch) > 0:
+            #         if all_transits:
+            #             textstr_transit_counts = r'$N_{Transits} = %s $' % (len(all_transits),) + r'$[Counts]$'
+            #         textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (len([vec for elem in all_transits_batch for vec in elem]),) + r'$[Counts]$'
+            #
+            #         ax5.plot(t_transit, transit_histogram, label='Transit profile', color='b')
+            #         ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+            #         ax5.text(0.05, 0.95, textstr_transit_counts, transform=ax5.transAxes, fontsize=12,
+            #                  verticalalignment='top', bbox=props)
+            #
+            #         ax6.plot(time_bins, tt_S_transit_events, label='Transit events histogram', marker='*', color='b')
+            #         ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+            #         ax6.text(0.05, 0.95, textstr_transit_event_counter, transform=ax6.transAxes, fontsize=12,
+            #                  verticalalignment='top', bbox=props)
+            #     else:
+            #         ax5.plot(t_transit, transit_histogram, label='Transit profile', color='b')
+            #         ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+            #         ax5.text(0.25, 0.5, textstr_No_transits, transform=ax5.transAxes, fontsize=24,
+            #                  verticalalignment='center', bbox=props)
+            #
+            #         ax6.plot(time_bins, tt_S_transit_events, label='Transit events histogram', marker='*', color='b')
+            #         ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+            #         ax6.text(0.25, 0.5, textstr_No_transits, transform=ax6.transAxes, fontsize=24,
+            #                  verticalalignment='center', bbox=props)
+            #
+            #     ax1.set_ylim(0, 8)
+            #     ax2.set_ylim(0, 8)
+            #
+            #     # plt.tight_layout()
+            # plt.show()
+            # plt.pause(0.5)
+            #
+            #     ###########################################################################################################
+
             while True:
                 # record time:
-                timest = time.strftime("%Y%m%d-%H%M%S") # TODO: is it needed? already writen above..
+                if self.keyPress == 'ESC':
+                    print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
+                    self.updateValue("CRUS_Exp_switch", False)
+                    self.update_parameters()
+                    # Other actions can be added here
+                    break
+                timest = time.strftime("%Y%m%d-%H%M%S")
                 datest = time.strftime("%Y%m%d")
 
-                self.get_tt_from_handles(Num_Of_dets, Counts_handle, tt_handle, FLR_handle)
+                # handles wait for values
+                for i in range(4):
+                    tt_handle[i].wait_for_values(1)
+                FLR_handle.wait_for_values(1)
+
+                tt_res = []
+                counts_res = []
+                # add the tt and counts to python vars
+                for i in range(4):
+                    counts_res.append(Counts_handle[i].fetch_all())
+                    tt_res.append(tt_handle[i].fetch_all())
+                FLR_res = -FLR_handle.fetch_all()
+
+                self.tt_S_measure = []
+                self.tt_measure = []
+                for i in range(4):  # for different detectors
+                    self.tt_measure.append(
+                        [tt_res[i][(index * Config.vec_size):
+                                   (index * Config.vec_size + counts)].tolist() for index, counts in
+                         enumerate(counts_res[i])])
+                    self.tt_S_measure += self.tt_measure[i][0]
+                    self.tt_measure[i].sort()
+                self.tt_S_measure.sort()
 
                 if self.tt_S_measure != self.tt_S_measure_batch[-1]:
                     break
-            # assaf - if x=self.M_window the index is out of range so i added 1
-            # lock_err = np.abs(np.load(
-            #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
-            if lock_err < lock_err_threshold:
-                self.Single_det_foldeded = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
-                self.tt_N_det_SPRINT_events_batch = np.zeros(sprint_sequence_len)
-                self.tt_S_det_SPRINT_events_batch = np.zeros(sprint_sequence_len)
 
-                # divide south and north into reflection and transmission
-                self.tt_histogram_transmission, self.tt_histogram_reflection = \
-                    self.divide_to_reflection_trans(det_pulse_len=det_pulse_len, sprint_pulse_len=sprint_pulse_len,
-                                                    sprint_sequence_delay_S=delay_in_detection_S,
-                                                    sprint_sequence_delay_N=delay_in_detection_N,
-                                                    num_of_det_pulses=len(Config.det_pulse_amp_S),
-                                                    num_of_sprint_pulses=len(Config.sprint_pulse_amp_S),
-                                                    num_of_sprint_sequences=self.number_of_sprint_sequences)
-                self.divide_tt_to_reflection_trans(sprint_pulse_len, len([x for x in Config.det_pulse_amp_S if x > 0]))
-                self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
-                                                      + self.num_of_det_reflections_per_seq_N
-                self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
-                                                                   + self.num_of_det_reflections_per_seq_N
-                self.num_of_SPRINT_reflections_per_seq = self.num_of_SPRINT_reflections_per_seq_N \
-                                                           + self.num_of_SPRINT_reflections_per_seq_S
-                self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_N \
-                                                           + self.num_of_SPRINT_transmissions_per_seq_S
+            self.tt_S_binning = np.zeros(histogram_bin_number * 2)
 
-                # fold reflections and transmission
-                self.folded_transmission, self.folded_reflection = \
-                    self.fold_tt_histogram(exp_sequence_len=self.sprint_sequence_len, delay_S=delay_in_detection_S,
-                                           delay_N=delay_in_detection_N)
-                self.folded_transmission_accumulated += self.folded_transmission
-                self.folded_reflection_accumulated += self.folded_reflection
+            for x in [elem for elem in self.tt_S_measure if elem < self.M_window]:
+                self.tt_S_binning[x // int(histogram_bin_size / 2)] += 1
 
-                ### Find transits and build histogram:  ###
-                [self.atom_detect_data, self.sprints_data] = \
-                    self.find_transits_and_sprint_events(detection_condition=transit_condition,
-                                                         num_of_det_pulses=len(Config.det_pulse_amp_S),
-                                                         num_of_sprint_pulses=len(Config.sprint_pulse_amp_S))
-                self.transit_sequences = self.atom_detect_data[0]
+            if ((sum(self.tt_S_binning) * 1000) / (self.M_window / 2)) < total_counts_threshold:
 
-                # Batch folded tt "N" and "S"
-                self.folded_tt_N_batch = (self.folded_tt_N_batch * (Counter - 1) + self.folded_tt_N) / Counter
-                self.folded_tt_S_batch = (self.folded_tt_S_batch * (Counter - 1) + self.folded_tt_S) / Counter
+                self.tt_S_SPRINT_events = np.zeros(histogram_bin_size)
 
-                # get the average number of photons in detection pulse
-                self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S, self.pulses_location_in_seq_S)
-                self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N, self.pulses_location_in_seq_N)
-                self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + self.avg_num_of_photons_per_pulse_N_live
-                self.avg_num_of_photons_per_pulse_S = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S_batch, self.pulses_location_in_seq_S)
-                self.avg_num_of_photons_per_pulse_N = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N_batch, self.pulses_location_in_seq_N)
-                self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_S + self.avg_num_of_photons_per_pulse_N
+                for x in [elem for elem in self.tt_S_measure if elem <= self.M_window]:
+                    self.tt_S_SPRINT_events[x % histogram_bin_size] += 1
+                    self.tt_S_SPRINT_events_batch[x % histogram_bin_size] += 1
 
-                # get box location on the y-axis:
-                self.max_value_per_pulse_S_live = self.get_max_value_in_seq_pulses(self.folded_tt_S, self.pulses_location_in_seq_S)
-                self.max_value_per_pulse_N_live = self.get_max_value_in_seq_pulses(self.folded_tt_N, self.pulses_location_in_seq_N)
-                self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + self.max_value_per_pulse_N_live
-                self.max_value_per_pulse_S = self.get_max_value_in_seq_pulses(self.folded_tt_S_batch, self.pulses_location_in_seq_S)
-                self.max_value_per_pulse_N = self.get_max_value_in_seq_pulses(self.folded_tt_N_batch, self.pulses_location_in_seq_N)
-                self.Num_of_photons_txt_box_y_loc = self.max_value_per_pulse_S + self.max_value_per_pulse_N
-
-                # fold for different detectors: # TODO: delete after everything works
-                for i in range(len(Num_Of_dets)):
-                    # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]:
-                    for x in [elem for elem in self.tt_measure[i][-1]]:
-                        self.Single_det_foldeded[i][x % self.sprint_sequence_len] += 1
-                        self.single_det_folded_accumulated[i][x % self.sprint_sequence_len] += 1
-
-                FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
+                FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
                 if Counter < N:
                     Counter += 1
                 print(timest, Counter)
 
-                self.save_tt_to_batch(Num_Of_dets,N)
+                for i in range(4):
+                    self.tt_measure_batch[i] = self.tt_measure_batch[i][-(N - 1):] + [self.tt_measure[i]]
+                self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
+                tt_S_binning_batch = tt_S_binning_batch[-(N - 1):] + [self.tt_S_binning]
+
+            #
+            #     # Find transits and build histogram:
+            #     current_transit = []
+            #     all_transits = []
+            #     all_transits_aligned_first = []
+            #     for index, value in enumerate(tt_S_binning_resonance):
+            #         if not current_transit and value:  # if the array is empty
+            #             current_transit.append(index)
+            #         if value:
+            #             if ((index - current_transit[0]) * 480) < transit_time_threshold:
+            #                 current_transit.append(index)
+            #             elif len(current_transit) > transit_counts_threshold:
+            #                 all_transits.append(current_transit)
+            #                 all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
+            #                 current_transit = [index]
+            #             else:
+            #                 # Finding if there any index that was saved to current transit and is close enough to the new index
+            #                 t = [i for i, elem in enumerate(current_transit) if
+            #                      ((index - elem) * 480) < transit_time_threshold]
+            #                 if t:
+            #                     current_transit = current_transit[t[0]:] + [index]
+            #                 else:
+            #                     current_transit = [index]
+            #
+            #     tt_S_transit_events[[i for i in [vec for elem in all_transits for vec in elem]]] += 1
+            #
+            #     if all_transits:
+            #         all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
+            # else:
+            #     tt_S_binning_resonance = tt_S_binning_resonance_batch[-1]  # odd
+            #     tt_S_binning_detuned = tt_S_binning_detuned_batch[-1]  # even
+
         ############################################## END WHILE LOOP #################################################
 
         ## Adding comment to measurement [prompt whether stopped or finished regularly]
@@ -1835,8 +1982,8 @@ class OPX:
         # Counter_str = (Counter)
         filename_N_tt = f'North_timetags.npz'
         filename_Det_tt = []
-        for i in Num_Of_dets:
-            filename_Det_tt.append(f'Det'+str(i)+f'_timetags.npz')
+        for i in range(4):
+            filename_Det_tt.append(f'Det' + str(i + 5) + f'_timetags.npz')
         filename_S_tt = f'South_timetags.npz'
         filename_S_transits = f'South_Transits.npz'
         filename_S_folded = f'South_timetags_folded_512ns.npz'
@@ -1849,7 +1996,7 @@ class OPX:
             np.savez(dirname + filename_timestamp, Exp_timestr_batch)
         if len(self.tt_S_SPRINT_events_batch) > 0:
             np.savez(dirname + filename_S_folded, self.tt_S_SPRINT_events_batch)
-        for i in range(len(Num_Of_dets)):
+        for i in range(4):
             if len(self.tt_measure_batch[i]) > 0:
                 np.savez(dirname_S + filename_Det_tt[i], self.tt_measure_batch[i])
         if len(self.tt_S_measure_batch) > 0:
@@ -1859,7 +2006,7 @@ class OPX:
 
         ### Edit comments file ####
         cmntDir = root_dirname + '\\daily_experiment_comments.txt'
-        cmnt = timest + ' - '+'max probe counts:'#+max_probe_counts+'-'
+        cmnt = timest + ' - ' + 'max probe counts:'  # +max_probe_counts+'-'
         if preComment is not None: cmnt = cmnt + preComment + '; '
         if aftComment is not None: cmnt = cmnt + aftComment
         if preComment is None and aftComment is None: cmnt = cmnt + 'No comment. '
@@ -1879,23 +2026,27 @@ class OPX:
 
         self.saveConfigTable(path=dirname)
         try:
-            with open(f'{dirname}max_probe_counts.txt', 'w') as file: json.dump(max_probe_counts, file, indent=4)
+            with open(f'{dirname}max_probe_counts.txt', 'w') as file:
+                json.dump(max_probe_counts, file, indent=4)
         except Exception as e:
             print(e)
         for qrdCtrl in self.QuadRFControllers:
             qrdCtrl.saveLinesAsCSV(f'{dirname}QuadRF_table.csv')
         ## ------------------ end of saving section -------
 
-    def Start_Sprint_Exp_with_tt(self, N=100, sprint_sequence_len=int(len(Config.Sprint_Exp_Gaussian_samples_S)),
-                                 transit_condition=[2,2], preComment=None, lock_err_threshold=0.01):
+    def Start_Transit_Exp(self, N=100, bin_size=100, preComment=None, threshold=0.1):
+        self.Transit_Exp_switch(True)
+        self.update_parameters()
+        self.Save_SNSPDs_Measurement(N, bin_size, preComment, threshold)
+
+    def Start_Transit_Exp_with_tt(self, N=100, Histogram_bin_size=1000, Transit_profile_bin_size=100, preComment=None,
+                                  total_counts_threshold=1, transit_counts_threshold=5):
         # Max_probe_counts = self.Get_Max_Probe_counts(3)  # return the average maximum probe counts of 3 cycles.
         Max_probe_counts = None  # return the average maximum probe counts of 3 cycles.
-        self.SPRINT_Exp_switch(True)
+        self.Transit_Exp_switch(True)
         self.update_parameters()
-        self.Save_SNSPDs_Sprint_Measurement_with_tt(N, sprint_sequence_len, preComment,lock_err_threshold,
-                                                    transit_condition, Max_probe_counts)
-
-    ## MW spectroscopy variable update functions: ##
+        self.Save_SNSPDs_Transit_Measurement_with_tt(N, Histogram_bin_size, Transit_profile_bin_size, preComment,
+                                                     total_counts_threshold, transit_counts_threshold, Max_probe_counts)
 
     def MW_spec_frequency(self, freq):
         self.update_io_parameter(51, int(freq))  # In unit of [Hz]
@@ -1986,18 +2137,8 @@ class OPX:
 
 
 if __name__ == "__main__":
-    # try:
-        experiment = OPX(Config.config)
-        # experiment.Start_Sprint_Exp_with_tt(N=500, preComment='test')
-    # except KeyboardInterrupt:
-    #     experiment.job.halt()
-    #     experiment.qmm.reset_data_processing()
-    # finally:
-    #     experiment.job.halt()
-    #     experiment.qmm.reset_data_processing()
+    experiment = OPX(Config.config)
     # experiment.updateValue('PrePulse_duration', 5)
     # experiment.update_parameters()
     # experiment.Repeat_Measurement(10)
     # experiment.Repeat_Measurement(10)
-
-

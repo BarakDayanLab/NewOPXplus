@@ -315,8 +315,8 @@ def Transits_Exp_TT(M_delay, m_time, m_window, shutter_open_time,
     tt_vec1 = declare(int, size=1250)
     tt_vec2 = declare(int, size=1250)
     tt_vec3 = declare(int, size=1250)
-    tt_vec4 = declare(int, size=1250)
-    tt_vec5 = declare(int, size=1250)
+    # tt_vec4 = declare(int, size=1250)
+    # tt_vec5 = declare(int, size=1250)
     tt_vec6 = declare(int, size=1250)
     tt_vec7 = declare(int, size=1250)
     tt_vec8 = declare(int, size=1250)
@@ -328,8 +328,8 @@ def Transits_Exp_TT(M_delay, m_time, m_window, shutter_open_time,
     m1 = declare(int)
     m2 = declare(int)
     m3 = declare(int)
-    m4 = declare(int)
-    m5 = declare(int)
+    # m4 = declare(int)
+    # m5 = declare(int)
     m6 = declare(int)
     m7 = declare(int)
     m8 = declare(int)
@@ -345,8 +345,8 @@ def Transits_Exp_TT(M_delay, m_time, m_window, shutter_open_time,
                 time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
                 time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
                 time_tagging.digital(tt_vec3, m_window, element_output="out3", targetLen=counts3),
-                time_tagging.digital(tt_vec4, m_window, element_output="out4", targetLen=counts4),
-                time_tagging.digital(tt_vec5, m_window, element_output="out5", targetLen=counts5),
+                # time_tagging.digital(tt_vec4, m_window, element_output="out4", targetLen=counts4),
+                # time_tagging.digital(tt_vec5, m_window, element_output="out5", targetLen=counts5),
                 time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
                 time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
                 time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
@@ -358,8 +358,8 @@ def Transits_Exp_TT(M_delay, m_time, m_window, shutter_open_time,
         save(counts1, ON_counts_st1)
         save(counts2, ON_counts_st2)
         save(counts3, ON_counts_st3)
-        save(counts4, ON_counts_st4)
-        save(counts5, ON_counts_st5)
+        # save(counts4, ON_counts_st4)
+        # save(counts5, ON_counts_st5)
         save(counts6, ON_counts_st6)
         save(counts7, ON_counts_st7)
         save(counts8, ON_counts_st8)
@@ -370,10 +370,10 @@ def Transits_Exp_TT(M_delay, m_time, m_window, shutter_open_time,
             save(tt_vec2[m2], tt_st_N)
         with for_(m3, 0, m3 < counts3, m3 + 1):
             save(tt_vec3[m3], tt_st_N)
-        with for_(m4, 0, m4 < counts4, m4 + 1):
-            save(tt_vec4[m4], tt_st_N)
-        with for_(m5, 0, m5 < counts5, m5 + 1):
-            save(tt_vec5[m5], tt_st_S)
+        # with for_(m4, 0, m4 < counts4, m4 + 1):
+        #     save(tt_vec4[m4], tt_st_N)
+        # with for_(m5, 0, m5 < counts5, m5 + 1):
+        #     save(tt_vec5[m5], tt_st_S)
         with for_(m6, 0, m6 < counts6, m6 + 1):
             save(tt_vec6[m6], tt_st_S)
         with for_(m7, 0, m7 < counts7, m7 + 1):

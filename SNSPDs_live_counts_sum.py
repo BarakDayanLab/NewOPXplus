@@ -364,10 +364,10 @@ QMm.clear_all_job_results()
 
 with program() as dig:
     # QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH1_freq': '113MHz', 'CH1_amp': '10.074226808222061dbm'},
-    # QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH1_freq': '113MHz', 'CH1_amp': '16.95dbm'},
-    #                     updateChannels=[1], debugging=False, continuous=False)  # updates values on QuadRF (uploads table) #
-    QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
-                        updateChannels=[3], debugging=False, continuous=False)  # updates values on QuadRF (uploads table) #
+    QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH1_freq': '113MHz', 'CH1_amp': '16.95dbm'},
+                        updateChannels=[1], debugging=False, continuous=False)  # updates values on QuadRF (uploads table) #
+    # QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
+    #                     updateChannels=[3], debugging=False, continuous=False)  # updates values on QuadRF (uploads table) #
 
     counts1 = declare(int)
     counts2 = declare(int)
@@ -404,8 +404,8 @@ with program() as dig:
         # play("MOT", "AOM_TOP_1")
     with infinite_loop_():
         with for_(n, 0, n < rep, n+1):
-            play("Const_open", "PULSER_N")
-            play("Const_open", "PULSER_S")
+            # play("Const_open", "PULSER_N")
+            # play("Const_open", "PULSER_S")
             # play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
             # play("CRUS_pulse", "Pulser_CRUS")
 
