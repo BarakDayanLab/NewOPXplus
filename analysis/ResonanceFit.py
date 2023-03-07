@@ -3,7 +3,8 @@ from matplotlib import pyplot as plt
 from scipy.optimize import least_squares
 import matplotlib
 from scipy.signal import find_peaks
-from UtilityResources.DPO7254DataAcquisition import DPO7254Visa,printGreen
+from UtilityResources.DPO7254DataAcquisition import DPO7254Visa, printGreen
+from pynput import keyboard
 import time
 
 class ResonanceFit():
@@ -12,52 +13,76 @@ class ResonanceFit():
         printGreen(s='please make zero transmission on the scope, to take T=0 trace, and then press Enter')
         input()
 
+        ## Listen for keyboard
+        listener = keyboard.Listener(on_press=self.on_key_press)
+        listener.start()  # start to listen on a separate thread
+        self.keyPress = None
+        print('\033[94m' + 'Press ESC to stop measurement.' + '\033[0m')  # print blue
+
         # parameters
         print('taking trace for zero transmission')
-        self.trans0,self.refl0,_ = self.get_trace_from_scope()
-        fig_T,ax_T = plt.subplots(figsize=(8, 6))
-        fig_R,ax_R = plt.subplots(figsize=(8, 6))
-        while True:
-            time.sleep(30)
-            print('taking traces')
-            trans, refl, rubidiumLines = self.get_trace_from_scope()
+        self.trans0, self.refl0, rubidiumLines = self.get_trace_from_scope()
+        # calibrate range from rubidium lines
+        self.t = self.calibrate_x_range(rubidiumLines)
+
+        # fig_T, ax_T = plt.subplots(figsize=(8, 6))
+        # fig_R, ax_R = plt.subplots(figsize=(8, 6))
+        fig2 = plt.figure(2)
+        ax_T = plt.subplot2grid((1, 2), (0, 0), colspan=1, rowspan=1)
+        ax_R = plt.subplot2grid((1, 2), (0, 1), colspan=1, rowspan=1)
+
+        self.binning = 10
+
+        # while True:
+        # if self.keyPress == 'ESC':
+        #     print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
+        #     self.updateValue("Sprint_Exp_switch", False)
+        #     self.update_parameters()
+        #     # Other actions can be added here
+        #     break
+
+        # time.sleep(30)
+        print('taking traces')
+        trans, refl, _ = self.get_trace_from_scope()
+
+        self.start_index = 0
+        self.end_index = -1
 
 
-            self.start_index = 0
-            self.end_index = -1
+        trans100 = np.mean(trans[1:10000]) * np.ones(len(trans))
+        self.delta_T = trans - self.trans0
+        self.T_abs = self.delta_T / (trans100 - self.trans0)
+        self.R_abs = (refl - self.refl0)
 
+        deep_min, peak_R = self.find_extremum()
 
-            trans100 = np.mean(trans[1:10000]) * np.ones(len(trans))
-            self.delta_T = trans - self.trans0
-            self.T_abs = self.delta_T / (trans100 - self.trans0)
-            self.R_abs = (refl - self.refl0)
+        # fit transmission
+        print('fit transmission')
+        x0_T = [10e6, 15e6, 7e6, deep_min - 50e6, 0]
+        self.fit_T, self.kappa_i_T, self.h_fit_T = \
+            self.fit_to_resonance(x0=x0_T, bounds=([0, 0, 0, -np.inf, -np.inf], [100e6, 100e6, 20e6, np.inf, np.inf]),
+                                  Y=self.T_abs, fit_func=self.func_Lorenzian_T)
 
-            # calibrate range from rubidium lines
-            self.t = self.calibrate_x_range(rubidiumLines)
+        # fit reflection
+        print('fit reflection')
 
-            deep_min, peak_R = self.find_extremum()
+        x0_R = [8e6, 20e6, 7e6, peak_R, 0, 2]
+        self.fit_R, self.kappa_i_R, self.h_fit_R =\
+            self.fit_to_resonance(x0=x0_R, bounds=([0, 0, 0, -np.inf, -np.inf, 0], [100e6, 100e6, 20e6, np.inf, np.inf, np.inf]),
+                                  Y=self.R_abs, fit_func=self.func_Lorenzian_R)
 
-            # fit transmission
-            print('fit transmission')
-            x0_T = [15e6, 10e6, 7e6, deep_min - 50e6, 0]
-            self.fit_T,self.kappa_i_T, self.h_fit_T = \
-                self.fit_to_resonance(x0=x0_T,bounds=(-np.inf, np.inf),Y=self.T_abs,fit_func=self.func_Lorenzian_T)
-
-            # fit reflection
-            print('fit reflection')
-
-            x0_R = [8e6, 20e6, 7e6, peak_R, 0, 2]
-            self.fit_R,self.kappa_i_R, self.h_fit_R =\
-                self.fit_to_resonance(x0=x0_R,bounds=([0, 0, 0, -np.inf, -np.inf, 0], np.inf),
-                                                     Y=self.R_abs,fit_func=self.func_Lorenzian_R)
-
-            # plot
-            ax_T.clear()
-            ax_R.clear()
-            self.plot_fit(fit=self.fit_T,Y=self.T_abs,func=self.func_Lorenzian_T,
-                          label='Transmission',ylim=[0, 1.1],res_params=[self.kappa_i_T, self.h_fit_T],fig=ax_T)
-            self.plot_fit(fit=self.fit_R,Y=self.R_abs,func=self.func_Lorenzian_R,label='Reflection',
-                          ylim=None,res_params=[self.kappa_i_R, self.h_fit_R],fig=ax_R)
+        # plot
+        ax_T.clear()
+        ax_R.clear()
+        self.plot_fit(fit=self.fit_T, Y=np.mean(np.reshape(self.T_abs, [len(self.T_abs)//self.binning, self.binning]), axis=1)
+                      , func=self.func_Lorenzian_T, label='Transmission', ylim=[0, 1.1],
+                      res_params=[self.kappa_i_T, self.h_fit_T], fig=ax_T)
+        self.plot_fit(fit=self.fit_R, Y=np.mean(np.reshape(self.R_abs, [len(self.R_abs)//self.binning, self.binning]), axis=1)
+                      , func=self.func_Lorenzian_R, label='Reflection', ylim=None,
+                      res_params=[self.kappa_i_R, self.h_fit_R], fig=ax_R)
+        # mng = plt.get_current_fig_manager()
+        # mng.frame.Maximize(True)
+        fig2.show()
 
     def find_extremum(self):
         # find min and max in resonance
@@ -69,40 +94,41 @@ class ResonanceFit():
         trans = np.array(self.scope.wvfm[1])
         refl = np.array(self.scope.wvfm[2])
         rubidiumLines = np.array(self.scope.wvfm[4])
-        return trans,refl,rubidiumLines
+        return trans, refl, rubidiumLines
 
-    def calibrate_x_range(self,rubidiumLines):
-        peaks, prop = find_peaks(rubidiumLines, prominence=0.022, distance=1000)  # width=50, rel_height=0.5)
-        plt.figure(1)
+    def calibrate_x_range(self, rubidiumLines):
+        peaks, prop = find_peaks(rubidiumLines, prominence=0.017, distance=1000)  # width=50, rel_height=0.5)
+        fig1 = plt.figure(1)
         plt.clf()
         plt.plot(rubidiumLines)
         plt.plot(peaks, np.array(rubidiumLines)[peaks], "x")
         indx_to_freq = (156.947e6 / 2) / (peaks[-1] - peaks[-2])
         t = np.array(list(range(len(self.trans0)))) * indx_to_freq  # Calibration
+        fig1.show()
         return t
 
-    def fit_to_resonance(self,x0,bounds,Y,fit_func):
+    def fit_to_resonance(self, x0, bounds, Y, fit_func):
         # init guess and fit
-        fit = least_squares(fit_func, x0,bounds=bounds, loss='soft_l1', f_scale=0.1,
+        fit = least_squares(fit_func, x0, bounds=bounds, loss='soft_l1', f_scale=0.1,
                                      args=(self.t[self.start_index:self.end_index],
                                            Y[self.start_index:self.end_index]))
         print('fit parameters are:', fit.x)
         kappa_i_h = round(fit.x[1] - fit.x[0], 2)
         h_fit = round(fit.x[2], 2)
-        print('k_i=',kappa_i_h)
-        print('h=',h_fit)
-        return fit,kappa_i_h, h_fit
+        print('k_i=', kappa_i_h/int(1e6))
+        print('h=', h_fit/int(1e6))
+        return fit, kappa_i_h, h_fit
 
-    def plot_fit(self,fit,Y,func,label,ylim,res_params,fig):
-        matplotlib.rcParams.update({'font.size': 22})
-        fig.plot((self.t[self.start_index:self.end_index] - fit.x[3]) / 1e6,
-                 Y[self.start_index:self.end_index], 'b-', label='data')
-        fig.plot((self.t[self.start_index:self.end_index] - fit.x[3]) / 1e6,
-                 func(fit.x, self.t[self.start_index:self.end_index], 0), 'r--',
+    def plot_fit(self, fit, Y, func, label, ylim, res_params, fig):
+        matplotlib.rcParams.update({'font.size': 20})
+        f = (self.t - fit.x[3]) / 1e6
+        f_binned = np.mean(np.reshape(f, [len(f) // self.binning, self.binning]), axis=1)
+        fig.plot((f_binned - fit.x[3]) / 1e6, Y, 'b-', label='data')
+        fig.plot((f_binned - fit.x[3]) / 1e6, func(fit.x, f_binned, 0), 'r--',
                  label='fit')
         fig.set_ylabel(label, fontsize=28)
         fig.set_xlabel('$\Delta [MHz]$', fontsize=28)
-        fig.set_xlim([(self.t[self.start_index] - fit.x[3]) / 1e6, (self.t[self.end_index] - fit.x[3]) / 1e6])
+        # fig.set_xlim([(self.t[self.start_index] - fit.x[3]) / 1e6, (self.t[self.end_index] - fit.x[3]) / 1e6])
         fig.set_ylim(ylim)
         fig.text(220, 0.05,
                  "$\kappa_i$ = {k:.2f} MHz".format(k=res_params[0] / 1e6) + '\n h = {h:.2f} MHz'.format(h=res_params[1] / 1e6),
@@ -114,21 +140,25 @@ class ResonanceFit():
                            )
                  )
         fig.legend(loc='lower left')
-        plt.pause(0.5)
+        # plt.pause(0.5)
 
-
-    def func_Lorenzian_T(self,x, t, y):  # with h
+    def func_Lorenzian_T(self, x, t, y):  # with h
         z = x[4] + np.power(np.abs(1 + 2 * 1j * x[0] * (t - x[3] - 1j * x[1]) / \
                                    (np.power((t - x[3] - 1j * x[1]), 2) - np.power(x[2], 2))), 2) - y
         return z
 
-    def func_Lorenzian_R(self,x, t, y):
+    def func_Lorenzian_R(self, x, t, y):
         z = x[4] + x[5] * np.power(
             np.abs(2 * x[0] * x[2] / (np.power((1j * (t - x[3]) + x[1]), 2) + np.power(x[2], 2))), 2) - y
         return z
 
+    def on_key_press(self, key):
+        if key == keyboard.Key.esc:
+            self.keyPress = 'ESC'
+
+
 if __name__ == '__main__':
-    o = ResonanceFit()
+    ResProp = ResonanceFit()
 
 
 #
