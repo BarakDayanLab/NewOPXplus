@@ -715,7 +715,7 @@ def opx_control(obj, qm):
             ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
             ON_counts_st6.buffer(obj.rep).save('Det6_Counts')
             ON_counts_st7.buffer(obj.rep).save('Det7_Counts')
-            ON_counts_st8.buffer(obj.rep).save('Det8_Counts')\
+            ON_counts_st8.buffer(obj.rep).save('Det8_Counts')
             (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
             (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
             (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
@@ -1215,8 +1215,7 @@ class OPX:
         histogram_bin_number = self.M_time // histogram_bin_size
         time_bins = np.linspace(0, self.M_time, histogram_bin_number)
         # time_threshold = int(histogram_bin_size / intensity_threshold)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
-        time_threshold = int(
-            histogram_bin_size * 0.8)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
+        time_threshold = int(histogram_bin_size * 0.8)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
 
         ## Listen for keyboard
         listener = keyboard.Listener(on_press=self.on_key_press)
@@ -1224,9 +1223,11 @@ class OPX:
         self.keyPress = None
         print('\033[94m' + 'Press ESC to stop measurement.' + '\033[0m')  # print blue
         reps = 1  # a counter, number of repeats actually made.
+
         ####     get tt and counts from OPX to python   #####
         Num_Of_dets = [1, 2, 3, 6, 7, 8]
         Counts_handle, tt_handle, FLR_handle = self.get_handles_from_OPX_Server(Num_Of_dets)
+        self.get_tt_from_handles(Num_Of_dets, Counts_handle, tt_handle, FLR_handle)
 
         tt_N_measure_batch = []
         tt_N_binning_batch = []
@@ -1357,7 +1358,7 @@ class OPX:
             ax6.clear()
 
             props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-            textstr_N = r'$Probe_N = %.3f$' % ((len(tt_N_measure) * 1000) / self.M_time,) + '[MPhotons/sec]\n' \
+            textstr_N = r'$Probe_N = %.3f$' % ((len(self.tt_N_measure) * 1000) / self.M_time,) + '[MPhotons/sec]\n' \
                         + '$\overline{Probe}_N = %.3f$' % ((np.mean([len(x) for x in tt_N_measure_batch]) * 1000)
                                                            / self.M_time,) + '[MPhotons/sec]'
             textstr_S = r'$Probe_S = %.3f$' % ((len(self.tt_S_measure) * 1000) / self.M_time,) + '[MPhotons/sec]\n' \
@@ -1461,7 +1462,7 @@ class OPX:
 
             if ((len(self.tt_S_measure) * 1000) / self.M_time) < total_counts_threshold:
 
-                FLR_measurement = FLR_measurement[-(N - 1):] + [FLR_res.tolist()]
+                FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
                 Counter += 1
                 print(timest, Counter)
@@ -1480,7 +1481,7 @@ class OPX:
                     tt_S_transit_events[
                         [i for i, x in enumerate(tt_S_binning_batch[0]) if x > transit_counts_threshold]] -= 1
 
-                tt_N_measure_batch = tt_N_measure_batch[-(N - 1):] + [tt_N_measure]
+                tt_N_measure_batch = tt_N_measure_batch[-(N - 1):] + [self.tt_N_measure]
                 tt_N_binning_batch = tt_N_binning_batch[-(N - 1):] + [tt_N_binning]
                 self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
                 tt_S_binning_batch = tt_S_binning_batch[-(N - 1):] + [tt_S_binning]
@@ -2043,7 +2044,7 @@ class OPX:
         self.update_parameters()
         self.Save_SNSPDs_Measurement(N, bin_size, preComment, threshold)
 
-    def Start_Transit_Exp_with_tt(self, N=100, Histogram_bin_size=1000, Transit_profile_bin_size=100, preComment=None,
+    def Start_Transit_Exp_with_tt(self, N=500, Histogram_bin_size=1000, Transit_profile_bin_size=100, preComment=None,
                                   total_counts_threshold=1, transit_counts_threshold=5):
         # Max_probe_counts = self.Get_Max_Probe_counts(3)  # return the average maximum probe counts of 3 cycles.
         Max_probe_counts = None  # return the average maximum probe counts of 3 cycles.

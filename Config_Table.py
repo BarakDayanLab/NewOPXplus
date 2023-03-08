@@ -22,10 +22,10 @@ calibrationData = None
 Initial_Values = {
     # 'Operation_Mode': 'Magnetic_fountain',
     # 'Operation_Mode': 'Imaging',
-    # 'Operation_Mode': 'PrePGC_Fountain',
+    'Operation_Mode': 'PrePGC_Fountain',
     # 'Operation_Mode': 'OD_FS',
     # 'Operation_Mode': 'Depump',
-    'Operation_Mode': 'Transit_Exp',
+    # 'Operation_Mode': 'Transit_Exp',
     # 'Operation_Mode': 'Spectrum_Exp',
     # 'Operation_Mode': 'CRUS_Exp',
     # 'Operation_Mode': 'SPRINT_Exp',
