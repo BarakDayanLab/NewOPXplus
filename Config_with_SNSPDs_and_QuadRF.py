@@ -70,16 +70,17 @@ spectrum_pulse = 240
 IF_TOP1_MOT = 113e6
 IF_TOP1_PGC = 93e6
 IF_TOP1_Flash = 121.6625e6
-IF_TOP2 = 100e6
+IF_TOP2 = 90e6
 IF_AOM_MOT = 110e6
 IF_AOM_MOT_OFF = 80e6
 IF_AOM_OD = 92675000 # (226 - 266.65 / 2) * 1e6
 # IF_AOM_OD = 133.325e6
 IF_AOM_Depump = 133.325e6
 IF_AOM_Repump = 78.4735e6
-IF_AOM_N = 89.2368e6
-IF_AOM_S = 80e6
+# IF_AOM_N = 89.2368e6
+IF_AOM_N = 129.2368e6
 # IF_AOM_S = 89.2368e6
+IF_AOM_S = 129.2368e6
 IF_AOM_LO = 89.2368e6
 IF_AOM_SigmaPlus = 114.58e6
 IF_AOM_SigmaMinus = 114.58e6
@@ -178,7 +179,7 @@ config = {
                 7: {'offset': dc_i},  # MW_I
                 8: {'offset': dc_q},  # MW_Q
                 9: {'offset': +0.0},  # AOM N
-                10: {'offset': +0.0}, # AOM LO
+                10: {'offset': +0.0}, # AOM S
             },
 
             'digital_outputs': {
@@ -201,14 +202,16 @@ config = {
             },
 
             'digital_inputs': {
-                1: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                2: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                3: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                4: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                5: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                6: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                7: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                8: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                1: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                2: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                3: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                4: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                5: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                6: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                7: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                8: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                9: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                10: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
             },
         }
     },
@@ -230,7 +233,7 @@ config = {
 
         "MOT_AOM_0": {
             'singleInput': {
-                "port": (controller, 3)
+                "port": (controller, 2)
             },
             'operations': {
                 'MOT': "MOT_lock",
@@ -242,7 +245,7 @@ config = {
 
         "MOT_AOM_-": {
             'singleInput': {
-                "port": (controller, 2)
+                "port": (controller, 3)
             },
             'operations': {
                 'MOT': "MOT_lock",
@@ -338,14 +341,7 @@ config = {
 
         "AOM_2-2'": {
             'singleInput': {
-                "port": (controller, 6)
-            },
-            'digitalInputs': {
-                "Depump_Trigger": {
-                    "port": (controller, 7),
-                    "delay": 0,
-                    "buffer": 0,
-                },
+                "port": (controller, 5)
             },
             'operations': {
                 'Depump': "Depump_pulse",
@@ -382,7 +378,7 @@ config = {
         "Dig_detectors": {
             ## fake port ##
             "singleInput": {
-                "port": (controller, 6)
+                "port": (controller, 1)
             },
             'digitalInputs': {
                 "AWG_Switch": {
@@ -417,7 +413,7 @@ config = {
         "Dig_detectors_spectrum": {
             ## fake port ##
             "singleInput": {
-                "port": (controller, 6)
+                "port": (controller, 1)
             },
             'digitalInputs': {
                 "AWG_Switch": {
@@ -454,7 +450,7 @@ config = {
         "FLR_detection": {
             # open fake:
             "singleInput": {
-                "port": (controller, 7)
+                "port": (controller, 1)
             },
             "outputs": {
                 'out1': (controller, 1)
@@ -462,7 +458,7 @@ config = {
             'operations': {
                 'Detection': "Det_pulse",
             },
-            'time_of_flight': 28,
+            'time_of_flight': 36,
             'smearing': 0,
         },
 
@@ -470,7 +466,7 @@ config = {
             'digitalInputs': {
                 "AntiHelmholtz": {
                     "port": (controller, 3),
-                    "delay": 136,
+                    "delay": 0,
                     "buffer": 0,
                 },
             },

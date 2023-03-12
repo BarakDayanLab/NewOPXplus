@@ -140,14 +140,14 @@ def Sprint_Exp_Gaussian_samples(sprint_pulse_len=110,det_pulse_len = 30, det_pul
     return Sprint_Exp_Gaussian_samples[:-num_between_zeros]
 
 det_pulse_len = 30
-num_init_zeros_S = 37
-num_fin_zeros_S = 13
+num_init_zeros_S = 30
+num_fin_zeros_S = 20
 num_between_zeros = 10
 det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
-# det_pulse_amp_S = [0, 0, 0, 0, 0, 0]
+# det_pulse_amp_S = [0.45, 0, 0, 0, 0, 0]
 prep_pulse_amp_S = 0.4
 prep_pulse_len = 50
-sprint_pulse_amp_S = [0.085, 0, 0.085]
+sprint_pulse_amp_S = [0.06, 0, 0.06]
 sprint_pulse_len = 110
 Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
                                                             det_pulse_len=det_pulse_len,
@@ -158,6 +158,7 @@ Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=spr
 num_init_zeros_N = 30
 num_fin_zeros_N = 20
 det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45]
+# det_pulse_amp_N = [0.45, 0, 0, 0, 0, 0]
 
 Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
                                                             det_pulse_len=det_pulse_len,
@@ -220,7 +221,6 @@ wf_samples = [confargs['wf_samples']['wf1'], confargs['wf_samples']['wf2']]
 correction_matrix = calc_cmat([confargs['correction_vars']['theta'], confargs['correction_vars']['k']])
 pulse_time = confargs['pulse_time']
 
-
 config = {
 
     'version': 1,
@@ -261,16 +261,16 @@ config = {
             },
 
             'digital_inputs': {
-                1: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                2: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                3: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                4: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                5: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                6: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                7: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                8: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                9: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                10: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                1: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                2: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                3: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                4: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                5: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                6: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                7: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                8: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                9: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                10: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
             },
         }
     },

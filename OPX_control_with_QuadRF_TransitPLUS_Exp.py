@@ -194,7 +194,6 @@ def Pulse_with_prep_with_chirp(total_pulse_duration, prep_duration, zero_pulse_d
 
     ## Playing the pulses to the AOMs for the constant part. (Qua) ##
     align("MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+")
-    # align("MOT_AOM_-", "MOT_AOM_+")
     update_frequency("MOT_AOM_-", Config.IF_AOM_MOT + delta_f)
     update_frequency("MOT_AOM_+", Config.IF_AOM_MOT - delta_f)
     with if_(total_pulse_duration > prep_duration):
@@ -426,8 +425,6 @@ def opx_control(obj, qm):
     with program() as opx_control_prog:
         ## declaring program variables: ##
         i = declare(int)
-        k = declare(int)
-        j = declare(int)
         filler = declare(int, value=1)
         Trigger_Phase = declare(int, value=Phases_Names.index(obj.Exp_Values['Triggering_Phase']))
         Imaging_Phase = declare(int, value=Phases_Names.index(obj.Exp_Values['Imaging_Phase']))
@@ -570,6 +567,7 @@ def opx_control(obj, qm):
             with else_():
                 assign(x, 0)
             FreeFall(FreeFall_duration - x, coils_timing)
+
             ##########################
             ## Measurement Sequence ##
             ##########################
@@ -579,29 +577,34 @@ def opx_control(obj, qm):
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
 
-            wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
-            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'") # , "Dig_detectors"
+            with if_(Transits_Exp_ON):
+                wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
+            with else_():
+                wait(PrePulse_duration, "Cooling_Sequence")
+            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "Dig_detectors") # , "Dig_detectors"
 
             with if_(Trigger_Phase == 4):  # when trigger on pulse 1
                 ## Trigger QuadRF Sequence #####################
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
-            with if_((Imaging_Phase == 4) & (Pulse_1_duration > 0)):  # 4 means imaging phase on pulse_1
-                with if_(Transits_Exp_ON):
-                    align(*all_elements, "Dig_detectors_spectrum", "AOM_2-2/3'", "Pulser_CRUS")
-                    Transits_Exp_TT(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
-                                    ON_counts_st1, ON_counts_st2, ON_counts_st3,
-                                    ON_counts_st6, ON_counts_st7, ON_counts_st8,
-                                    tt_st_1, tt_st_2, tt_st_3, tt_st_6, tt_st_7, tt_st_8, rep_st)
-                    save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
-                    with if_(AntiHelmholtz_ON):
-                        save(FLR, FLR_st)
-                with else_():
-                    align(*all_elements)
-                    Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
-                                    pulse_1_duration_minus, pulse_1_duration_plus)
-                    Measure(Pulse_1_duration)  # This triggers camera (Control 7)
-                    align(*all_elements)
+            ## For taking an image:
+            with if_((Pulse_1_duration > 0) & ~Transits_Exp_ON):
+                align(*all_elements)
+                Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
+                                pulse_1_duration_minus, pulse_1_duration_plus)
+                Measure(Pulse_1_duration)  # This triggers camera (Control 7)
+                align(*all_elements)
+
+            with if_((Pulse_1_duration > 0) & Transits_Exp_ON):
+                align(*all_elements, "Dig_detectors", "AOM_2-2/3'")
+                Transits_Exp_TT(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
+                                ON_counts_st1, ON_counts_st2, ON_counts_st3,
+                                ON_counts_st6, ON_counts_st7, ON_counts_st8,
+                                tt_st_1, tt_st_2, tt_st_3, tt_st_6, tt_st_7, tt_st_8, rep_st)
+                save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
+                with if_(AntiHelmholtz_ON):
+                    save(FLR, FLR_st)
+                align(*all_elements, "Dig_detectors", "AOM_2-2/3'")
 
             assign(N_Snaps, 1)
             assign(Buffer_Cycles, 0)
@@ -762,9 +765,9 @@ class OPX:
         # we hold this connection until update is finished, the we close the connection.
         # we do still hold the QuadRFController objects, for access to the table (read only!) when the experiment is running.
         qrfContr = QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 4), topticaLockWhenUpdating=False,
-                                        debugging=True, continuous=False)
+                                       debugging=False, continuous=False)
         self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
-        self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev, initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '100MHz', 'CH3_amp': '31dbm'},
+        self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev, initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
                                                           updateChannels=[3], debugging=False, continuous=False))  # updates values on QuadRF (uploads table)
         #self.QuadRFControllers.append(QuadRFFrequencyScannerController(MOGdevice = qrfContr.dev, channel=2, debugging=False))  # updates values on QuadRF (uploads table)
 
@@ -883,10 +886,16 @@ class OPX:
         self.TOP2_pulse_len = int(Config.Probe_pulse_len / 4)  # [nsec]
         self.Calibration_time = 10  # [msec]
 
-        self.qmm = QuantumMachinesManager(host='132.77.54.230', port='80')
-        self.qmm.clear_all_job_results()
-        self.qm = self.qmm.open_qm(config)
-        self.job = opx_control(self, self.qm)
+        try:
+            self.qmm = QuantumMachinesManager(host='132.77.54.230', port='80')
+            self.qmm.clear_all_job_results()
+            self.qmm.reset_data_processing()
+            self.qmm.close_all_quantum_machines()
+            self.qm = self.qmm.open_qm(config)
+            self.job = opx_control(self, self.qm)
+        except KeyboardInterrupt:
+            self.job.halt()
+            self.qmm.reset_data_processing()
 
         self.io1_list = []
         self.io2_list = []
@@ -1305,6 +1314,8 @@ class OPX:
                 current_transit = [t]
             else:
                 current_transit = [t]
+
+        # tt_S_transit_events[[i for i in [vec for elem in all_transits for vec in elem]]] += 1
 
         if all_transits:
             if len(all_transits_aligned_first_batch) == N:

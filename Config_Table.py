@@ -22,14 +22,14 @@ calibrationData = None
 Initial_Values = {
     # 'Operation_Mode': 'Magnetic_fountain',
     # 'Operation_Mode': 'Imaging',
-    'Operation_Mode': 'PrePGC_Fountain',
+    # 'Operation_Mode': 'PrePGC_Fountain',
     # 'Operation_Mode': 'OD_FS',
     # 'Operation_Mode': 'Depump',
     # 'Operation_Mode': 'Transit_Exp',
     # 'Operation_Mode': 'Spectrum_Exp',
     # 'Operation_Mode': 'CRUS_Exp',
-    # 'Operation_Mode': 'SPRINT_Exp',
-    # 'Operation_Mode': 'Continuous',
+    'Operation_Mode': 'SPRINT_Exp',
+    # 'Operation_ModB-e': 'Continuous',
     'Imaging_Phase': 'Pulse_1',
     'Triggering_Phase': -1,  # Don't change this. Triggering phase should be defined within each operation mode (see below)
     # 'Operation_Mode': 'Double_PGC_with_Microwave',
@@ -244,8 +244,8 @@ Operation_Modes = {
                     'Transit_Exp': {'Triggering_Phase': 'Free_Fall',
                                     'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
                                     'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],
-                                    'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'] + 30e6,
-                                    'Pulse_1_Repump_amp': 0.000001,
+                                    'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'],
+                                    # 'Pulse_1_Repump_amp': 0.000001,
                                     'N_Snaps': 1,
                                     'Buffer_Cycles': 0,
                                     'Imaging_Phase': 'Pulse_1',

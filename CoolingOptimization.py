@@ -1,4 +1,6 @@
+# from OPX_control_with_QuadRF_TransitPLUS_Exp import OPX
 from OPX_control_with_QuadRF_Sprint_Exp import OPX
+# import Config_with_SNSPDs_and_QuadRF as Config
 import Config_with_SNSPDs_and_QuadRF_Sprint as Config
 import numpy as np
 from PIL import Image
