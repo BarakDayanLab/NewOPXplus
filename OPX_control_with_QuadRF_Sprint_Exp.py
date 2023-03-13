@@ -1304,7 +1304,10 @@ class OPX:
 
     def get_avg_num_of_photons_in_seq_pulses(self, seq, pulse_loc):
         avg_num_of_photons_in_seq_pulses = []
-        real_number_of_seq = math.ceil(max(self.tt_S_measure)/len(Config.Sprint_Exp_Gaussian_samples_S))
+        try:
+            real_number_of_seq = math.ceil(max(self.tt_S_measure)/len(Config.Sprint_Exp_Gaussian_samples_S))
+        except:
+            real_number_of_seq = 0
         for t in pulse_loc:
             avg_num_of_photons_in_seq_pulses.append((sum(seq[t[0]:t[1]]) + seq[t[1]]) / (real_number_of_seq * 0.147))
         return avg_num_of_photons_in_seq_pulses
@@ -2008,7 +2011,7 @@ class OPX:
 if __name__ == "__main__":
     # try:
         experiment = OPX(Config.config)
-        experiment.Start_Sprint_Exp_with_tt(N=500, preComment='test')
+        # experiment.Start_Sprint_Exp_with_tt(N=500, preComment='test')
     # except KeyboardInterrupt:
     #     experiment.job.halt()
     #     experiment.qmm.reset_data_processing()
