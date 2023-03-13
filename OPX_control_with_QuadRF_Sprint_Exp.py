@@ -1558,6 +1558,7 @@ class OPX:
         self.tt_S_measure_batch = []
         self.tt_N_measure_batch = []
         self.transit_sequences_batch = []
+        self.all_transits_seq_indx_batch = []
 
         self.folded_transmission = np.zeros(len(Config.Sprint_Exp_Gaussian_samples_S))
         self.folded_reflection = np.zeros(len(Config.Sprint_Exp_Gaussian_samples_S))
@@ -1716,7 +1717,8 @@ class OPX:
 
         ### Dor version ###
         self.find_transits_and_sprint_events_changed(cond=transit_condition, minimum_number_of_seq_detected=2)
-        self.seq_transit_events[[i for i in [vec for elem in self.all_transits_seq_indx for vec in elem]]] += 1
+        self.seq_transit_events[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
+        self.all_transits_seq_indx_batch = self.all_transits_seq_indx_batch[-(N-1):] + [self.all_transits_seq_indx]
         ###################
 
         self.save_tt_to_batch(Num_Of_dets, N)
@@ -1739,10 +1741,10 @@ class OPX:
                 break
             if reps < N:
                 reps += 1
-            #
-            #     ########################## PLOT!!! ########################################################################
+            ######################################## PLOT!!! ###########################################################
             ax = [ax1, ax2, ax3, ax4,ax5,ax6]
             self.plot_sprint_figures(ax, Num_Of_dets)
+            ############################################################################################################
             while True:
                 # record time:
                 timest = time.strftime("%Y%m%d-%H%M%S") # TODO: is it needed? already writen above..
@@ -1757,8 +1759,6 @@ class OPX:
             #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
             if lock_err < lock_err_threshold:
                 self.Single_det_foldeded = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
-                self.tt_N_det_SPRINT_events_batch = np.zeros(sprint_sequence_len)
-                self.tt_S_det_SPRINT_events_batch = np.zeros(sprint_sequence_len)
 
                 # divide south and north into reflection and transmission
                 self.tt_histogram_transmission, self.tt_histogram_reflection = \
@@ -1793,8 +1793,11 @@ class OPX:
                 self.transit_sequences = self.atom_detect_data[0]
 
                 ### Dor version ###
-                # self.find_transits_and_sprint_events_changed(cond=transit_condition, minimum_number_of_seq_detected=2)
-                # self.seq_transit_events[[i for i in [vec for elem in self.all_transits_seq_indx for vec in elem]]] += 1
+                self.find_transits_and_sprint_events_changed(cond=transit_condition, minimum_number_of_seq_detected=2)
+                self.seq_transit_events[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
+                self.all_transits_seq_indx_batch = self.all_transits_seq_indx_batch[-(N - 1):] + [
+                    self.all_transits_seq_indx]
+                ###################
 
                 # Batch folded tt "N" and "S"
                 self.folded_tt_N_batch = (self.folded_tt_N_batch * (Counter - 1) + self.folded_tt_N) / Counter
@@ -1829,7 +1832,7 @@ class OPX:
                     Counter += 1
                 print(timest, Counter)
 
-                self.save_tt_to_batch(Num_Of_dets,N)
+                self.save_tt_to_batch(Num_Of_dets, N)
         ############################################## END WHILE LOOP #################################################
 
         ## Adding comment to measurement [prompt whether stopped or finished regularly]
