@@ -58,7 +58,7 @@ def MOT(mot_repetitions):
     """
     FLR = declare(fixed)
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-3'_for_interference", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors_spectrum", "Dig_detectors") # , "PULSER_N", "PULSER_S")
+          "AOM_2-2/3'", "AOM_2-3'_for_interference", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors") # , "PULSER_N", "PULSER_S")
 
     ## MOT build-up ##
     n = declare(int)
@@ -76,7 +76,7 @@ def MOT(mot_repetitions):
         # play("OD_FS" * amp(0.1), "AOM_2-3'_for_interference")
 
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors", "Dig_detectors_spectrum") #, "PULSER_N", "PULSER_S")
+          "AOM_2-2/3'", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors") #, "PULSER_N", "PULSER_S")
 
     return FLR
 
@@ -224,7 +224,7 @@ def FreeFall(freefall_duration, coils_timing):
 
     ## Aligning all the different elements used during the freefall time of the experiment ##
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'", "AOM_2-2'",
-          "Measurement", "PULSER_N", "PULSER_S") # , "Dig_detectors", "Dig_detectors_spectrum")
+          "Measurement", "PULSER_N", "PULSER_S") # , "Dig_detectors")
 
     ## Zeeman Coils turn-on sequence ##
     wait(coils_timing, "Zeeman_Coils")
