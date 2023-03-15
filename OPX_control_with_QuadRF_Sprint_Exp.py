@@ -337,6 +337,7 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
     wait(90, "Dig_detectors")
     with for_(n, 0, n < m_time * 4, n + m_window):
         measure("readout_SPRINT", "Dig_detectors", None,
+        # measure("readout_QRAM", "Dig_detectors", None,
                 time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
                 time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
                 time_tagging.digital(tt_vec3, m_window, element_output="out3", targetLen=counts3),
@@ -643,8 +644,8 @@ class OPX:
         qrfContr = QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 4), topticaLockWhenUpdating=False,
                                        debugging=False, continuous=False)
         self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
-        self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev, initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
-                                                          updateChannels=[3], debugging=False, continuous=False))  # updates values on QuadRF (uploads table)
+        # self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev, initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
+        #                                                   updateChannels=[3], debugging=False, continuous=False))  # updates values on QuadRF (uploads table)
         #self.QuadRFControllers.append(QuadRFFrequencyScannerController(MOGdevice = qrfContr.dev, channel=2, debugging=False))  # updates values on QuadRF (uploads table)
 
         self.Update_QuadRF_channels = set({})  # Only update these channels on QuadRF when UpdateParameters method is called [note: this is a python set]

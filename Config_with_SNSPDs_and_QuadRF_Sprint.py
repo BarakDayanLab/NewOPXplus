@@ -139,9 +139,9 @@ def Sprint_Exp_Gaussian_samples(sprint_pulse_len=110,det_pulse_len = 30, det_pul
     Sprint_Exp_Gaussian_samples += [0] * num_fin_zeros
     return Sprint_Exp_Gaussian_samples[:-num_between_zeros]
 
-def QRAM_Exp_samples(delta, pulse_len):
+def QRAM_Exp_samples(delta=200, pulse_len=10000000):
     QRAM_exp_samples = []
-    for n in range(pulse_len//delta):
+    for n in range(int(pulse_len//(5*delta))):
         QRAM_exp_samples += [0.45]*2*delta + [0]*3*delta
     return QRAM_exp_samples
 
@@ -177,8 +177,8 @@ readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/1.5)/(efficiency*1e6
 # readout_pulse_sprint_len_S = math.ceil(((opx_max_per_window/4)/(efficiency*1e6*num_of_photons_per_sequence_S))*len(Sprint_Exp_Gaussian_samples_S))*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
 readout_pulse_sprint_len_S = math.ceil(((opx_max_per_window/1.5)/(efficiency*1e6*num_of_photons_per_sequence_S))*len(Sprint_Exp_Gaussian_samples_S))*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
 
-SPRINT_Exp_TOP2_samples = [0.45]*max(readout_pulse_sprint_len_N, readout_pulse_sprint_len_S)
-QRAM_Exp_TOP2_samples = QRAM_Exp_samples(delta=200, Pulse_len=readout_pulse_sprint_len_S)
+SPRINT_Exp_TOP2_samples = [0.45]*int(max(readout_pulse_sprint_len_N, readout_pulse_sprint_len_S))
+QRAM_Exp_TOP2_samples = QRAM_Exp_samples(delta=200, pulse_len=readout_pulse_sprint_len_S)
 
 CRUS_probe_samples = [0] * 340 + ([0.4] * (256 * 2 + 10)) + [0] * 162 # twice the 512ns period of the AWG, with scope triggered
 CRUS_pulser_samples = [0] * 128 + ([0.4] * (256 + 128)) + [0] * 128 * 4 # twice the 512ns period of the AWG, with scope triggered
@@ -426,11 +426,13 @@ config = {
             'operations': {
                 'readout': "digital_readout",
                 'readout_SPRINT': "digital_readout_sprint",
+                'readout_QRAM': "digital_readout_QRAM",
             },
             'time_of_flight': 36,
             'smearing': 0,
-            # 'intermediate_frequency': 0,
+            'intermediate_frequency': IF_TOP2,
         },
+
 
         "FLR_detection": {
             # open fake:#
@@ -833,6 +835,15 @@ config = {
             'digital_marker': 'ON'
         },
 
+        "digital_readout_QRAM": {
+            'length': len(QRAM_Exp_TOP2_samples),
+            'operation': 'control',
+            'waveforms': {
+                'single': 'qram_wf'
+            },
+            'digital_marker': 'ON'
+        },
+
         "digital_readout_CRUS": {
             'length': readout_CRUS_pulse_len,
             'operation': 'control',
@@ -928,6 +939,10 @@ config = {
         'Sprint_Gaussian_wf_N': {
             'type': 'arbitrary',
             'samples': Sprint_Exp_Gaussian_samples_N
+        },
+        'qram_wf': {
+            'type': 'arbitrary',
+            'samples': QRAM_Exp_TOP2_samples
         },
         'CRUS_pulser_wf': {
             'type': 'arbitrary',
