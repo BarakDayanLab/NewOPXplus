@@ -1050,7 +1050,7 @@ class OPX:
         FLR_handle = self.job.result_handles.get("FLR_measure")
         return Counts_handle,tt_handle,FLR_handle
 
-    def get_tt_from_handles(self,Num_Of_dets,Counts_handle,tt_handle,FLR_handle):
+    def get_tt_from_handles(self, Num_Of_dets, Counts_handle, tt_handle, FLR_handle):
         counts_res = []
         tt_res = []
 
@@ -1076,8 +1076,8 @@ class OPX:
                                     enumerate(counts_res[i])])
             self.tt_measure[i].sort()
         # create vector of tt's for each direction (north and south) and sort them
-        self.tt_S_measure = sorted(sum(sum(self.tt_measure[:3],[]),[])) # unify detectors 1-3 and windows within detectors
-        self.tt_N_measure = sorted(sum(sum(self.tt_measure[3:],[]),[])) # unify detectors 6-8 and windows within detectors
+        self.tt_N_measure = sorted(sum(sum(self.tt_measure[:3],[]),[])) # unify detectors 1-3 and windows within detectors
+        self.tt_S_measure = sorted(sum(sum(self.tt_measure[3:],[]),[])) # unify detectors 6-8 and windows within detectors
 
 
     def get_pulses_bins(self,det_pulse_len,sprint_pulse_len,num_of_det_pulses,num_of_sprint_pulses,
@@ -1410,31 +1410,7 @@ class OPX:
         #                 + '$\overline{Probe}_S = %.3f$' % ((np.mean([sum(x) for x in tt_S_binning_resonance_batch]) * 1000)
         #                                                    / (self.M_window / 2),) + '[MPhotons/sec]'
         #     textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (np.mean(FLR_measurement) * 1e5,) + r'$\times 10^{-5}$'
-        #     textstr_No_transits = 'NO TRANSITS YET!!!'
-
-        # plt.plot(self.tt_S_SPRINT_events_batch, label='Counts histogram', color='b')
-        # for i in range(len(Num_Of_dets)):
-        #     plt.plot(self.tt_Single_det_SPRINT_events_batch[i], label='detector'+str(Num_Of_dets[i]))
-        # plt.legend(loc='upper right')
-        # plt.show()
-        # plt.pause(0.5)
-
-        # fig2.clear()
-        # plt.figure()
-        # plt.plot(tt_S_binning_batch, label='unfolded data')
-        # plt.show()
-        # plt.pause(0.5)
-
-        # for i in range(len(Num_Of_dets)):
-        #     ax[0].plot(self.tt_Single_det_SPRINT_events_batch[i], label='detector' + str(Num_Of_dets[i]))
-        # ax[0].set_title('binned timetags from all detectors folded (batch)', fontweight="bold")
-        # # ax1.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
-        # #     ax1.text(0.05, 0.95, textstr_detuned, transform=ax1.transAxes, fontsize=12,
-        # #              verticalalignment='top', bbox=props)
-        # ax[0].legend(loc='upper right')
-        #     print('ok')
-        # for i in range(len(Num_Of_dets)):
-        #     ax[1].plot(self.Single_det_foldeded[i], label='detector' + str(Num_Of_dets[i]))
+        textstr_No_transits = 'NO TRANSITS YET!!!'
 
         ax[0].plot(self.folded_tt_N_batch, label='"N" detectors')
         ax[0].plot(self.folded_tt_S_batch, label='"S" detectors')
@@ -1462,12 +1438,7 @@ class OPX:
         ax[2].legend(loc='upper right')
 
         ax[3].plot(self.num_of_det_reflections_per_seq, label='Num of reflections per sequence (Live)')
-        # ax[3].plot(self.folded_transmission_accumulated, label='folded transmission')
-        # ax[3].plot(self.folded_reflection_accumulated, label='folded reflection')
-
         ax[3].set_title('Num of reflections per sequence (accumulated)', fontweight="bold")
-        # ax[3].set_title('folded reflection and transmission(accumulated)', fontweight="bold")
-        # ax[3].legend(loc='upper right')
         ax[3].text(0.1, 0.9*max(self.num_of_det_reflections_per_seq), textstr_total_reflections, fontsize=16,
                   verticalalignment='top', bbox=props)
 
@@ -1476,70 +1447,41 @@ class OPX:
                                 range=(0, self.M_window))[0], label='transits(Live)')
         ax[4].set_title('transit histogram(live)', fontweight="bold")
         ax[4].legend(loc='upper right')
-        ax[4].text(0.5,0.5,'number of transits='+str(self.atom_detect_data[1]))
+        ax[4].text(0.5, 0.5, 'number of transits='+str(self.atom_detect_data[1]))
 
         ax[5].plot(np.histogram(self.transit_sequences_batch,bins=self.number_of_sprint_sequences
                                 ,range=(0,self.M_window))[0], label='transits(Live)')
         ax[5].set_title('transit histogram(accumulated)', fontweight="bold")
         ax[5].legend(loc='upper right')
 
+        # if len(self.all_transits_seq_indx_batch) > 0:
+        #     if self.number_of_transits_live:
+        #         textstr_transit_counts = r'$N_{Transits} = %s $' % (self.number_of_transits_live,) + r'$[Counts]$'
+        #     textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (self.number_of_transits_total,) + r'$[Counts]$'
+        #
+        #     ax[4].bar(self.number_of_sprint_sequences, self.seq_transit_events_live, label='Current transit events', color='b')
+        #     ax[4].set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+        #     ax[4].text(0.05, 0.95, textstr_transit_counts, transform=ax[4].transAxes, fontsize=12,
+        #                verticalalignment='top', bbox=props)
+        #
+        #     ax[5].bar(self.number_of_sprint_sequences, self.seq_transit_events_batched, label='Transit events histogram', marker='*', color='b')
+        #     ax[5].set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+        #     ax[5].text(0.05, 0.95, textstr_transit_event_counter, transform=ax[5].transAxes, fontsize=12,
+        #                verticalalignment='top', bbox=props)
+        # else:
+        #     ax[4].bar(self.number_of_sprint_sequences, self.seq_transit_events_live, label='Current transit events', color='b')
+        #     ax[4].set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+        #     ax[4].text(0.25, 0.5, textstr_No_transits, transform=ax[4].transAxes, fontsize=24,
+        #                verticalalignment='center', bbox=props)
+        #
+        #     ax[5].bar(self.number_of_sprint_sequences, self.seq_transit_events_batched, label='Transit events histogram', marker='*', color='b')
+        #     ax[5].set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+        #     ax[5].text(0.25, 0.5, textstr_No_transits, transform=ax[5].transAxes, fontsize=24,
+        #                verticalalignment='center', bbox=props)
 
-        # DONT ERASE!!!!!######################################################################################
-        # # How to add the text to the graph(Dor)
-        # pulse_loc = experiment.num_of_photons_txt_box_loc()
-        # for i in range(len(experiment.max_value_in_seq_pulses)):
-        #     ax2.text(pulse_loc[0][i], experiment.max_value_in_seq_pulses[i],
-        #              '%.1f' % experiment.avg_num_of_photons_in_seq_pulse[i],
-        #              horizontalalignment='center', fontsize=20, fontweight='bold', family=['Comic Sans MS'])
-        # #####################################################################################################
-        # ax2.set_title('On resonant counts', fontweight="bold")
-        # ax2.set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
-        # ax2.text(0.05, 0.95, textstr_resonance, transform=ax2.transAxes, fontsize=12,
-        #          verticalalignment='top', bbox=props)
-        # ax2.legend(loc='upper right')
-        #
-        # ax3.plot(SPRINT_pulse_time, self.tt_S_SPRINT_events, label='Folded photon detection events per cycle', color='k')
-        #     ax3.set(xlabel='Time [nsec]', ylabel='Counts [#Number]')
-        #     ax3.legend(loc='upper right')
-        #
-        # ax4.plot(SPRINT_pulse_time, self.tt_S_SPRINT_events, label='Folded photon detection events per run', color='k')
-        #     ax4.set(xlabel='Time [msec]', ylabel='Counts [#Number]')
-        #     ax4.legend(loc='upper right')
-        #
-        #     if len(all_transits_batch) > 0:
-        #         if all_transits:
-        #             textstr_transit_counts = r'$N_{Transits} = %s $' % (len(all_transits),) + r'$[Counts]$'
-        #         textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (len([vec for elem in all_transits_batch for vec in elem]),) + r'$[Counts]$'
-        #
-        #         ax5.plot(t_transit, transit_histogram, label='Transit profile', color='b')
-        #         ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-        #         ax5.text(0.05, 0.95, textstr_transit_counts, transform=ax5.transAxes, fontsize=12,
-        #                  verticalalignment='top', bbox=props)
-        #
-        #         ax6.plot(time_bins, tt_S_transit_events, label='Transit events histogram', marker='*', color='b')
-        #         ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-        #         ax6.text(0.05, 0.95, textstr_transit_event_counter, transform=ax6.transAxes, fontsize=12,
-        #                  verticalalignment='top', bbox=props)
-        #     else:
-        #         ax5.plot(t_transit, transit_histogram, label='Transit profile', color='b')
-        #         ax5.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-        #         ax5.text(0.25, 0.5, textstr_No_transits, transform=ax5.transAxes, fontsize=24,
-        #                  verticalalignment='center', bbox=props)
-        #
-        #         ax6.plot(time_bins, tt_S_transit_events, label='Transit events histogram', marker='*', color='b')
-        #         ax6.set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-        #         ax6.text(0.25, 0.5, textstr_No_transits, transform=ax6.transAxes, fontsize=24,
-        #                  verticalalignment='center', bbox=props)
-        #
-        #     ax1.set_ylim(0, 8)
-        #     ax2.set_ylim(0, 8)
-        #
-
-        # plt.tight_layout()
         # plt.show()
         plt.pause(0.5)
-        # #
-        #     ###########################################################################################################
+        ###########################################################################################################
 
     def init_params_for_save_sprint(self,sprint_sequence_len,Num_Of_dets):
         # define empty variables
@@ -1566,7 +1508,8 @@ class OPX:
         self.folded_reflection = np.zeros(len(Config.Sprint_Exp_Gaussian_samples_S))
 
         self.tt_S_binning = np.zeros(self.number_of_sprint_sequences + 1)
-        self.seq_transit_events = np.zeros(self.number_of_sprint_sequences)
+        self.seq_transit_events_live = np.zeros(self.number_of_sprint_sequences)
+        self.seq_transit_events_batched = np.zeros(self.number_of_sprint_sequences)
         self.tt_S_SPRINT_events = np.zeros(self.sprint_sequence_len)
         self.tt_S_SPRINT_events_batch = np.zeros(self.sprint_sequence_len)
         self.Single_det_foldeded = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
@@ -1720,7 +1663,8 @@ class OPX:
 
         ### Dor version ###
         self.find_transits_and_sprint_events_changed(cond=transit_condition, minimum_number_of_seq_detected=2)
-        self.seq_transit_events[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
+        self.seq_transit_events_live[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
+        self.seq_transit_events_batched[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
         self.all_transits_seq_indx_batch = self.all_transits_seq_indx_batch[-(N-1):] + [self.all_transits_seq_indx]
         self.number_of_transits_live = len(self.all_transits_seq_indx)
         self.number_of_transits_total = len([vec for lst in self.all_transits_seq_indx_batch for vec in lst])
@@ -1764,6 +1708,7 @@ class OPX:
             #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
             if lock_err < lock_err_threshold:
                 self.Single_det_foldeded = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
+                self.seq_transit_events_live = np.zeros(self.number_of_sprint_sequences)
 
                 # divide south and north into reflection and transmission
                 self.tt_histogram_transmission, self.tt_histogram_reflection = \
@@ -1799,7 +1744,8 @@ class OPX:
 
                 ### Dor version ###
                 self.find_transits_and_sprint_events_changed(cond=transit_condition, minimum_number_of_seq_detected=2)
-                self.seq_transit_events[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
+                self.seq_transit_events_live[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
+                self.seq_transit_events_batched[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
                 self.all_transits_seq_indx_batch = self.all_transits_seq_indx_batch[-(N - 1):] + [
                     self.all_transits_seq_indx]
                 self.number_of_transits_live = len(self.all_transits_seq_indx)
