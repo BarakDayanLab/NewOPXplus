@@ -220,24 +220,43 @@ Super_Sprint_Config = {
             'intermediate_frequency': IF_AOM_OD,
         },
 
-        # "digital_detectors_S": {
-        #     "singleInput": {
-        #         "port": (controller, 5)
-        #     },
-        #     "digitalOutputs": {
-        #         "out5": (controller, 5),
-        #         "out6": (controller, 6),
-        #         "out7": (controller, 7),
-        #         "out8": (controller, 8),
-        #     },
-        #     'operations': {
-        #         'readout': "digital_readout",
-        #         'OD_measure': "OD_pulse"
-        #     },
-        #     'time_of_flight': 28,
-        #     'smearing': 0,
-        #     'intermediate_frequency': 0,
-        # },
+        "digital_detectors_S": {
+            "singleInput": {
+                "port": (controller, 1)
+            },
+            'digitalInputs': {
+                "switch1": {
+                    "port": (controller, 2),
+                    "delay": 0,
+                    "buffer": 0,
+                },
+                "switch2": {
+                    "port": (controller, 5),
+                    "delay": 0,
+                    "buffer": 0,
+                },
+            },
+            "digitalOutputs": {
+                "out1": (controller, 1),
+                "out2": (controller, 2),
+                "out3": (controller, 3),
+                "out4": (controller, 4),
+                "out5": (controller, 5),
+                "out6": (controller, 6),
+                "out7": (controller, 7),
+                "out8": (controller, 8),
+            },
+            'outputs': {
+                'out1': (controller, 1)
+            },
+            'operations': {
+                'readout': "digital_readout",
+                'OD_measure': "OD_pulse"
+            },
+            'time_of_flight': 1200 + 28,
+            'smearing': 0,
+            'intermediate_frequency': IF_TOP2,
+        },
 
         "AntiHelmholtz_Coils": {
             'digitalInputs': {
@@ -409,7 +428,8 @@ with program() as dig:
             # play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
             # play("CRUS_pulse", "Pulser_CRUS")
 
-            measure("OD_measure", "digital_detectors_N", None,
+            measure("OD_measure", "digital_detectors_S", None,
+            # measure("OD_measure", "digital_detectors_N", None,
                     counting.digital(counts1, m_window, element_outputs="out1"),
                     counting.digital(counts2, m_window, element_outputs="out2"),
                     counting.digital(counts3, m_window, element_outputs="out3"),

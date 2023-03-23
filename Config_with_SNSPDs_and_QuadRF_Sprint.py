@@ -139,21 +139,36 @@ def Sprint_Exp_Gaussian_samples(sprint_pulse_len=110,det_pulse_len = 30, det_pul
     Sprint_Exp_Gaussian_samples += [0] * num_fin_zeros
     return Sprint_Exp_Gaussian_samples[:-num_between_zeros]
 
-def QRAM_Exp_samples(delta=200, pulse_len=10000000):
+
+def QRAM_Exp_Gaussian_samples(sprint_pulse_len=110, det_pulse_len=30, det_pulses_amp=[0.4]*6, sprint_pulses_amp=[0.4]*4,
+                              num_init_zeros=10, num_between_zeros=10, num_fin_zeros=0):
+    qram_exp_gaussian_samples = [0] * num_init_zeros
+    for n in det_pulses_amp:
+        # Sprint_Exp_Gaussian_samples += [n] * 50 + [0] * num_between_zeros
+        qram_exp_gaussian_samples += (signal.gaussian(det_pulse_len, std=(det_pulse_len / 2.355)) * n).tolist() + [0] * num_between_zeros
+    # Sprint_Exp_Gaussian_samples += (signal.gaussian(prep_pulse_len, std=(prep_pulse_len / 2.355)) * prep_pulse_amp).tolist() + [0] * num_between_zeros
+    for m in sprint_pulses_amp:
+        # Sprint_Exp_Gaussian_samples += [m] * 110 + [0] * num_between_zeros
+        qram_exp_gaussian_samples += (signal.gaussian(sprint_pulse_len, std=(sprint_pulse_len / 2.355)) * m).tolist() + [0] * num_between_zeros
+    qram_exp_gaussian_samples += [0] * num_fin_zeros
+    return qram_exp_gaussian_samples[:-num_between_zeros]
+
+def QRAM_Exp_samples(delta=240, pulse_len=10000000):
     QRAM_exp_samples = []
-    for n in range(int(pulse_len//(5*delta))):
-        QRAM_exp_samples += [0.45]*2*delta + [0]*3*delta
+    for n in range(int(pulse_len//(3*delta))):
+        QRAM_exp_samples += [0.4]*delta + [0]*2*delta
     return QRAM_exp_samples
 
 det_pulse_len = 30
 num_init_zeros_S = 30
 num_fin_zeros_S = 20
 num_between_zeros = 10
+# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
 det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
-# det_pulse_amp_S = [0.45, 0, 0, 0, 0, 0]
 prep_pulse_amp_S = 0.4
 prep_pulse_len = 50
-sprint_pulse_amp_S = [0.06, 0, 0.06]
+# sprint_pulse_amp_S = [0.06, 0, 0.06]
+sprint_pulse_amp_S = [0, 0, 0]
 sprint_pulse_len = 110
 Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
                                                             det_pulse_len=det_pulse_len,
@@ -163,13 +178,13 @@ Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=spr
 
 num_init_zeros_N = 30
 num_fin_zeros_N = 20
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45]
 det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45]
-# det_pulse_amp_N = [0.45, 0, 0, 0, 0, 0]
 
 Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
                                                             det_pulse_len=det_pulse_len,
                                                             det_pulses_amp=det_pulse_amp_N,
-                                                            sprint_pulses_amp=[0, 0.1, 0], num_init_zeros=num_init_zeros_N,
+                                                            sprint_pulses_amp=[0.1, 0, 0], num_init_zeros=num_init_zeros_N,
                                                             num_between_zeros=num_between_zeros, num_fin_zeros=num_fin_zeros_N)
 
 # readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/4)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
@@ -178,7 +193,7 @@ readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/1.5)/(efficiency*1e6
 readout_pulse_sprint_len_S = math.ceil(((opx_max_per_window/1.5)/(efficiency*1e6*num_of_photons_per_sequence_S))*len(Sprint_Exp_Gaussian_samples_S))*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
 
 SPRINT_Exp_TOP2_samples = [0.45]*int(max(readout_pulse_sprint_len_N, readout_pulse_sprint_len_S))
-QRAM_Exp_TOP2_samples = QRAM_Exp_samples(delta=200, pulse_len=readout_pulse_sprint_len_S)
+QRAM_Exp_TOP2_samples = QRAM_Exp_samples(delta=240, pulse_len=24000)
 
 CRUS_probe_samples = [0] * 340 + ([0.4] * (256 * 2 + 10)) + [0] * 162 # twice the 512ns period of the AWG, with scope triggered
 CRUS_pulser_samples = [0] * 128 + ([0.4] * (256 + 128)) + [0] * 128 * 4 # twice the 512ns period of the AWG, with scope triggered
@@ -640,6 +655,14 @@ config = {
             },
         },
 
+        "Const_pulse_2dBm": {
+            'operation': 'control',
+            'length': Short_pulse_len,
+            'waveforms': {
+                'single': 'const_wf_2dBm'
+            },
+        },
+
         "OD_pulse": {
             'operation': 'measurement',
             'length': OD_pulse_len,
@@ -830,7 +853,7 @@ config = {
             'length': readout_pulse_sprint_len_N,
             'operation': 'control',
             'waveforms': {
-                'single': 'const_wf'
+                'single': 'const_wf_2dBm'
             },
             'digital_marker': 'ON'
         },
@@ -910,6 +933,11 @@ config = {
         'const_wf': {
             'type': 'constant',
             'sample': 0.45
+            # 'sample': 0.3
+        },
+        'const_wf_2dBm': {
+            'type': 'constant',
+            'sample': 0.4
             # 'sample': 0.3
         },
         'zero_wf': {
@@ -1005,6 +1033,9 @@ config = {
         },
         "Trig": {
             "samples": [(1, 20000), (0, 0)]
+        },
+        "Trig_ns": {
+            "samples": [(1, 40), (0, 0)]
         }
     },
 

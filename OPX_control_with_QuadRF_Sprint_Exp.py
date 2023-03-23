@@ -335,6 +335,7 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
         play("Sprint_experiment_pulses_N", "PULSER_N")
 
     wait(90, "Dig_detectors")
+    # wait(40, "Dig_detectors")
     with for_(n, 0, n < m_time * 4, n + m_window):
         measure("readout_SPRINT", "Dig_detectors", None,
         # measure("readout_QRAM", "Dig_detectors", None,
@@ -1308,7 +1309,7 @@ class OPX:
         try:
             real_number_of_seq = math.ceil(max(self.tt_S_measure)/len(Config.Sprint_Exp_Gaussian_samples_S))
         except:
-            real_number_of_seq = 0
+            real_number_of_seq = self.number_of_sprint_sequences
         for t in pulse_loc:
             avg_num_of_photons_in_seq_pulses.append((sum(seq[t[0]:t[1]]) + seq[t[1]]) / (real_number_of_seq * 0.147))
         return avg_num_of_photons_in_seq_pulses
@@ -1572,9 +1573,8 @@ class OPX:
         self.single_det_folded_accumulated = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
         self.num_of_det_reflections_per_seq_accumulated = np.zeros(self.number_of_sprint_sequences)
 
-
     def Save_SNSPDs_Sprint_Measurement_with_tt(self, N, sprint_sequence_len, preComment, lock_err_threshold, transit_condition,
-                                               max_probe_counts):
+                                               max_probe_counts, filter_delay):
         """
         Function for analyzing,saving and displaying data from sprint experiment.
         :param N: Number of maximum experiments (free throws) saved and displayed.
@@ -1584,6 +1584,8 @@ class OPX:
                            parameters.
         :param lock_err_threshold: The maximal error in locking resonator to rb line (in ms, depends on the scan width/vpp)
         :param max_probe_counts: The maximum counts probe counts at each direction measured when cavity isn't locked.
+        :param filter_delay: Delay of the filter window compared to original location (can be taken by comparing the
+                             time of the 1st detection pulse pick location to the original sequence)
         :return:
         """
         if not preComment:
@@ -1600,10 +1602,10 @@ class OPX:
         self.init_params_for_save_sprint(sprint_sequence_len,Num_Of_dets)
 
         # get pulses location south and north
-        self.pulses_location_in_seq_S, self.filter_S = self.get_pulses_location_in_seq(-7,
+        self.pulses_location_in_seq_S, self.filter_S = self.get_pulses_location_in_seq(filter_delay[0],
                                                                                        Config.Sprint_Exp_Gaussian_samples_S,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
-        self.pulses_location_in_seq_N, self.filter_N = self.get_pulses_location_in_seq(-5,
+        self.pulses_location_in_seq_N, self.filter_N = self.get_pulses_location_in_seq(filter_delay[1],
                                                                                        Config.Sprint_Exp_Gaussian_samples_N,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
         self.Num_of_photons_txt_box_x_loc = np.concatenate((self.num_of_photons_txt_box_loc(self.pulses_location_in_seq_S),
@@ -1718,8 +1720,10 @@ class OPX:
 
         ### Dor version ###
         self.find_transits_and_sprint_events_changed(cond=transit_condition, minimum_number_of_seq_detected=2)
-        self.seq_transit_events[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
+        self.seq_transit_events[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
         self.all_transits_seq_indx_batch = self.all_transits_seq_indx_batch[-(N-1):] + [self.all_transits_seq_indx]
+        self.number_of_transits_live = len(self.all_transits_seq_indx)
+        self.number_of_transits_total = len([vec for lst in self.all_transits_seq_indx_batch for vec in lst])
         ###################
 
         self.save_tt_to_batch(Num_Of_dets, N)
@@ -1798,6 +1802,8 @@ class OPX:
                 self.seq_transit_events[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
                 self.all_transits_seq_indx_batch = self.all_transits_seq_indx_batch[-(N - 1):] + [
                     self.all_transits_seq_indx]
+                self.number_of_transits_live = len(self.all_transits_seq_indx)
+                self.number_of_transits_total = len([vec for lst in self.all_transits_seq_indx_batch for vec in lst])
                 ###################
 
                 # Batch folded tt "N" and "S"
@@ -1914,13 +1920,13 @@ class OPX:
         ## ------------------ end of saving section -------
 
     def Start_Sprint_Exp_with_tt(self, N=100, sprint_sequence_len=int(len(Config.Sprint_Exp_Gaussian_samples_S)),
-                                 transit_condition=[2,2], preComment=None, lock_err_threshold=0.01):
+                                 transit_condition=[2,2], preComment=None, lock_err_threshold=0.01, filter_delay=[-7,2]):
         # Max_probe_counts = self.Get_Max_Probe_counts(3)  # return the average maximum probe counts of 3 cycles.
         Max_probe_counts = None  # return the average maximum probe counts of 3 cycles.
         self.SPRINT_Exp_switch(True)
         self.update_parameters()
         self.Save_SNSPDs_Sprint_Measurement_with_tt(N, sprint_sequence_len, preComment,lock_err_threshold,
-                                                    transit_condition, Max_probe_counts)
+                                                    transit_condition, Max_probe_counts, filter_delay)
 
     ## MW spectroscopy variable update functions: ##
 
