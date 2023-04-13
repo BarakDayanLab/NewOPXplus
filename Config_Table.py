@@ -308,14 +308,14 @@ Operation_Modes = {
                                     'Imaging_Phase': 'Pulse_1',
                                     'PrePulse_duration': 13,  # [msec]
                                     'Shutter_open_time': 5,  # [msec]
-                                    'Pulse_1_duration': int(min(Config_Sprint.readout_pulse_sprint_len_N,
+                                    'Pulse_1_duration': int(max(Config_Sprint.readout_pulse_sprint_len_N,
                                                                 Config_Sprint.readout_pulse_sprint_len_S)) / 1e6,  # [msec]
                                     ## If with fountain:
                                     'Fountain_duration': 0.5,  # [msec]
                                     'Fountain_prep_duration': 0.5,  # [msec], Can't be zero!!!
-                                    'M_window': int(min(Config_Sprint.readout_pulse_sprint_len_N,
+                                    'M_window': int(max(Config_Sprint.readout_pulse_sprint_len_N,
                                                         Config_Sprint.readout_pulse_sprint_len_S)), # [nsec]
-                                    'M_time': int(min(Config_Sprint.readout_pulse_sprint_len_N,
+                                    'M_time': int(max(Config_Sprint.readout_pulse_sprint_len_N,
                                                       Config_Sprint.readout_pulse_sprint_len_S)) / 1e6,  # Pulse_length[nsec] * 1000 repetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
                                     'M_off_time': 5,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
                                     },

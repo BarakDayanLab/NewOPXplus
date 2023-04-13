@@ -423,13 +423,14 @@ with program() as dig:
         # play("MOT", "AOM_TOP_1")
     with infinite_loop_():
         with for_(n, 0, n < rep, n+1):
+
             play("Const_open", "PULSER_N")
             play("Const_open", "PULSER_S")
             # play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
             # play("CRUS_pulse", "Pulser_CRUS")
 
-            measure("OD_measure", "digital_detectors_S", None,
-            # measure("OD_measure", "digital_detectors_N", None,
+            # measure("OD_measure", "digital_detectors_S", None,
+            measure("OD_measure", "digital_detectors_N", None,
                     counting.digital(counts1, m_window, element_outputs="out1"),
                     counting.digital(counts2, m_window, element_outputs="out2"),
                     counting.digital(counts3, m_window, element_outputs="out3"),

@@ -85,7 +85,8 @@ IF_AOM_Repump = 78.4735e6
 IF_AOM_N = 129.2368e6
 # IF_AOM_S = 89.2368e6
 IF_AOM_S = 129.2368e6
-IF_AOM_LO = 89.2368e6
+# IF_AOM_LO = 89.2368e6
+IF_AOM_LO = 129.2368e6
 IF_AOM_SigmaPlus = 114.58e6
 IF_AOM_SigmaMinus = 114.58e6
 IF_AOM_Pi = 75.34e6
@@ -113,16 +114,20 @@ Det_Gaussian_samples = ((signal.gaussian(200, std=(24 / 30)) * 0.8 - 0.4).tolist
 
 # SPRINT parameters
 num_of_photons_det_pulses = 2 # alpha^2
-num_of_photons_sprint_pulses = 0.15 # alpha^2
+# num_of_photons_sprint_pulses = 0.15 # alpha^2
+num_of_photons_sprint_pulses = 0 # alpha^2  # For only det pulses sequence
 
 num_of_det_pulses_S = 3
-num_of_sprint_pulses_S = 2
+# num_of_sprint_pulses_S = 2
+num_of_sprint_pulses_S = 0  # For only det pulses sequence
 num_of_det_pulses_N = 3
-num_of_sprint_pulses_N = 1
+# num_of_sprint_pulses_N = 1
+num_of_sprint_pulses_N = 0  # For only det pulses sequence
 
 # parameters for window len
 # efficiency = 0.5 # the efficiency of the system
-efficiency = 0.29 # the efficiency of the system
+# efficiency = 0.29 # the efficiency of the system
+efficiency = 0.14 # the efficiency of the system with sagnac
 num_of_photons_per_sequence_S = num_of_photons_det_pulses * num_of_det_pulses_S + num_of_photons_sprint_pulses * num_of_sprint_pulses_S
 num_of_photons_per_sequence_N = num_of_photons_det_pulses * num_of_det_pulses_N + num_of_photons_sprint_pulses * num_of_sprint_pulses_N
 
@@ -131,7 +136,7 @@ def Sprint_Exp_Gaussian_samples(sprint_pulse_len=110,det_pulse_len = 30, det_pul
     Sprint_Exp_Gaussian_samples = [0] * num_init_zeros
     for n in det_pulses_amp:
         # Sprint_Exp_Gaussian_samples += [n] * 50 + [0] * num_between_zeros
-        Sprint_Exp_Gaussian_samples += (signal.gaussian(det_pulse_len, std=(det_pulse_len / 2.355)) * n).tolist() + [0] * num_between_zeros
+        Sprint_Exp_Gaussian_samples += (signal.gaussian(det_pulse_len, std=(det_pulse_len * 0.5 / 2.355)) * n).tolist() + [0] * num_between_zeros
     # Sprint_Exp_Gaussian_samples += (signal.gaussian(prep_pulse_len, std=(prep_pulse_len / 2.355)) * prep_pulse_amp).tolist() + [0] * num_between_zeros
     for m in sprint_pulses_amp:
         # Sprint_Exp_Gaussian_samples += [m] * 110 + [0] * num_between_zeros
@@ -160,15 +165,19 @@ def QRAM_Exp_samples(delta=240, pulse_len=10000000):
     return QRAM_exp_samples
 
 det_pulse_len = 30
-num_init_zeros_S = 30
-num_fin_zeros_S = 20
-num_between_zeros = 10
-# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
+# num_init_zeros_S = 30
+num_init_zeros_S = 10  # For only det pulses sequence
+# num_fin_zeros_S = 20
+num_fin_zeros_S = 10  # For only det pulses sequence
+# num_between_zeros = 10
+num_between_zeros = 20
 det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
+# det_pulse_amp_S = [0.45, 0, 0, 0, 0, 0]
 prep_pulse_amp_S = 0.4
 prep_pulse_len = 50
-# sprint_pulse_amp_S = [0.06, 0, 0.06]
-sprint_pulse_amp_S = [0, 0, 0]
+# sprint_pulse_amp_S = [0.125, 0, 0.07]
+# sprint_pulse_amp_S = [0, 0, 0]
+sprint_pulse_amp_S = []  # For only det pulses sequence
 sprint_pulse_len = 110
 Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
                                                             det_pulse_len=det_pulse_len,
@@ -176,15 +185,20 @@ Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=spr
                                                             sprint_pulses_amp=sprint_pulse_amp_S, num_init_zeros=num_init_zeros_S,
                                                             num_between_zeros=num_between_zeros, num_fin_zeros=num_fin_zeros_S)
 
-num_init_zeros_N = 30
-num_fin_zeros_N = 20
-# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45]
+# num_init_zeros_N = 30
+num_init_zeros_N = 10  # For only det pulses sequence
+# num_fin_zeros_N = 20
+num_fin_zeros_N = 10  # For only det pulses sequence
 det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45]
+# det_pulse_amp_N = [0.45, 0, 0, 0, 0, 0]
+# sprint_pulse_amp_N = [0, 0.07, 0]
+# sprint_pulse_amp_N = [0, 0, 0]
+sprint_pulse_amp_N = []  # For only det pulses sequence
 
 Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
                                                             det_pulse_len=det_pulse_len,
                                                             det_pulses_amp=det_pulse_amp_N,
-                                                            sprint_pulses_amp=[0.1, 0, 0], num_init_zeros=num_init_zeros_N,
+                                                            sprint_pulses_amp=sprint_pulse_amp_N, num_init_zeros=num_init_zeros_N,
                                                             num_between_zeros=num_between_zeros, num_fin_zeros=num_fin_zeros_N)
 
 # readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/4)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
@@ -496,6 +510,7 @@ config = {
                 'ZeemanOFF': "Zeeman_off",
             },
         },
+
         "AOM_ANALYZER_N": {
             "singleInput": {
                 "port": (controller, 6),
@@ -508,6 +523,7 @@ config = {
             },
             'intermediate_frequency': IF_AOM_N,
         },
+
         "AOM_ANALYZER_S": {
             "singleInput": {
                 "port": (controller, 7),
@@ -521,18 +537,29 @@ config = {
             'intermediate_frequency': IF_AOM_N,
         },
         # for bell-experiment
-        "PULSER_ANCILLA": {
+        # "PULSER_ANCILLA": {
+        #     "singleInput": {
+        #         "port": (controller, 8),
+        #     },
+        #     'operations': {
+        #         'Const_open': "MOT_lock",
+        #         'Detection_pulses': "Square_detection_pulses",
+        #         'Homodyne_Pulse': "Homodyne_Pulse",
+        #         'Sprint_experiment_pulses_N': "Gaussian_Sprint_pulse_N"
+        #     },
+        #     'intermediate_frequency': IF_AOM_N,
+        # },
+        # for bell-experiment
+        "PULSER_LO": {
             "singleInput": {
                 "port": (controller, 8),
             },
             'operations': {
                 'Const_open': "MOT_lock",
-                'Detection_pulses': "Square_detection_pulses",
-                'Homodyne_Pulse': "Homodyne_Pulse",
-                'Sprint_experiment_pulses_N': "Gaussian_Sprint_pulse_N"
             },
-            'intermediate_frequency': IF_AOM_N,
+            'intermediate_frequency': IF_AOM_LO,
         },
+
         "PULSER_N": {
             "singleInput": {
                 "port": (controller, 9),
@@ -850,7 +877,7 @@ config = {
         },
 
         "digital_readout_sprint": {
-            'length': readout_pulse_sprint_len_N,
+            'length': int(max(readout_pulse_sprint_len_N, readout_pulse_sprint_len_S)),
             'operation': 'control',
             'waveforms': {
                 'single': 'const_wf_2dBm'

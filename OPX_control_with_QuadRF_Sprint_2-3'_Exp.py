@@ -224,7 +224,7 @@ def FreeFall(freefall_duration, coils_timing):
 
     ## Aligning all the different elements used during the freefall time of the experiment ##
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'", "AOM_2-2'",
-          "Measurement", "PULSER_N", "PULSER_S") # , "Dig_detectors")
+          "Measurement", "PULSER_N", "PULSER_S", "PULSER_LO") # , "Dig_detectors")
 
     ## Zeeman Coils turn-on sequence ##
     wait(coils_timing, "Zeeman_Coils")
@@ -326,11 +326,12 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
     t = declare(int)
     m = declare(int)
 
-    align("PULSER_N", "PULSER_S", "Dig_detectors", "AOM_2-2'")
-    play("Depump", "AOM_2-2'", duration=shutter_open_time)
-    play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
-    align("PULSER_N", "PULSER_S", "Dig_detectors")
-
+    align("PULSER_N", "PULSER_S", "Dig_detectors", "AOM_2-2/3'", "PULSER_LO")
+    play("OD", "AOM_2-2/3'", duration=shutter_open_time)
+    play("Const_open", "PULSER_LO", duration=shutter_open_time)
+    align("PULSER_N", "PULSER_S", "Dig_detectors", "AOM_2-2/3'", "PULSER_LO")
+    play("OD", "AOM_2-2/3'", duration=(m_time + m_off_time))
+    play("Const_open", "PULSER_LO", duration=(m_time + m_off_time))
     with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.Sprint_Exp_Gaussian_samples_S))): #assaf comment debbuging
         play("Sprint_experiment_pulses_S", "PULSER_S")
         play("Sprint_experiment_pulses_N", "PULSER_N")
@@ -521,7 +522,7 @@ def opx_control(obj, qm):
                 align(*all_elements)
 
             with if_((Pulse_1_duration > 0) & SPRINT_Exp_ON):
-                align("Dig_detectors", "PULSER_N", "PULSER_S")
+                align("Dig_detectors", "PULSER_N", "PULSER_S", "PULSER_LO")
                 Sprint_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
                            ON_counts_st1, ON_counts_st2, ON_counts_st3,
                            ON_counts_st6, ON_counts_st7, ON_counts_st8,
@@ -529,7 +530,7 @@ def opx_control(obj, qm):
                 save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
                 with if_(AntiHelmholtz_ON):
                     save(FLR, FLR_st)
-                align("Dig_detectors", "PULSER_N", "PULSER_S")
+                align("Dig_detectors", "PULSER_N", "PULSER_S", "PULSER_LO")
 
             assign(N_Snaps, 1)
             assign(Buffer_Cycles, 0)

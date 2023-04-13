@@ -765,7 +765,7 @@ class OPX:
         # we hold this connection until update is finished, the we close the connection.
         # we do still hold the QuadRFController objects, for access to the table (read only!) when the experiment is running.
         qrfContr = QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 4), topticaLockWhenUpdating=False,
-                                       debugging=False, continuous=False)
+                                       debugging=True, continuous=False)
         self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
         self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev, initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
                                                           updateChannels=[3], debugging=False, continuous=False))  # updates values on QuadRF (uploads table)
@@ -1188,9 +1188,11 @@ class OPX:
                  enumerate(counts_res[i])])
             self.tt_measure[i].sort()
         # create vector of tt's for each direction (north and south) and sort them
-        self.tt_S_measure = sorted(
+        # self.tt_S_measure = sorted(
+        self.tt_N_measure = sorted(                 # sagnac configuration
             sum(sum(self.tt_measure[:3], []), []))  # unify detectors 1-3 and windows within detectors
-        self.tt_N_measure = sorted(
+        # self.tt_N_measure = sorted(
+        self.tt_S_measure = sorted(                 # Sagnac configuration
             sum(sum(self.tt_measure[3:], []), []))  # unify detectors 6-8 and windows within detectors
 
     def Save_SNSPDs_Transit_Measurement_with_tt(self, N, histogram_bin_size, Transit_profile_bin_size, preComment,
@@ -1463,13 +1465,16 @@ class OPX:
 
             ###########################################################################################################
 
-            while self.tt_S_measure == self.tt_S_measure_batch[-1]:
+            while True:
                 # record time:
                 timest = time.strftime("%Y%m%d-%H%M%S")
                 datest = time.strftime("%Y%m%d")
 
                 # get measures:
                 self.get_tt_from_handles(Num_Of_dets, Counts_handle, tt_handle, FLR_handle)
+
+                if self.tt_S_measure != self.tt_S_measure_batch[-1]:
+                    break
 
             if ((len(self.tt_S_measure) * 1000) / self.M_time) < total_counts_threshold:
 
