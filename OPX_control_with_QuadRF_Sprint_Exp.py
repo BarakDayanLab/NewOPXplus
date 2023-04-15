@@ -1585,8 +1585,6 @@ class OPX:
         self.keyPress = None
         print('\033[94m' + 'Press ESC to stop measurement.' + '\033[0m')  # print blue
 
-        reps = 1  # a counter, number of repeats actually made.
-
         ####     get tt and counts from OPX to python   #####
         Counts_handle, tt_handle, FLR_handle = self.get_handles_from_OPX_Server(Num_Of_dets)
 
@@ -1722,8 +1720,8 @@ class OPX:
                 self.update_parameters()
                 # Other actions can be added here
                 break
-            if reps < N:
-                reps += 1
+
+            print(timest, self.Counter)
             ######################################## PLOT!!! ###########################################################
             ax = [ax1, ax2, ax3, ax4, ax5, ax6]
             self.plot_sprint_figures(ax, Num_Of_dets)
@@ -1822,7 +1820,6 @@ class OPX:
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
                 if self.Counter < N:
                     self.Counter += 1
-                print(timest, self.Counter)
 
                 self.save_tt_to_batch(Num_Of_dets, N)
         ############################################## END WHILE LOOP #################################################
@@ -1859,19 +1856,24 @@ class OPX:
             filename_Det_tt.append(f'Det'+str(i)+f'_timetags.npz')
         filename_S_tt = f'South_timetags.npz'
         filename_N_tt = f'North_timetags.npz'
-        filename_S_transits = f'South_Transits.npz'
-        filename_S_folded = f'South_timetags_folded_512ns.npz'
+        filename_N_folded = f'North_timetags_folded_to_seq.npz'
+        filename_S_folded = f'South_timetags_folded_to_seq.npz'
         filename_FLR = f'Flouresence.npz'
         filename_timestamp = f'Drops_time_stamps.npz'
+        filename_reflection_averaged = f'reflection_from_detection_pulses_per_seq_averaged.npz'
         filename_transits_events = f'seq_transit_events_batched.npz'
         filename_transits_batched = f'all_transits_seq_indx_batch.npz'
-
+        filename_experimentPlot = f'Experiment_plot.png'
+        self.folded_tt_N_batch
         if len(FLR_measurement) > 0:
             np.savez(dirname + filename_FLR, FLR_measurement)
         if len(Exp_timestr_batch) > 0:
             np.savez(dirname + filename_timestamp, Exp_timestr_batch)
-        # if len(self.tt_S_SPRINT_events_batch) > 0:
-        #     np.savez(dirname + filename_S_folded, self.tt_S_SPRINT_events_batch)
+            plt.savefig(dirname + filename_experimentPlot, bbox_inches='tight')
+        if len(self.folded_tt_N_batch) > 0:
+            np.savez(dirname + filename_N_folded, self.folded_tt_N_batch)
+        if len(self.folded_tt_S_batch) > 0:
+            np.savez(dirname + filename_S_folded, self.folded_tt_S_batch)
         for i in range(len(Num_Of_dets)):
             if len(self.tt_measure_batch[i]) > 0:
                 np.savez(dirname_S + filename_Det_tt[i], self.tt_measure_batch[i])
@@ -1879,10 +1881,12 @@ class OPX:
             np.savez(dirname_S + filename_S_tt, self.tt_S_measure_batch)
         if len(self.tt_N_measure_batch) > 0:
             np.savez(dirname_N + filename_N_tt, self.tt_N_measure_batch)
+        if len(self.num_of_det_reflections_per_seq_accumulated) > 0:
+            np.savez(dirname + filename_reflection_averaged, self.num_of_det_reflections_per_seq_accumulated/self.Counter)
         if len(self.seq_transit_events_batched) > 0:
-            np.savez(dirname + filename_transits_events, Exp_timestr_batch)
+            np.savez(dirname + filename_transits_events, self.seq_transit_events_batched)
         if len(self.all_transits_seq_indx_batch) > 0:
-            np.savez(dirname + filename_transits_batched, Exp_timestr_batch)
+            np.savez(dirname + filename_transits_batched, self.all_transits_seq_indx_batch)
 
         # if len(all_transits_batch) > 0:
         #     np.savez(dirname_S + filename_S_transits, all_transits_batch)
