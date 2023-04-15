@@ -15,6 +15,8 @@ import time, json
 import sys
 import os
 import math
+import itertools
+import operator
 from pynput import keyboard
 import logging
 from logging import StreamHandler, Formatter, INFO, WARN, ERROR
@@ -1077,10 +1079,11 @@ class OPX:
         for i in range(len(Num_Of_dets)): # for different detectors
             self.tt_measure.append([tt_res[i][(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts in
                                     enumerate(counts_res[i])])
+            self.tt_measure[i] = [elm for elm in self.tt_measure[i] if elm != experiment.M_window]  # Due to an unresolved bug in the OPD there are "ghost" readings of timetags equal to the maximum time of measuring window.
             self.tt_measure[i].sort()
         # create vector of tt's for each direction (north and south) and sort them
-        self.tt_N_measure = sorted(sum(sum(self.tt_measure[:3],[]),[])) # unify detectors 1-3 and windows within detectors
-        self.tt_S_measure = sorted(sum(sum(self.tt_measure[3:],[]),[])) # unify detectors 6-8 and windows within detectors
+        self.tt_N_measure = sorted(sum(sum(self.tt_measure[:3], []), [])) # unify detectors 1-3 and windows within detectors
+        self.tt_S_measure = sorted(sum(sum(self.tt_measure[3:], []), [])) # unify detectors 6-8 and windows within detectors
 
 
     def get_pulses_bins(self,det_pulse_len,sprint_pulse_len,num_of_det_pulses,num_of_sprint_pulses,
@@ -1593,11 +1596,10 @@ class OPX:
         # lock_err = np.abs(np.load(
         #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy', allow_pickle=True)) # the error of locking the resontor to Rb line
         lock_err = lock_err_threshold/2
-        sum_for_threshold = 0
-
+        sum_for_threshold = reflection_threshold
+        cycle = 0
         # Place holders for results # TODO: ask dor - is it works as we expect?
-        # while (number of photons * 10^-6 [Mcounts] / Measuring time [nsec] * 10^-9 [sec/nsec])  > counts_threshold [Mcounts /sec]:
-        while ((lock_err > lock_err_threshold) and (sum_for_threshold < reflection_threshold)) or start:
+        while ((lock_err > lock_err_threshold) or (sum_for_threshold > reflection_threshold)) or start:
             # lock_err = np.abs(np.load(
             #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
             if self.keyPress == 'ESC':
@@ -1607,7 +1609,10 @@ class OPX:
                 # Other actions can be added here
                 break
             if start:
-                start = False
+                if cycle > 1:
+                    start = False
+                else:
+                    cycle += 1
             else:
                 print('Above Threshold')
             self.get_tt_from_handles(Num_Of_dets, Counts_handle, tt_handle, FLR_handle)
@@ -1744,27 +1749,28 @@ class OPX:
                                                        + self.num_of_SPRINT_transmissions_per_seq_S
             sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.Sprint_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
 
+            # fold reflections and transmission
+            self.Single_det_foldeded = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
+            self.folded_transmission, self.folded_reflection = \
+                self.fold_tt_histogram(exp_sequence_len=self.sprint_sequence_len, delay_S=delay_in_detection_S,
+                                       delay_N=delay_in_detection_N)
+
             if (lock_err < lock_err_threshold) and (sum_for_threshold < reflection_threshold):
                 print('Sum of reflections: %d' %sum_for_threshold)
                 self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
                                                                    + self.num_of_det_reflections_per_seq_N
 
-                self.Single_det_foldeded = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
                 self.seq_transit_events_live = np.zeros(self.number_of_sprint_sequences)
 
-                # divide south and north into reflection and transmission
-                self.tt_histogram_transmission, self.tt_histogram_reflection = \
-                    self.divide_to_reflection_trans(det_pulse_len=det_pulse_len, sprint_pulse_len=sprint_pulse_len,
-                                                    sprint_sequence_delay_S=delay_in_detection_S,
-                                                    sprint_sequence_delay_N=delay_in_detection_N,
-                                                    num_of_det_pulses=len(Config.det_pulse_amp_S),
-                                                    num_of_sprint_pulses=len(Config.sprint_pulse_amp_S),
-                                                    num_of_sprint_sequences=self.number_of_sprint_sequences)
+                # # divide south and north into reflection and transmission
+                # self.tt_histogram_transmission, self.tt_histogram_reflection = \
+                #     self.divide_to_reflection_trans(det_pulse_len=det_pulse_len, sprint_pulse_len=sprint_pulse_len,
+                #                                     sprint_sequence_delay_S=delay_in_detection_S,
+                #                                     sprint_sequence_delay_N=delay_in_detection_N,
+                #                                     num_of_det_pulses=len(Config.det_pulse_amp_S),
+                #                                     num_of_sprint_pulses=len(Config.sprint_pulse_amp_S),
+                #                                     num_of_sprint_sequences=self.number_of_sprint_sequences)
 
-                # fold reflections and transmission
-                self.folded_transmission, self.folded_reflection = \
-                    self.fold_tt_histogram(exp_sequence_len=self.sprint_sequence_len, delay_S=delay_in_detection_S,
-                                           delay_N=delay_in_detection_N)
                 self.folded_transmission_accumulated += self.folded_transmission
                 self.folded_reflection_accumulated += self.folded_reflection
 
@@ -1821,6 +1827,8 @@ class OPX:
                 self.save_tt_to_batch(Num_Of_dets, N)
         ############################################## END WHILE LOOP #################################################
 
+        self.most_common([x for vec in experiment.tt_S_measure_batch + experiment.tt_N_measure_batch for x in vec])
+
         ## Adding comment to measurement [prompt whether stopped or finished regularly]
         aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
         if aftComment == 'Timeout': aftComment = None
@@ -1855,13 +1863,15 @@ class OPX:
         filename_S_folded = f'South_timetags_folded_512ns.npz'
         filename_FLR = f'Flouresence.npz'
         filename_timestamp = f'Drops_time_stamps.npz'
+        filename_transits_events = f'seq_transit_events_batched.npz'
+        filename_transits_batched = f'all_transits_seq_indx_batch.npz'
 
         if len(FLR_measurement) > 0:
             np.savez(dirname + filename_FLR, FLR_measurement)
         if len(Exp_timestr_batch) > 0:
             np.savez(dirname + filename_timestamp, Exp_timestr_batch)
-        if len(self.tt_S_SPRINT_events_batch) > 0:
-            np.savez(dirname + filename_S_folded, self.tt_S_SPRINT_events_batch)
+        # if len(self.tt_S_SPRINT_events_batch) > 0:
+        #     np.savez(dirname + filename_S_folded, self.tt_S_SPRINT_events_batch)
         for i in range(len(Num_Of_dets)):
             if len(self.tt_measure_batch[i]) > 0:
                 np.savez(dirname_S + filename_Det_tt[i], self.tt_measure_batch[i])
@@ -1869,6 +1879,11 @@ class OPX:
             np.savez(dirname_S + filename_S_tt, self.tt_S_measure_batch)
         if len(self.tt_N_measure_batch) > 0:
             np.savez(dirname_N + filename_N_tt, self.tt_N_measure_batch)
+        if len(self.seq_transit_events_batched) > 0:
+            np.savez(dirname + filename_transits_events, Exp_timestr_batch)
+        if len(self.all_transits_seq_indx_batch) > 0:
+            np.savez(dirname + filename_transits_batched, Exp_timestr_batch)
+
         # if len(all_transits_batch) > 0:
         #     np.savez(dirname_S + filename_S_transits, all_transits_batch)
 
@@ -1945,6 +1960,27 @@ class OPX:
     def on_key_press(self, key):
         if key == keyboard.Key.esc:
             self.keyPress = 'ESC'
+
+    def most_common(self, lst):
+        # get an iterable of (item, iterable) pairs
+        SL = sorted((x, i) for i, x in enumerate(lst))
+        # print 'SL:', SL
+        groups = itertools.groupby(SL, key=operator.itemgetter(0))
+
+        # auxiliary function to get "quality" for an item
+        def _auxfun(g):
+            item, iterable = g
+            count = 0
+            min_index = len(lst)
+            for _, where in iterable:
+                count += 1
+                min_index = min(min_index, where)
+            if count > 2:
+                print('item %r, count %r, minind %r' % (item, count, min_index))
+            return count, -min_index
+
+        # pick the highest-count/earliest item
+        return max(groups, key=_auxfun)[0]
 
     # @Values_Factor hold factoring for values - each key has an array:
     # So, as Prep_duration is written in ms, we have to factor it into an int value, but in 4ns, for the OPX.

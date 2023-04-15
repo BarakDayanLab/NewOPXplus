@@ -28,6 +28,7 @@ Initial_Values = {
     # 'Operation_Mode': 'Transit_Exp',
     # 'Operation_Mode': 'Spectrum_Exp',
     # 'Operation_Mode': 'CRUS_Exp',
+    # 'Operation_Mode': 'SPRINT_2-3_Exp',
     'Operation_Mode': 'SPRINT_Exp',
     # 'Operation_ModB-e': 'Continuous',
     'Imaging_Phase': 'Pulse_1',
@@ -319,6 +320,25 @@ Operation_Modes = {
                                                       Config_Sprint.readout_pulse_sprint_len_S)) / 1e6,  # Pulse_length[nsec] * 1000 repetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
                                     'M_off_time': 5,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
                                     },
+                    'SPRINT_2-3_Exp':  {'Triggering_Phase': 'Free_Fall',
+                                        'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
+                                        'PrePulse_Repump_amp': 0.000001,  # relative
+                                        'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],
+                                        'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'] + 30e6,
+                                        'Pulse_1_Repump_amp': 0.000001,
+                                        'N_Snaps': 1,
+                                        'Buffer_Cycles': 0,
+                                        'Imaging_Phase': 'Pulse_1',
+                                        'PrePulse_duration': 13,  # [msec]
+                                        'Shutter_open_time': 5,  # [msec]
+                                        'Pulse_1_duration': 8,  # [msec]
+                                        ## If with fountain:
+                                        'Fountain_duration': 0.5,  # [msec]
+                                        'Fountain_prep_duration': 0.5,  # [msec], Can't be zero!!!
+                                        'M_window': int(8e6), # [nsec]
+                                        'M_time': 8,  # Pulse_length[nsec] * 1000 repetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
+                                        'M_off_time': 5,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
+                                        },
                     'PrePGC_Fountain': {'Triggering_Phase': 'Pulse_1',
                                         'Fountain_final_Delta_freq': 0.45e6,
                                         'Pulse_1_CH1_Freq_f': Initial_Values['Flash_freq'],

@@ -81,6 +81,7 @@ IF_AOM_Depump = 133.325e6
 IF_AOM_Repump = 78.4735e6
 IF_AOM_N = 129.2368e6
 IF_AOM_S = 129.2368e6
+IF_AOM_LO = 129.2368e6
 IF_Divert = 20e6
 #IF_AOM_N = 127.1e6
 #IF_AOM_S = 90e6
@@ -271,6 +272,16 @@ Super_Sprint_Config = {
             },
         },
 
+        "PULSER_LO": {
+            "singleInput": {
+                "port": (controller, 8),
+            },
+            'operations': {
+                'Const_open': "MOT_lock",
+            },
+            'intermediate_frequency': IF_AOM_LO,
+        },
+
         "PULSER_N": {
             "singleInput": {
                 "port": (controller, 9),
@@ -426,6 +437,7 @@ with program() as dig:
 
             play("Const_open", "PULSER_N")
             play("Const_open", "PULSER_S")
+            play("Const_open", "PULSER_LO")
             # play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
             # play("CRUS_pulse", "Pulser_CRUS")
 

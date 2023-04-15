@@ -649,8 +649,8 @@ class OPX:
         qrfContr = QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 4), topticaLockWhenUpdating=False,
                                        debugging=False, continuous=False)
         self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
-        # self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev, initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
-        #                                                   updateChannels=[3], debugging=False, continuous=False))  # updates values on QuadRF (uploads table)
+        self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev, initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
+                                                          updateChannels=[3], debugging=False, continuous=False))  # updates values on QuadRF (uploads table)
         #self.QuadRFControllers.append(QuadRFFrequencyScannerController(MOGdevice = qrfContr.dev, channel=2, debugging=False))  # updates values on QuadRF (uploads table)
 
         self.Update_QuadRF_channels = set({})  # Only update these channels on QuadRF when UpdateParameters method is called [note: this is a python set]
@@ -1247,13 +1247,13 @@ class OPX:
         self.reflection_SPRINT_data_per_transit = []
         self.transmission_SPRINT_data_per_transit = []
 
-        for i in range(len(self.num_of_det_reflections_per_seq) - len(cond) + 1):
-            cond_check = (self.num_of_det_reflections_per_seq[i:(i + len(cond))] >= cond).astype(int)
+        for i in range(len(self.num_of_det_transmissions_per_seq) - len(cond) + 1):
+            cond_check = (self.num_of_det_transmissions_per_seq[i:(i + len(cond))] >= cond).astype(int)
             if sum(cond_check) >= minimum_number_of_seq_detected:
                 current_transit = np.unique(
                     current_transit + [*range(i + np.where(cond_check != 0)[0][0], (i + len(cond)))]).tolist()
             elif len(current_transit) > 1:
-                current_transit = current_transit[:np.where(self.num_of_det_reflections_per_seq[current_transit] >= min(cond))[0][-1] + 1]
+                current_transit = current_transit[:np.where(self.num_of_det_transmissions_per_seq[current_transit] >= min(cond))[0][-1] + 1]
                 if self.all_transits_seq_indx:
                     if bool(set(current_transit) & set(self.all_transits_seq_indx[-1])):
                         current_transit = self.all_transits_seq_indx[-1] + current_transit[1:]
@@ -1268,7 +1268,7 @@ class OPX:
                 current_transit = []
         if len(current_transit) > 1:
             current_transit = current_transit[
-                              :np.where(self.num_of_det_reflections_per_seq[current_transit] >= min(cond))[0][-1] + 1]
+                              :np.where(self.num_of_det_transmissions_per_seq[current_transit] >= min(cond))[0][-1] + 1]
             if self.all_transits_seq_indx:
                 if bool(set(current_transit) & set(self.all_transits_seq_indx[-1])):
                     current_transit = self.all_transits_seq_indx[-1] + current_transit[1:]
@@ -1410,9 +1410,9 @@ class OPX:
         ax[5].clear()
         #
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        textstr_total_reflections = 'Total reflections per cycle "N"=%d \n' % (sum(self.num_of_det_reflections_per_seq_N),)\
-                                    + 'Total reflections per cycle "S"=%d' % (sum(self.num_of_det_reflections_per_seq_S),)
-        textstr_avg_reflections = r'Average reflections per cycle = %.2f' % (sum(self.num_of_det_reflections_per_seq_accumulated/self.Counter),)
+        textstr_total_transmissions = 'Total transmissions per cycle "N"=%d \n' % (sum(self.num_of_det_transmissions_per_seq_N),)\
+                                    + 'Total transmissions per cycle "S"=%d' % (sum(self.num_of_det_transmissions_per_seq_S),)
+        textstr_avg_transmissions = r'Average transmissions per cycle = %.2f' % (sum(self.num_of_det_transmissions_per_seq_accumulated/self.Counter),)
         #     textstr_detuned = r'$Probe_N = %.3f$' % ((sum(tt_S_binning_detuned) * 1000) / (self.M_window / 2),) + '[MPhotons/sec]\n' \
         #                + '$\overline{Probe}_S = %.3f$' % ((np.mean([sum(x) for x in tt_S_binning_detuned_batch]) * 1000)
         #                                                   / (self.M_window / 2),) + '[MPhotons/sec]'
@@ -1447,14 +1447,14 @@ class OPX:
         # ax[2].set_title('folded reflection and transmission(Live)', fontweight="bold")
         # ax[2].legend(loc='upper right')
 
-        ax[2].plot(self.num_of_det_reflections_per_seq, label='Num of reflections per sequence (Live)')
+        ax[2].plot(self.num_of_det_transmissions_per_seq, label='Num of transmissions per sequence (Live)')
         ax[2].set_title('Num of reflections per sequence (live)', fontweight="bold")
-        ax[2].text(0.1, 0.9*max(self.num_of_det_reflections_per_seq), textstr_total_reflections, fontsize=14,
+        ax[2].text(0.1, 0.9*max(self.num_of_det_transmissions_per_seq), textstr_total_transmissions, fontsize=14,
                    verticalalignment='top', bbox=props)
 
-        ax[3].plot(self.num_of_det_reflections_per_seq_accumulated/self.Counter, label='Num of reflections per sequence (Live)')
+        ax[3].plot(self.num_of_det_transmissions_per_seq_accumulated/self.Counter, label='Num of transmissions per sequence (Average)')
         ax[3].set_title('Num of reflections per sequence (Average)', fontweight="bold")
-        ax[3].text(0.1, 0.9*max(self.num_of_det_reflections_per_seq_accumulated/self.Counter), textstr_avg_reflections, fontsize=14,
+        ax[3].text(0.1, 0.9*max(self.num_of_det_transmissions_per_seq_accumulated/self.Counter), textstr_avg_transmissions, fontsize=14,
                    verticalalignment='top', bbox=props)
 
 
@@ -1535,6 +1535,7 @@ class OPX:
         self.Single_det_foldeded = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
         self.single_det_folded_accumulated = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
         self.num_of_det_reflections_per_seq_accumulated = np.zeros(self.number_of_sprint_sequences)
+        self.num_of_det_transmissions_per_seq_accumulated = np.zeros(self.number_of_sprint_sequences)
 
     def Save_SNSPDs_Sprint_Measurement_with_tt(self, N, sprint_sequence_len, preComment, lock_err_threshold, transit_condition,
                                                max_probe_counts, filter_delay, reflection_threshold, reflection_threshold_time):
@@ -1615,15 +1616,20 @@ class OPX:
             self.divide_tt_to_reflection_trans(sprint_pulse_len, len([x for x in Config.det_pulse_amp_S if x > 0]))
             self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
                                                   + self.num_of_det_reflections_per_seq_N
+            self.num_of_det_transmissions_per_seq = self.num_of_det_transmissions_per_seq_S \
+                                                  + self.num_of_det_transmissions_per_seq_N
             self.num_of_SPRINT_reflections_per_seq = self.num_of_SPRINT_reflections_per_seq_S \
                                                      + self.num_of_SPRINT_reflections_per_seq_N
             self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_S \
                                                        + self.num_of_SPRINT_transmissions_per_seq_N
-            sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.Sprint_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
+            # sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.Sprint_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
+            sum_for_threshold = sum(self.num_of_det_transmissions_per_seq[-int(reflection_threshold_time//len(Config.Sprint_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
         ####    end get tt and counts from OPX to python   #####
 
         self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
                                                            + self.num_of_det_reflections_per_seq_N
+        self.num_of_det_transmissions_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S \
+                                                             + self.num_of_det_transmissions_per_seq_N
 
         # divide south and north into reflection and transmission
         self.tt_histogram_transmission, self.tt_histogram_reflection = \
@@ -1739,18 +1745,27 @@ class OPX:
             self.divide_tt_to_reflection_trans(sprint_pulse_len, len([x for x in Config.det_pulse_amp_S if x > 0]))
             self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
                                                   + self.num_of_det_reflections_per_seq_N
+            self.num_of_det_transmissions_per_seq = self.num_of_det_transmissions_per_seq_S \
+                                                  + self.num_of_det_transmissions_per_seq_N
             self.num_of_SPRINT_reflections_per_seq = self.num_of_SPRINT_reflections_per_seq_N \
                                                      + self.num_of_SPRINT_reflections_per_seq_S
             self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_N \
                                                        + self.num_of_SPRINT_transmissions_per_seq_S
-            sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.Sprint_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
+            # sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.Sprint_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
+            sum_for_threshold = sum(self.num_of_det_transmissions_per_seq[-int(reflection_threshold_time//len(Config.Sprint_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
+
+            self.Single_det_foldeded = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
+            # fold reflections and transmission
+            self.folded_transmission, self.folded_reflection = \
+                self.fold_tt_histogram(exp_sequence_len=self.sprint_sequence_len, delay_S=delay_in_detection_S,
+                                       delay_N=delay_in_detection_N)
 
             if (lock_err < lock_err_threshold) and (sum_for_threshold < reflection_threshold):
-                print('Sum of reflections: %d' %sum_for_threshold)
+                print('Sum of transnissions: %d' %sum_for_threshold)
                 self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
                                                                    + self.num_of_det_reflections_per_seq_N
-
-                self.Single_det_foldeded = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
+                self.num_of_det_transmissions_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S \
+                                                                     + self.num_of_det_transmissions_per_seq_N
                 self.seq_transit_events_live = np.zeros(self.number_of_sprint_sequences)
 
                 # divide south and north into reflection and transmission
@@ -1762,10 +1777,6 @@ class OPX:
                                                     num_of_sprint_pulses=len(Config.sprint_pulse_amp_S),
                                                     num_of_sprint_sequences=self.number_of_sprint_sequences)
 
-                # fold reflections and transmission
-                self.folded_transmission, self.folded_reflection = \
-                    self.fold_tt_histogram(exp_sequence_len=self.sprint_sequence_len, delay_S=delay_in_detection_S,
-                                           delay_N=delay_in_detection_N)
                 self.folded_transmission_accumulated += self.folded_transmission
                 self.folded_reflection_accumulated += self.folded_reflection
 
