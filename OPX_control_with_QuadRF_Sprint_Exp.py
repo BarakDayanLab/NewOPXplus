@@ -1864,7 +1864,7 @@ class OPX:
         filename_transits_events = f'seq_transit_events_batched.npz'
         filename_transits_batched = f'all_transits_seq_indx_batch.npz'
         filename_experimentPlot = f'Experiment_plot.png'
-        self.folded_tt_N_batch
+
         if len(FLR_measurement) > 0:
             np.savez(dirname + filename_FLR, FLR_measurement)
         if len(Exp_timestr_batch) > 0:
