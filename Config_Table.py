@@ -307,7 +307,7 @@ Operation_Modes = {
                                     'N_Snaps': 1,
                                     'Buffer_Cycles': 0,
                                     'Imaging_Phase': 'Pulse_1',
-                                    'PrePulse_duration': 13,  # [msec]
+                                    'PrePulse_duration': 11,  # [msec]
                                     'Shutter_open_time': 5,  # [msec]
                                     'Pulse_1_duration': int(max(Config_Sprint.readout_pulse_sprint_len_N,
                                                                 Config_Sprint.readout_pulse_sprint_len_S)) / 1e6,  # [msec]

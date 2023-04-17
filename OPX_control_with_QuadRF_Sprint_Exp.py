@@ -591,7 +591,6 @@ def opx_control(obj, qm):
                 with if_(i == 59):  # Live control of the delay due to shutter opening time.
                     assign(shutter_open_time, IO2)
 
-
                 pause()
                 assign(i, IO1)
 
@@ -1053,7 +1052,7 @@ class OPX:
             Counts_handle.append(self.job.result_handles.get("Det"+str(i)+"_Counts"))
             tt_handle.append(self.job.result_handles.get("Det"+str(i)+"_Probe_TT"))
         FLR_handle = self.job.result_handles.get("FLR_measure")
-        return Counts_handle,tt_handle,FLR_handle
+        return Counts_handle, tt_handle, FLR_handle
 
     def get_tt_from_handles(self, Num_Of_dets, Counts_handle, tt_handle, FLR_handle):
         counts_res = []
@@ -1075,15 +1074,19 @@ class OPX:
         self.tt_N_measure = []
         self.tt_S_measure = []
 
+        #
+
         # remove zero-padding from tt-res and append into tt_measure
         for i in range(len(Num_Of_dets)): # for different detectors
             self.tt_measure.append([tt_res[i][(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts in
                                     enumerate(counts_res[i])])
-            self.tt_measure[i] = [elm for elm in self.tt_measure[i] if elm != experiment.M_window]  # Due to an unresolved bug in the OPD there are "ghost" readings of timetags equal to the maximum time of measuring window.
+            self.tt_measure[i] = [elm for elm in self.tt_measure[i] if elm % self.M_window != 0]  # Due to an unresolved bug in the OPD there are "ghost" readings of timetags equal to the maximum time of measuring window.
             self.tt_measure[i].sort()
         # create vector of tt's for each direction (north and south) and sort them
         self.tt_N_measure = sorted(sum(sum(self.tt_measure[:3], []), [])) # unify detectors 1-3 and windows within detectors
         self.tt_S_measure = sorted(sum(sum(self.tt_measure[3:], []), [])) # unify detectors 6-8 and windows within detectors
+
+        plt.plot(self.tt_S_measure)
 
 
     def get_pulses_bins(self,det_pulse_len,sprint_pulse_len,num_of_det_pulses,num_of_sprint_pulses,
@@ -1824,7 +1827,7 @@ class OPX:
                 self.save_tt_to_batch(Num_Of_dets, N)
         ############################################## END WHILE LOOP #################################################
 
-        self.most_common([x for vec in experiment.tt_S_measure_batch + experiment.tt_N_measure_batch for x in vec])
+        self.most_common([x for vec in self.tt_S_measure_batch + self.tt_N_measure_batch for x in vec])
 
         ## Adding comment to measurement [prompt whether stopped or finished regularly]
         aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
@@ -2046,8 +2049,9 @@ if __name__ == "__main__":
     # try:
         experiment = OPX(Config.config)
         # experiment.Start_Sprint_Exp_with_tt(N=500, preComment='test')
-        # experiment.Start_Sprint_Exp_with_tt(N=1000, transit_condition=[2,2,2], preComment='test', filter_delay=[0,0], reflection_threshold=35)
-    # except KeyboardInterrupt:
+        experiment.Start_Sprint_Exp_with_tt(N=1000, transit_condition=[2, 2],
+                                            preComment='SPRINT attempt, only detection pulses', filter_delay=[0, 0],
+                                            reflection_threshold=100000, reflection_threshold_time=8e6)    # except KeyboardInterrupt:
     #     experiment.job.halt()
     #     experiment.qmm.reset_data_processing()
     # finally:

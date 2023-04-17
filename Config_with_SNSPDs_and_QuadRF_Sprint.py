@@ -168,13 +168,13 @@ def QRAM_Exp_samples(delta=240, pulse_len=10000000):
     return QRAM_exp_samples
 
 # det_pulse_len = 30
-det_pulse_len = 160
+det_pulse_len = 80
 # num_init_zeros_S = 30
 num_init_zeros_S = 10  # For only det pulses sequence
 # num_fin_zeros_S = 20
 num_fin_zeros_S = 10  # For only det pulses sequence
 # num_between_zeros = 10
-num_between_zeros = 40
+num_between_zeros = 20
 # det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
 det_pulse_amp_S = [0.45, 0, 0.45, 0]  # SPRINT with 2-3'
 # det_pulse_amp_S = [0.45, 0, 0, 0, 0, 0]
