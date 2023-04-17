@@ -1080,7 +1080,7 @@ class OPX:
         for i in range(len(Num_Of_dets)): # for different detectors
             self.tt_measure.append([tt_res[i][(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts in
                                     enumerate(counts_res[i])])
-            self.tt_measure[i] = [elm for elm in self.tt_measure[i] if elm % self.M_window != 0]  # Due to an unresolved bug in the OPD there are "ghost" readings of timetags equal to the maximum time of measuring window.
+            self.tt_measure[i] = [[elm for elm in self.tt_measure[i][0] if elm % self.M_window != 0]]  # Due to an unresolved bug in the OPD there are "ghost" readings of timetags equal to the maximum time of measuring window.
             self.tt_measure[i].sort()
         # create vector of tt's for each direction (north and south) and sort them
         self.tt_N_measure = sorted(sum(sum(self.tt_measure[:3], []), [])) # unify detectors 1-3 and windows within detectors
@@ -1736,7 +1736,13 @@ class OPX:
 
                 self.get_tt_from_handles(Num_Of_dets, Counts_handle, tt_handle, FLR_handle)
 
-                if self.tt_S_measure != self.tt_S_measure_batch[-1]:
+                #check if new tt's arrived
+                lenS = min(len(self.tt_S_measure),len(self.tt_S_measure_batch[-1]))
+                lenN = min(len(self.tt_N_measure),len(self.tt_N_measure_batch[-1]))\
+                # if num of same values in new and last vector is less than 1/
+                is_new_tts_S = sum(np.array(self.tt_S_measure[:lenS])==np.array(self.tt_S_measure_batch[-1][:lenS])) < lenS/2
+                is_new_tts_N = sum(np.array(self.tt_N_measure[:lenN])==np.array(self.tt_N_measure_batch[-1][:lenN])) < lenN/2
+                if (is_new_tts_N & is_new_tts_S):
                     break
             # assaf - if x=self.M_window the index is out of range so i added 1
             # lock_err = np.abs(np.load(
