@@ -3,6 +3,11 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 import numpy as np
 
+def find_indx_for_nearest(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return idx
+
 def transmission_func(f, y, k_ex, k_i, h, f_offset, y0):
     z = y0 + np.power(np.abs(1 + 2 * 1j * k_ex * (f - f_offset - 1j * (k_i + k_ex)) /
                              (np.power((f - f_offset - 1j * (k_i + k_ex)), 2) - np.power(h, 2))), 2) - y
@@ -13,15 +18,22 @@ def reflection_func(f, y, k_ex, k_i, h, f_offset, y0):
                              (np.power((1j * (f - f_offset) + (k_i + k_ex)), 2) + np.power(h, 2))), 2) - y
     return z
 
-# # Variables:
-max_Detuning = int(100e6)  # in Hz
+# Variables and Values to plot:
+max_Detuning = int(150e6)  # in Hz
 delta_f = int(0.1e6)  # in Hz
 k_ex_0 = 7  # in MHz
 k_i_0 = 7  # in MHz
 h_0 = 11  # in MHz
 f_offset = 0  # in Hz
 y0 = 0
-f = np.linspace(-max_Detuning, max_Detuning, delta_f)
+f = np.arange(-max_Detuning, max_Detuning + delta_f, delta_f)
+
+x = f / 1e6
+y_T0 = transmission_func(f, 0, k_ex_0 * 1e6, k_i_0 * 1e6, h_0 * 1e6, f_offset, y0)
+y_R0 = reflection_func(f, 0, k_ex_0 * 1e6, k_i_0 * 1e6, h_0 * 1e6, f_offset, y0)
+HM = y_T0[max_Detuning//delta_f] + (1 - y_T0[max_Detuning//delta_f])/2
+FWHM = abs(2 * x[find_indx_for_nearest(y_T0, HM)])
+
 
 # General plot parameters
 mpl.rcParams['font.family'] = 'Cambria'
@@ -61,13 +73,16 @@ s_Ki = Slider(ax=ax_Ki, label='$K_{i} $', valmin=0, valmax=20.0, valinit=k_i_0, 
               facecolor='#cc7000')
 
 color = 'tab:red'
-T, = ax1.plot(np.array(f) / 1e6, transmission_func(f, 0, k_ex_0 * 1e6, k_i_0 * 1e6, h_0 * 1e6, f_offset, y0), label='Transmission', linewidth=2.5)
+T, = ax1.plot(x, y_T0, label='Transmission', linewidth=2.5)
 ax1.set_ylabel('T', fontsize=28)
 ax1.set_xlabel('$\Delta [MHz]$', fontsize=28)
+# ax1.minorticks_on()
+# ax1.grid(visible=True, which='both', axis='both', linestyle='-.')
+ax1.set_title('FWHM = %1.1f[MHz]' % FWHM)
 ax1.set_ylim([0, 1])
 
 ax2 = ax1.twinx()
-R, = ax2.plot(np.array(f) / 1e6, reflection_func(f, 0, k_ex_0 * 1e6, k_i_0 * 1e6, h_0 * 1e6, f_offset, y0), label='Reflection', color=color)
+R, = ax2.plot(x, y_R0, label='Reflection', color=color)
 ax2.set_ylabel('R', fontsize=28, color=color)
 ax2.tick_params(axis='y', labelcolor=color)
 ax2.set_ylim([0, 1])
@@ -77,8 +92,13 @@ def update(val):
     Kex = s_Kex.val
     h = s_h.val
     Ki = s_Ki.val
-    T.set_data(np.array(f) / 1e6, transmission_func(f, 0, Kex * 1e6, Ki * 1e6, h * 1e6, f_offset, y0))
-    R.set_data(np.array(f) / 1e6, reflection_func(f, 0, Kex * 1e6, Ki * 1e6, h * 1e6, f_offset, y0))
+    y_T = transmission_func(f, 0, Kex * 1e6, Ki * 1e6, h * 1e6, f_offset, y0)
+    y_R = reflection_func(f, 0, Kex * 1e6, Ki * 1e6, h * 1e6, f_offset, y0)
+    HM = y_T[max_Detuning // delta_f] + (1 - y_T[max_Detuning // delta_f]) / 2
+    FWHM = abs(2 * x[find_indx_for_nearest(y_T, HM)])
+    T.set_data(x, y_T)
+    ax1.set_title('FWHM = %1.1f[MHz]' % FWHM)
+    R.set_data(x, y_R)
     fig.canvas.draw_idle()
 
 
