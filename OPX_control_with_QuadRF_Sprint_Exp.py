@@ -1384,10 +1384,10 @@ class OPX:
         ax[5].clear()
         #
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        textstr_total_reflections = 'Total reflections per cycle "N"=%d \n' % (sum(self.num_of_det_reflections_per_seq_N),)\
-                                    + 'Total reflections per cycle "S"=%d' % (sum(self.num_of_det_reflections_per_seq_S),)
+        textstr_total_reflections = 'Total reflections per cycle "N" = %d \n' % (sum(self.num_of_det_reflections_per_seq_N),)\
+                                    + 'Total reflections per cycle "S" = %d' % (sum(self.num_of_det_reflections_per_seq_S),)
         textstr_avg_reflections = r'Average reflections per cycle = %.2f' % (sum(self.num_of_det_reflections_per_seq_accumulated/self.Counter),)
-
+        textstr_total_SPRINT_reflections = 'Total reflections from SPRINT pulses during transits = %d' % (self.total_number_of_reflections_from_SPRINT_pulses_in_transits,)
 
         ax[0].plot(self.folded_tt_N_batch, label='"N" detectors')
         ax[0].plot(self.folded_tt_S_batch, label='"S" detectors')
@@ -1423,7 +1423,8 @@ class OPX:
             textstr_transit_counts = r'$N_{Transits} = %s $' % (self.number_of_transits_live,) + r'$[Counts]$'
         else:
             textstr_transit_counts = r'$N_{Transits} = %s $' % (0,) + r'$[Counts]$'
-        textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (self.number_of_transits_total,) + r'$[Counts]$'
+        textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (self.number_of_transits_total,) + '[Counts]\n'\
+                                        + textstr_total_SPRINT_reflections
 
         ax[4].plot(range(self.number_of_sprint_sequences), self.seq_transit_events_live, label='Current transit events')
         ax[4].set(xlabel='Sequence [#]', ylabel='Counts [Photons]')
@@ -1454,6 +1455,8 @@ class OPX:
         self.tt_N_measure_batch = []
         self.transit_sequences_batch = []
         self.all_transits_seq_indx_batch = []
+        self.reflection_SPRINT_data_per_transit_batch = []
+        self.transmission_SPRINT_data_per_transit_batch = []
 
         self.folded_transmission = np.zeros(len(Config.Sprint_Exp_Gaussian_samples_S))
         self.folded_reflection = np.zeros(len(Config.Sprint_Exp_Gaussian_samples_S))
@@ -1616,8 +1619,14 @@ class OPX:
         self.seq_transit_events_live[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
         self.seq_transit_events_batched[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
         self.all_transits_seq_indx_batch = self.all_transits_seq_indx_batch[-(N-1):] + [self.all_transits_seq_indx]
+        self.reflection_SPRINT_data_per_transit_batch = self.reflection_SPRINT_data_per_transit_batch[-(N-1):]\
+                                                        + [self.reflection_SPRINT_data_per_transit]
+        self.transmission_SPRINT_data_per_transit_batch = self.transmission_SPRINT_data_per_transit_batch[-(N-1):]\
+                                                          + [self.transmission_SPRINT_data_per_transit]
         self.number_of_transits_live = len(self.all_transits_seq_indx)
         self.number_of_transits_total = len([vec for lst in self.all_transits_seq_indx_batch for vec in lst])
+        self.total_number_of_reflections_from_SPRINT_pulses_in_transits = \
+            np.sum(np.sum([vec for lst in self.reflection_SPRINT_data_per_transit_batch for vec in lst]))
         ###################
 
         self.save_tt_to_batch(Num_Of_dets, N)
@@ -1707,10 +1716,16 @@ class OPX:
                 self.find_transits_and_sprint_events_changed(cond=transit_condition, minimum_number_of_seq_detected=2)
                 self.seq_transit_events_live[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
                 self.seq_transit_events_batched[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
-                self.all_transits_seq_indx_batch = self.all_transits_seq_indx_batch[-(N - 1):] + [
-                    self.all_transits_seq_indx]
+                self.all_transits_seq_indx_batch = self.all_transits_seq_indx_batch[-(N - 1):]\
+                                                   + [self.all_transits_seq_indx]
+                self.reflection_SPRINT_data_per_transit_batch = self.reflection_SPRINT_data_per_transit_batch[-(N - 1):] \
+                                                                + [self.reflection_SPRINT_data_per_transit]
+                self.transmission_SPRINT_data_per_transit_batch = self.transmission_SPRINT_data_per_transit_batch[-(N - 1):] \
+                                                                  + [self.transmission_SPRINT_data_per_transit]
                 self.number_of_transits_live = len(self.all_transits_seq_indx)
                 self.number_of_transits_total = len([vec for lst in self.all_transits_seq_indx_batch for vec in lst])
+                self.total_number_of_reflections_from_SPRINT_pulses_in_transits = \
+                    np.sum(np.sum([vec for lst in self.reflection_SPRINT_data_per_transit_batch for vec in lst]))
                 ###########################################
 
                 # Batch folded tt "N" and "S"
@@ -1783,6 +1798,8 @@ class OPX:
         filename_reflection_averaged = f'reflection_from_detection_pulses_per_seq_averaged.npz'
         filename_transits_events = f'seq_transit_events_batched.npz'
         filename_transits_batched = f'all_transits_seq_indx_batch.npz'
+        filename_SPRINT_reflections_batched = f'all_SPRINT_pulses_reflections_during_transits.npz'
+        filename_SPRINT_transmissions_batched = f'all_SPRINT_pulses_transmissions_during_transits.npz'
         filename_experimentPlot = f'Experiment_plot.png'
 
         if len(FLR_measurement) > 0:
@@ -1809,6 +1826,8 @@ class OPX:
             np.savez(dirname + filename_transits_events, self.seq_transit_events_batched)
         if len(self.all_transits_seq_indx_batch) > 0:
             np.savez(dirname + filename_transits_batched, self.all_transits_seq_indx_batch)
+            np.savez(dirname + filename_SPRINT_reflections_batched, self.reflection_SPRINT_data_per_transit_batch)
+            np.savez(dirname + filename_SPRINT_transmissions_batched, self.transmission_SPRINT_data_per_transit_batch)
 
         # if len(all_transits_batch) > 0:
         #     np.savez(dirname_S + filename_S_transits, all_transits_batch)
