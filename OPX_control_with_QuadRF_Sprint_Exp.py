@@ -1234,20 +1234,20 @@ class OPX:
 
     def find_transits_and_sprint_events_changed(self, cond=[2,2,2], minimum_number_of_seq_detected=2):
         '''
-        find transits of atoms by searching events with detection_condition[0] photons before
-        the sprint sequence and detection_condition[1] after.
-        :param minimum_number_of_seq_detected:
-        :param cond:
-        :param detection_condition:
-        :param num_of_det_pulses:
-        :param num_of_sprint_pulses:
+        Find transits of atoms by searching events that satisfy the number of reflected photons per sequence required at
+        each cond place with minimum number of conditions needed to be satisfied, defined by the minimum_number_of_seq_detected.
+        For example:
+        given cond=[2,1,2] and minimum_number_of_seq_detected=2, if in 3 consecutive sequences we get either 2-1-0 or
+        0-2-1 or 2-0-2, the condition is satisfied and it is defined as a transit.
+        :param cond: The condition that need to be met for number of reflections per detection pulses in sequence.
+        :param minimum_number_of_seq_detected: The number of terms needed to be satisfied per cond vector.
         :return:
         '''
 
         current_transit = []
-        self.all_transits_seq_indx = []
-        self.reflection_SPRINT_data_per_transit = []
-        self.transmission_SPRINT_data_per_transit = []
+        self.all_transits_seq_indx = []  # Array of the sequence indexes of all recognized transits per cycle. The length of it will be the number of all transits at the current cycle.
+        self.reflection_SPRINT_data_per_transit = []  # Array of vectors with data on the number of reflections per SPRINT pulse in sequence.
+        self.transmission_SPRINT_data_per_transit = []  # Array of vectors with data on the number of transmissions per SPRINT pulse in sequence.
 
         for i in range(len(self.num_of_det_reflections_per_seq) - len(cond) + 1):
             cond_check = (self.num_of_det_reflections_per_seq[i:(i + len(cond))] >= cond).astype(int)
