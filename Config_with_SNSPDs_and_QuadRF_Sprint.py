@@ -115,17 +115,17 @@ Det_Gaussian_samples = ((signal.gaussian(200, std=(24 / 30)) * 0.8 - 0.4).tolist
 # SPRINT parameters
 num_of_photons_det_pulses = 1.5 # alpha^2
 # num_of_photons_det_pulses = 2 # alpha^2
-# num_of_photons_sprint_pulses = 0.15 # alpha^2
-num_of_photons_sprint_pulses = 0 # alpha^2  # For only det pulses sequence
+num_of_photons_sprint_pulses = 0.13 # alpha^2
+# num_of_photons_sprint_pulses = 0 # alpha^2  # For only det pulses sequence
 
-# num_of_det_pulses_S = 3
-num_of_det_pulses_S = 2
-# num_of_sprint_pulses_S = 2
-num_of_sprint_pulses_S = 0  # For only det pulses sequence
-# num_of_det_pulses_N = 3
-num_of_det_pulses_N = 2
-# num_of_sprint_pulses_N = 1
-num_of_sprint_pulses_N = 0  # For only det pulses sequence
+num_of_det_pulses_S = 3
+# num_of_det_pulses_S = 2
+num_of_sprint_pulses_S = 1
+# num_of_sprint_pulses_S = 0  # For only det pulses sequence
+num_of_det_pulses_N = 3
+# num_of_det_pulses_N = 2
+num_of_sprint_pulses_N = 1
+# num_of_sprint_pulses_N = 0  # For only det pulses sequence
 
 # parameters for window len
 # efficiency = 0.5 # the efficiency of the system
@@ -167,23 +167,24 @@ def QRAM_Exp_samples(delta=240, pulse_len=10000000):
         QRAM_exp_samples += [0.4]*delta + [0]*2*delta
     return QRAM_exp_samples
 
-# det_pulse_len = 30
-det_pulse_len = 80
+det_pulse_len = 40
+# det_pulse_len = 80
 # num_init_zeros_S = 30
 num_init_zeros_S = 10  # For only det pulses sequence
 # num_fin_zeros_S = 20
 num_fin_zeros_S = 10  # For only det pulses sequence
 # num_between_zeros = 10
 num_between_zeros = 20
-# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
-det_pulse_amp_S = [0.45, 0, 0.45, 0]  # SPRINT with 2-3'
+det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
+# det_pulse_amp_S = [0.45, 0, 0.45, 0]  # SPRINT with 2-3'
 # det_pulse_amp_S = [0.45, 0, 0, 0, 0, 0]
 prep_pulse_amp_S = 0.4
 prep_pulse_len = 50
-# sprint_pulse_amp_S = [0.125, 0, 0.07]
+sprint_pulse_amp_S = [0.075, 0]
+# sprint_pulse_amp_S = [0.075, 0, 0, 0]
 # sprint_pulse_amp_S = [0, 0, 0]
-sprint_pulse_amp_S = []  # For only det pulses sequence
-sprint_pulse_len = 110
+# sprint_pulse_amp_S = []  # For only det pulses sequence
+sprint_pulse_len = 100
 Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
                                                             det_pulse_len=det_pulse_len,
                                                             det_pulses_amp=det_pulse_amp_S,
@@ -195,11 +196,12 @@ num_init_zeros_N = 10  # For only det pulses sequence
 # num_fin_zeros_N = 20
 num_fin_zeros_N = 10  # For only det pulses sequence
 det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45]
-det_pulse_amp_N = [0, 0.45, 0, 0.45]  # SPRINT with 2-3'
+# det_pulse_amp_N = [0, 0.45, 0, 0.45]  # SPRINT with 2-3'
 # det_pulse_amp_N = [0.45, 0, 0, 0, 0, 0]
-# sprint_pulse_amp_N = [0, 0.07, 0]
+sprint_pulse_amp_N = [0, 0.085]
+# sprint_pulse_amp_N = [0, 0.085, 0.085, 0.085]
 # sprint_pulse_amp_N = [0, 0, 0]
-sprint_pulse_amp_N = []  # For only det pulses sequence
+# sprint_pulse_amp_N = []  # For only det pulses sequence
 
 Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
                                                             det_pulse_len=det_pulse_len,
