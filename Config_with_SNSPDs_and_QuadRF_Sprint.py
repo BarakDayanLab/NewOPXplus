@@ -113,7 +113,8 @@ trig_samples = [0, 0, 0, 0] + [0.3, 0.3, 0.3, 0.3] * 16 + [0, 0, 0, 0]
 Det_Gaussian_samples = ((signal.gaussian(200, std=(24 / 30)) * 0.8 - 0.4).tolist() + [-0.4] * 200) * 4
 
 # SPRINT parameters
-num_of_photons_det_pulses = 1.5 # alpha^2
+# num_of_photons_det_pulses = 1.5 # alpha^2
+num_of_photons_det_pulses = 1.65 # alpha^2
 # num_of_photons_det_pulses = 2 # alpha^2
 num_of_photons_sprint_pulses = 0.13 # alpha^2
 # num_of_photons_sprint_pulses = 0 # alpha^2  # For only det pulses sequence
@@ -124,13 +125,13 @@ num_of_sprint_pulses_S = 1
 # num_of_sprint_pulses_S = 0  # For only det pulses sequence
 num_of_det_pulses_N = 3
 # num_of_det_pulses_N = 2
-num_of_sprint_pulses_N = 1
+num_of_sprint_pulses_N = 3
 # num_of_sprint_pulses_N = 0  # For only det pulses sequence
 
 # parameters for window len
 # efficiency = 0.5 # the efficiency of the system
 # efficiency = 0.29 # the efficiency of the system
-efficiency = 0.14 # the efficiency of the system with sagnac
+efficiency = 0.168 # the efficiency of the system with sagnac
 num_of_photons_per_sequence_S = num_of_photons_det_pulses * num_of_det_pulses_S + num_of_photons_sprint_pulses * num_of_sprint_pulses_S
 num_of_photons_per_sequence_N = num_of_photons_det_pulses * num_of_det_pulses_N + num_of_photons_sprint_pulses * num_of_sprint_pulses_N
 
@@ -141,9 +142,10 @@ def Sprint_Exp_Gaussian_samples(sprint_pulse_len=110,det_pulse_len = 30, det_pul
         # Sprint_Exp_Gaussian_samples += [n] * 50 + [0] * num_between_zeros
         Sprint_Exp_Gaussian_samples += (signal.gaussian(det_pulse_len, std=(det_pulse_len * 0.5 / 2.355)) * n).tolist() + [0] * num_between_zeros
     # Sprint_Exp_Gaussian_samples += (signal.gaussian(prep_pulse_len, std=(prep_pulse_len / 2.355)) * prep_pulse_amp).tolist() + [0] * num_between_zeros
+    Sprint_Exp_Gaussian_samples += [0] * 16
     for m in sprint_pulses_amp:
         # Sprint_Exp_Gaussian_samples += [m] * 110 + [0] * num_between_zeros
-        Sprint_Exp_Gaussian_samples += (signal.gaussian(sprint_pulse_len, std=(sprint_pulse_len / 2.355)) * m).tolist() + [0] * num_between_zeros
+        Sprint_Exp_Gaussian_samples += (signal.gaussian((sprint_pulse_len-4), std=((sprint_pulse_len-4) / 2.355)) * m).tolist() + [0] * (num_between_zeros + 4)
     Sprint_Exp_Gaussian_samples += [0] * num_fin_zeros
     return Sprint_Exp_Gaussian_samples[:-num_between_zeros]
 
@@ -180,8 +182,11 @@ det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
 # det_pulse_amp_S = [0.45, 0, 0, 0, 0, 0]
 prep_pulse_amp_S = 0.4
 prep_pulse_len = 50
-sprint_pulse_amp_S = [0.075, 0]
+# sprint_pulse_amp_S = [0.075, 0]
 # sprint_pulse_amp_S = [0.075, 0, 0, 0]
+# sprint_pulse_amp_S = [0.075, 0.075, 0.075, 0.075]
+sprint_pulse_amp_S = [0, 0, 0, 0]
+
 # sprint_pulse_amp_S = [0, 0, 0]
 # sprint_pulse_amp_S = []  # For only det pulses sequence
 sprint_pulse_len = 100
@@ -198,8 +203,12 @@ num_fin_zeros_N = 10  # For only det pulses sequence
 det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45]
 # det_pulse_amp_N = [0, 0.45, 0, 0.45]  # SPRINT with 2-3'
 # det_pulse_amp_N = [0.45, 0, 0, 0, 0, 0]
-sprint_pulse_amp_N = [0, 0.085]
+# sprint_pulse_amp_N = [0, 0.085]
 # sprint_pulse_amp_N = [0, 0.085, 0.085, 0.085]
+# sprint_pulse_amp_N = [0, 0.085, 0.085, 0]
+sprint_pulse_amp_N = [0.085, 0.085, 0.085, 0]
+# sprint_pulse_amp_N = [0, 0, 0, 0]
+
 # sprint_pulse_amp_N = [0, 0, 0]
 # sprint_pulse_amp_N = []  # For only det pulses sequence
 
@@ -211,10 +220,10 @@ Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(sprint_pulse_len=spr
 
 # readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/4)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
 # readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/1.5)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
-readout_pulse_sprint_len_N = 8*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
+readout_pulse_sprint_len_N = 10*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
 # readout_pulse_sprint_len_S = math.ceil(((opx_max_per_window/4)/(efficiency*1e6*num_of_photons_per_sequence_S))*len(Sprint_Exp_Gaussian_samples_S))*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
 # readout_pulse_sprint_len_S = math.ceil(((opx_max_per_window/1.5)/(efficiency*1e6*num_of_photons_per_sequence_S))*len(Sprint_Exp_Gaussian_samples_S))*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
-readout_pulse_sprint_len_S = 8*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
+readout_pulse_sprint_len_S = 10*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
 
 SPRINT_Exp_TOP2_samples = [0.45]*int(max(readout_pulse_sprint_len_N, readout_pulse_sprint_len_S))
 QRAM_Exp_TOP2_samples = QRAM_Exp_samples(delta=240, pulse_len=24000)
