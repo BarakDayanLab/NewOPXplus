@@ -18,7 +18,6 @@ import math
 import itertools
 import operator
 from pynput import keyboard
-from playsound import playsound
 import logging
 from logging import StreamHandler, Formatter, INFO, WARN, ERROR
 import pymsgbox
@@ -366,35 +365,35 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
     # wait(117, "Dig_detectors") # For 20ns between pulses in sequence
     # wait(298, "Dig_detectors") # For 20ns between pulses in sequence of only detections
     with for_(n, 0, n < m_time * 4, n + m_window):
-        measure("readout_SPRINT", "Dig_detectors", None,
+        measure("readout_SPRINT", "Dig_detectors1",
+                None,time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1))
         # measure("readout_QRAM", "Dig_detectors", None,
-                time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
-                time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
-                time_tagging.digital(tt_vec3, m_window, element_output="out3", targetLen=counts3),
-                time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
-                time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
-                time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
-                )
+                # time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
+                # time_tagging.digital(tt_vec3, m_window, element_output="out3", targetLen=counts3),
+                # time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
+                # time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
+                # time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
+                # )
 
         ## Save Data: ##
 
         # Number of Photons (NOP) Count stream for each detector: ##
         save(counts1, ON_counts_st1)
-        save(counts2, ON_counts_st2)
-        save(counts3, ON_counts_st3)
-        save(counts6, ON_counts_st6)
-        save(counts7, ON_counts_st7)
-        save(counts8, ON_counts_st8)
+        # save(counts2, ON_counts_st2)
+        # save(counts3, ON_counts_st3)
+        # save(counts6, ON_counts_st6)
+        # save(counts7, ON_counts_st7)
+        # save(counts8, ON_counts_st8)
 
 
         with for_(m, 0, m < vec_size, m + 1):
             wait(1000)
             save(tt_vec1[m], tt_st_1)
-            save(tt_vec2[m], tt_st_2)
-            save(tt_vec3[m], tt_st_3)
-            save(tt_vec6[m], tt_st_6)
-            save(tt_vec7[m], tt_st_7)
-            save(tt_vec8[m], tt_st_8)
+            # save(tt_vec2[m], tt_st_2)
+            # save(tt_vec3[m], tt_st_3)
+            # save(tt_vec6[m], tt_st_6)
+            # save(tt_vec7[m], tt_st_7)
+            # save(tt_vec8[m], tt_st_8)
             save(n, rep_st)
 
 
@@ -512,10 +511,10 @@ def opx_control(obj, qm):
             align(*all_elements)
 
             # FreeFall sequence:
-            with if_(SPRINT_Exp_ON):
-                assign(x, (38688900 - 3106 + 656000 * 2) // 4) # TODO -  added 38688900 to fix new delay due to wait(1000) in saving sprint data with vector size 10000, should be fixed as well
-            with else_():
-                assign(x,  - 3106)
+            # with if_(SPRINT_Exp_ON):
+            #     assign(x, (38688900 - 3106 + 656000 * 2) // 4) # TODO -  added 38688900 to fix new delay due to wait(1000) in saving sprint data with vector size 10000, should be fixed as well
+            # with else_():
+            assign(x,  - 3106)
             FreeFall(FreeFall_duration - x, coils_timing)
 
             ##########################
@@ -622,17 +621,17 @@ def opx_control(obj, qm):
 
         with stream_processing():
             ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
-            ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
-            ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
-            ON_counts_st6.buffer(obj.rep).save('Det6_Counts')
-            ON_counts_st7.buffer(obj.rep).save('Det7_Counts')
-            ON_counts_st8.buffer(obj.rep).save('Det8_Counts')
+            # ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
+            # ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
+            # ON_counts_st6.buffer(obj.rep).save('Det6_Counts')
+            # ON_counts_st7.buffer(obj.rep).save('Det7_Counts')
+            # ON_counts_st8.buffer(obj.rep).save('Det8_Counts')
             (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
-            (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
-            (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
-            (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep).save('Det6_Probe_TT')
-            (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det7_Probe_TT')
-            (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det8_Probe_TT')
+            # (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
+            # (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
+            # (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep).save('Det6_Probe_TT')
+            # (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det7_Probe_TT')
+            # (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det8_Probe_TT')
             FLR_st.save('FLR_measure')
             AntiHelmholtz_ON_st.save("antihelmholtz_on")
 
@@ -1411,14 +1410,6 @@ class OPX:
         ax[5].clear()
         #
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        if self.acquisition_flag:
-            props_thresholds = dict(boxstyle='round', edgecolor='green', linewidth=2, facecolor='green', alpha=0.5)
-        else:
-            playsound('C:/Windows/Media/cricket-1.wav')
-            props_thresholds = dict(boxstyle='round', edgecolor='red', linewidth=2, facecolor='red', alpha=0.5)
-
-        textstr_thresholds = '# %d - ' % self.Counter + 'Reflections: %d, ' % self.sum_for_threshold + \
-                             'Efficiency: %.2f, ' % self.lockingEfficiency + 'Flr: %.2f' % (1000 * np.average(self.FLR_res.tolist()))
         textstr_total_reflections = 'Total reflections per cycle "N" = %d \n' % (sum(self.num_of_det_reflections_per_seq_N),)\
                                     + 'Total reflections per cycle "S" = %d' % (sum(self.num_of_det_reflections_per_seq_S),)
         textstr_avg_reflections = r'Average reflections per cycle = %.2f' % (sum(self.num_of_det_reflections_per_seq_accumulated/self.Counter),)
@@ -1433,8 +1424,6 @@ class OPX:
                      horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
         ax[0].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
         ax[0].legend(loc='upper right')
-        ax[0].text(0.4, 1.4, textstr_thresholds, transform=ax[0].transAxes, fontsize=28,
-                   verticalalignment='top', bbox=props_thresholds)
 
         # ax[0].plot(self.folded_tt_N, label='"N" detectors')
         # ax[0].plot(self.folded_tt_S, label='"S" detectors')
@@ -1521,7 +1510,7 @@ class OPX:
 
     def Save_SNSPDs_Sprint_Measurement_with_tt(self, N, sprint_sequence_len, preComment, lock_err_threshold, transit_condition,
                                                max_probe_counts, filter_delay, reflection_threshold, reflection_threshold_time,
-                                               photons_per_det_pulse_threshold, FLR_threshold):
+                                               photons_per_det_pulse_threshold):
         """
         Function for analyzing,saving and displaying data from sprint experiment.
         :param N: Number of maximum experiments (free throws) saved and displayed.
@@ -1577,10 +1566,10 @@ class OPX:
         # lock_err = np.abs(np.load(
         #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy', allow_pickle=True)) # the error of locking the resontor to Rb line
         lock_err = lock_err_threshold/2
-        self.sum_for_threshold = reflection_threshold
+        sum_for_threshold = reflection_threshold
         cycle = 0
         # Place holders for results # TODO: ask dor - is it works as we expect?
-        while ((lock_err > lock_err_threshold) or (self.sum_for_threshold > reflection_threshold)) or start:
+        while ((lock_err > lock_err_threshold) or (sum_for_threshold > reflection_threshold)) or start:
             # lock_err = np.abs(np.load(
             #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
             if self.keyPress == 'ESC':
@@ -1604,7 +1593,7 @@ class OPX:
                                                      + self.num_of_SPRINT_reflections_per_seq_N
             self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_S \
                                                        + self.num_of_SPRINT_transmissions_per_seq_N
-            self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.Sprint_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
+            sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.Sprint_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
         ####    end get tt and counts from OPX to python   #####
 
         self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
@@ -1682,7 +1671,6 @@ class OPX:
         self.save_tt_to_batch(Num_Of_dets, N)
         self.Counter = 1  # Total number of successful cycles
         self.rep = 1  # Total number of cycles
-        self.acquisition_flag = True
         #
         # create figures template
         ax1 = plt.subplot2grid((3, 2), (0, 0), colspan=1, rowspan=1)
@@ -1700,7 +1688,7 @@ class OPX:
                 # Other actions can be added here
                 break
             self.lockingEfficiency = self.Counter / self.rep
-            print(timest, self.Counter, 'Eff: %.2f' % self.lockingEfficiency, 'Flr: %.2f' % (1000 * np.average(self.FLR_res.tolist())))
+            print(timest, self.Counter, 'Eff: %.2f' % self.lockingEfficiency)
             self.rep += 1
             ######################################## PLOT!!! ###########################################################
             ax = [ax1, ax2, ax3, ax4, ax5, ax6]
@@ -1731,7 +1719,7 @@ class OPX:
                                                      + self.num_of_SPRINT_reflections_per_seq_S
             self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_N \
                                                        + self.num_of_SPRINT_transmissions_per_seq_S
-            self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.Sprint_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
+            sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.Sprint_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
 
             # fold reflections and transmission
             self.Single_det_foldeded = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
@@ -1753,15 +1741,9 @@ class OPX:
                                                                                self.pulses_location_in_seq_N)
             self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + self.max_value_per_pulse_N_live
 
-            if (lock_err > lock_err_threshold) or (1000 * np.average(self.FLR_res.tolist()) < FLR_threshold):
-                self.acquisition_flag = False
-            else:
-                self.acquisition_flag = True
-
-            if (self.sum_for_threshold < reflection_threshold) and \
-                    (np.average(experiment.avg_num_of_photons_per_pulse_live) < photons_per_det_pulse_threshold) and \
-                    self.acquisition_flag:
-                print('Sum of reflections: %d' % self.sum_for_threshold)
+            if (lock_err < lock_err_threshold) and (sum_for_threshold < reflection_threshold) and \
+                    (np.average(experiment.avg_num_of_photons_per_pulse_live) < photons_per_det_pulse_threshold):
+                print('Sum of reflections: %d' % sum_for_threshold)
                 self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
                                                                    + self.num_of_det_reflections_per_seq_N
 
@@ -1815,7 +1797,7 @@ class OPX:
         ############################################## END WHILE LOOP #################################################
 
         # For debuging:
-        # self.most_common([x for vec in self.tt_S_measure_batch + self.tt_N_measure_batch for x in vec])
+        self.most_common([x for vec in self.tt_S_measure_batch + self.tt_N_measure_batch for x in vec])
 
         ## Adding comment to measurement [prompt whether stopped or finished regularly]
         aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
@@ -1926,7 +1908,7 @@ class OPX:
     def Start_Sprint_Exp_with_tt(self, N=100, sprint_sequence_len=int(len(Config.Sprint_Exp_Gaussian_samples_S)),
                                  transit_condition=[2,2], preComment=None, lock_err_threshold=0.01, filter_delay=[-7,2],
                                  reflection_threshold=100, reflection_threshold_time=1e6,
-                                 photons_per_det_pulse_threshold=12, FLR_threshold=0.11):
+                                 photons_per_det_pulse_threshold=12):
         # Max_probe_counts = self.Get_Max_Probe_counts(3)  # return the average maximum probe counts of 3 cycles.
         Max_probe_counts = None  # return the average maximum probe counts of 3 cycles.
         self.SPRINT_Exp_switch(True)
@@ -1934,7 +1916,7 @@ class OPX:
         self.Save_SNSPDs_Sprint_Measurement_with_tt(N, sprint_sequence_len, preComment,lock_err_threshold,
                                                     transit_condition, Max_probe_counts, filter_delay,
                                                     reflection_threshold, reflection_threshold_time,
-                                                    photons_per_det_pulse_threshold, FLR_threshold)
+                                                    photons_per_det_pulse_threshold)
 
     ## MW spectroscopy variable update functions: ##
 
@@ -2050,7 +2032,6 @@ class OPX:
 if __name__ == "__main__":
     # try:
         experiment = OPX(Config.config)
-        #
         # experiment.Start_Sprint_Exp_with_tt(N=1000, transit_condition=[2, 1, 2],
         #                             preComment='test', filter_delay=[0, 0],
         #                             reflection_threshold=375, reflection_threshold_time=10e6)
