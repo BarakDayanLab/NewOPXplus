@@ -1753,14 +1753,13 @@ class OPX:
                                                                                self.pulses_location_in_seq_N)
             self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + self.max_value_per_pulse_N_live
 
-            if (lock_err > lock_err_threshold) or (1000 * np.average(self.FLR_res.tolist()) < FLR_threshold):
+            if (lock_err > lock_err_threshold) or (1000 * np.average(self.FLR_res.tolist()) < FLR_threshold) or \
+                    (np.average(experiment.avg_num_of_photons_per_pulse_live) > photons_per_det_pulse_threshold):
                 self.acquisition_flag = False
             else:
                 self.acquisition_flag = True
 
-            if (self.sum_for_threshold < reflection_threshold) and \
-                    (np.average(experiment.avg_num_of_photons_per_pulse_live) < photons_per_det_pulse_threshold) and \
-                    self.acquisition_flag:
+            if (self.sum_for_threshold < reflection_threshold)  and self.acquisition_flag:
                 print('Sum of reflections: %d' % self.sum_for_threshold)
                 self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
                                                                    + self.num_of_det_reflections_per_seq_N
