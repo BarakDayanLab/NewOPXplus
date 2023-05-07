@@ -138,16 +138,18 @@ num_of_photons_per_sequence_N = num_of_photons_det_pulses * num_of_det_pulses_N 
 def Sprint_Exp_Gaussian_samples(sprint_pulse_len=110,det_pulse_len = 30, det_pulses_amp = [0.4]*6,sprint_pulses_amp = [0.4]*4
                                 ,num_init_zeros = 10,num_between_zeros = 10, num_fin_zeros = 0):
     Sprint_Exp_Gaussian_samples = [0] * num_init_zeros
+    Sprint_Exp_Gaussian_samples += [0] * 12  # Due to undesired reflections (Echos)
     for n in det_pulses_amp:
         # Sprint_Exp_Gaussian_samples += [n] * 50 + [0] * num_between_zeros
         Sprint_Exp_Gaussian_samples += (signal.gaussian(det_pulse_len, std=(det_pulse_len * 0.5 / 2.355)) * n).tolist() + [0] * num_between_zeros
     # Sprint_Exp_Gaussian_samples += (signal.gaussian(prep_pulse_len, std=(prep_pulse_len / 2.355)) * prep_pulse_amp).tolist() + [0] * num_between_zeros
-    Sprint_Exp_Gaussian_samples += [0] * 16
+    Sprint_Exp_Gaussian_samples += [0] * 12  # Due to undesired reflections (Echos)
     for m in sprint_pulses_amp:
         # Sprint_Exp_Gaussian_samples += [m] * 110 + [0] * num_between_zeros
         Sprint_Exp_Gaussian_samples += (signal.gaussian((sprint_pulse_len-4), std=((sprint_pulse_len-4) / 2.355)) * m).tolist() + [0] * (num_between_zeros + 4)
     Sprint_Exp_Gaussian_samples += [0] * num_fin_zeros
-    return Sprint_Exp_Gaussian_samples[:-num_between_zeros]
+    # return Sprint_Exp_Gaussian_samples[:-num_between_zeros]
+    return Sprint_Exp_Gaussian_samples
 
 
 def QRAM_Exp_Gaussian_samples(sprint_pulse_len=110, det_pulse_len=30, det_pulses_amp=[0.4]*6, sprint_pulses_amp=[0.4]*4,
@@ -172,20 +174,23 @@ def QRAM_Exp_samples(delta=240, pulse_len=10000000):
 det_pulse_len = 40
 # det_pulse_len = 80
 # num_init_zeros_S = 30
-num_init_zeros_S = 10  # For only det pulses sequence
+# num_init_zeros_S = 10  # For only det pulses sequence
+num_init_zeros_S = 0  # For QRAM seq
 # num_fin_zeros_S = 20
-num_fin_zeros_S = 10  # For only det pulses sequence
+# num_fin_zeros_S = 10  # For only det pulses sequence
+num_fin_zeros_S = 0  # For only det pulses sequence
 # num_between_zeros = 10
 num_between_zeros = 20
-det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
+# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
+det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0] # QRAM seq
 # det_pulse_amp_S = [0.45, 0, 0.45, 0]  # SPRINT with 2-3'
 # det_pulse_amp_S = [0.45, 0, 0, 0, 0, 0]
 prep_pulse_amp_S = 0.4
 prep_pulse_len = 50
 # sprint_pulse_amp_S = [0.075, 0]
-# sprint_pulse_amp_S = [0.075, 0, 0, 0]
+sprint_pulse_amp_S = [0.075, 0, 0, 0]
 # sprint_pulse_amp_S = [0.075, 0.075, 0.075, 0.075]
-sprint_pulse_amp_S = [0, 0, 0, 0]
+# sprint_pulse_amp_S = [0, 0, 0, 0]
 
 # sprint_pulse_amp_S = [0, 0, 0]
 # sprint_pulse_amp_S = []  # For only det pulses sequence
@@ -197,16 +202,19 @@ Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=spr
                                                             num_between_zeros=num_between_zeros, num_fin_zeros=num_fin_zeros_S)
 
 # num_init_zeros_N = 30
-num_init_zeros_N = 10  # For only det pulses sequence
+# num_init_zeros_N = 10  # For only det pulses sequence
+num_init_zeros_N = 0  # For QRAM seq
 # num_fin_zeros_N = 20
-num_fin_zeros_N = 10  # For only det pulses sequence
-det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45]
+# num_fin_zeros_N = 10  # For only det pulses sequence
+num_fin_zeros_N = 0  # For only det pulses sequence
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45]
+det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
 # det_pulse_amp_N = [0, 0.45, 0, 0.45]  # SPRINT with 2-3'
 # det_pulse_amp_N = [0.45, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_N = [0, 0.085]
-# sprint_pulse_amp_N = [0, 0.085, 0.085, 0.085]
+sprint_pulse_amp_N = [0, 0.085, 0.085, 0.085]
 # sprint_pulse_amp_N = [0, 0.085, 0.085, 0]
-sprint_pulse_amp_N = [0.085, 0.085, 0.085, 0]
+# sprint_pulse_amp_N = [0.085, 0.085, 0.085, 0]
 # sprint_pulse_amp_N = [0, 0, 0, 0]
 
 # sprint_pulse_amp_N = [0, 0, 0]
