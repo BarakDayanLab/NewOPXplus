@@ -181,8 +181,8 @@ num_init_zeros_S = 0  # For QRAM seq
 num_fin_zeros_S = 0  # For only det pulses sequence
 # num_between_zeros = 10
 num_between_zeros = 20
-# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
-det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0] # QRAM seq
+det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
+# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0] # QRAM seq
 # det_pulse_amp_S = [0.45, 0, 0.45, 0]  # SPRINT with 2-3'
 # det_pulse_amp_S = [0.45, 0, 0, 0, 0, 0]
 prep_pulse_amp_S = 0.4
@@ -207,12 +207,17 @@ num_init_zeros_N = 0  # For QRAM seq
 # num_fin_zeros_N = 20
 # num_fin_zeros_N = 10  # For only det pulses sequence
 num_fin_zeros_N = 0  # For only det pulses sequence
-# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45]
-det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
+det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45]
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
 # det_pulse_amp_N = [0, 0.45, 0, 0.45]  # SPRINT with 2-3'
 # det_pulse_amp_N = [0.45, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_N = [0, 0.085]
-sprint_pulse_amp_N = [0, 0.085, 0.085, 0.085]
+
+# SPRINT N PULSES
+#for q-ram z-measurment - for 1/2 power from S=0.075 sprint pulses
+sprint_pulse_amp_N = [0, 0.065, 0, 0.065]
+# for sprint
+# sprint_pulse_amp_N = [0, 0.085, 0.085, 0.085]
 # sprint_pulse_amp_N = [0, 0.085, 0.085, 0]
 # sprint_pulse_amp_N = [0.085, 0.085, 0.085, 0]
 # sprint_pulse_amp_N = [0, 0, 0, 0]
