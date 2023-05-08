@@ -362,7 +362,8 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
         play("Sprint_experiment_pulses_N", "PULSER_N")
 
     # wait(137, "Dig_detectors")
-    wait(293, "Dig_detectors")
+    # wait(293, "Dig_detectors")
+    wait(292, "Dig_detectors")  # For
     # wait(117, "Dig_detectors") # For 20ns between pulses in sequence
     # wait(298, "Dig_detectors") # For 20ns between pulses in sequence of only detections
     with for_(n, 0, n < m_time * 4, n + m_window):
@@ -1418,7 +1419,9 @@ class OPX:
             props_thresholds = dict(boxstyle='round', edgecolor='red', linewidth=2, facecolor='red', alpha=0.5)
 
         textstr_thresholds = '# %d - ' % self.Counter + 'Reflections: %d, ' % self.sum_for_threshold + \
-                             'Efficiency: %.2f, ' % self.lockingEfficiency + 'Flr: %.2f' % (1000 * np.average(self.FLR_res.tolist()))
+                             'Efficiency: %.2f, ' % self.lockingEfficiency + \
+                             'Flr: %.2f, ' % (1000 * np.average(self.FLR_res.tolist())) + \
+                             'Lock Error: %.3f' % self.lock_err
         textstr_total_reflections = 'Total reflections per cycle "N" = %d \n' % (sum(self.num_of_det_reflections_per_seq_N),)\
                                     + 'Total reflections per cycle "S" = %d' % (sum(self.num_of_det_reflections_per_seq_S),)
         textstr_avg_reflections = r'Average reflections per cycle = %.2f' % (sum(self.num_of_det_reflections_per_seq_accumulated/self.Counter),)
@@ -1433,7 +1436,7 @@ class OPX:
                      horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
         ax[0].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
         ax[0].legend(loc='upper right')
-        ax[0].text(0.4, 1.4, textstr_thresholds, transform=ax[0].transAxes, fontsize=28,
+        ax[0].text(0.15, 1.4, textstr_thresholds, transform=ax[0].transAxes, fontsize=28,
                    verticalalignment='top', bbox=props_thresholds)
 
         # ax[0].plot(self.folded_tt_N, label='"N" detectors')
@@ -1574,13 +1577,13 @@ class OPX:
         ## take data only if
         start = True
         # take threshold from npz ( error from resonator lock PID)
-        # lock_err = np.abs(np.load(
-        #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy', allow_pickle=True)) # the error of locking the resontor to Rb line
-        lock_err = lock_err_threshold/2
+        self.lock_err = np.abs(np.load(
+            'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy', allow_pickle=True)) # the error of locking the resontor to Rb line
+        # lock_err = lock_err_threshold/2
         self.sum_for_threshold = reflection_threshold
         cycle = 0
         # Place holders for results # TODO: ask dor - is it works as we expect?
-        while ((lock_err > lock_err_threshold) or (self.sum_for_threshold > reflection_threshold)) or start:
+        while ((self.lock_err > lock_err_threshold) or (self.sum_for_threshold > reflection_threshold)) or start:
             # lock_err = np.abs(np.load(
             #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
             if self.keyPress == 'ESC':
@@ -1722,8 +1725,12 @@ class OPX:
                 if is_new_tts_N & is_new_tts_S:
                     break
             # assaf - if x=self.M_window the index is out of range so i added 1
-            # lock_err = np.abs(np.load(
-            #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
+            try:
+                self.lock_err = np.abs(np.load(
+                    'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
+            except:
+                pass
+                print('error in loading file')
             self.divide_tt_to_reflection_trans(sprint_pulse_len, num_of_detection_pulses)
             self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
                                                   + self.num_of_det_reflections_per_seq_N
@@ -1753,7 +1760,7 @@ class OPX:
                                                                                self.pulses_location_in_seq_N)
             self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + self.max_value_per_pulse_N_live
 
-            if (lock_err > lock_err_threshold) or (1000 * np.average(self.FLR_res.tolist()) < FLR_threshold) or \
+            if (self.lock_err > lock_err_threshold) or (1000 * np.average(self.FLR_res.tolist()) < FLR_threshold) or \
                     (np.average(experiment.avg_num_of_photons_per_pulse_live) > photons_per_det_pulse_threshold):
                 self.acquisition_flag = False
             else:
@@ -1923,14 +1930,14 @@ class OPX:
         ## ------------------ end of saving section -------
 
     def Start_Sprint_Exp_with_tt(self, N=100, sprint_sequence_len=int(len(Config.Sprint_Exp_Gaussian_samples_S)),
-                                 transit_condition=[2,2], preComment=None, lock_err_threshold=0.01, filter_delay=[-7,2],
+                                 transit_condition=[2,2], preComment=None, lock_err_threshold=0.02, filter_delay=[-7,2],
                                  reflection_threshold=100, reflection_threshold_time=1e6,
                                  photons_per_det_pulse_threshold=12, FLR_threshold=0.11):
         # Max_probe_counts = self.Get_Max_Probe_counts(3)  # return the average maximum probe counts of 3 cycles.
         Max_probe_counts = None  # return the average maximum probe counts of 3 cycles.
         self.SPRINT_Exp_switch(True)
         self.update_parameters()
-        self.Save_SNSPDs_Sprint_Measurement_with_tt(N, sprint_sequence_len, preComment,lock_err_threshold,
+        self.Save_SNSPDs_Sprint_Measurement_with_tt(N, sprint_sequence_len, preComment, lock_err_threshold,
                                                     transit_condition, Max_probe_counts, filter_delay,
                                                     reflection_threshold, reflection_threshold_time,
                                                     photons_per_det_pulse_threshold, FLR_threshold)
