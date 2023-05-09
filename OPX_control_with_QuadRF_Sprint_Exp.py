@@ -1698,7 +1698,7 @@ class OPX:
         while True:
             if self.keyPress == 'ESC':
                 print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
-                self.updateValue("CRUS_Exp_switch", False)
+                self.updateValue("SPRINT_Exp_switch", False)
                 self.update_parameters()
                 # Other actions can be added here
                 break
@@ -1723,6 +1723,12 @@ class OPX:
                 is_new_tts_S = sum(np.array(self.tt_S_measure[:lenS]) == np.array(self.tt_S_measure_batch[-1][:lenS])) < lenS/2
                 is_new_tts_N = sum(np.array(self.tt_N_measure[:lenN]) == np.array(self.tt_N_measure_batch[-1][:lenN])) < lenN/2
                 if is_new_tts_N & is_new_tts_S:
+                    break
+                if self.keyPress == 'ESC':
+                    print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
+                    self.updateValue("SPRINT_Exp_switch", False)
+                    self.update_parameters()
+                    # Other actions can be added here
                     break
             # assaf - if x=self.M_window the index is out of range so i added 1
             try:
@@ -2057,9 +2063,9 @@ if __name__ == "__main__":
     # try:
         experiment = OPX(Config.config)
         #
-        # experiment.Start_Sprint_Exp_with_tt(N=1000, transit_condition=[2, 1, 2],
-        #                             preComment='test', filter_delay=[0, 0],
-        #                             reflection_threshold=375, reflection_threshold_time=10e6)
+        experiment.Start_Sprint_Exp_with_tt(N=1000, transit_condition=[2,1,2],
+    preComment='seq 0-0-0-0, prepulse duration 13ms', lock_err_threshold=1, filter_delay=[0,0], reflection_threshold=2375,
+                                            reflection_threshold_time=10e6, FLR_threshold=0)
 # experiment.Start_Sprint_Exp_with_tt(N=1000, transit_condition=[2, 2],
         #                                     preComment='SPRINT attempt, only detection pulses', filter_delay=[0, 0],
         #                                     reflection_threshold=100000, reflection_threshold_time=8e6)    # except KeyboardInterrupt:
