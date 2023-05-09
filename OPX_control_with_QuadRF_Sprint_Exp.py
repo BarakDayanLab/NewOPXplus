@@ -1715,6 +1715,7 @@ class OPX:
                 datest = time.strftime("%Y%m%d")
 
                 self.get_tt_from_handles(Num_Of_dets, Counts_handle, tt_handle, FLR_handle)
+                self.save_tt_to_batch(Num_Of_dets, N)
 
                 # Check if new tt's arrived:
                 lenS = min(len(self.tt_S_measure), len(self.tt_S_measure_batch[-1]))
@@ -1723,12 +1724,6 @@ class OPX:
                 is_new_tts_S = sum(np.array(self.tt_S_measure[:lenS]) == np.array(self.tt_S_measure_batch[-1][:lenS])) < lenS/2
                 is_new_tts_N = sum(np.array(self.tt_N_measure[:lenN]) == np.array(self.tt_N_measure_batch[-1][:lenN])) < lenN/2
                 if is_new_tts_N & is_new_tts_S:
-                    break
-                if self.keyPress == 'ESC':
-                    print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
-                    self.updateValue("SPRINT_Exp_switch", False)
-                    self.update_parameters()
-                    # Other actions can be added here
                     break
             # assaf - if x=self.M_window the index is out of range so i added 1
             try:
@@ -1823,7 +1818,6 @@ class OPX:
                 if self.Counter < N:
                     self.Counter += 1
 
-                self.save_tt_to_batch(Num_Of_dets, N)
         ############################################## END WHILE LOOP #################################################
 
         # For debuging:
