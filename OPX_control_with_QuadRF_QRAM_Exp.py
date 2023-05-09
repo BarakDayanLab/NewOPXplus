@@ -247,7 +247,7 @@ def FreeFall(freefall_duration, coils_timing):
 
     ## Aligning all the different elements used during the freefall time of the experiment ##
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'", "AOM_2-2'",
-          "Measurement", "PULSER_N", "PULSER_S") # , "Dig_detectors")
+          "Measurement", "PULSER_N", "PULSER_S", "PULSER_ANCILLA", "AOM_Early", "AOM_Late") # , "Dig_detectors")
 
     ## Zeeman Coils turn-on sequence ##
     wait(coils_timing, "Zeeman_Coils")
@@ -257,7 +257,7 @@ def FreeFall(freefall_duration, coils_timing):
 
 def Measure(measuring_duration):
     """
-    The Measure function is an all purpose tool for any measurement is needed.
+    The Measure function is an all-purpose tool for any measurement is needed.
 
     Parameters
     ----------
@@ -451,15 +451,18 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
     # assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
 
-    align("PULSER_N", "PULSER_S", "Dig_detectors", "AOM_2-2'")
+    align("PULSER_N", "PULSER_S", "PULSER_ANCILLA", "AOM_Early", "AOM_Late", "Dig_detectors", "AOM_2-2'")
     play("Depump", "AOM_2-2'", duration=shutter_open_time)
     play("Const_open" * amp(0.4), "PULSER_S", duration=shutter_open_time)
     play("Const_open" * amp(0.4), "PULSER_N", duration=shutter_open_time)
-    align("PULSER_N", "PULSER_S", "Dig_detectors")
+    align("PULSER_N", "PULSER_S", "PULSER_ANCILLA", "AOM_Early", "AOM_Late", "Dig_detectors")
 
     with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.Sprint_Exp_Gaussian_samples_S))): #assaf comment debbuging
         play("Sprint_experiment_pulses_S", "PULSER_S")
         play("Sprint_experiment_pulses_N", "PULSER_N")
+        play("QRAM_experiment_pulses_Ancilla", "PULSER_ANCILLA")
+        play("Sprint_experiment_pulses_N", "AOM_Early")
+        play("Sprint_experiment_pulses_N", "AOM_Late")
 
     # wait(137, "Dig_detectors")
     wait(293, "Dig_detectors")
@@ -648,7 +651,7 @@ def opx_control(obj, qm):
             with else_():
                 play("Depump", "AOM_2-2'", duration=PrePulse_duration)
                 # wait(PrePulse_duration, "Cooling_Sequence")
-            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "PULSER_N", "PULSER_S", "Dig_detectors")
+            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "PULSER_N", "PULSER_S", "PULSER_ANCILLA", "AOM_Early", "AOM_Late", "Dig_detectors")
 
             with if_(Trigger_Phase == 4):  # when trigger on pulse 1
                 ## Trigger QuadRF Sequence #####################
@@ -663,13 +666,13 @@ def opx_control(obj, qm):
                 align(*all_elements)
 
             with if_((Pulse_1_duration > 0) & SPRINT_Exp_ON):
-                align("Dig_detectors", "PULSER_N", "PULSER_S")
+                align("Dig_detectors", "PULSER_N", "PULSER_S", "PULSER_ANCILLA", "AOM_Early", "AOM_Late")
                 QRAM_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
                          ON_counts_st1, ON_counts_st2, ON_counts_st3,
                          ON_counts_st6, ON_counts_st7, ON_counts_st8,
                          ON_counts_st9, ON_counts_st11, ON_counts_st15,
                          tt_st_1, tt_st_2, tt_st_3, tt_st_6, tt_st_7, tt_st_8, tt_st_9, tt_st_11, tt_st_15, rep_st)
-                align("Dig_detectors", "PULSER_N", "PULSER_S")
+                align("Dig_detectors", "PULSER_N", "PULSER_S", "PULSER_ANCILLA", "AOM_Early", "AOM_Late")
 
             save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
             with if_(AntiHelmholtz_ON):
