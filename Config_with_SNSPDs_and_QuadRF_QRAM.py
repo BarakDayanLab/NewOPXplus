@@ -46,7 +46,7 @@ controller = 'con1'
 # time tags vector size
 
 # parameters of sizes
-vec_size = 10000
+vec_size = 8000
 num_of_detectors = 6
 opx_max_per_window = vec_size*num_of_detectors/2
 
@@ -162,15 +162,27 @@ def QRAM_Exp_Gaussian_samples(sprint_pulse_len=110, det_pulse_len=30, det_pulses
     qram_exp_gaussian_samples += [0] * num_fin_zeros
     return qram_exp_gaussian_samples
 
-def QRAM_Exp_Square_samples(sprint_pulse_len=110, det_pulse_len=30, det_pulses_amp=[0.4]*6, sprint_pulses_amp=[0.4]*4,
-                              num_between_vals=10, num_init_val=12, num_mid_val=12, num_fin_val=0):
-    qram_exp_gaussian_samples = [det_pulses_amp[0]] * num_init_val
-    for n in det_pulses_amp:
-        qram_exp_gaussian_samples += [n] * num_between_vals + [n] * det_pulse_len
-    qram_exp_gaussian_samples += [sprint_pulses_amp[0]] * num_mid_val  # due to unresolved reflections
-    for m in sprint_pulses_amp:
-        qram_exp_gaussian_samples += [m] * (num_between_vals + 4) + [m] * (sprint_pulse_len - 4)
-    qram_exp_gaussian_samples += [det_pulses_amp[0]] * num_fin_val
+def QRAM_Exp_Square_samples(amp=0.45, sprint_pulse_len=110, det_pulse_len=30, det_pulses_amp=[0.4]*6, sprint_pulses_amp=[0.4]*4,
+                            num_between_vals=10, num_init_val=12, num_mid_val=12, num_fin_val=0):
+
+    qram_exp_gaussian_samples = [det_pulses_amp[0] * amp] * num_init_val
+
+    for n in range(len(det_pulses_amp)-1):
+        qram_exp_gaussian_samples += [det_pulses_amp[n] * amp] * det_pulse_len + \
+                                     [det_pulses_amp[n] * det_pulses_amp[n+1] * amp] * num_between_vals
+    qram_exp_gaussian_samples += [det_pulses_amp[-1] * amp] * det_pulse_len + \
+                                 [det_pulses_amp[-1] * sprint_pulses_amp[0] * amp] * num_between_vals
+
+    qram_exp_gaussian_samples += [sprint_pulses_amp[0] * amp] * num_mid_val  # due to unresolved reflections
+
+    for m in range(len(sprint_pulses_amp)-1):
+        qram_exp_gaussian_samples += [sprint_pulses_amp[m] * amp] * (sprint_pulse_len - 4) + \
+                                     [sprint_pulses_amp[m] * sprint_pulses_amp[m + 1] * amp] * (num_between_vals + 4)
+    qram_exp_gaussian_samples += [sprint_pulses_amp[-1] * amp] * (sprint_pulse_len - 4) + \
+                                 [sprint_pulses_amp[-1] * det_pulses_amp[0] * amp] * (num_between_vals + 4)
+
+    qram_exp_gaussian_samples += [det_pulses_amp[0] * amp] * num_fin_val
+
     return qram_exp_gaussian_samples
 
 def QRAM_Exp_samples(delta=240, pulse_len=10000000):
@@ -249,10 +261,20 @@ num_between_vals = 20
 num_init_val_Early = 12  # For only det pulses sequence
 num_mid_val_Early = 12
 num_fin_val_Early = 0  # For only det pulses sequence
-det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 0, 0]
-sprint_pulse_amp_Early = [0.45, 0.45, 0, 0]
+Pulses_Amp = 0.45
+# For Bell |(0 + 1)c, 1t>
+det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 1, 1]
+sprint_pulse_amp_Early = [1, 0, 0, 0]
+# |0c, (0 + 1)t>
+# det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 0, 0]
+# sprint_pulse_amp_Early = [1, 1, 0, 0]
+# # |1c, (0 + 1)t>
+# det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 1, 1]
+# sprint_pulse_amp_Early = [1, 1, 0, 0]
 
-QRAM_Exp_Square_samples_Early = QRAM_Exp_Square_samples(sprint_pulse_len=sprint_pulse_len,
+
+QRAM_Exp_Square_samples_Early = QRAM_Exp_Square_samples(amp=Pulses_Amp,
+                                                        sprint_pulse_len=sprint_pulse_len,
                                                         det_pulse_len=det_pulse_len,
                                                         det_pulses_amp=det_pulse_amp_Early,
                                                         sprint_pulses_amp=sprint_pulse_amp_Early,
@@ -264,17 +286,25 @@ QRAM_Exp_Square_samples_Early = QRAM_Exp_Square_samples(sprint_pulse_len=sprint_
 num_init_val_Late = 12  # For only det pulses sequence
 num_mid_val_Late = 12
 num_fin_val_Late = 0  # For only det pulses sequence
+# For Bell |(0 + 1)c, 1t>
 det_pulse_amp_Late = [0, 0, 0, 0, 0, 0, 0, 0]
-sprint_pulse_amp_Late = [0, 0, 0.45, 0.45]
+sprint_pulse_amp_Late = [0, 0, 0, 0]
+# |0c, (0 + 1)t>
+# det_pulse_amp_Late = [0, 0, 0, 0, 0, 0, 0, 0]
+# sprint_pulse_amp_Late = [0, 0, 1, 1]
+# # |1c, (0 + 1)t>
+# det_pulse_amp_Late = [0, 0, 0, 0, 0, 0, 0, 0]
+# sprint_pulse_amp_Late = [0, 0, 1, 1]
 
-QRAM_Exp_Square_samples_Late = QRAM_Exp_Square_samples(sprint_pulse_len=sprint_pulse_len,
-                                                        det_pulse_len=det_pulse_len,
-                                                        det_pulses_amp=det_pulse_amp_Late,
-                                                        sprint_pulses_amp=sprint_pulse_amp_Late,
-                                                        num_between_vals=num_between_vals,
-                                                        num_init_val=num_init_val_Late,
-                                                        num_mid_val=num_mid_val_Late,
-                                                        num_fin_val=num_fin_val_Late)
+QRAM_Exp_Square_samples_Late = QRAM_Exp_Square_samples(amp=Pulses_Amp,
+                                                       sprint_pulse_len=sprint_pulse_len,
+                                                       det_pulse_len=det_pulse_len,
+                                                       det_pulses_amp=det_pulse_amp_Late,
+                                                       sprint_pulses_amp=sprint_pulse_amp_Late,
+                                                       num_between_vals=num_between_vals,
+                                                       num_init_val=num_init_val_Late,
+                                                       num_mid_val=num_mid_val_Late,
+                                                       num_fin_val=num_fin_val_Late)
 
 # readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/1.5)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
 readout_pulse_sprint_len_N = 10*1e6# [ns] length of the measurment window for North, the 4's are for division in 4

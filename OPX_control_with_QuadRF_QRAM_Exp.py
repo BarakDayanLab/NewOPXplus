@@ -1,5 +1,5 @@
 # from Config import config
-import Config_with_SNSPDs_and_QuadRF_Sprint as Config
+import Config_with_SNSPDs_and_QuadRF_QRAM as Config
 from Config_Table import Initial_Values, Phases_Names  # , Values_Factor
 from quadRFMOTController import QuadRFMOTController
 from quadRFFrequencyScannerController import QuadRFFrequencyScannerController
@@ -398,6 +398,115 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
             save(n, rep_st)
 
 
+def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
+             ON_counts_st1, ON_counts_st2, ON_counts_st3,
+             ON_counts_st6, ON_counts_st7, ON_counts_st8,
+             ON_counts_st9, ON_counts_st11, ON_counts_st15,
+             tt_st_1, tt_st_2, tt_st_3, tt_st_6, tt_st_7, tt_st_8, tt_st_9, tt_st_11, tt_st_15, rep_st):
+    """
+     Generates train of 8 pulses (to be configured from config if each of thenm is north ore south)
+     for SPRINT experiments
+
+       Parameters
+       ----------
+       :param M_delay: The time delay from end of PGC until the first 2-3' pulse (OD + trigger).
+       :param rep: The number of measuring window repetitions, derived from OD measuring duration (M_time/M_window).
+       :param m_time: The duration of the entire measurement time.
+       :param m_window: The duration of each measuring window - fpr each window there is 28 nsec "deadtime".
+       :param counts_st1: The stream array for the number of photons counted at each measuring window for detector 1.
+       :param counts_st2: The stream array for the number of photons counted at each measuring window for detector 2.
+       :param counts_st3: The stream array for the number of photons counted at each measuring window for detector 3.
+       :param counts_st4: The stream array for the number of photons counted at each measuring window for detector 4.
+       :param counts_st5: The stream array for the number of photons counted at each measuring window for detector 5.
+       :param counts_st6: The stream array for the number of photons counted at each measuring window for detector 6.
+       :param counts_st7: The stream array for the number of photons counted at each measuring window for detector 7.
+       :param counts_st8: The stream array for the number of photons counted at each measuring window for detector 8.
+       """
+
+    vec_size = Config.vec_size
+
+    counts1 = declare(int)
+    counts2 = declare(int)
+    counts3 = declare(int)
+    counts6 = declare(int)
+    counts7 = declare(int)
+    counts8 = declare(int)
+    counts9 = declare(int)
+    counts11 = declare(int)
+    counts15 = declare(int)
+
+    tt_vec1 = declare(int, size=vec_size)
+    tt_vec2 = declare(int, size=vec_size)
+    tt_vec3 = declare(int, size=vec_size)
+    tt_vec6 = declare(int, size=vec_size)
+    tt_vec7 = declare(int, size=vec_size)
+    tt_vec8 = declare(int, size=vec_size)
+    tt_vec9 = declare(int, size=vec_size)
+    tt_vec11 = declare(int, size=vec_size)
+    tt_vec15 = declare(int, size=vec_size)
+
+    n = declare(int)
+    t = declare(int)
+    m = declare(int)
+
+    # assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
+
+    align("PULSER_N", "PULSER_S", "Dig_detectors", "AOM_2-2'")
+    play("Depump", "AOM_2-2'", duration=shutter_open_time)
+    play("Const_open" * amp(0.4), "PULSER_S", duration=shutter_open_time)
+    play("Const_open" * amp(0.4), "PULSER_N", duration=shutter_open_time)
+    align("PULSER_N", "PULSER_S", "Dig_detectors")
+
+    with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.Sprint_Exp_Gaussian_samples_S))): #assaf comment debbuging
+        play("Sprint_experiment_pulses_S", "PULSER_S")
+        play("Sprint_experiment_pulses_N", "PULSER_N")
+
+    # wait(137, "Dig_detectors")
+    wait(293, "Dig_detectors")
+    # wait(117, "Dig_detectors") # For 20ns between pulses in sequence
+    # wait(298, "Dig_detectors") # For 20ns between pulses in sequence of only detections
+    with for_(n, 0, n < m_time * 4, n + m_window):
+        measure("readout_SPRINT", "Dig_detectors", None,
+        # measure("readout_QRAM", "Dig_detectors", None,
+                time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
+                time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
+                time_tagging.digital(tt_vec3, m_window, element_output="out3", targetLen=counts3),
+                time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
+                time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
+                time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
+                time_tagging.digital(tt_vec9, m_window, element_output="out9", targetLen=counts9),
+                time_tagging.digital(tt_vec11, m_window, element_output="out10", targetLen=counts11),
+                time_tagging.digital(tt_vec15, m_window, element_output="out5", targetLen=counts15),
+                )
+
+        ## Save Data: ##
+
+        # Number of Photons (NOP) Count stream for each detector: ##
+        save(counts1, ON_counts_st1)
+        save(counts2, ON_counts_st2)
+        save(counts3, ON_counts_st3)
+        save(counts6, ON_counts_st6)
+        save(counts7, ON_counts_st7)
+        save(counts8, ON_counts_st8)
+        save(counts9, ON_counts_st9)
+        save(counts11, ON_counts_st11)
+        save(counts15, ON_counts_st15)
+
+
+        with for_(m, 0, m < vec_size, m + 1):
+            wait(1000)
+            save(tt_vec1[m], tt_st_1)
+            save(tt_vec2[m], tt_st_2)
+            save(tt_vec3[m], tt_st_3)
+            save(tt_vec6[m], tt_st_6)
+            save(tt_vec7[m], tt_st_7)
+            save(tt_vec8[m], tt_st_8)
+            save(tt_vec9[m], tt_st_9)
+            save(tt_vec11[m], tt_st_11)
+            save(tt_vec15[m], tt_st_15)
+            save(n, rep_st)
+
+
 def opx_control(obj, qm):
     with program() as opx_control_prog:
         ## declaring program variables: ##
@@ -470,12 +579,18 @@ def opx_control(obj, qm):
         ON_counts_st6 = declare_stream()
         ON_counts_st7 = declare_stream()
         ON_counts_st8 = declare_stream()
+        ON_counts_st9 = declare_stream()
+        ON_counts_st11 = declare_stream()
+        ON_counts_st15 = declare_stream()
         tt_st_1 = declare_stream()
         tt_st_2 = declare_stream()
         tt_st_3 = declare_stream()
         tt_st_6 = declare_stream()
         tt_st_7 = declare_stream()
         tt_st_8 = declare_stream()
+        tt_st_9 = declare_stream()
+        tt_st_11 = declare_stream()
+        tt_st_15 = declare_stream()
         rep_st = declare_stream()
         AntiHelmholtz_ON_st = declare_stream()
         FLR_st = declare_stream()
@@ -549,10 +664,11 @@ def opx_control(obj, qm):
 
             with if_((Pulse_1_duration > 0) & SPRINT_Exp_ON):
                 align("Dig_detectors", "PULSER_N", "PULSER_S")
-                Sprint_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
-                           ON_counts_st1, ON_counts_st2, ON_counts_st3,
-                           ON_counts_st6, ON_counts_st7, ON_counts_st8,
-                           tt_st_1, tt_st_2, tt_st_3, tt_st_6, tt_st_7, tt_st_8, rep_st)
+                QRAM_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
+                         ON_counts_st1, ON_counts_st2, ON_counts_st3,
+                         ON_counts_st6, ON_counts_st7, ON_counts_st8,
+                         ON_counts_st9, ON_counts_st11, ON_counts_st15,
+                         tt_st_1, tt_st_2, tt_st_3, tt_st_6, tt_st_7, tt_st_8, tt_st_9, tt_st_11, tt_st_15, rep_st)
                 align("Dig_detectors", "PULSER_N", "PULSER_S")
 
             save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
@@ -627,12 +743,18 @@ def opx_control(obj, qm):
             ON_counts_st6.buffer(obj.rep).save('Det6_Counts')
             ON_counts_st7.buffer(obj.rep).save('Det7_Counts')
             ON_counts_st8.buffer(obj.rep).save('Det8_Counts')
+            ON_counts_st9.buffer(obj.rep).save('Det9_Counts')
+            ON_counts_st11.buffer(obj.rep).save('Det11_Counts')
+            ON_counts_st15.buffer(obj.rep).save('Det15_Counts')
             (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
             (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
             (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
             (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep).save('Det6_Probe_TT')
             (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det7_Probe_TT')
             (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det8_Probe_TT')
+            (tt_st_9 + rep_st).buffer(obj.vec_size * obj.rep).save('Det9_Probe_TT')
+            (tt_st_11 + rep_st).buffer(obj.vec_size * obj.rep).save('Det11_Probe_TT')
+            (tt_st_15 + rep_st).buffer(obj.vec_size * obj.rep).save('Det15_Probe_TT')
             FLR_st.save('FLR_measure')
             AntiHelmholtz_ON_st.save("antihelmholtz_on")
 
