@@ -82,6 +82,7 @@ IF_AOM_Repump = 78.4735e6
 IF_AOM_N = 129.2368e6
 IF_AOM_S = 129.2368e6
 IF_AOM_LO = 129.2368e6
+IF_AOMs_MZ = 110e6
 IF_Divert = 20e6
 #IF_AOM_N = 127.1e6
 #IF_AOM_S = 90e6
@@ -90,6 +91,8 @@ IF_AOM_SigmaMinus = 114.58e6
 IF_AOM_Pi = 75.34e6
 IF_AOM_Analyzer = np.abs(IF_AOM_N - IF_AOM_S) * 2
 IF_CRUS_pulser = 125e6
+
+SQUARE_wf = [0.45] * 10000
 
 Super_Sprint_Config = {
 
@@ -274,12 +277,14 @@ Super_Sprint_Config = {
 
         "PULSER_LO": {
             "singleInput": {
-                "port": (controller, 8),
+                "port": (controller, 7),
             },
             'operations': {
                 'Const_open': "MOT_lock",
+                'Square_Pulse': "square_pulse",
             },
-            'intermediate_frequency': IF_AOM_LO,
+            # 'intermediate_frequency': IF_AOM_LO,
+            'intermediate_frequency': IF_AOMs_MZ,
         },
 
         "PULSER_N": {
@@ -335,6 +340,13 @@ Super_Sprint_Config = {
                 'single': 'const_wf'
             }
         },
+        "square_pulse": {
+            'operation': 'control',
+            'length': len(SQUARE_wf),
+            'waveforms': {
+                'single': 'square_wf'
+            }
+        },
         "AntiHelmholtz_on": {
             'operation': 'control',
             'length': MOT_pulse_len,
@@ -372,7 +384,12 @@ Super_Sprint_Config = {
         'const_wf': {
             'type': 'constant',
             # 'sample': 0.1
-            'sample': 0.49
+            'sample': 0.45
+        },
+        'square_wf': {
+            'type': 'arbitrary',
+            # 'sample': 0.1
+            'samples': SQUARE_wf
         },
     },
 
@@ -437,7 +454,7 @@ with program() as dig:
 
             play("Const_open", "PULSER_N")
             play("Const_open", "PULSER_S")
-            play("Const_open", "PULSER_LO")
+            # play("Square_Pulse", "PULSER_LO")
             # play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
             # play("CRUS_pulse", "Pulser_CRUS")
 

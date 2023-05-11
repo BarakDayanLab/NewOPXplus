@@ -87,13 +87,14 @@ IF_AOM_N = 129.2368e6
 IF_AOM_S = 129.2368e6
 # IF_AOM_LO = 89.2368e6
 IF_AOM_LO = 129.2368e6
+IF_AOMs_MZ = 110e6
 IF_AOM_SigmaPlus = 114.58e6
 IF_AOM_SigmaMinus = 114.58e6
 IF_AOM_Pi = 75.34e6
 IF_CRUS_pulser = 125e6
 
 IF_Divert = 20e6
-IF_AOM_Analyzer = np.abs(IF_AOM_N - IF_AOM_S) * 2
+# IF_AOM_Analyzer = np.abs(IF_AOM_N - IF_AOM_S) * 2
 
 # Waveforms
 
@@ -624,7 +625,7 @@ config = {
                 'Homodyne_Pulse': "Homodyne_Pulse",
                 'Sprint_experiment_pulses_N': "Gaussian_Sprint_pulse_N"
             },
-            'intermediate_frequency': IF_AOM_N,
+            'intermediate_frequency': IF_AOMs_MZ,
         },
 
         "AOM_Late": {
@@ -635,9 +636,10 @@ config = {
                 'Const_open': "MOT_lock",
                 'Detection_pulses': "Square_detection_pulses",
                 'Homodyne_Pulse': "Homodyne_Pulse",
-                'Sprint_experiment_pulses_S': "Gaussian_Sprint_pulse_N"
+                'Sprint_experiment_pulses_S': "Gaussian_Sprint_pulse_N",
+                'QRAM_experiment_pulses_Late': "Square_pulse_seq_MZ_Late",
             },
-            'intermediate_frequency': IF_AOM_N,
+            'intermediate_frequency': IF_AOMs_MZ,
         },
 
         "PULSER_ANCILLA": {
@@ -869,6 +871,22 @@ config = {
             }
         },
 
+        "Square_pulse_seq_MZ_Early": {
+            'operation': 'control',
+            'length': len(QRAM_Exp_Square_samples_Early),
+            'waveforms': {
+                'single': 'QRAM_Square_wf_Early'
+            }
+        },
+
+        "Square_pulse_seq_MZ_Late": {
+            'operation': 'control',
+            'length': len(QRAM_Exp_Square_samples_Late),
+            'waveforms': {
+                'single': 'QRAM_Square_wf_Late'
+            }
+        },
+
         "QRAM_seq_pulse_Ancilla": {
             'operation': 'control',
             'length': len(QRAM_Exp_Gaussian_samples_Ancilla),
@@ -1074,6 +1092,14 @@ config = {
         'Sprint_Gaussian_wf_N': {
             'type': 'arbitrary',
             'samples': Sprint_Exp_Gaussian_samples_N
+        },
+        'QRAM_Square_wf_Early': {
+            'type': 'arbitrary',
+            'samples': QRAM_Exp_Square_samples_Early
+        },
+        'QRAM_Square_wf_Late': {
+            'type': 'arbitrary',
+            'samples': QRAM_Exp_Square_samples_Late
         },
         'qram_wf': {
             'type': 'arbitrary',
