@@ -49,7 +49,7 @@ controller = 'con1'
 vec_size = 10000
 num_of_detectors = 6
 opx_max_per_window = vec_size*num_of_detectors/2
-
+dets_number = [1, 2, 3, 6, 7, 8]
 
 # Pulse_durations
 readout_pulse_len = 10000000
@@ -463,7 +463,7 @@ config = {
             },
         },
 
-        "Dig_detectors": {
+        "detector_with_dig_out": {
             ## fake port ##
             "singleInput": {
                 "port": (controller, 1)
@@ -475,14 +475,10 @@ config = {
                     "buffer": 0,
                 },
             },
+
             ###############
             "digitalOutputs": {
-                "out1": (controller, 1),
-                "out2": (controller, 2),
-                "out3": (controller, 3),
-                "out6": (controller, 6),
-                "out7": (controller, 7),
-                "out8": (controller, 8),
+                "out1": (controller,dets_number[0]),
             },
             'outputs': {
                   'out1': (controller, 1)
@@ -496,8 +492,24 @@ config = {
             'smearing': 0,
             'intermediate_frequency': IF_TOP2,
         },
-
-
+        "detectors_no_dig_out": {
+            f"Dig_detectors_{i}":
+                     {"singleInput":
+                          {"port": (controller, 1)},
+                      "digitalOutputs":
+                          {f"out{i}": (controller, i)},
+                      'outputs': {
+                          'out1': (controller, 1)
+                      },
+                      'operations': {
+                          'readout': "digital_readout",
+                          'readout_SPRINT': "digital_readout_sprint",
+                          'readout_QRAM': "digital_readout_QRAM",
+                      },
+                      'time_of_flight': 36,
+                      'smearing': 0,
+                      'intermediate_frequency': IF_TOP2,
+                      } for i in dets_number[1:]},
         "FLR_detection": {
             # open fake:#
             "singleInput": {
