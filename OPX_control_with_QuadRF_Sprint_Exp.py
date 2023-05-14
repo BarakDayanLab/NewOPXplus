@@ -1601,10 +1601,10 @@ class OPX:
                 print('Above Threshold')
             self.get_tt_from_handles(Num_Of_dets, Counts_handle, tt_handle, FLR_handle)
             self.divide_tt_to_reflection_trans(sprint_pulse_len, num_of_detection_pulses)
-            # self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \ ## change back to this! (Ziv)
-            #                                       + self.num_of_det_reflections_per_seq_N
-            self.num_of_det_reflections_per_seq = self.num_of_det_transmissions_per_seq_S \
-                                                  + self.num_of_det_transmissions_per_seq_N
+            self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
+                                                  + self.num_of_det_reflections_per_seq_N
+            # self.num_of_det_reflections_per_seq = self.num_of_det_transmissions_per_seq_S \
+            #                                       + self.num_of_det_transmissions_per_seq_N
             self.num_of_SPRINT_reflections_per_seq = self.num_of_SPRINT_reflections_per_seq_S \
                                                      + self.num_of_SPRINT_reflections_per_seq_N
             self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_S \
@@ -1612,10 +1612,10 @@ class OPX:
             self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.Sprint_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
         ####    end get tt and counts from OPX to python   #####
 
-        # self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \ ## change back to this! (Ziv)
-        #                                                    + self.num_of_det_reflections_per_seq_N
-        self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S \
-                                                           + self.num_of_det_transmissions_per_seq_N
+        self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
+                                                           + self.num_of_det_reflections_per_seq_N
+        # self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S \
+        #                                                    + self.num_of_det_transmissions_per_seq_N
 
         # divide south and north into reflection and transmission
         self.tt_histogram_transmission, self.tt_histogram_reflection = \

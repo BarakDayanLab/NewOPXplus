@@ -47,7 +47,7 @@ controller = 'con1'
 
 # parameters of sizes
 vec_size = 8000
-num_of_detectors = 6
+num_of_detectors = 2
 opx_max_per_window = vec_size*num_of_detectors/2
 
 
@@ -623,7 +623,8 @@ config = {
                 'Const_open': "MOT_lock",
                 'Detection_pulses': "Square_detection_pulses",
                 'Homodyne_Pulse': "Homodyne_Pulse",
-                'Sprint_experiment_pulses_N': "Gaussian_Sprint_pulse_N"
+                'Sprint_experiment_pulses_N': "Gaussian_Sprint_pulse_N",
+                'QRAM_experiment_pulses_Early': "Square_pulse_seq_MZ_Early",
             },
             'intermediate_frequency': IF_AOMs_MZ,
         },
@@ -893,16 +894,18 @@ config = {
             'waveforms': {
                 'single': 'QRAM_Gaussian_wf_Ancilla'
             },
-            'digital_marker': 'QRAM_TOP2_pulsar'
+            # 'digital_marker': 'QRAM_TOP2_pulsar'
+            'digital_marker': 'ON'
         },
 
-        "QRAM_seq_pulse_North": {
+        "QRAM_seq_pulse_N": {
             'operation': 'control',
             'length': len(QRAM_Exp_Gaussian_samples_N),
             'waveforms': {
                 'single': 'QRAM_Gaussian_wf_N'
             },
-            'digital_marker': 'Det_switch'
+            # 'digital_marker': 'Det_switch'
+            'digital_marker': 'ON'
         },
 
         "QRAM_seq_pulse_S": {
@@ -1092,6 +1095,18 @@ config = {
         'Sprint_Gaussian_wf_N': {
             'type': 'arbitrary',
             'samples': Sprint_Exp_Gaussian_samples_N
+        },
+        'QRAM_Gaussian_wf_Ancilla': {
+            'type': 'arbitrary',
+            'samples': QRAM_Exp_Gaussian_samples_Ancilla
+        },
+        'QRAM_Gaussian_wf_S': {
+            'type': 'arbitrary',
+            'samples': QRAM_Exp_Gaussian_samples_S
+        },
+        'QRAM_Gaussian_wf_N': {
+            'type': 'arbitrary',
+            'samples': QRAM_Exp_Gaussian_samples_N
         },
         'QRAM_Square_wf_Early': {
             'type': 'arbitrary',

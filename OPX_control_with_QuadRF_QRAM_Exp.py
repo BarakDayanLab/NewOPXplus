@@ -247,7 +247,7 @@ def FreeFall(freefall_duration, coils_timing):
 
     ## Aligning all the different elements used during the freefall time of the experiment ##
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'", "AOM_2-2'",
-          "Measurement", "PULSER_N", "PULSER_S") # , "Dig_detectors")
+          "Measurement", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S") # , "Dig_detectors")
 
     ## Zeeman Coils turn-on sequence ##
     wait(coils_timing, "Zeeman_Coils")
@@ -305,97 +305,7 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
     play("OD_FS", "AOM_2-2/3'", duration=OD_pulse_duration)
 
 
-def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
-               ON_counts_st1, ON_counts_st2, ON_counts_st3,
-               ON_counts_st6, ON_counts_st7, ON_counts_st8,
-               tt_st_1, tt_st_2, tt_st_3, tt_st_6, tt_st_7, tt_st_8, rep_st):
-    """
-     Generates train of 8 pulses (to be configured from config if each of thenm is north ore south)
-     for SPRINT experiments
-
-       Parameters
-       ----------
-       :param M_delay: The time delay from end of PGC until the first 2-3' pulse (OD + trigger).
-       :param rep: The number of measuring window repetitions, derived from OD measuring duration (M_time/M_window).
-       :param m_time: The duration of the entire measurement time.
-       :param m_window: The duration of each measuring window - fpr each window there is 28 nsec "deadtime".
-       :param counts_st1: The stream array for the number of photons counted at each measuring window for detector 1.
-       :param counts_st2: The stream array for the number of photons counted at each measuring window for detector 2.
-       :param counts_st3: The stream array for the number of photons counted at each measuring window for detector 3.
-       :param counts_st4: The stream array for the number of photons counted at each measuring window for detector 4.
-       :param counts_st5: The stream array for the number of photons counted at each measuring window for detector 5.
-       :param counts_st6: The stream array for the number of photons counted at each measuring window for detector 6.
-       :param counts_st7: The stream array for the number of photons counted at each measuring window for detector 7.
-       :param counts_st8: The stream array for the number of photons counted at each measuring window for detector 8.
-       """
-
-    vec_size = Config.vec_size
-
-    counts1 = declare(int)
-    counts2 = declare(int)
-    counts3 = declare(int)
-    counts6 = declare(int)
-    counts7 = declare(int)
-    counts8 = declare(int)
-
-    tt_vec1 = declare(int, size=vec_size)
-    tt_vec2 = declare(int, size=vec_size)
-    tt_vec3 = declare(int, size=vec_size)
-    tt_vec6 = declare(int, size=vec_size)
-    tt_vec7 = declare(int, size=vec_size)
-    tt_vec8 = declare(int, size=vec_size)
-
-    n = declare(int)
-    t = declare(int)
-    m = declare(int)
-
-    # assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
-
-    align("PULSER_N", "PULSER_S", "Dig_detectors", "AOM_2-2'")
-    play("Depump", "AOM_2-2'", duration=shutter_open_time)
-    play("Const_open" * amp(0.4), "PULSER_S", duration=shutter_open_time)
-    play("Const_open" * amp(0.4), "PULSER_N", duration=shutter_open_time)
-    align("PULSER_N", "PULSER_S", "Dig_detectors")
-
-    with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.Sprint_Exp_Gaussian_samples_S))): #assaf comment debbuging
-        play("Sprint_experiment_pulses_S", "PULSER_S")
-        play("Sprint_experiment_pulses_N", "PULSER_N")
-
-    # wait(137, "Dig_detectors")
-    wait(293, "Dig_detectors")
-    # wait(117, "Dig_detectors") # For 20ns between pulses in sequence
-    # wait(298, "Dig_detectors") # For 20ns between pulses in sequence of only detections
-    with for_(n, 0, n < m_time * 4, n + m_window):
-        measure("readout_SPRINT", "Dig_detectors", None,
-        # measure("readout_QRAM", "Dig_detectors", None,
-                time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
-                time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
-                time_tagging.digital(tt_vec3, m_window, element_output="out3", targetLen=counts3),
-                time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
-                time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
-                time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
-                )
-
-        ## Save Data: ##
-
-        # Number of Photons (NOP) Count stream for each detector: ##
-        save(counts1, ON_counts_st1)
-        save(counts2, ON_counts_st2)
-        save(counts3, ON_counts_st3)
-        save(counts6, ON_counts_st6)
-        save(counts7, ON_counts_st7)
-        save(counts8, ON_counts_st8)
-
-
-        with for_(m, 0, m < vec_size, m + 1):
-            wait(1000)
-            save(tt_vec1[m], tt_st_1)
-            save(tt_vec2[m], tt_st_2)
-            save(tt_vec3[m], tt_st_3)
-            save(tt_vec6[m], tt_st_6)
-            save(tt_vec7[m], tt_st_7)
-            save(tt_vec8[m], tt_st_8)
-            save(n, rep_st)
+def MZ_balancing(m_time):
 
 
 def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
@@ -451,15 +361,18 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
     # assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
 
-    align("PULSER_N", "PULSER_S", "Dig_detectors", "AOM_2-2'")
+    align("AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors", "AOM_2-2'")
     play("Depump", "AOM_2-2'", duration=shutter_open_time)
     play("Const_open" * amp(0.4), "PULSER_S", duration=shutter_open_time)
     play("Const_open" * amp(0.4), "PULSER_N", duration=shutter_open_time)
-    align("PULSER_N", "PULSER_S", "Dig_detectors")
+    align("AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors")
 
     with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.Sprint_Exp_Gaussian_samples_S))): #assaf comment debbuging
-        play("Sprint_experiment_pulses_S", "PULSER_S")
-        play("Sprint_experiment_pulses_N", "PULSER_N")
+        play("QRAM_experiment_pulses_Ancilla", "PULSER_ANCILLA")
+        play("QRAM_experiment_pulses_S", "PULSER_S")
+        play("QRAM_experiment_pulses_N", "PULSER_N")
+        play("QRAM_experiment_pulses_Early", "AOM_Early")
+        play("QRAM_experiment_pulses_Late", "AOM_Late")
 
     # wait(137, "Dig_detectors")
     wait(293, "Dig_detectors")
@@ -475,8 +388,8 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
                 time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
                 time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
                 time_tagging.digital(tt_vec9, m_window, element_output="out9", targetLen=counts9),
-                time_tagging.digital(tt_vec11, m_window, element_output="out10", targetLen=counts11),
-                time_tagging.digital(tt_vec15, m_window, element_output="out5", targetLen=counts15),
+                # time_tagging.digital(tt_vec11, m_window, element_output="out11", targetLen=counts11),
+                # time_tagging.digital(tt_vec15, m_window, element_output="out15", targetLen=counts15),
                 )
 
         ## Save Data: ##
@@ -648,7 +561,7 @@ def opx_control(obj, qm):
             with else_():
                 play("Depump", "AOM_2-2'", duration=PrePulse_duration)
                 # wait(PrePulse_duration, "Cooling_Sequence")
-            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "PULSER_N", "PULSER_S", "Dig_detectors")
+            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors")
 
             with if_(Trigger_Phase == 4):  # when trigger on pulse 1
                 ## Trigger QuadRF Sequence #####################
@@ -663,13 +576,13 @@ def opx_control(obj, qm):
                 align(*all_elements)
 
             with if_((Pulse_1_duration > 0) & SPRINT_Exp_ON):
-                align("Dig_detectors", "PULSER_N", "PULSER_S")
+                align("Dig_detectors", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S")
                 QRAM_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
                          ON_counts_st1, ON_counts_st2, ON_counts_st3,
                          ON_counts_st6, ON_counts_st7, ON_counts_st8,
                          ON_counts_st9, ON_counts_st11, ON_counts_st15,
                          tt_st_1, tt_st_2, tt_st_3, tt_st_6, tt_st_7, tt_st_8, tt_st_9, tt_st_11, tt_st_15, rep_st)
-                align("Dig_detectors", "PULSER_N", "PULSER_S")
+                align("Dig_detectors", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S")
 
             save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
             with if_(AntiHelmholtz_ON):
