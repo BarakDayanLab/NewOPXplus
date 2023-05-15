@@ -331,31 +331,27 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
     vec_size = Config.vec_size
 
-    counts1 = declare(int)
-    counts2 = declare(int)
-    counts3 = declare(int)
-    counts6 = declare(int)
-    counts7 = declare(int)
-    counts8 = declare(int)
+    counts = np.zeros(8)
+    for i in Config.dets_number:
+        counts[i] = declare(int)
 
-    tt_vec1 = declare(int, size=vec_size)
-    tt_vec2 = declare(int, size=vec_size)
-    tt_vec3 = declare(int, size=vec_size)
-    tt_vec6 = declare(int, size=vec_size)
-    tt_vec7 = declare(int, size=vec_size)
-    tt_vec8 = declare(int, size=vec_size)
+    tt_vec = np.zeros(8)
+    for i in Config.dets_number:
+        tt_vec[i] = declare(int, size=vec_size)
 
     n = declare(int)
     t = declare(int)
     m = declare(int)
 
-    # assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
+    assign_variables_to_element("detector_with_dig_out", tt_vec[Config.dets_number[0]][0], counts[Config.dets_number[0]], m_window)
+    for i in Config.dets_number[1:]:
+        assign_variables_to_element(f"detectors_no_dig_out_{i}", tt_vec[i][0], counts[i], m_window)
 
     align("PULSER_N", "PULSER_S", "Dig_detectors", "AOM_2-2'")
     play("Depump", "AOM_2-2'", duration=shutter_open_time)
     play("Const_open" * amp(0.4), "PULSER_S", duration=shutter_open_time)
     play("Const_open" * amp(0.4), "PULSER_N", duration=shutter_open_time)
-    align("PULSER_N", "PULSER_S", "Dig_detectors")
+    align("PULSER_N", "PULSER_S", "detector_with_dig_out")
 
     with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.Sprint_Exp_Gaussian_samples_S))): #assaf comment debbuging
         play("Sprint_experiment_pulses_S", "PULSER_S")
@@ -363,20 +359,12 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
     # wait(137, "Dig_detectors")
     # wait(293, "Dig_detectors")
-    wait(292, "Dig_detectors")  # For
+    wait(292, "detector_with_dig_out")  # For
     # wait(117, "Dig_detectors") # For 20ns between pulses in sequence
     # wait(298, "Dig_detectors") # For 20ns between pulses in sequence of only detections
     with for_(n, 0, n < m_time * 4, n + m_window):
-        measure("readout_SPRINT", "Dig_detectors", None,
-        # measure("readout_QRAM", "Dig_detectors", None,
-                time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
-                time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
-                time_tagging.digital(tt_vec3, m_window, element_output="out3", targetLen=counts3),
-                time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
-                time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
-                time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
-                )
-
+        measure("readout_SPRINT", "detector_with_dig_out", None, time_tagging.digital(tt_vec[Config.dets_number[0]], m_window,
+                                                     element_output="out1", targetLen=counts[Config.dets_number[0]]))
         ## Save Data: ##
 
         # Number of Photons (NOP) Count stream for each detector: ##

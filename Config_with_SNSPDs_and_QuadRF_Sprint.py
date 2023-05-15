@@ -492,24 +492,8 @@ config = {
             'smearing': 0,
             'intermediate_frequency': IF_TOP2,
         },
-        "detectors_no_dig_out": {
-            f"Dig_detectors_{i}":
-                     {"singleInput":
-                          {"port": (controller, 1)},
-                      "digitalOutputs":
-                          {f"out{i}": (controller, i)},
-                      'outputs': {
-                          'out1': (controller, 1)
-                      },
-                      'operations': {
-                          'readout': "digital_readout",
-                          'readout_SPRINT': "digital_readout_sprint",
-                          'readout_QRAM': "digital_readout_QRAM",
-                      },
-                      'time_of_flight': 36,
-                      'smearing': 0,
-                      'intermediate_frequency': IF_TOP2,
-                      } for i in dets_number[1:]},
+        # all other detectors are added at the end of the script as "detectors_no_dig_out_{i}"
+
         "FLR_detection": {
             # open fake:#
             "singleInput": {
@@ -1120,3 +1104,22 @@ config = {
     }
 
 }
+# add Dig detectors elements without output
+config['elements'].update({f"detectors_no_dig_out_{i}":
+                     {"singleInput":
+                          {"port": (controller, 1)},
+                      "digitalOutputs":
+                          {f"out{i}": (controller, i)},
+                      'outputs': {
+                          'out1': (controller, 1)
+                      },
+                      'operations': {
+                          'readout': "digital_readout",
+                          'readout_SPRINT': "digital_readout_sprint",
+                          'readout_QRAM': "digital_readout_QRAM",
+                      },
+                      'time_of_flight': 36,
+                      'smearing': 0,
+                      'intermediate_frequency': IF_TOP2,
+                      } for i in dets_number[1:]})
+
