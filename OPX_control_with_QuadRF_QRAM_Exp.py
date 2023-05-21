@@ -378,7 +378,7 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
     counts8 = declare(int)
     counts9 = declare(int)
     counts11 = declare(int)
-    counts15 = declare(int)
+    # counts15 = declare(int)
 
     tt_vec1 = declare(int, size=vec_size)
     tt_vec2 = declare(int, size=vec_size)
@@ -388,7 +388,7 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
     tt_vec8 = declare(int, size=vec_size)
     tt_vec9 = declare(int, size=vec_size)
     tt_vec11 = declare(int, size=vec_size)
-    tt_vec15 = declare(int, size=vec_size)
+    # tt_vec15 = declare(int, size=vec_size)
 
     n = declare(int)
     t = declare(int)
@@ -423,7 +423,7 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
                 time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
                 time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
                 time_tagging.digital(tt_vec9, m_window, element_output="out9", targetLen=counts9),
-                # time_tagging.digital(tt_vec11, m_window, element_output="out11", targetLen=counts11),
+                time_tagging.digital(tt_vec11, m_window, element_output="out11", targetLen=counts11),
                 # time_tagging.digital(tt_vec15, m_window, element_output="out15", targetLen=counts15),
                 )
 
@@ -438,7 +438,7 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
         save(counts8, ON_counts_st8)
         save(counts9, ON_counts_st9)
         save(counts11, ON_counts_st11)
-        save(counts15, ON_counts_st15)
+        # save(counts15, ON_counts_st15)
 
 
         with for_(m, 0, m < vec_size, m + 1):
@@ -451,7 +451,7 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
             save(tt_vec8[m], tt_st_8)
             save(tt_vec9[m], tt_st_9)
             save(tt_vec11[m], tt_st_11)
-            save(tt_vec15[m], tt_st_15)
+            # save(tt_vec15[m], tt_st_15)
             save(n, rep_st)
 
 
@@ -465,7 +465,7 @@ def opx_control(obj, qm):
 
         # Boolean variables:
         AntiHelmholtz_ON = declare(bool, value=True)
-        SPRINT_Exp_ON = declare(bool, value=False)
+        SPRINT_Exp_ON = declare(bool, value=True)
 
         # MOT variables
         MOT_Repetitions = declare(int, value=obj.Exp_Values['MOT_rep'])
@@ -689,6 +689,8 @@ def opx_control(obj, qm):
                 assign(i, IO1)
 
         with stream_processing():
+            counts_st_B.buffer(obj.rep_MZ).save('B_Counts')
+            counts_st_D.buffer(obj.rep_MZ).save('D_Counts')
             ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
             ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
             ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
@@ -696,8 +698,8 @@ def opx_control(obj, qm):
             ON_counts_st7.buffer(obj.rep).save('Det7_Counts')
             ON_counts_st8.buffer(obj.rep).save('Det8_Counts')
             ON_counts_st9.buffer(obj.rep).save('Det9_Counts')
-            ON_counts_st11.buffer(obj.rep).save('Det11_Counts')
-            ON_counts_st15.buffer(obj.rep).save('Det15_Counts')
+            # ON_counts_st11.buffer(obj.rep).save('Det11_Counts')
+            # ON_counts_st15.buffer(obj.rep).save('Det15_Counts')
             (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
             (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
             (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
@@ -705,8 +707,8 @@ def opx_control(obj, qm):
             (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det7_Probe_TT')
             (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det8_Probe_TT')
             (tt_st_9 + rep_st).buffer(obj.vec_size * obj.rep).save('Det9_Probe_TT')
-            (tt_st_11 + rep_st).buffer(obj.vec_size * obj.rep).save('Det11_Probe_TT')
-            (tt_st_15 + rep_st).buffer(obj.vec_size * obj.rep).save('Det15_Probe_TT')
+            # (tt_st_11 + rep_st).buffer(obj.vec_size * obj.rep).save('Det11_Probe_TT')
+            # (tt_st_15 + rep_st).buffer(obj.vec_size * obj.rep).save('Det15_Probe_TT')
             FLR_st.save('FLR_measure')
             AntiHelmholtz_ON_st.save("antihelmholtz_on")
 
@@ -847,6 +849,7 @@ class OPX:
         self.OD_FS_sleep = self.Exp_Values['OD_FS_sleep']
         ## OD In-fiber/Transits:
         self.Transit_switch = False
+        self.prepulse_duration = self.Exp_Values['PrePulse_duration']
         self.OD_delay = self.Exp_Values['OD_delay']  # [msec]
         self.M_window = self.Exp_Values['M_window']  # [nsec]
         self.OD_duration_pulse1 = self.Exp_Values['OD_duration_pulse1']  # [msec]
@@ -858,6 +861,7 @@ class OPX:
         # self.rep = int(self.M_time / (self.M_window + 28 + 170))
         self.rep = int(self.M_time / self.M_window)
         self.vec_size = Config.vec_size
+        self.rep_MZ = int((self.prepulse_duration - self.Shutter_open_time) * 1e6 / len(Config.QRAM_MZ_balance_pulse_Late))
 
         # MW spectroscopy parameters:
         self.MW_start_frequency = int(100e6)  # [Hz]

@@ -86,7 +86,8 @@ IF_AOM_N = 129.2368e6
 # IF_AOM_S = 89.2368e6
 IF_AOM_S = 129.2368e6
 # IF_AOM_LO = 89.2368e6
-IF_AOM_LO = 129.2368e6
+IF_AOM_ANCILLA = 129.2368e6 + 110e6/2
+# IF_AOM_LO = 129.2368e6
 IF_AOMs_MZ = 110e6
 IF_AOM_SigmaPlus = 114.58e6
 IF_AOM_SigmaMinus = 114.58e6
@@ -192,6 +193,33 @@ def QRAM_Exp_samples(delta=240, pulse_len=10000000):
         QRAM_exp_samples += [0.4]*delta + [0]*2*delta
     return QRAM_exp_samples
 
+def get_pulses_location_in_seq(delay, seq, smearing = 0):
+    '''
+    A function that uses the original sequence samples that the OPX uses, in order to obtain the location of the
+    pulses in the sequence and build a filter. The user may add smearing which is the value that is added before and
+    after each pulse in the sequence to match the filter to the performance of the physical system (AOMs).
+    :param delay: Between the actual sequence pulse location to the location of the folded data
+    :param seq: The sequence of pulses from which the filter is generated.
+    :param smearing: The value that is added to the filter before and after the each pulse in the sequence.
+    :return:
+    '''
+    seq_filter = (np.array(seq) > 0).astype(int)
+    seq_filter = np.roll(seq_filter, delay)
+    seq_indx = np.where(seq_filter > 0)[0] + 1
+    pulses_loc = []
+    start_indx = seq_indx[0]
+    for i in range(1, len(seq_indx)):
+        if (seq_indx[i] - seq_indx[i-1]) > 1:
+            if (start_indx > 1) and pulses_loc:
+                pulses_loc.append((0, start_indx - 1 - pulses_loc[-1][-1] - int(smearing)))
+            pulses_loc.append((1, seq_indx[i-1] - start_indx + 1 + int(smearing)))
+            start_indx = seq_indx[i]
+    if (start_indx > 1) and pulses_loc:
+        pulses_loc.append((0, start_indx - 1 - pulses_loc[-1][-1] - int(smearing)))
+    pulses_loc.append((1, seq_indx[-1] - start_indx + 1 + int(smearing)))
+    pulses_loc.append((0, 0))
+    return pulses_loc
+
 det_pulse_len = 40
 sprint_pulse_len = 100
 
@@ -199,9 +227,21 @@ num_init_zeros_S = 12  # For only det pulses sequence
 num_mid_zeros_S = 12
 num_fin_zeros_S = 0  # For only det pulses sequence
 num_between_zeros = 20
-det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
-sprint_pulse_amp_S = [0.075, 0, 0, 0]
+# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
+# sprint_pulse_amp_S = [0.075, 0, 0, 0]
+# For pulse sync
+det_pulse_amp_S = [0.45, 0, 0, 0, 0, 0, 0, 0]
+sprint_pulse_amp_S = [0, 0, 0, 0]
+# For Bell |(0 + 1)c, 1t>
+# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
+# sprint_pulse_amp_S = [0.075, 0, 0, 0]
+# |0c, (0 + 1)t>
+# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
 # sprint_pulse_amp_S = [0, 0, 0, 0]
+# # |1c, (0 + 1)t>
+# det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
+# sprint_pulse_amp_S = [0, 0.075, 0, 0.075]
+
 Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
                                                             det_pulse_len=det_pulse_len,
                                                             det_pulses_amp=det_pulse_amp_S,
@@ -213,9 +253,21 @@ Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=spr
 num_init_zeros_N = 12  # For only det pulses sequence
 num_mid_zeros_N = 12
 num_fin_zeros_N = 0  # For only det pulses sequence
-det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
-sprint_pulse_amp_N = [0, 0.085, 0.085, 0.085]
-# sprint_pulse_amp_N = [0, 0, 0, 0]
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
+# sprint_pulse_amp_N = [0, 0.085, 0, 0.085]
+# For pulse sync
+det_pulse_amp_N = [0.45, 0, 0, 0, 0, 0, 0, 0]
+sprint_pulse_amp_N = [0, 0, 0, 0]
+# For Bell |(0 + 1)c, 1t>
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
+# sprint_pulse_amp_N = [0, 0, 0, 0.085]
+# |0c, (0 + 1)t>
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
+# sprint_pulse_amp_N = [0, 0.085, 0, 0.085]
+# # |1c, (0 + 1)t>
+# det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
+# sprint_pulse_amp_N = [0.085, 0, 0, 0]
+
 Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
                                                             det_pulse_len=det_pulse_len,
                                                             det_pulses_amp=det_pulse_amp_N,
@@ -228,8 +280,19 @@ Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(sprint_pulse_len=spr
 num_init_zeros_Ancilla = 12  # For only det pulses sequence
 num_mid_zeros_Ancilla = 12
 num_fin_zeros_Ancilla = 0  # For only det pulses sequence
-det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0, 0, 0]
-sprint_pulse_amp_Ancilla = [0, 0, 0.085, 0]
+
+# For pulse sync
+det_pulse_amp_Ancilla = [0.45, 0, 0, 0, 0, 0, 0, 0]
+sprint_pulse_amp_Ancilla = [0, 0, 0, 0]
+# For Bell |(0 + 1)c, 1t>
+# det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0, 0, 0]
+# sprint_pulse_amp_Ancilla = [0, 0, 0.085, 0]
+# |0c, (0 + 1)t>
+# det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0, 0, 0]
+# sprint_pulse_amp_Ancilla = [0, 0, 0.085, 0]
+# # |1c, (0 + 1)t>
+# det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0, 0, 0]
+# sprint_pulse_amp_Ancilla = [0, 0, 0, 0]
 
 QRAM_Exp_Gaussian_samples_Ancilla = QRAM_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
                                                               det_pulse_len=det_pulse_len,
@@ -263,9 +326,12 @@ num_init_val_Early = 12  # For only det pulses sequence
 num_mid_val_Early = 12
 num_fin_val_Early = 0  # For only det pulses sequence
 Pulses_Amp = 0.45
+# For pulse sync
+det_pulse_amp_Early = [1, 0, 0, 0, 0, 0, 0, 0]
+sprint_pulse_amp_Early = [0, 0, 0, 0]
 # For Bell |(0 + 1)c, 1t>
-det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 1, 1]
-sprint_pulse_amp_Early = [1, 0, 0, 0]
+# det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 1, 1]
+# sprint_pulse_amp_Early = [1, 0, 0, 0]
 # |0c, (0 + 1)t>
 # det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_Early = [1, 1, 0, 0]
@@ -287,9 +353,12 @@ QRAM_Exp_Square_samples_Early = QRAM_Exp_Square_samples(amp=Pulses_Amp,
 num_init_val_Late = 12  # For only det pulses sequence
 num_mid_val_Late = 12
 num_fin_val_Late = 0  # For only det pulses sequence
-# For Bell |(0 + 1)c, 1t>
-det_pulse_amp_Late = [0, 0, 0, 0, 0, 0, 0, 0]
+# For pulse sync
+det_pulse_amp_Late = [1, 0, 0, 0, 0, 0, 0, 0]
 sprint_pulse_amp_Late = [0, 0, 0, 0]
+# For Bell |(0 + 1)c, 1t>
+# det_pulse_amp_Late = [0, 0, 0, 0, 0, 0, 0, 0]
+# sprint_pulse_amp_Late = [0, 0, 0, 0]
 # |0c, (0 + 1)t>
 # det_pulse_amp_Late = [0, 0, 0, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_Late = [0, 0, 1, 1]
@@ -306,6 +375,34 @@ QRAM_Exp_Square_samples_Late = QRAM_Exp_Square_samples(amp=Pulses_Amp,
                                                        num_init_val=num_init_val_Late,
                                                        num_mid_val=num_mid_val_Late,
                                                        num_fin_val=num_fin_val_Late)
+
+num_init_val_FS_North = 12  # For only det pulses sequence
+num_mid_val_FS_North = 12
+num_fin_val_FS_North = 0  # For only det pulses sequence
+# For Bell |(0 + 1)c, 1t>
+det_pulse_amp_FS_North = [1, 1, 1, 1, 1, 1, 1, 1]
+sprint_pulse_amp_FS_North = [1, 0, 0, 0]
+# |0c, (0 + 1)t>
+# det_pulse_amp_Late = [1, 1, 1, 1, 1, 1, 1, 1]
+# sprint_pulse_amp_Late = [1, 1, 1, 1]
+# # |1c, (0 + 1)t>
+# det_pulse_amp_Late = [1, 1, 1, 1, 1, 1, 1, 1]
+# sprint_pulse_amp_Late = [1, 1, 1, 1]
+
+QRAM_Exp_Square_samples_FS_North = QRAM_Exp_Square_samples(amp=Pulses_Amp,
+                                                           sprint_pulse_len=sprint_pulse_len,
+                                                           det_pulse_len=det_pulse_len,
+                                                           det_pulses_amp=det_pulse_amp_FS_North,
+                                                           sprint_pulses_amp=sprint_pulse_amp_FS_North,
+                                                           num_between_vals=num_between_vals,
+                                                           num_init_val=num_init_val_FS_North,
+                                                           num_mid_val=num_mid_val_FS_North,
+                                                           num_fin_val=num_fin_val_FS_North)
+
+QRAM_Exp_digital_samples_FS_North = get_pulses_location_in_seq(delay=0,
+                                                               seq=QRAM_Exp_Square_samples_FS_North,
+                                                               smearing=0)
+
 
 MZ_delay = int(len(QRAM_Exp_Gaussian_samples_N))
 AOM_risetime = 120
@@ -688,7 +785,7 @@ config = {
                 'Sprint_experiment_pulses_N': "Gaussian_Sprint_pulse_N",
                 'QRAM_experiment_pulses_Ancilla': "QRAM_seq_pulse_Ancilla",
             },
-            'intermediate_frequency': IF_AOM_N,
+            'intermediate_frequency': IF_AOM_ANCILLA,
         },
 
         "PULSER_N": {
@@ -696,7 +793,7 @@ config = {
                 "port": (controller, 9),
             },
             'digitalInputs': {
-                "Shutter_Switch": {
+                "FS_North": {
                     "port": (controller, 8),
                     "delay": 0,
                     "buffer": 0,
@@ -931,8 +1028,8 @@ config = {
             'waveforms': {
                 'single': 'QRAM_Gaussian_wf_N'
             },
-            # 'digital_marker': 'Det_switch'
-            'digital_marker': 'ON'
+            'digital_marker': 'FS_North'
+            # 'digital_marker': 'ON'
         },
 
         "QRAM_seq_pulse_S": {
@@ -1237,6 +1334,9 @@ config = {
         },
         "Trig_ns": {
             "samples": [(1, 40), (0, 0)]
+        },
+        "FS_North": {
+            "samples": QRAM_Exp_digital_samples_FS_North
         }
     },
 
