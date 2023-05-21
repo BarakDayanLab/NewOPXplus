@@ -307,6 +307,12 @@ QRAM_Exp_Square_samples_Late = QRAM_Exp_Square_samples(amp=Pulses_Amp,
                                                        num_mid_val=num_mid_val_Late,
                                                        num_fin_val=num_fin_val_Late)
 
+MZ_delay = int(len(QRAM_Exp_Gaussian_samples_N))
+AOM_risetime = 120
+Seq_rep = 20
+QRAM_MZ_balance_pulse_Early = ([Pulses_Amp] * (MZ_delay - AOM_risetime) + [0] * (MZ_delay + AOM_risetime)) * Seq_rep
+QRAM_MZ_balance_pulse_Late = ([0] * (MZ_delay + AOM_risetime) + [Pulses_Amp] * (MZ_delay - AOM_risetime)) * Seq_rep
+
 # readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/1.5)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
 readout_pulse_sprint_len_N = 10*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
 # readout_pulse_sprint_len_S = math.ceil(((opx_max_per_window/1.5)/(efficiency*1e6*num_of_photons_per_sequence_S))*len(Sprint_Exp_Gaussian_samples_S))*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
@@ -619,13 +625,27 @@ config = {
             "singleInput": {
                 "port": (controller, 6),
             },
+            'digitalInputs': {
+                "AWG_Switch": {
+                    "port": (controller, 10),
+                    "delay": 0,
+                    "buffer": 0,
+                },
+            },
+            "digitalOutputs": {
+                "outBright": (controller, 1),
+            },
+            'outputs': {
+                'out1': (controller, 1)
+            },
             'operations': {
                 'Const_open': "MOT_lock",
-                'Detection_pulses': "Square_detection_pulses",
-                'Homodyne_Pulse': "Homodyne_Pulse",
+                'MZ_balancing_pulses': "MZ_balance_pulses_Early",
                 'Sprint_experiment_pulses_N': "Gaussian_Sprint_pulse_N",
                 'QRAM_experiment_pulses_Early': "Square_pulse_seq_MZ_Early",
             },
+            'time_of_flight': 36,
+            'smearing': 0,
             'intermediate_frequency': IF_AOMs_MZ,
         },
 
@@ -633,13 +653,20 @@ config = {
             "singleInput": {
                 "port": (controller, 7),
             },
+            "digitalOutputs": {
+                "outDark": (controller, 4),
+            },
+            'outputs': {
+                'out1': (controller, 1)
+            },
             'operations': {
                 'Const_open': "MOT_lock",
-                'Detection_pulses': "Square_detection_pulses",
-                'Homodyne_Pulse': "Homodyne_Pulse",
+                'MZ_balancing_pulses': "MZ_balance_pulses_Late",
                 'Sprint_experiment_pulses_S': "Gaussian_Sprint_pulse_N",
                 'QRAM_experiment_pulses_Late': "Square_pulse_seq_MZ_Late",
             },
+            'time_of_flight': 36,
+            'smearing': 0,
             'intermediate_frequency': IF_AOMs_MZ,
         },
 
@@ -1032,6 +1059,24 @@ config = {
             'digital_marker': 'ON'
         },
 
+        "MZ_balance_pulses_Early": {
+            'length': len(QRAM_MZ_balance_pulse_Early),
+            'operation': 'control',
+            'waveforms': {
+                'single': 'early_late_wf'
+            },
+            'digital_marker': 'ON'
+        },
+
+        "MZ_balance_pulses_Late": {
+            'length': len(QRAM_MZ_balance_pulse_Late),
+            'operation': 'control',
+            'waveforms': {
+                'single': 'late_early_wf'
+            },
+            'digital_marker': 'ON'
+        },
+
         'pulse1_in': {
             'operation': 'control',
             'length': pulse_time,
@@ -1119,6 +1164,14 @@ config = {
         'qram_wf': {
             'type': 'arbitrary',
             'samples': QRAM_Exp_TOP2_samples
+        },
+        'early_late_wf': {
+            'type': 'arbitrary',
+            'samples': QRAM_MZ_balance_pulse_Early
+        },
+        'late_early_wf': {
+            'type': 'arbitrary',
+            'samples': QRAM_MZ_balance_pulse_Late
         },
         'CRUS_pulser_wf': {
             'type': 'arbitrary',

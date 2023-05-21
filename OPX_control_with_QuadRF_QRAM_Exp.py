@@ -305,7 +305,42 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
     play("OD_FS", "AOM_2-2/3'", duration=OD_pulse_duration)
 
 
-def MZ_balancing(m_time):
+def MZ_balancing(m_time, m_window, counts_st_B, counts_st_D):
+
+    counts_B = declare(int)
+    counts_D = declare(int)
+
+    t = declare(int)
+    # n = declare(int)
+    # m = declare(int)
+
+    sign = declare(int, value=1)
+    last_counts_D = declare(int)
+
+    align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
+    play("Const_open", "PULSER_S", duration=m_time)
+    play("Const_open", "PULSER_N", duration=m_time)
+
+    wait(293, "AOM_Early", "AOM_Late")
+    with for_(t, 0, t < (m_time * 4), t + m_window):
+        # with for_(t, 0, t < m_window, t + int(len(Config.QRAM_MZ_balance_pulse_Early))):
+            # play("MZ_balancing_pulses", "AOM_Early")
+            # play("MZ_balancing_pulses", "AOM_Late")
+        measure("MZ_balancing_pulses", "AOM_Early", None,
+                counting.digital(counts_B, int(len(Config.QRAM_MZ_balance_pulse_Early)), "outBright"))
+        measure("MZ_balancing_pulses", "AOM_Late", None,
+                counting.digital(counts_D, int(len(Config.QRAM_MZ_balance_pulse_Late)), "outDark"))
+
+        with if_(t > 0):
+            assign(sign, Util.cond(counts_D > last_counts_D, -1, 1))
+
+        save(counts_B, counts_st_B)
+        save(counts_D, counts_st_D)
+
+        frame_rotation_2pi(sign * (counts_B - counts_D) / counts_B, "AOM_Early")
+
+        assign(last_counts_D, counts_D)
+        # assign(sign, 1)
 
 
 def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
@@ -486,6 +521,8 @@ def opx_control(obj, qm):
         shutter_open_time = declare(int, value=int(obj.Shutter_open_time * 1e6 / 4))
 
         # Stream processing:
+        counts_st_B = declare_stream()
+        counts_st_D = declare_stream()
         ON_counts_st1 = declare_stream()
         ON_counts_st2 = declare_stream()
         ON_counts_st3 = declare_stream()
@@ -555,9 +592,11 @@ def opx_control(obj, qm):
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
 
+            align("AOM_2-2'", "AOM_Early", "AOM_Late")
             wait(2500, "AOM_2-2'")
             with if_(SPRINT_Exp_ON):
                 play("Depump", "AOM_2-2'", duration=(PrePulse_duration - shutter_open_time))
+                MZ_balancing((PrePulse_duration - shutter_open_time), len(Config.QRAM_MZ_balance_pulse_Late), counts_st_B, counts_st_D)
             with else_():
                 play("Depump", "AOM_2-2'", duration=PrePulse_duration)
                 # wait(PrePulse_duration, "Cooling_Sequence")
