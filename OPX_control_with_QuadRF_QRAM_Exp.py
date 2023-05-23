@@ -81,7 +81,7 @@ def MOT(mot_repetitions):
     """
     FLR = declare(fixed)
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-3'_for_interference", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors") # , "PULSER_N", "PULSER_S")
+          "AOM_2-2/3'", "AOM_2-3'_for_interference", "FLR_detection", "Measurement") # , "Dig_detectors") # , "PULSER_N", "PULSER_S")
 
     ## MOT build-up ##
     n = declare(int)
@@ -99,7 +99,7 @@ def MOT(mot_repetitions):
         # play("OD_FS" * amp(0.1), "AOM_2-3'_for_interference")
 
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors") #, "PULSER_N", "PULSER_S")
+          "AOM_2-2/3'", "FLR_detection", "Measurement") # , "Dig_detectors") #, "PULSER_N", "PULSER_S")
 
     return FLR
 
@@ -246,7 +246,7 @@ def FreeFall(freefall_duration, coils_timing):
     update_frequency("MOT_AOM_+", Config.IF_AOM_MOT)
 
     ## Aligning all the different elements used during the freefall time of the experiment ##
-    align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'", "AOM_2-2'",
+    align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'",
           "Measurement", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S") # , "Dig_detectors")
 
     ## Zeeman Coils turn-on sequence ##
@@ -396,13 +396,13 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
     # assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
 
-    align("AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors", "AOM_2-2'")
-    play("Depump", "AOM_2-2'", duration=shutter_open_time)
+    align("AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors") #, "AOM_2-2'")
+    # play("Depump", "AOM_2-2'", duration=shutter_open_time)
     play("Const_open" * amp(0.4), "PULSER_S", duration=shutter_open_time)
     play("Const_open" * amp(0.4), "PULSER_N", duration=shutter_open_time)
     align("AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors")
 
-    with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.Sprint_Exp_Gaussian_samples_S))): #assaf comment debbuging
+    with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.QRAM_Exp_Gaussian_samples_S))): #assaf comment debbuging
         play("QRAM_experiment_pulses_Ancilla", "PULSER_ANCILLA")
         play("QRAM_experiment_pulses_S", "PULSER_S")
         play("QRAM_experiment_pulses_N", "PULSER_N")
@@ -410,7 +410,8 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
         play("QRAM_experiment_pulses_Late", "AOM_Late")
 
     # wait(137, "Dig_detectors")
-    wait(293, "Dig_detectors")
+    # wait(293, "Dig_detectors")
+    wait(301, "Dig_detectors")
     # wait(117, "Dig_detectors") # For 20ns between pulses in sequence
     # wait(298, "Dig_detectors") # For 20ns between pulses in sequence of only detections
     with for_(n, 0, n < m_time * 4, n + m_window):
@@ -465,7 +466,7 @@ def opx_control(obj, qm):
 
         # Boolean variables:
         AntiHelmholtz_ON = declare(bool, value=True)
-        SPRINT_Exp_ON = declare(bool, value=True)
+        SPRINT_Exp_ON = declare(bool, value=False)
 
         # MOT variables
         MOT_Repetitions = declare(int, value=obj.Exp_Values['MOT_rep'])
@@ -578,7 +579,7 @@ def opx_control(obj, qm):
 
             # FreeFall sequence:
             with if_(SPRINT_Exp_ON):
-                assign(x, (38688900 - 3106 + 656000 * 2) // 4) # TODO -  added 38688900 to fix new delay due to wait(1000) in saving sprint data with vector size 10000, should be fixed as well
+                assign(x, (30678780 - 3106 + 656000 * 2) // 4) # TODO -  added 38688900 to fix new delay due to wait(1000) in saving sprint data with vector size 10000, should be fixed as well
             with else_():
                 assign(x,  - 3106)
             FreeFall(FreeFall_duration - x, coils_timing)
@@ -592,15 +593,16 @@ def opx_control(obj, qm):
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
 
-            align("AOM_2-2'", "AOM_Early", "AOM_Late")
-            wait(2500, "AOM_2-2'")
+            align("Cooling_Sequence", "AOM_Early", "AOM_Late")
+            # wait(2500, "AOM_2-2'")
             with if_(SPRINT_Exp_ON):
-                play("Depump", "AOM_2-2'", duration=(PrePulse_duration - shutter_open_time))
+                wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
+                # play("Depump", "AOM_2-2'", duration=(PrePulse_duration - shutter_open_time))
                 MZ_balancing((PrePulse_duration - shutter_open_time), len(Config.QRAM_MZ_balance_pulse_Late), counts_st_B, counts_st_D)
             with else_():
-                play("Depump", "AOM_2-2'", duration=PrePulse_duration)
-                # wait(PrePulse_duration, "Cooling_Sequence")
-            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors")
+                # play("Depump", "AOM_2-2'", duration=PrePulse_duration)
+                wait(PrePulse_duration, "Cooling_Sequence")
+            align(*all_elements, "AOM_2-2/3'", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors")
 
             with if_(Trigger_Phase == 4):  # when trigger on pulse 1
                 ## Trigger QuadRF Sequence #####################
@@ -689,8 +691,8 @@ def opx_control(obj, qm):
                 assign(i, IO1)
 
         with stream_processing():
-            counts_st_B.buffer(obj.rep_MZ).save('B_Counts')
-            counts_st_D.buffer(obj.rep_MZ).save('D_Counts')
+            # counts_st_B.buffer(obj.rep_MZ).save('B_Counts')
+            # counts_st_D.buffer(obj.rep_MZ).save('D_Counts')
             ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
             ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
             ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
@@ -698,7 +700,7 @@ def opx_control(obj, qm):
             ON_counts_st7.buffer(obj.rep).save('Det7_Counts')
             ON_counts_st8.buffer(obj.rep).save('Det8_Counts')
             ON_counts_st9.buffer(obj.rep).save('Det9_Counts')
-            # ON_counts_st11.buffer(obj.rep).save('Det11_Counts')
+            ON_counts_st11.buffer(obj.rep).save('Det11_Counts')
             # ON_counts_st15.buffer(obj.rep).save('Det15_Counts')
             (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
             (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
@@ -707,7 +709,7 @@ def opx_control(obj, qm):
             (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det7_Probe_TT')
             (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det8_Probe_TT')
             (tt_st_9 + rep_st).buffer(obj.vec_size * obj.rep).save('Det9_Probe_TT')
-            # (tt_st_11 + rep_st).buffer(obj.vec_size * obj.rep).save('Det11_Probe_TT')
+            (tt_st_11 + rep_st).buffer(obj.vec_size * obj.rep).save('Det11_Probe_TT')
             # (tt_st_15 + rep_st).buffer(obj.vec_size * obj.rep).save('Det15_Probe_TT')
             FLR_st.save('FLR_measure')
             AntiHelmholtz_ON_st.save("antihelmholtz_on")
@@ -748,11 +750,11 @@ class OPX:
         # Note: So as not to connect again and again to QuadRF each time we update table, we now save the MOGDevic (actual QuadRF device) connected,
         # we hold this connection until update is finished, the we close the connection.
         # we do still hold the QuadRFController objects, for access to the table (read only!) when the experiment is running.
-        qrfContr = QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 4), topticaLockWhenUpdating=False,
+        qrfContr = QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 2, 4), topticaLockWhenUpdating=False,
                                        debugging=False, continuous=False)
         self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
-        # self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev, initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
-        #                                                   updateChannels=[3], debugging=False, continuous=False))  # updates values on QuadRF (uploads table)
+        self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev, initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
+                                                          updateChannels=[3], debugging=False, continuous=False))  # updates values on QuadRF (uploads table)
         #self.QuadRFControllers.append(QuadRFFrequencyScannerController(MOGdevice = qrfContr.dev, channel=2, debugging=False))  # updates values on QuadRF (uploads table)
 
         self.Update_QuadRF_channels = set({})  # Only update these channels on QuadRF when UpdateParameters method is called [note: this is a python set]
@@ -1389,7 +1391,7 @@ class OPX:
             self.transmission_SPRINT_data_per_transit.append([self.num_of_SPRINT_transmissions_per_seq[elem].tolist()
                                                               for elem in current_transit[:-1]])
 
-    def get_pulses_location_in_seq(self, delay, seq=Config.Sprint_Exp_Gaussian_samples_S, smearing = int(Config.num_between_zeros/2)):
+    def get_pulses_location_in_seq(self, delay, seq=Config.QRAM_Exp_Gaussian_samples_S, smearing = int(Config.num_between_zeros/2)):
         '''
         A function that uses the original sequence samples that the OPX uses, in order to obtain the location of the
         pulses in the sequence and build a filter. The user may add smearing which is the value that is added before and
@@ -1419,7 +1421,7 @@ class OPX:
     def get_avg_num_of_photons_in_seq_pulses(self, seq, pulse_loc):
         avg_num_of_photons_in_seq_pulses = []
         try:
-            real_number_of_seq = math.ceil(max(self.tt_S_measure)/len(Config.Sprint_Exp_Gaussian_samples_S))
+            real_number_of_seq = math.ceil(max(self.tt_S_measure)/len(Config.QRAM_Exp_Gaussian_samples_S))
             # print('Real number of seq = %d' %real_number_of_seq)
         except:
             real_number_of_seq = self.number_of_sprint_sequences
@@ -1451,8 +1453,8 @@ class OPX:
             self.folded_tt_N[x % exp_sequence_len] += 1
 
         # a vector of ones at pulses inexes and zeros else, used to take only pulses location
-        S_pulses_location = np.asarray(Config.Sprint_Exp_Gaussian_samples_S).astype(bool).astype(int)
-        N_pulses_location = np.asarray(Config.Sprint_Exp_Gaussian_samples_N).astype(bool).astype(int)
+        S_pulses_location = np.asarray(Config.QRAM_Exp_Gaussian_samples_S).astype(bool).astype(int)
+        N_pulses_location = np.asarray(Config.QRAM_Exp_Gaussian_samples_N).astype(bool).astype(int)
         self.S_pulses_loc_delayed = np.roll(S_pulses_location, delay_rf_S)
         self.N_pulses_loc_delayed = np.roll(N_pulses_location, delay_rf_N)
 
@@ -1496,7 +1498,9 @@ class OPX:
             props_thresholds = dict(boxstyle='round', edgecolor='red', linewidth=2, facecolor='red', alpha=0.5)
 
         textstr_thresholds = '# %d - ' % self.Counter + 'Reflections: %d, ' % self.sum_for_threshold + \
-                             'Efficiency: %.2f, ' % self.lockingEfficiency + 'Flr: %.2f' % (1000 * np.average(self.FLR_res.tolist()))
+                             'Efficiency: %.2f, ' % self.lockingEfficiency + \
+                             'Flr: %.2f, ' % (1000 * np.average(self.FLR_res.tolist())) + \
+                             'Lock Error: %.3f' % self.lock_err
         textstr_total_reflections = 'Total reflections per cycle "N" = %d \n' % (sum(self.num_of_det_reflections_per_seq_N),)\
                                     + 'Total reflections per cycle "S" = %d' % (sum(self.num_of_det_reflections_per_seq_S),)
         textstr_avg_reflections = r'Average reflections per cycle = %.2f' % (sum(self.num_of_det_reflections_per_seq_accumulated/self.Counter),)
@@ -1572,7 +1576,7 @@ class OPX:
     def init_params_for_save_sprint(self,sprint_sequence_len,Num_Of_dets):
         # define empty variables
         self.sprint_sequence_len=sprint_sequence_len
-        self.number_of_sprint_sequences = math.ceil(experiment.M_window / experiment.sprint_sequence_len)
+        self.number_of_sprint_sequences = math.ceil(self.M_window / self.sprint_sequence_len)
         self.number_of_SPRINT_pulses_per_seq = len(Config.sprint_pulse_amp_S)
 
         self.tt_measure = []
@@ -1585,8 +1589,8 @@ class OPX:
         self.reflection_SPRINT_data_per_transit_batch = []
         self.transmission_SPRINT_data_per_transit_batch = []
 
-        self.folded_transmission = np.zeros(len(Config.Sprint_Exp_Gaussian_samples_S))
-        self.folded_reflection = np.zeros(len(Config.Sprint_Exp_Gaussian_samples_S))
+        self.folded_transmission = np.zeros(len(Config.QRAM_Exp_Gaussian_samples_S))
+        self.folded_reflection = np.zeros(len(Config.QRAM_Exp_Gaussian_samples_S))
 
         self.tt_S_binning = np.zeros(self.number_of_sprint_sequences + 1)
         self.seq_transit_events_live = np.zeros(self.number_of_sprint_sequences)
@@ -1632,10 +1636,10 @@ class OPX:
 
         # get pulses location south and north
         self.pulses_location_in_seq_S, self.filter_S = self.get_pulses_location_in_seq(filter_delay[0],
-                                                                                       Config.Sprint_Exp_Gaussian_samples_S,
+                                                                                       Config.QRAM_Exp_Gaussian_samples_S,
                                                                                        smearing=5)  # smearing=int(Config.num_between_zeros/2))
         self.pulses_location_in_seq_N, self.filter_N = self.get_pulses_location_in_seq(filter_delay[1],
-                                                                                       Config.Sprint_Exp_Gaussian_samples_N,
+                                                                                       Config.QRAM_Exp_Gaussian_samples_N,
                                                                                        smearing=5)  # smearing=int(Config.num_between_zeros/2))
         self.Num_of_photons_txt_box_x_loc = np.concatenate((self.num_of_photons_txt_box_loc(self.pulses_location_in_seq_S),
                                                            self.num_of_photons_txt_box_loc(self.pulses_location_in_seq_N)))
@@ -1652,13 +1656,13 @@ class OPX:
         ## take data only if
         start = True
         # take threshold from npz ( error from resonator lock PID)
-        # lock_err = np.abs(np.load(
-        #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy', allow_pickle=True)) # the error of locking the resontor to Rb line
-        lock_err = lock_err_threshold/2
+        self.lock_err = np.abs(np.load(
+            'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy', allow_pickle=True)) # the error of locking the resontor to Rb line
+        # lock_err = lock_err_threshold/2
         self.sum_for_threshold = reflection_threshold
         cycle = 0
         # Place holders for results # TODO: ask dor - is it works as we expect?
-        while ((lock_err > lock_err_threshold) or (self.sum_for_threshold > reflection_threshold)) or start:
+        while ((self.lock_err > lock_err_threshold) or (self.sum_for_threshold > reflection_threshold)) or start:
             # lock_err = np.abs(np.load(
             #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
             if self.keyPress == 'ESC':
@@ -1678,15 +1682,26 @@ class OPX:
             self.divide_tt_to_reflection_trans(sprint_pulse_len, num_of_detection_pulses)
             self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
                                                   + self.num_of_det_reflections_per_seq_N
+            # self.num_of_det_reflections_per_seq = self.num_of_det_transmissions_per_seq_S \
+            #                                       + self.num_of_det_transmissions_per_seq_N
             self.num_of_SPRINT_reflections_per_seq = self.num_of_SPRINT_reflections_per_seq_S \
                                                      + self.num_of_SPRINT_reflections_per_seq_N
             self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_S \
                                                        + self.num_of_SPRINT_transmissions_per_seq_N
-            self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.Sprint_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
+            self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.QRAM_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
+            print(self.lock_err, self.lock_err > lock_err_threshold, self.sum_for_threshold)
+            try:
+                self.lock_err = np.abs(np.load(
+                    'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
+            except:
+                pass
+                print('error in loading file')
         ####    end get tt and counts from OPX to python   #####
 
         self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
                                                            + self.num_of_det_reflections_per_seq_N
+        # self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S \
+        #                                                    + self.num_of_det_transmissions_per_seq_N
 
         # divide south and north into reflection and transmission
         self.tt_histogram_transmission, self.tt_histogram_reflection = \
@@ -1784,6 +1799,7 @@ class OPX:
             ax = [ax1, ax2, ax3, ax4, ax5, ax6]
             self.plot_sprint_figures(ax, Num_Of_dets)
             ############################################################################################################
+
             while True:
                 # record time:
                 timest = time.strftime("%Y%m%d-%H%M%S") # TODO: is it needed? already writen above..
@@ -1797,11 +1813,22 @@ class OPX:
                 # Check if the number of same values in the new and last vector are less then 1/2 of the total number of values.
                 is_new_tts_S = sum(np.array(self.tt_S_measure[:lenS]) == np.array(self.tt_S_measure_batch[-1][:lenS])) < lenS/2
                 is_new_tts_N = sum(np.array(self.tt_N_measure[:lenN]) == np.array(self.tt_N_measure_batch[-1][:lenN])) < lenN/2
-                if is_new_tts_N & is_new_tts_S:
+                self.save_tt_to_batch(Num_Of_dets, N)
+                if is_new_tts_N or is_new_tts_S:
+                    break
+                if self.keyPress == 'ESC':
+                    print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
+                    self.updateValue("CRUS_Exp_switch", False)
+                    self.update_parameters()
+                    # Other actions can be added here
                     break
             # assaf - if x=self.M_window the index is out of range so i added 1
-            # lock_err = np.abs(np.load(
-            #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
+            try:
+                self.lock_err = np.abs(np.load(
+                    'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
+            except:
+                pass
+                print('error in loading file')
             self.divide_tt_to_reflection_trans(sprint_pulse_len, num_of_detection_pulses)
             self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
                                                   + self.num_of_det_reflections_per_seq_N
@@ -1809,7 +1836,7 @@ class OPX:
                                                      + self.num_of_SPRINT_reflections_per_seq_S
             self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_N \
                                                        + self.num_of_SPRINT_transmissions_per_seq_S
-            self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.Sprint_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
+            self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.QRAM_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
 
             # fold reflections and transmission
             self.Single_det_foldeded = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
@@ -1831,14 +1858,13 @@ class OPX:
                                                                                self.pulses_location_in_seq_N)
             self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + self.max_value_per_pulse_N_live
 
-            if (lock_err > lock_err_threshold) or (1000 * np.average(self.FLR_res.tolist()) < FLR_threshold):
+            if (self.lock_err > lock_err_threshold) or (1000 * np.average(self.FLR_res.tolist()) < FLR_threshold) or \
+                    (np.average(experiment.avg_num_of_photons_per_pulse_live) > photons_per_det_pulse_threshold):
                 self.acquisition_flag = False
             else:
                 self.acquisition_flag = True
 
-            if (self.sum_for_threshold < reflection_threshold) and \
-                    (np.average(experiment.avg_num_of_photons_per_pulse_live) < photons_per_det_pulse_threshold) and \
-                    self.acquisition_flag:
+            if (self.sum_for_threshold < reflection_threshold)  and self.acquisition_flag:
                 print('Sum of reflections: %d' % self.sum_for_threshold)
                 self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
                                                                    + self.num_of_det_reflections_per_seq_N
@@ -1942,8 +1968,8 @@ class OPX:
             np.savez(dirname + filename_FLR, FLR_measurement)
         if len(Exp_timestr_batch) > 0:
             np.savez(dirname + filename_timestamp, Exp_timestr_batch)
-            np.savez(dirname + filname_sequence_S, Config.Sprint_Exp_Gaussian_samples_S)
-            np.savez(dirname + filname_sequence_N, Config.Sprint_Exp_Gaussian_samples_N)
+            np.savez(dirname + filname_sequence_S, Config.QRAM_Exp_Gaussian_samples_S)
+            np.savez(dirname + filname_sequence_N, Config.QRAM_Exp_Gaussian_samples_N)
             plt.savefig(dirname + filename_experimentPlot, bbox_inches='tight')
         if len(self.folded_tt_N_batch) > 0:
             np.savez(dirname + filename_N_folded, self.folded_tt_N_batch)
@@ -2001,7 +2027,7 @@ class OPX:
             qrdCtrl.saveLinesAsCSV(f'{dirname}QuadRF_table.csv')
         ## ------------------ end of saving section -------
 
-    def Start_Sprint_Exp_with_tt(self, N=100, sprint_sequence_len=int(len(Config.Sprint_Exp_Gaussian_samples_S)),
+    def Start_Sprint_Exp_with_tt(self, N=100, sprint_sequence_len=int(len(Config.QRAM_Exp_Gaussian_samples_S)),
                                  transit_condition=[2,2], preComment=None, lock_err_threshold=0.01, filter_delay=[-7,2],
                                  reflection_threshold=100, reflection_threshold_time=1e6,
                                  photons_per_det_pulse_threshold=12, FLR_threshold=0.11):
@@ -2009,7 +2035,7 @@ class OPX:
         Max_probe_counts = None  # return the average maximum probe counts of 3 cycles.
         self.SPRINT_Exp_switch(True)
         self.update_parameters()
-        self.Save_SNSPDs_Sprint_Measurement_with_tt(N, sprint_sequence_len, preComment,lock_err_threshold,
+        self.Save_SNSPDs_Sprint_Measurement_with_tt(N, sprint_sequence_len, preComment, lock_err_threshold,
                                                     transit_condition, Max_probe_counts, filter_delay,
                                                     reflection_threshold, reflection_threshold_time,
                                                     photons_per_det_pulse_threshold, FLR_threshold)

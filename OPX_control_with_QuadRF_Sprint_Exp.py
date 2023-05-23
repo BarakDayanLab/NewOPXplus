@@ -247,7 +247,7 @@ def FreeFall(freefall_duration, coils_timing):
 
     ## Aligning all the different elements used during the freefall time of the experiment ##
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'", "AOM_2-2'",
-          "Measurement", "PULSER_N", "PULSER_S") # , "Dig_detectors")
+          "Measurement", "PULSER_N", "PULSER_S","PULSER_ANCILLA") # , "Dig_detectors")
 
     ## Zeeman Coils turn-on sequence ##
     wait(coils_timing, "Zeeman_Coils")
@@ -351,15 +351,16 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
     # assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
 
-    align("PULSER_N", "PULSER_S", "Dig_detectors", "AOM_2-2'")
+    align("PULSER_N", "PULSER_S", "Dig_detectors", "AOM_2-2'","PULSER_ANCILLA")
     play("Depump", "AOM_2-2'", duration=shutter_open_time)
-    play("Const_open" * amp(0.4), "PULSER_S", duration=shutter_open_time)
-    play("Const_open" * amp(0.4), "PULSER_N", duration=shutter_open_time)
-    align("PULSER_N", "PULSER_S", "Dig_detectors")
+    play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
+    play("Const_open" * amp(0), "PULSER_N", duration=shutter_open_time)
+    align("PULSER_N", "PULSER_S", "Dig_detectors","PULSER_ANCILLA")
 
     with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.Sprint_Exp_Gaussian_samples_S))): #assaf comment debbuging
         play("Sprint_experiment_pulses_S", "PULSER_S")
         play("Sprint_experiment_pulses_N", "PULSER_N")
+        play("Sprint_experiment_pulses_N", "PULSER_ANCILLA")
 
     # wait(137, "Dig_detectors")
     # wait(293, "Dig_detectors")
@@ -534,7 +535,7 @@ def opx_control(obj, qm):
             with else_():
                 play("Depump", "AOM_2-2'", duration=PrePulse_duration)
                 # wait(PrePulse_duration, "Cooling_Sequence")
-            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "PULSER_N", "PULSER_S", "Dig_detectors")
+            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "PULSER_N", "PULSER_S", "Dig_detectors", "PULSER_ANCILLA")
 
             with if_(Trigger_Phase == 4):  # when trigger on pulse 1
                 ## Trigger QuadRF Sequence #####################
@@ -549,12 +550,12 @@ def opx_control(obj, qm):
                 align(*all_elements)
 
             with if_((Pulse_1_duration > 0) & SPRINT_Exp_ON):
-                align("Dig_detectors", "PULSER_N", "PULSER_S")
+                align("Dig_detectors", "PULSER_N", "PULSER_S","PULSER_ANCILLA")
                 Sprint_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
                            ON_counts_st1, ON_counts_st2, ON_counts_st3,
                            ON_counts_st6, ON_counts_st7, ON_counts_st8,
                            tt_st_1, tt_st_2, tt_st_3, tt_st_6, tt_st_7, tt_st_8, rep_st)
-                align("Dig_detectors", "PULSER_N", "PULSER_S")
+                align("Dig_detectors", "PULSER_N", "PULSER_S","PULSER_ANCILLA")
 
             save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
             with if_(AntiHelmholtz_ON):
@@ -1832,7 +1833,7 @@ class OPX:
         ############################################## END WHILE LOOP #################################################
 
         # For debuging:
-        # self.most_common([x for vec in self.tt_S_measure_batch + self.tt_N_measure_batch for x in vec])
+        self.most_common([x for vec in self.tt_S_measure_batch + self.tt_N_measure_batch for x in vec])
 
         ## Adding comment to measurement [prompt whether stopped or finished regularly]
         aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
@@ -2067,8 +2068,8 @@ class OPX:
 if __name__ == "__main__":
     # try:
         experiment = OPX(Config.config)
-        #
-        # experiment.Start_Sprint_Exp_with_tt(N=1000, transit_condition=[2,1,2],
+    #     #
+    #     experiment.Start_Sprint_Exp_with_tt(N=1000, transit_condition=[2,1,2],
     # preComment='seq 0-0-0-0, prepulse duration 13ms', lock_err_threshold=1, filter_delay=[0,0], reflection_threshold=2375,
     #                                         reflection_threshold_time=10e6, FLR_threshold=0)
 # experiment.Start_Sprint_Exp_with_tt(N=1000, transit_condition=[2, 2],

@@ -207,16 +207,17 @@ def get_pulses_location_in_seq(delay, seq, smearing = 0):
     seq_filter = np.roll(seq_filter, delay)
     seq_indx = np.where(seq_filter > 0)[0] + 1
     pulses_loc = []
-    start_indx = seq_indx[0]
-    for i in range(1, len(seq_indx)):
-        if (seq_indx[i] - seq_indx[i-1]) > 1:
-            if (start_indx > 1) and pulses_loc:
-                pulses_loc.append((0, start_indx - 1 - pulses_loc[-1][-1] - int(smearing)))
-            pulses_loc.append((1, seq_indx[i-1] - start_indx + 1 + int(smearing)))
-            start_indx = seq_indx[i]
-    if (start_indx > 1) and pulses_loc:
-        pulses_loc.append((0, start_indx - 1 - pulses_loc[-1][-1] - int(smearing)))
-    pulses_loc.append((1, seq_indx[-1] - start_indx + 1 + int(smearing)))
+    if seq_indx:
+        start_indx = seq_indx[0]
+        for i in range(1, len(seq_indx)):
+            if (seq_indx[i] - seq_indx[i-1]) > 1:
+                if (start_indx > 1) and pulses_loc:
+                    pulses_loc.append((0, start_indx - 1 - pulses_loc[-1][-1] - int(smearing)))
+                pulses_loc.append((1, seq_indx[i-1] - start_indx + 1 + int(smearing)))
+                start_indx = seq_indx[i]
+        if (start_indx > 1) and pulses_loc:
+            pulses_loc.append((0, start_indx - 1 - pulses_loc[-1][-1] - int(smearing)))
+        pulses_loc.append((1, seq_indx[-1] - start_indx + 1 + int(smearing)))
     pulses_loc.append((0, 0))
     return pulses_loc
 
@@ -227,11 +228,11 @@ num_init_zeros_S = 12  # For only det pulses sequence
 num_mid_zeros_S = 12
 num_fin_zeros_S = 0  # For only det pulses sequence
 num_between_zeros = 20
-# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
-# sprint_pulse_amp_S = [0.075, 0, 0, 0]
+det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
+sprint_pulse_amp_S = [0.075, 0, 0.075, 0]
 # For pulse sync
-det_pulse_amp_S = [0.45, 0, 0, 0, 0, 0, 0, 0]
-sprint_pulse_amp_S = [0, 0, 0, 0]
+# det_pulse_amp_S = [0.45, 0, 0, 0, 0, 0, 0, 0]
+# sprint_pulse_amp_S = [0, 0, 0, 0]
 # For Bell |(0 + 1)c, 1t>
 # det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
 # sprint_pulse_amp_S = [0.075, 0, 0, 0]
@@ -253,11 +254,11 @@ Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=spr
 num_init_zeros_N = 12  # For only det pulses sequence
 num_mid_zeros_N = 12
 num_fin_zeros_N = 0  # For only det pulses sequence
-# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
-# sprint_pulse_amp_N = [0, 0.085, 0, 0.085]
+det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
+sprint_pulse_amp_N = [0, 0.085, 0, 0.085]
 # For pulse sync
-det_pulse_amp_N = [0.45, 0, 0, 0, 0, 0, 0, 0]
-sprint_pulse_amp_N = [0, 0, 0, 0]
+# det_pulse_amp_N = [0.45, 0, 0, 0, 0, 0, 0, 0]
+# sprint_pulse_amp_N = [0, 0, 0, 0]
 # For Bell |(0 + 1)c, 1t>
 # det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
 # sprint_pulse_amp_N = [0, 0, 0, 0.085]
@@ -282,7 +283,7 @@ num_mid_zeros_Ancilla = 12
 num_fin_zeros_Ancilla = 0  # For only det pulses sequence
 
 # For pulse sync
-det_pulse_amp_Ancilla = [0.45, 0, 0, 0, 0, 0, 0, 0]
+det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0, 0, 0]
 sprint_pulse_amp_Ancilla = [0, 0, 0, 0]
 # For Bell |(0 + 1)c, 1t>
 # det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0, 0, 0]
@@ -327,7 +328,7 @@ num_mid_val_Early = 12
 num_fin_val_Early = 0  # For only det pulses sequence
 Pulses_Amp = 0.45
 # For pulse sync
-det_pulse_amp_Early = [1, 0, 0, 0, 0, 0, 0, 0]
+det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 0, 0]
 sprint_pulse_amp_Early = [0, 0, 0, 0]
 # For Bell |(0 + 1)c, 1t>
 # det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 1, 1]
@@ -354,7 +355,7 @@ num_init_val_Late = 12  # For only det pulses sequence
 num_mid_val_Late = 12
 num_fin_val_Late = 0  # For only det pulses sequence
 # For pulse sync
-det_pulse_amp_Late = [1, 0, 0, 0, 0, 0, 0, 0]
+det_pulse_amp_Late = [0, 0, 0, 0, 0, 0, 0, 0]
 sprint_pulse_amp_Late = [0, 0, 0, 0]
 # For Bell |(0 + 1)c, 1t>
 # det_pulse_amp_Late = [0, 0, 0, 0, 0, 0, 0, 0]
@@ -380,8 +381,8 @@ num_init_val_FS_North = 12  # For only det pulses sequence
 num_mid_val_FS_North = 12
 num_fin_val_FS_North = 0  # For only det pulses sequence
 # For Bell |(0 + 1)c, 1t>
-det_pulse_amp_FS_North = [1, 1, 1, 1, 1, 1, 1, 1]
-sprint_pulse_amp_FS_North = [1, 0, 0, 0]
+det_pulse_amp_FS_North = [0, 0, 0, 0, 0, 0, 0, 0]
+sprint_pulse_amp_FS_North = [0, 0, 0, 0]
 # |0c, (0 + 1)t>
 # det_pulse_amp_Late = [1, 1, 1, 1, 1, 1, 1, 1]
 # sprint_pulse_amp_Late = [1, 1, 1, 1]
@@ -795,7 +796,7 @@ config = {
             'digitalInputs': {
                 "FS_North": {
                     "port": (controller, 8),
-                    "delay": 0,
+                    "delay": 500,
                     "buffer": 0,
                 },
             },
@@ -821,7 +822,7 @@ config = {
                 },
             },
             'operations': {
-                'Const_open': "MOT_lock",
+                'Const_open': "MOT_lock_ON",
                 'Detection_pulses': "Square_detection_pulses",
                 'Homodyne_Pulse': "Homodyne_Pulse",
                 'Sprint_experiment_pulses_S': "Gaussian_Sprint_pulse_S",
@@ -847,7 +848,6 @@ config = {
             'waveforms': {
                 'single': 'const_wf'
             },
-            'digital_marker': 'ON'
         },
 
         "MOT_lock_ON": {
@@ -856,7 +856,8 @@ config = {
             'waveforms': {
                 'single': 'const_wf'
             },
-            'digital_marker': 'ON_pulse_switch'
+            'digital_marker': 'ON',
+            # 'digital_marker': 'ON_pulse_switch'
         },
 
         "MOT_lock_OFF": {

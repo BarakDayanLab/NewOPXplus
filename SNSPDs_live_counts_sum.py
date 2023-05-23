@@ -83,6 +83,8 @@ IF_AOM_N = 129.2368e6
 IF_AOM_S = 129.2368e6
 IF_AOM_LO = 129.2368e6
 IF_AOMs_MZ = 110e6
+IF_AOM_Anc = 184e6
+
 IF_Divert = 20e6
 #IF_AOM_N = 127.1e6
 #IF_AOM_S = 90e6
@@ -132,14 +134,14 @@ Super_Sprint_Config = {
 
             },
             'digital_inputs': {
-                1: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                2: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                3: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                4: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                5: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                6: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                7: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
-                8: {'polarity': 'RISING', "threshold": 0.5,"deadtime": 4},
+                1: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                2: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                3: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                4: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                5: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                6: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                7: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                8: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
             },
         }
     },
@@ -275,6 +277,19 @@ Super_Sprint_Config = {
             },
         },
 
+        "PULSER_E/L": {
+            "singleInput": {
+                "port": (controller, 7),
+            },
+            'operations': {
+                'Const_open': "MOT_lock",
+                'Square_Pulse': "square_pulse",
+            },
+            # 'intermediate_frequency': IF_AOM_LO,
+            'intermediate_frequency': IF_AOMs_MZ,
+            # 'intermediate_frequency': IF_AOM_Anc,
+        },
+
         "PULSER_LO": {
             "singleInput": {
                 "port": (controller, 7),
@@ -285,6 +300,7 @@ Super_Sprint_Config = {
             },
             # 'intermediate_frequency': IF_AOM_LO,
             'intermediate_frequency': IF_AOMs_MZ,
+            # 'intermediate_frequency': IF_AOM_Anc,
         },
 
         "PULSER_N": {
@@ -454,7 +470,9 @@ with program() as dig:
 
             play("Const_open", "PULSER_N")
             play("Const_open", "PULSER_S")
+            # play("Const_open", "PULSER_E/L")
             # play("Square_Pulse", "PULSER_LO")
+            # play("Const_open"*amp(0.7), "PULSER_LO")
             # play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
             # play("CRUS_pulse", "Pulser_CRUS")
 
