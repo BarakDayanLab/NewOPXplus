@@ -314,7 +314,7 @@ def MZ_balancing(m_time, m_window, counts_st_B, counts_st_D):
     # n = declare(int)
     # m = declare(int)
 
-    sign = declare(int, value=1)
+    last_extinction_ratio = declare(fixed, value=0)
     phase_correction = declare(fixed, value=0.1)
     last_counts_D = declare(int)
 
@@ -334,9 +334,10 @@ def MZ_balancing(m_time, m_window, counts_st_B, counts_st_D):
 
         with if_(t > 0):
             # assign(phase_correction, Util.cond(last_counts_D > 0, (counts_D - last_counts_D)/last_counts_D, 0))
-            assign(phase_correction, Util.cond(last_counts_D > 0,
-                                               Cast.to_fixed((counts_D - last_counts_D)/(counts_D + counts_B)),
-                                               Cast.to_fixed(counts_D/(counts_D + counts_B))))
+            assign(phase_correction, Util.cond(counts_D > 0,
+                                               # Cast.to_fixed((counts_D - last_counts_D)/(counts_D + counts_B)), 0))
+                                               Cast.to_fixed(counts_D/(counts_D + counts_B)) - last_extinction_ratio, 0))
+                                               # Cast.to_fixed(counts_D/(counts_D + counts_B))))
         #     assign(sign, Util.cond(counts_D > last_counts_D, -1, 1))
 
         save(counts_B, counts_st_B)
@@ -347,7 +348,8 @@ def MZ_balancing(m_time, m_window, counts_st_B, counts_st_D):
         # frame_rotation_2pi(sign * (counts_B - counts_D) / counts_B, "AOM_Early")
         frame_rotation_2pi(phase_correction, "AOM_Early")
 
-        assign(last_counts_D, counts_D)
+        # assign(last_counts_D, counts_D)
+        assign(last_extinction_ratio, Cast.to_fixed(counts_D/(counts_D + counts_B)))
         # assign(sign, 1)
 
 
@@ -474,7 +476,7 @@ def opx_control(obj, qm):
 
         # Boolean variables:
         AntiHelmholtz_ON = declare(bool, value=True)
-        SPRINT_Exp_ON = declare(bool, value=False)
+        QRAM_Exp_ON = declare(bool, value=False)
 
         # MOT variables
         MOT_Repetitions = declare(int, value=obj.Exp_Values['MOT_rep'])
@@ -586,7 +588,7 @@ def opx_control(obj, qm):
             align(*all_elements)
 
             # FreeFall sequence:
-            with if_(SPRINT_Exp_ON):
+            with if_(QRAM_Exp_ON):
                 assign(x, (30678780 - 3106 + 656000 * 2) // 4) # TODO -  added 38688900 to fix new delay due to wait(1000) in saving sprint data with vector size 10000, should be fixed as well
             with else_():
                 assign(x,  - 3106)
@@ -603,7 +605,7 @@ def opx_control(obj, qm):
 
             align("Cooling_Sequence", "AOM_Early", "AOM_Late")
             # wait(2500, "AOM_2-2'")
-            with if_(SPRINT_Exp_ON):
+            with if_(QRAM_Exp_ON):
                 wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
                 # play("Depump", "AOM_2-2'", duration=(PrePulse_duration - shutter_open_time))
                 MZ_balancing((PrePulse_duration - shutter_open_time), len(Config.QRAM_MZ_balance_pulse_Late), counts_st_B, counts_st_D)
@@ -617,14 +619,14 @@ def opx_control(obj, qm):
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
             ## For taking an image:
-            with if_((Pulse_1_duration > 0) & ~SPRINT_Exp_ON):
+            with if_((Pulse_1_duration > 0) & ~QRAM_Exp_ON):
                 align(*all_elements)
                 Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
                                 pulse_1_duration_minus, pulse_1_duration_plus)
                 Measure(Pulse_1_duration)  # This triggers camera (Control 7)
                 align(*all_elements)
 
-            with if_((Pulse_1_duration > 0) & SPRINT_Exp_ON):
+            with if_((Pulse_1_duration > 0) & QRAM_Exp_ON):
                 align("Dig_detectors", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S")
                 QRAM_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
                          ON_counts_st1, ON_counts_st2, ON_counts_st3,
@@ -647,7 +649,7 @@ def opx_control(obj, qm):
             with while_(i > 0):
                 ## Boolean variables control: ##
                 with if_(i == 4):
-                    assign(SPRINT_Exp_ON, IO2)
+                    assign(QRAM_Exp_ON, IO2)
                 ## AntiHelmholtz control ##
                 with if_(i == 10):
                     assign(antihelmholtz_delay, IO2)
@@ -699,8 +701,8 @@ def opx_control(obj, qm):
                 assign(i, IO1)
 
         with stream_processing():
-            # counts_st_B.buffer(obj.rep_MZ).save('B_Counts')
-            # counts_st_D.buffer(obj.rep_MZ).save('D_Counts')
+            counts_st_B.buffer(obj.rep_MZ).save('B_Counts')
+            counts_st_D.buffer(obj.rep_MZ).save('D_Counts')
             ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
             ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
             ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
@@ -871,7 +873,8 @@ class OPX:
         # self.rep = int(self.M_time / (self.M_window + 28 + 170))
         self.rep = int(self.M_time / self.M_window)
         self.vec_size = Config.vec_size
-        self.rep_MZ = int((self.prepulse_duration - self.Shutter_open_time) * 1e6 / len(Config.QRAM_MZ_balance_pulse_Late))
+        self.rep_MZ = int((self.prepulse_duration - self.Shutter_open_time) * 1e6 /
+                          (len(Config.QRAM_MZ_balance_pulse_Late) + 240))
 
         # MW spectroscopy parameters:
         self.MW_start_frequency = int(100e6)  # [Hz]
@@ -1064,7 +1067,7 @@ class OPX:
     def Spectrum_Exp_switch(self, Bool):
         self.update_io_parameter(4, Bool)
 
-    def SPRINT_Exp_switch(self, Bool):
+    def QRAM_Exp_switch(self, Bool):
         self.update_io_parameter(4, Bool)
 
     def AntiHelmholtz_Delay_switch(self, Bool):
@@ -1610,9 +1613,9 @@ class OPX:
         self.single_det_folded_accumulated = np.zeros((len(Num_Of_dets), self.sprint_sequence_len))
         self.num_of_det_reflections_per_seq_accumulated = np.zeros(self.number_of_sprint_sequences)
 
-    def Save_SNSPDs_Sprint_Measurement_with_tt(self, N, sprint_sequence_len, preComment, lock_err_threshold, transit_condition,
-                                               max_probe_counts, filter_delay, reflection_threshold, reflection_threshold_time,
-                                               photons_per_det_pulse_threshold, FLR_threshold):
+    def Save_SNSPDs_QRAM_Measurement_with_tt(self, N, sprint_sequence_len, preComment, lock_err_threshold, transit_condition,
+                                             max_probe_counts, filter_delay, reflection_threshold, reflection_threshold_time,
+                                             photons_per_det_pulse_threshold, FLR_threshold, exp_flag):
         """
         Function for analyzing,saving and displaying data from sprint experiment.
         :param N: Number of maximum experiments (free throws) saved and displayed.
@@ -1665,12 +1668,14 @@ class OPX:
         ## take data only if
         start = True
         # take threshold from npz ( error from resonator lock PID)
-        try:
-            self.lock_err = np.abs(np.load(
-                'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy', allow_pickle=True))  # the error of locking the resontor to Rb line
-        except:
-            self.lock_err = lock_err_threshold/2
-            print('error in loading file')
+        if exp_flag:
+            try:
+                self.lock_err = np.abs(np.load(
+                    'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy', allow_pickle=True))  # the error of locking the resontor to Rb line
+            except:
+                print('error in loading file')
+        else:
+            self.lock_err = lock_err_threshold / 2
 
         self.sum_for_threshold = reflection_threshold
         cycle = 0
@@ -1703,12 +1708,13 @@ class OPX:
                                                        + self.num_of_SPRINT_transmissions_per_seq_N
             self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.QRAM_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
             print(self.lock_err, self.lock_err > lock_err_threshold, self.sum_for_threshold)
-            try:
-                self.lock_err = np.abs(np.load(
-                    'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
-            except:
-                pass
-                print('error in loading file')
+            if exp_flag:
+                try:
+                    self.lock_err = np.abs(np.load(
+                        'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
+                except:
+                    pass
+                    print('error in loading file')
         ####    end get tt and counts from OPX to python   #####
 
         self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
@@ -1871,13 +1877,14 @@ class OPX:
                                                                                self.pulses_location_in_seq_N)
             self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + self.max_value_per_pulse_N_live
 
-            if (self.lock_err > lock_err_threshold) or (1000 * np.average(self.FLR_res.tolist()) < FLR_threshold) or \
-                    (np.average(experiment.avg_num_of_photons_per_pulse_live) > photons_per_det_pulse_threshold):
-                self.acquisition_flag = False
-            else:
-                self.acquisition_flag = True
+            if exp_flag:
+                if (self.lock_err > lock_err_threshold) or (1000 * np.average(self.FLR_res.tolist()) < FLR_threshold) or \
+                        (np.average(experiment.avg_num_of_photons_per_pulse_live) > photons_per_det_pulse_threshold):
+                    self.acquisition_flag = False
+                else:
+                    self.acquisition_flag = True
 
-            if (self.sum_for_threshold < reflection_threshold)  and self.acquisition_flag:
+            if (self.sum_for_threshold < reflection_threshold or not exp_flag) and self.acquisition_flag:
                 print('Sum of reflections: %d' % self.sum_for_threshold)
                 self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
                                                                    + self.num_of_det_reflections_per_seq_N
@@ -2040,18 +2047,18 @@ class OPX:
             qrdCtrl.saveLinesAsCSV(f'{dirname}QuadRF_table.csv')
         ## ------------------ end of saving section -------
 
-    def Start_Sprint_Exp_with_tt(self, N=100, sprint_sequence_len=int(len(Config.QRAM_Exp_Gaussian_samples_S)),
-                                 transit_condition=[2,2], preComment=None, lock_err_threshold=0.01, filter_delay=[-7,2],
-                                 reflection_threshold=100, reflection_threshold_time=1e6,
-                                 photons_per_det_pulse_threshold=12, FLR_threshold=0.11):
+    def Start_QRAM_Exp_with_tt(self, N=100, sprint_sequence_len=int(len(Config.QRAM_Exp_Gaussian_samples_S)),
+                               transit_condition=[2, 2], preComment=None, lock_err_threshold=0.01, filter_delay=[-7,2],
+                               reflection_threshold=100, reflection_threshold_time=1e6,
+                               photons_per_det_pulse_threshold=12, FLR_threshold=0.11, Exp_flag=True):
         # Max_probe_counts = self.Get_Max_Probe_counts(3)  # return the average maximum probe counts of 3 cycles.
         Max_probe_counts = None  # return the average maximum probe counts of 3 cycles.
-        self.SPRINT_Exp_switch(True)
+        self.QRAM_Exp_switch(True)
         self.update_parameters()
-        self.Save_SNSPDs_Sprint_Measurement_with_tt(N, sprint_sequence_len, preComment, lock_err_threshold,
-                                                    transit_condition, Max_probe_counts, filter_delay,
-                                                    reflection_threshold, reflection_threshold_time,
-                                                    photons_per_det_pulse_threshold, FLR_threshold)
+        self.Save_SNSPDs_QRAM_Measurement_with_tt(N, sprint_sequence_len, preComment, lock_err_threshold,
+                                                  transit_condition, Max_probe_counts, filter_delay,
+                                                  reflection_threshold, reflection_threshold_time,
+                                                  photons_per_det_pulse_threshold, FLR_threshold, exp_flag=Exp_flag)
 
     ## MW spectroscopy variable update functions: ##
 
@@ -2114,7 +2121,7 @@ class OPX:
     Values_Factor = {
         'Transit_Exp_switch': [bool, None, Transit_Exp_switch],
         'Spectrum_Exp_switch': [bool, None, Spectrum_Exp_switch],
-        "CRUS_Exp_switch": [bool, None, CRUS_Exp_switch],
+        "QRAM_Exp_switch": [bool, None, QRAM_Exp_switch],
         'MOT_duration': [int, 1e6 / Config.MOT_pulse_len],
         'AntiHelmholtz_delay': [int, 1e6 / 4],  # [msec]
         'Post_MOT_delay': [int, 1e6 / 4],  # [msec]
