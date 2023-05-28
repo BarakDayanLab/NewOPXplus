@@ -731,7 +731,7 @@ config = {
                 },
             },
             "digitalOutputs": {
-                "outBright": (controller, 1),
+                "outBright": (controller, 4),
             },
             'outputs': {
                 'out1': (controller, 1)
@@ -752,7 +752,7 @@ config = {
                 "port": (controller, 7),
             },
             "digitalOutputs": {
-                "outDark": (controller, 4),
+                "outDark": (controller, 5),
             },
             'outputs': {
                 'out1': (controller, 1)
@@ -822,7 +822,8 @@ config = {
                 },
             },
             'operations': {
-                'Const_open': "MOT_lock_ON",
+                'Const_open': "MOT_lock",
+                'Const_open_triggered': "MOT_lock_ON",
                 'Detection_pulses': "Square_detection_pulses",
                 'Homodyne_Pulse': "Homodyne_Pulse",
                 'Sprint_experiment_pulses_S': "Gaussian_Sprint_pulse_S",

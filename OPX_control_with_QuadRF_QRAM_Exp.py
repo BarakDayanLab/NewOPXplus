@@ -315,6 +315,7 @@ def MZ_balancing(m_time, m_window, counts_st_B, counts_st_D):
     # m = declare(int)
 
     sign = declare(int, value=1)
+    phase_correction = declare(fixed, value=0.1)
     last_counts_D = declare(int)
 
     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
@@ -332,12 +333,19 @@ def MZ_balancing(m_time, m_window, counts_st_B, counts_st_D):
                 counting.digital(counts_D, int(len(Config.QRAM_MZ_balance_pulse_Late)), "outDark"))
 
         with if_(t > 0):
-            assign(sign, Util.cond(counts_D > last_counts_D, -1, 1))
+            # assign(phase_correction, Util.cond(last_counts_D > 0, (counts_D - last_counts_D)/last_counts_D, 0))
+            assign(phase_correction, Util.cond(last_counts_D > 0,
+                                               Cast.to_fixed((counts_D - last_counts_D)/(counts_D + counts_B)),
+                                               Cast.to_fixed(counts_D/(counts_D + counts_B))))
+        #     assign(sign, Util.cond(counts_D > last_counts_D, -1, 1))
 
         save(counts_B, counts_st_B)
         save(counts_D, counts_st_D)
-
-        frame_rotation_2pi(sign * (counts_B - counts_D) / counts_B, "AOM_Early")
+        # assign(phase_correction, sign / 10)
+        # assign(phase_correction, Util.cond(last_counts_D > 0, (counts_D - last_counts_D) / last_counts_D, 0.0))
+        # frame_rotation_2pi(0.1, "AOM_Early")
+        # frame_rotation_2pi(sign * (counts_B - counts_D) / counts_B, "AOM_Early")
+        frame_rotation_2pi(phase_correction, "AOM_Early")
 
         assign(last_counts_D, counts_D)
         # assign(sign, 1)
@@ -398,7 +406,7 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
     align("AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors") #, "AOM_2-2'")
     # play("Depump", "AOM_2-2'", duration=shutter_open_time)
-    play("Const_open" * amp(0.4), "PULSER_S", duration=shutter_open_time)
+    play("Const_open_triggered" * amp(0.4), "PULSER_S", duration=shutter_open_time)
     play("Const_open" * amp(0.4), "PULSER_N", duration=shutter_open_time)
     align("AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors")
 
@@ -1506,17 +1514,30 @@ class OPX:
         textstr_avg_reflections = r'Average reflections per cycle = %.2f' % (sum(self.num_of_det_reflections_per_seq_accumulated/self.Counter),)
         textstr_total_SPRINT_reflections = 'Total reflections from SPRINT pulses during transits = %d' % (self.total_number_of_reflections_from_SPRINT_pulses_in_transits,)
 
-        ax[0].plot(self.folded_tt_N_batch, label='"N" detectors')
-        ax[0].plot(self.folded_tt_S_batch, label='"S" detectors')
-        ax[0].plot((self.filter_N) * max(self.folded_tt_N_batch + self.folded_tt_S_batch), '--b', label='Filter "N"')
-        for i in range(len(self.Num_of_photons_txt_box_y_loc)):
-            ax[0].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc[i],
-                     '%.2f' % self.avg_num_of_photons_per_pulse[i],
-                     horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
-        ax[0].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
+
+        ax[0].plot(self.folded_tt_N, label='"N" detectors')
+        ax[0].plot(self.folded_tt_S, label='"S" detectors')
+        ax[0].plot((self.filter_S) * max(self.folded_tt_N + self.folded_tt_S), '--', color='orange', label='Filter "S"')
+        # ax[0].set_xlim(420, 820)
+        # ax[0].set_ylim(0, 5)
+        for i in range(len(self.Num_of_photons_txt_box_y_loc_live)):
+            ax[0].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc_live[i],
+                       '%.2f' % self.avg_num_of_photons_per_pulse_live[i],
+                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
+        ax[0].set_title('binned timetags from all detectors folded (Live)', fontweight="bold")
         ax[0].legend(loc='upper right')
         ax[0].text(0.4, 1.4, textstr_thresholds, transform=ax[0].transAxes, fontsize=28,
                    verticalalignment='top', bbox=props_thresholds)
+
+        ax[1].plot(self.folded_tt_N_batch, label='"N" detectors')
+        ax[1].plot(self.folded_tt_S_batch, label='"S" detectors')
+        ax[1].plot((self.filter_N) * max(self.folded_tt_N_batch + self.folded_tt_S_batch), '--b', label='Filter "N"')
+        for i in range(len(self.Num_of_photons_txt_box_y_loc)):
+            ax[1].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc[i],
+                     '%.2f' % self.avg_num_of_photons_per_pulse[i],
+                     horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
+        ax[1].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
+        ax[1].legend(loc='upper right')
 
         # ax[0].plot(self.folded_tt_N, label='"N" detectors')
         # ax[0].plot(self.folded_tt_S, label='"S" detectors')
@@ -1527,18 +1548,6 @@ class OPX:
         #                horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
         # ax[0].set_title('binned timetags from all detectors folded (Live)', fontweight="bold")
         # ax[0].legend(loc='upper right')
-
-        ax[1].plot(self.folded_tt_N, label='"N" detectors')
-        ax[1].plot(self.folded_tt_S, label='"S" detectors')
-        ax[1].plot((self.filter_S) * max(self.folded_tt_N + self.folded_tt_S), '--', color='orange', label='Filter "S"')
-        # ax[1].set_xlim(420, 820)
-        # ax[1].set_ylim(0, 5)
-        for i in range(len(self.Num_of_photons_txt_box_y_loc_live)):
-            ax[1].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc_live[i],
-                       '%.2f' % self.avg_num_of_photons_per_pulse_live[i],
-                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
-        ax[1].set_title('binned timetags from all detectors folded (Live)', fontweight="bold")
-        ax[1].legend(loc='upper right')
 
         ax[2].plot(self.num_of_det_reflections_per_seq, label='Num of reflections per sequence (Live)')
         ax[2].set_title('Num of reflections per sequence (live)', fontweight="bold")
@@ -1656,9 +1665,13 @@ class OPX:
         ## take data only if
         start = True
         # take threshold from npz ( error from resonator lock PID)
-        self.lock_err = np.abs(np.load(
-            'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy', allow_pickle=True)) # the error of locking the resontor to Rb line
-        # lock_err = lock_err_threshold/2
+        try:
+            self.lock_err = np.abs(np.load(
+                'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy', allow_pickle=True))  # the error of locking the resontor to Rb line
+        except:
+            self.lock_err = lock_err_threshold/2
+            print('error in loading file')
+
         self.sum_for_threshold = reflection_threshold
         cycle = 0
         # Place holders for results # TODO: ask dor - is it works as we expect?
