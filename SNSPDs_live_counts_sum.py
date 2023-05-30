@@ -126,6 +126,7 @@ Super_Sprint_Config = {
                 3: {},  # AntiHelmholtz Coils
                 5: {},  # Camtrigger
                 7: {},  # Trigger STIRAP
+                8: {},  # Trigger FS
                 9: {},  # trigger
             },
             'analog_inputs': {
@@ -279,7 +280,7 @@ Super_Sprint_Config = {
 
         "PULSER_E/L": {
             "singleInput": {
-                "port": (controller, 7),
+                "port": (controller, 6),
             },
             'operations': {
                 'Const_open': "MOT_lock",
@@ -307,8 +308,16 @@ Super_Sprint_Config = {
             "singleInput": {
                 "port": (controller, 9),
             },
+            'digitalInputs': {
+                "FS_North": {
+                    "port": (controller, 8),
+                    "delay": 500,
+                    "buffer": 0,
+                },
+            },
             'operations': {
                 'Const_open': "MOT_lock",
+                'Const_open_triggered': "MOT_lock_ON",
             },
             'intermediate_frequency': IF_AOM_N,
         },
@@ -355,6 +364,15 @@ Super_Sprint_Config = {
             'waveforms': {
                 'single': 'const_wf'
             }
+        },
+        "MOT_lock_ON": {
+            'operation': 'control',
+            'length': MOT_pulse_len,
+            'waveforms': {
+                'single': 'const_wf'
+            },
+            'digital_marker': 'ON',
+            # 'digital_marker': 'ON_pulse_switch'
         },
         "square_pulse": {
             'operation': 'control',
@@ -468,9 +486,9 @@ with program() as dig:
     with infinite_loop_():
         with for_(n, 0, n < rep, n+1):
 
-            play("Const_open", "PULSER_N")
+            play("Const_open_triggered", "PULSER_N")
             play("Const_open", "PULSER_S")
-            # play("Const_open", "PULSER_E/L")
+            play("Const_open", "PULSER_E/L")
             # play("Square_Pulse", "PULSER_LO")
             # play("Const_open"*amp(0.7), "PULSER_LO")
             # play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
