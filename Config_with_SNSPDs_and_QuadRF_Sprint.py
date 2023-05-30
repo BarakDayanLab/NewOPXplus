@@ -475,10 +475,9 @@ config = {
                     "buffer": 0,
                 },
             },
-
             ###############
             "digitalOutputs": {
-                "out1": (controller,dets_number[0]),
+                "out1": (controller,1),
             },
             'outputs': {
                   'out1': (controller, 1)
@@ -1105,21 +1104,20 @@ config = {
 
 }
 # add Dig detectors elements without output
-config['elements'].update({f"detectors_no_dig_out_{i}":
-                     {"singleInput":
-                          {"port": (controller, 1)},
-                      "digitalOutputs":
-                          {f"out{i}": (controller, i)},
-                      'outputs': {
-                          'out1': (controller, 1)
-                      },
-                      'operations': {
-                          'readout': "digital_readout",
-                          'readout_SPRINT': "digital_readout_sprint",
-                          'readout_QRAM': "digital_readout_QRAM",
-                      },
-                      'time_of_flight': 36,
-                      'smearing': 0,
-                      'intermediate_frequency': IF_TOP2,
-                      } for i in dets_number[1:]})
+# config['elements'].update({f"detectors_no_dig_out_{i}":
+#                      {"singleInput":
+#                           {"port": (controller, 1)},
+#                       "digitalOutputs":
+#                           {"out": (controller, j)},
+#                       'outputs': {
+#                           'out1': (controller, 1)
+#                       },
+#                       'operations': {
+#                           'readout': "digital_readout",
+#                           'readout_SPRINT': "digital_readout_sprint",
+#                           'readout_QRAM': "digital_readout_QRAM",
+#                       },
+#                       'time_of_flight': 36,
+#                       'smearing': 0,
+#                       } for i,j in enumerate(dets_number[1:])})
 

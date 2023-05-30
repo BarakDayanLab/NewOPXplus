@@ -69,7 +69,9 @@ def assign_variables_to_element(element, *variables):
     wait(4 + 0 * _exp, element)
 
 all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]
-
+# all_detectors = ["detector_with_dig_out", "detectors_no_dig_out_0", "detectors_no_dig_out_1"
+#           , "detectors_no_dig_out_2", "detectors_no_dig_out_3", "detectors_no_dig_out_4"]
+all_detectors = ["detector_with_dig_out"]
 
 def MOT(mot_repetitions):
     """
@@ -331,27 +333,36 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
     vec_size = Config.vec_size
 
-    counts = np.zeros(8)
-    for i in Config.dets_number:
-        counts[i] = declare(int)
+    counts1 = declare(int)
+    counts2 = declare(int)
+    counts3 = declare(int)
+    counts6 = declare(int)
+    counts7 = declare(int)
+    counts8 = declare(int)
+    tot_counts = [counts1,counts2,counts3,counts6,counts7,counts8]
 
-    tt_vec = np.zeros(8)
-    for i in Config.dets_number:
-        tt_vec[i] = declare(int, size=vec_size)
+    tt_vec1 = declare(int, size=vec_size)
+    tt_vec2 = declare(int, size=vec_size)
+    tt_vec3 = declare(int, size=vec_size)
+    tt_vec6 = declare(int, size=vec_size)
+    tt_vec7 = declare(int, size=vec_size)
+    tt_vec8 = declare(int, size=vec_size)
+    tot_tt_vec= [tt_vec1,tt_vec2,tt_vec3,tt_vec6,tt_vec7,tt_vec8]
 
     n = declare(int)
     t = declare(int)
     m = declare(int)
 
-    assign_variables_to_element("detector_with_dig_out", tt_vec[Config.dets_number[0]][0], counts[Config.dets_number[0]], m_window)
-    for i in Config.dets_number[1:]:
-        assign_variables_to_element(f"detectors_no_dig_out_{i}", tt_vec[i][0], counts[i], m_window)
+    # assign_variables_to_element("detector_with_dig_out", tt_vec1[0], counts1, m_window)
+    # for det_ind,_ in enumerate(Config.dets_number[1:]):
+    #     assign_variables_to_element(f"detectors_no_dig_out_{det_ind}", tot_tt_vec[det_ind-1][0], tot_counts[det_ind-1],
+    #                                 m_window)
 
-    align("PULSER_N", "PULSER_S", "Dig_detectors", "AOM_2-2'")
+    align("PULSER_N", "PULSER_S", "AOM_2-2'","detector_with_dig_out")
     play("Depump", "AOM_2-2'", duration=shutter_open_time)
     play("Const_open" * amp(0.4), "PULSER_S", duration=shutter_open_time)
     play("Const_open" * amp(0.4), "PULSER_N", duration=shutter_open_time)
-    align("PULSER_N", "PULSER_S", "detector_with_dig_out")
+    align("PULSER_N", "PULSER_S","detector_with_dig_out")
 
     with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.Sprint_Exp_Gaussian_samples_S))): #assaf comment debbuging
         play("Sprint_experiment_pulses_S", "PULSER_S")
@@ -359,12 +370,22 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
     # wait(137, "Dig_detectors")
     # wait(293, "Dig_detectors")
-    wait(292, "detector_with_dig_out")  # For
+    wait(292, "detector_with_dig_out")  # TODO: Dor ???
     # wait(117, "Dig_detectors") # For 20ns between pulses in sequence
     # wait(298, "Dig_detectors") # For 20ns between pulses in sequence of only detections
     with for_(n, 0, n < m_time * 4, n + m_window):
-        measure("readout_SPRINT", "detector_with_dig_out", None, time_tagging.digital(tt_vec[Config.dets_number[0]], m_window,
-                                                     element_output="out1", targetLen=counts[Config.dets_number[0]]))
+        measure("readout_SPRINT", "detector_with_dig_out", None, time_tagging.digital(tt_vec1, m_window,
+                                                     element_output="out1", targetLen=counts1))
+        # measure("readout_SPRINT", "detectors_no_dig_out_0", None, time_tagging.digital(tt_vec2, m_window,
+        #                                              element_output="out", targetLen=counts2))
+        # measure("readout_SPRINT", "detectors_no_dig_out_1", None, time_tagging.digital(tt_vec3, m_window,
+        #                                              element_output="out", targetLen=counts3))
+        # measure("readout_SPRINT", "detectors_no_dig_out_2", None, time_tagging.digital(tt_vec6, m_window,
+        #                                              element_output="out", targetLen=counts6))
+        # measure("readout_SPRINT", "detectors_no_dig_out_3", None, time_tagging.digital(tt_vec7, m_window,
+        #                                              element_output="out", targetLen=counts7))
+        # measure("readout_SPRINT", "detectors_no_dig_out_4", None, time_tagging.digital(tt_vec8, m_window,
+        #                                              element_output="out", targetLen=counts8))
         ## Save Data: ##
 
         # Number of Photons (NOP) Count stream for each detector: ##
@@ -522,7 +543,7 @@ def opx_control(obj, qm):
             with else_():
                 play("Depump", "AOM_2-2'", duration=PrePulse_duration)
                 # wait(PrePulse_duration, "Cooling_Sequence")
-            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "PULSER_N", "PULSER_S", "Dig_detectors")
+            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "PULSER_N", "PULSER_S","detector_with_dig_out")
 
             with if_(Trigger_Phase == 4):  # when trigger on pulse 1
                 ## Trigger QuadRF Sequence #####################
@@ -537,12 +558,12 @@ def opx_control(obj, qm):
                 align(*all_elements)
 
             with if_((Pulse_1_duration > 0) & SPRINT_Exp_ON):
-                align("Dig_detectors", "PULSER_N", "PULSER_S")
+                align( "PULSER_N", "PULSER_S","detector_with_dig_out")
                 Sprint_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
                            ON_counts_st1, ON_counts_st2, ON_counts_st3,
                            ON_counts_st6, ON_counts_st7, ON_counts_st8,
                            tt_st_1, tt_st_2, tt_st_3, tt_st_6, tt_st_7, tt_st_8, rep_st)
-                align("Dig_detectors", "PULSER_N", "PULSER_S")
+                align( "PULSER_N", "PULSER_S","detector_with_dig_out")
 
             save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
             with if_(AntiHelmholtz_ON):
