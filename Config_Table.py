@@ -301,6 +301,7 @@ Operation_Modes = {
                     'SPRINT_Exp':  {'Triggering_Phase': 'Free_Fall',
                                     'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
                                     'PrePulse_Repump_amp': 0.000001,  # relative
+                                    'PrePulse_CH2_freq': 133.325e6, # Hz
                                     'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],
                                     'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'] + 30e6,
                                     'Pulse_1_Repump_amp': 0.000001,
@@ -320,9 +321,33 @@ Operation_Modes = {
                                                       Config_Sprint.readout_pulse_sprint_len_S)) / 1e6,  # Pulse_length[nsec] * 1000 repetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
                                     'M_off_time': 5,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
                                     },
+                    'QRAM_Exp':  {'Triggering_Phase': 'Free_Fall',
+                                  'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
+                                  'PrePulse_Repump_amp': 0.000001,  # relative
+                                  'PrePulse_CH2_freq': 133.325e6, # Hz
+                                  'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],
+                                  'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'] + 30e6,
+                                  'Pulse_1_Repump_amp': 0.000001,
+                                  'N_Snaps': 1,
+                                  'Buffer_Cycles': 0,
+                                  'Imaging_Phase': 'Pulse_1',
+                                  'PrePulse_duration': 13,  # [msec]
+                                  'Shutter_open_time': 3.5,  # [msec]
+                                  'Pulse_1_duration': int(max(Config_Sprint.readout_pulse_sprint_len_N,
+                                                              Config_Sprint.readout_pulse_sprint_len_S)) / 1e6,  # [msec]
+                                  ## If with fountain:
+                                  'Fountain_duration': 0.5,  # [msec]
+                                  'Fountain_prep_duration': 0.5,  # [msec], Can't be zero!!!
+                                  'M_window': int(max(Config_Sprint.readout_pulse_sprint_len_N,
+                                                      Config_Sprint.readout_pulse_sprint_len_S)), # [nsec]
+                                  'M_time': int(max(Config_Sprint.readout_pulse_sprint_len_N,
+                                                    Config_Sprint.readout_pulse_sprint_len_S)) / 1e6,  # Pulse_length[nsec] * 1000 repetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
+                                  'M_off_time': 5,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
+                                  },
                     'SPRINT_2-3_Exp':  {'Triggering_Phase': 'Free_Fall',
                                         'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
                                         'PrePulse_Repump_amp': 0.000001,  # relative
+                                        'PrePulse_CH2_freq': 133.325e6,  # Hz
                                         'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],
                                         'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'] + 30e6,
                                         'Pulse_1_Repump_amp': 0.000001,
@@ -553,7 +578,9 @@ IOParametersMapping = {  # These are chans. in OPX, and should all be int(s). Th
   "Linear_PGC_switch": 2,
   "Transit_Exp_switch": 3,
   "Spectrum_Exp_switch": 4,
+  "SPRINT_Exp_switch": 4,
   "CRUS_Exp_switch": 4,
+  "QRAM_Exp_switch": 4,
   "AntiHelmholtz_Delay_switch": 5,
   "Max_Probe_counts_switch": 6,
   "AntiHelmholtz_delay": 10,

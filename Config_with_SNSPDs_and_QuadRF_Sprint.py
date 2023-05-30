@@ -85,6 +85,7 @@ IF_AOM_Repump = 78.4735e6
 IF_AOM_N = 129.2368e6
 # IF_AOM_S = 89.2368e6
 IF_AOM_S = 129.2368e6
+IF_AOM_ANCILLA = 184e6
 # IF_AOM_LO = 89.2368e6
 IF_AOM_LO = 129.2368e6
 IF_AOM_SigmaPlus = 114.58e6
@@ -181,16 +182,19 @@ num_init_zeros_S = 0  # For QRAM seq
 num_fin_zeros_S = 0  # For only det pulses sequence
 # num_between_zeros = 10
 num_between_zeros = 20
-det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
-# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0] # QRAM seq
-# det_pulse_amp_S = [0.45, 0, 0.45, 0]  # SPRINT with 2-3'
-# det_pulse_amp_S = [0.45, 0, 0, 0, 0, 0]
 prep_pulse_amp_S = 0.4
 prep_pulse_len = 50
+
+# pulses structure
+# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
+# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0] # QRAM seq
+# det_pulse_amp_S = [0.45, 0, 0.45, 0]  # SPRINT with 2-3'
+det_pulse_amp_S = [0.45, 0, 0.45, 0, 0, 0]
+
 # sprint_pulse_amp_S = [0.075, 0]
-sprint_pulse_amp_S = [0.075, 0, 0, 0]
+# sprint_pulse_amp_S = [0.075, 0, 0, 0]
 # sprint_pulse_amp_S = [0.075, 0.075, 0.075, 0.075]
-# sprint_pulse_amp_S = [0, 0, 0, 0]
+sprint_pulse_amp_S = [0.2, 0, 0.2, 0]
 
 # sprint_pulse_amp_S = [0, 0, 0]
 # sprint_pulse_amp_S = []  # For only det pulses sequence
@@ -207,20 +211,20 @@ num_init_zeros_N = 0  # For QRAM seq
 # num_fin_zeros_N = 20
 # num_fin_zeros_N = 10  # For only det pulses sequence
 num_fin_zeros_N = 0  # For only det pulses sequence
-det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45]
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45]
 # det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
 # det_pulse_amp_N = [0, 0.45, 0, 0.45]  # SPRINT with 2-3'
-# det_pulse_amp_N = [0.45, 0, 0, 0, 0, 0]
+det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
 # sprint_pulse_amp_N = [0, 0.085]
 
 # SPRINT N PULSES
 #for q-ram z-measurment - for 1/2 power from S=0.075 sprint pulses
-sprint_pulse_amp_N = [0, 0.065, 0, 0.065]
+# sprint_pulse_amp_N = [0, 0.065, 0, 0.065]
 # for sprint
 # sprint_pulse_amp_N = [0, 0.085, 0.085, 0.085]
 # sprint_pulse_amp_N = [0, 0.085, 0.085, 0]
 # sprint_pulse_amp_N = [0.085, 0.085, 0.085, 0]
-# sprint_pulse_amp_N = [0, 0, 0, 0]
+sprint_pulse_amp_N = [0.2, 0, 0, 0]
 
 # sprint_pulse_amp_N = [0, 0, 0]
 # sprint_pulse_amp_N = []  # For only det pulses sequence
@@ -543,18 +547,18 @@ config = {
             },
         },
 
-        "AOM_ANALYZER_N": {
-            "singleInput": {
-                "port": (controller, 6),
-            },
-            'operations': {
-                'Const_open': "MOT_lock",
-                'Detection_pulses': "Square_detection_pulses",
-                'Homodyne_Pulse': "Homodyne_Pulse",
-                'Sprint_experiment_pulses_N': "Gaussian_Sprint_pulse_N"
-            },
-            'intermediate_frequency': IF_AOM_N,
-        },
+        # "AOM_ANALYZER_N": {
+        #     "singleInput": {
+        #         "port": (controller, 6),
+        #     },
+        #     'operations': {
+        #         'Const_open': "MOT_lock",
+        #         'Detection_pulses': "Square_detection_pulses",
+        #         'Homodyne_Pulse': "Homodyne_Pulse",
+        #         'Sprint_experiment_pulses_N': "Gaussian_Sprint_pulse_N"
+        #     },
+        #     'intermediate_frequency': IF_AOM_N,
+        # },
 
         "AOM_ANALYZER_S": {
             "singleInput": {
@@ -569,28 +573,28 @@ config = {
             'intermediate_frequency': IF_AOM_N,
         },
         # for bell-experiment
-        # "PULSER_ANCILLA": {
-        #     "singleInput": {
-        #         "port": (controller, 8),
-        #     },
-        #     'operations': {
-        #         'Const_open': "MOT_lock",
-        #         'Detection_pulses': "Square_detection_pulses",
-        #         'Homodyne_Pulse': "Homodyne_Pulse",
-        #         'Sprint_experiment_pulses_N': "Gaussian_Sprint_pulse_N"
-        #     },
-        #     'intermediate_frequency': IF_AOM_N,
-        # },
-        # for bell-experiment
-        "PULSER_LO": {
+        "PULSER_ANCILLA": {
             "singleInput": {
                 "port": (controller, 8),
             },
             'operations': {
                 'Const_open': "MOT_lock",
+                'Detection_pulses': "Square_detection_pulses",
+                'Homodyne_Pulse': "Homodyne_Pulse",
+                'Sprint_experiment_pulses_N': "Gaussian_Sprint_pulse_N"
             },
-            'intermediate_frequency': IF_AOM_LO,
+            'intermediate_frequency': IF_AOM_ANCILLA,
         },
+        # for bell-experiment
+        # "PULSER_LO": {
+        #     "singleInput": {
+        #         "port": (controller, 8),
+        #     },
+        #     'operations': {
+        #         'Const_open': "MOT_lock",
+        #     },
+        #     'intermediate_frequency': IF_AOM_LO,
+        # },
 
         "PULSER_N": {
             "singleInput": {
