@@ -337,7 +337,7 @@ sprint_pulse_amp_Early = [0, 0, 0, 0]
 # det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_Early = [1, 1, 0, 0]
 # # |1c, (0 + 1)t>
-# det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 1, 1]
+# det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_Early = [1, 1, 0, 0]
 
 
@@ -358,13 +358,13 @@ num_fin_val_Late = 0  # For only det pulses sequence
 det_pulse_amp_Late = [0, 0, 0, 0, 0, 0, 0, 0]
 sprint_pulse_amp_Late = [0, 0, 0, 0]
 # For Bell |(0 + 1)c, 1t>
-# det_pulse_amp_Late = [0, 0, 0, 0, 0, 0, 0, 0]
+# det_pulse_amp_Late = [1, 1, 1, 1, 1, 1, 0, 0]
 # sprint_pulse_amp_Late = [0, 0, 0, 0]
 # |0c, (0 + 1)t>
-# det_pulse_amp_Late = [0, 0, 0, 0, 0, 0, 0, 0]
+# det_pulse_amp_Late = [1, 1, 1, 1, 1, 1, 1, 1]
 # sprint_pulse_amp_Late = [0, 0, 1, 1]
 # # |1c, (0 + 1)t>
-# det_pulse_amp_Late = [0, 0, 0, 0, 0, 0, 0, 0]
+# det_pulse_amp_Late = [1, 1, 1, 1, 1, 1, 0, 0]
 # sprint_pulse_amp_Late = [0, 0, 1, 1]
 
 QRAM_Exp_Square_samples_Late = QRAM_Exp_Square_samples(amp=Pulses_Amp,
@@ -381,8 +381,8 @@ num_init_val_FS_North = 12  # For only det pulses sequence
 num_mid_val_FS_North = 12
 num_fin_val_FS_North = 0  # For only det pulses sequence
 # For Bell |(0 + 1)c, 1t>
-det_pulse_amp_FS_North = [0, 0, 0, 0, 0, 0, 0, 0]
-sprint_pulse_amp_FS_North = [0, 0, 0, 0]
+det_pulse_amp_FS_North = [1, 1, 1, 1, 1, 1, 1, 1]
+sprint_pulse_amp_FS_North = [1, 0, 0, 0]
 # |0c, (0 + 1)t>
 # det_pulse_amp_Late = [1, 1, 1, 1, 1, 1, 1, 1]
 # sprint_pulse_amp_Late = [1, 1, 1, 1]
