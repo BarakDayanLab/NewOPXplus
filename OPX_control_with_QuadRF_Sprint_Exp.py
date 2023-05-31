@@ -354,7 +354,7 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
     m = declare(int)
 
     assign_variables_to_element("detector_with_dig_out", tt_vec1[0], counts1, m_window)
-    for det_ind,_ in enumerate(Config.dets_number[1:]):
+    for det_ind,_ in range(1,len(Config.dets_number)):
         assign_variables_to_element(f"detectors_no_dig_out_{det_ind-1}", tot_tt_vec[det_ind][0], tot_counts[det_ind],
                                     m_window)
 
