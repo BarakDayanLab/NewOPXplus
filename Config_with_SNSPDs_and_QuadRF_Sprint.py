@@ -475,6 +475,7 @@ config = {
                     "buffer": 0,
                 },
             },
+
             ###############
             "digitalOutputs": {
                 "out1": (controller,1),

@@ -69,9 +69,7 @@ def assign_variables_to_element(element, *variables):
     wait(4 + 0 * _exp, element)
 
 all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]
-# all_detectors = ["detector_with_dig_out", "detectors_no_dig_out_0", "detectors_no_dig_out_1"
-#           , "detectors_no_dig_out_2", "detectors_no_dig_out_3", "detectors_no_dig_out_4"]
-all_detectors = ["detector_with_dig_out"]
+
 
 def MOT(mot_repetitions):
     """
