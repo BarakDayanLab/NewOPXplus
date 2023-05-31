@@ -69,7 +69,9 @@ def assign_variables_to_element(element, *variables):
     wait(4 + 0 * _exp, element)
 
 all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]
-
+# all_detectors = ["detector_with_dig_out", "detectors_no_dig_out_0", "detectors_no_dig_out_1"
+#           , "detectors_no_dig_out_2", "detectors_no_dig_out_3", "detectors_no_dig_out_4"]
+all_detectors = ["detector_with_dig_out"]
 
 def MOT(mot_repetitions):
     """
@@ -81,7 +83,7 @@ def MOT(mot_repetitions):
     """
     FLR = declare(fixed)
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-3'_for_interference", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors") # , "PULSER_N", "PULSER_S")
+          "AOM_2-2/3'", "AOM_2-3'_for_interference", "AOM_2-2'", "FLR_detection", "Measurement") # , "detector_with_dig_out") # , "PULSER_N", "PULSER_S")
 
     ## MOT build-up ##
     n = declare(int)
@@ -99,7 +101,7 @@ def MOT(mot_repetitions):
         # play("OD_FS" * amp(0.1), "AOM_2-3'_for_interference")
 
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors") #, "PULSER_N", "PULSER_S")
+          "AOM_2-2/3'", "AOM_2-2'", "FLR_detection", "Measurement") # , "detector_with_dig_out") #, "PULSER_N", "PULSER_S")
 
     return FLR
 
@@ -247,7 +249,7 @@ def FreeFall(freefall_duration, coils_timing):
 
     ## Aligning all the different elements used during the freefall time of the experiment ##
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'", "AOM_2-2'",
-          "Measurement", "PULSER_N", "PULSER_S","PULSER_ANCILLA") # , "Dig_detectors")
+          "Measurement", "PULSER_N", "PULSER_S") # , "detector_with_dig_out")
 
     ## Zeeman Coils turn-on sequence ##
     wait(coils_timing, "Zeeman_Coils")
@@ -337,6 +339,7 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
     counts6 = declare(int)
     counts7 = declare(int)
     counts8 = declare(int)
+    tot_counts = [counts1,counts2,counts3,counts6,counts7,counts8]
 
     tt_vec1 = declare(int, size=vec_size)
     tt_vec2 = declare(int, size=vec_size)
@@ -344,40 +347,45 @@ def Sprint_Exp(m_off_time, m_time, m_window, shutter_open_time,
     tt_vec6 = declare(int, size=vec_size)
     tt_vec7 = declare(int, size=vec_size)
     tt_vec8 = declare(int, size=vec_size)
+    tot_tt_vec= [tt_vec1,tt_vec2,tt_vec3,tt_vec6,tt_vec7,tt_vec8]
 
     n = declare(int)
     t = declare(int)
     m = declare(int)
 
-    # assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
+    assign_variables_to_element("detector_with_dig_out", tt_vec1[0], counts1, m_window)
+    for det_ind,_ in range(1,len(Config.dets_number)):
+        assign_variables_to_element(f"detectors_no_dig_out_{det_ind-1}", tot_tt_vec[det_ind][0], tot_counts[det_ind],
+                                    m_window)
 
-    align("PULSER_N", "PULSER_S", "Dig_detectors", "AOM_2-2'","PULSER_ANCILLA")
+    align("PULSER_N", "PULSER_S", "detector_with_dig_out", "AOM_2-2'")
     play("Depump", "AOM_2-2'", duration=shutter_open_time)
-    play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
-    play("Const_open" * amp(0), "PULSER_N", duration=shutter_open_time)
-    align("PULSER_N", "PULSER_S", "Dig_detectors","PULSER_ANCILLA")
+    play("Const_open" * amp(0.4), "PULSER_S", duration=shutter_open_time)
+    play("Const_open" * amp(0.4), "PULSER_N", duration=shutter_open_time)
+    align("PULSER_N", "PULSER_S", "detector_with_dig_out")
 
     with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.Sprint_Exp_Gaussian_samples_S))): #assaf comment debbuging
         play("Sprint_experiment_pulses_S", "PULSER_S")
         play("Sprint_experiment_pulses_N", "PULSER_N")
-        play("Sprint_experiment_pulses_N", "PULSER_ANCILLA")
 
-    # wait(137, "Dig_detectors")
-    # wait(293, "Dig_detectors")
-    wait(292, "Dig_detectors")  # For
-    # wait(117, "Dig_detectors") # For 20ns between pulses in sequence
-    # wait(298, "Dig_detectors") # For 20ns between pulses in sequence of only detections
+    # wait(137, "detector_with_dig_out")
+    # wait(293, "detector_with_dig_out")
+    wait(292, "detector_with_dig_out")  # For
+    # wait(117, "detector_with_dig_out") # For 20ns between pulses in sequence
+    # wait(298, "detector_with_dig_out") # For 20ns between pulses in sequence of only detections
     with for_(n, 0, n < m_time * 4, n + m_window):
-        measure("readout_SPRINT", "Dig_detectors", None,
-        # measure("readout_QRAM", "Dig_detectors", None,
-                time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
-                time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
-                time_tagging.digital(tt_vec3, m_window, element_output="out3", targetLen=counts3),
-                time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
-                time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
-                time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
-                )
-
+        measure("readout_SPRINT", "detector_with_dig_out", None, time_tagging.digital(tt_vec1, m_window,
+                                                     element_output="out1", targetLen=counts1))
+        measure("readout_SPRINT", "detectors_no_dig_out_0", None, time_tagging.digital(tt_vec2, m_window,
+                                                     element_output="out", targetLen=counts2))
+        measure("readout_SPRINT", "detectors_no_dig_out_1", None, time_tagging.digital(tt_vec3, m_window,
+                                                     element_output="out", targetLen=counts3))
+        measure("readout_SPRINT", "detectors_no_dig_out_2", None, time_tagging.digital(tt_vec6, m_window,
+                                                     element_output="out", targetLen=counts6))
+        measure("readout_SPRINT", "detectors_no_dig_out_3", None, time_tagging.digital(tt_vec7, m_window,
+                                                     element_output="out", targetLen=counts7))
+        measure("readout_SPRINT", "detectors_no_dig_out_4", None, time_tagging.digital(tt_vec8, m_window,
+                                                     element_output="out", targetLen=counts8))
         ## Save Data: ##
 
         # Number of Photons (NOP) Count stream for each detector: ##
@@ -535,7 +543,7 @@ def opx_control(obj, qm):
             with else_():
                 play("Depump", "AOM_2-2'", duration=PrePulse_duration)
                 # wait(PrePulse_duration, "Cooling_Sequence")
-            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "PULSER_N", "PULSER_S", "Dig_detectors", "PULSER_ANCILLA")
+            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "PULSER_N", "PULSER_S", "detector_with_dig_out")
 
             with if_(Trigger_Phase == 4):  # when trigger on pulse 1
                 ## Trigger QuadRF Sequence #####################
@@ -550,12 +558,12 @@ def opx_control(obj, qm):
                 align(*all_elements)
 
             with if_((Pulse_1_duration > 0) & SPRINT_Exp_ON):
-                align("Dig_detectors", "PULSER_N", "PULSER_S","PULSER_ANCILLA")
+                align("detector_with_dig_out", "PULSER_N", "PULSER_S")
                 Sprint_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
                            ON_counts_st1, ON_counts_st2, ON_counts_st3,
                            ON_counts_st6, ON_counts_st7, ON_counts_st8,
                            tt_st_1, tt_st_2, tt_st_3, tt_st_6, tt_st_7, tt_st_8, rep_st)
-                align("Dig_detectors", "PULSER_N", "PULSER_S","PULSER_ANCILLA")
+                align("detector_with_dig_out", "PULSER_N", "PULSER_S")
 
             save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
             with if_(AntiHelmholtz_ON):
@@ -1602,10 +1610,10 @@ class OPX:
                 print('Above Threshold')
             self.get_tt_from_handles(Num_Of_dets, Counts_handle, tt_handle, FLR_handle)
             self.divide_tt_to_reflection_trans(sprint_pulse_len, num_of_detection_pulses)
-            self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
-                                                  + self.num_of_det_reflections_per_seq_N
-            # self.num_of_det_reflections_per_seq = self.num_of_det_transmissions_per_seq_S \
-            #                                       + self.num_of_det_transmissions_per_seq_N
+            # self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \ ## change back to this! (Ziv)
+            #                                       + self.num_of_det_reflections_per_seq_N
+            self.num_of_det_reflections_per_seq = self.num_of_det_transmissions_per_seq_S \
+                                                  + self.num_of_det_transmissions_per_seq_N
             self.num_of_SPRINT_reflections_per_seq = self.num_of_SPRINT_reflections_per_seq_S \
                                                      + self.num_of_SPRINT_reflections_per_seq_N
             self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_S \
@@ -1613,10 +1621,10 @@ class OPX:
             self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.Sprint_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
         ####    end get tt and counts from OPX to python   #####
 
-        self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
-                                                           + self.num_of_det_reflections_per_seq_N
-        # self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S \
-        #                                                    + self.num_of_det_transmissions_per_seq_N
+        # self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \ ## change back to this! (Ziv)
+        #                                                    + self.num_of_det_reflections_per_seq_N
+        self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S \
+                                                           + self.num_of_det_transmissions_per_seq_N
 
         # divide south and north into reflection and transmission
         self.tt_histogram_transmission, self.tt_histogram_reflection = \
@@ -1833,7 +1841,7 @@ class OPX:
         ############################################## END WHILE LOOP #################################################
 
         # For debuging:
-        self.most_common([x for vec in self.tt_S_measure_batch + self.tt_N_measure_batch for x in vec])
+        # self.most_common([x for vec in self.tt_S_measure_batch + self.tt_N_measure_batch for x in vec])
 
         ## Adding comment to measurement [prompt whether stopped or finished regularly]
         aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
@@ -2068,8 +2076,8 @@ class OPX:
 if __name__ == "__main__":
     # try:
         experiment = OPX(Config.config)
-    #     #
-    #     experiment.Start_Sprint_Exp_with_tt(N=1000, transit_condition=[2,1,2],
+        #
+        # experiment.Start_Sprint_Exp_with_tt(N=1000, transit_condition=[2,1,2],
     # preComment='seq 0-0-0-0, prepulse duration 13ms', lock_err_threshold=1, filter_delay=[0,0], reflection_threshold=2375,
     #                                         reflection_threshold_time=10e6, FLR_threshold=0)
 # experiment.Start_Sprint_Exp_with_tt(N=1000, transit_condition=[2, 2],
