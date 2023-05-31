@@ -1777,8 +1777,6 @@ class OPX:
 
         # fold reflections and transmission
         self.fold_tt_histogram(exp_sequence_len=self.QRAM_sequence_len)
-        self.folded_transmission_accumulated,self.folded_reflection_accumulated = \
-            self.folded_transmission, self.folded_reflection
 
         # fold data from different detectors: # TODO: is needed? @Dor
         for i in range(len(Num_Of_dets)):
@@ -1787,13 +1785,23 @@ class OPX:
                 self.Single_det_foldeded[i][x % self.QRAM_sequence_len] += 1
                 self.single_det_folded_accumulated[i][x % self.QRAM_sequence_len] += 1
 
-        # Batch folded tt "N" and "S"
-        self.folded_tt_N_batch = self.folded_tt_N
+        # Batch folded tt "N", "S", BP, DP, FS
         self.folded_tt_S_batch = self.folded_tt_S
+        self.folded_tt_N_batch = self.folded_tt_N
+        self.folded_tt_BP_batch = self.folded_tt_BP
+        self.folded_tt_DP_batch = self.folded_tt_DP
+        self.folded_tt_FS_batch = self.folded_tt_FS
+        self.folded_tt_S_directional_batch = self.folded_tt_S_directional
+        self.folded_tt_N_directional_batch = self.folded_tt_N_directional
+        self.folded_tt_BP_timebins_batch = self.folded_tt_BP_timebins
+        self.folded_tt_DP_timebins_batch = self.folded_tt_DP_timebins
 
         # get the average number of photons in detection pulse
-        self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S, self.pulses_location_in_seq_S)
-        self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N, self.pulses_location_in_seq_N)
+        self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S_directional, self.pulses_location_in_seq_S)
+        self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N_directional, self.pulses_location_in_seq_N)
+        self.avg_num_of_photons_per_pulse_A_live = self.get_avg_num_of_photons_in_seq_pulses(
+            (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_S_directional)
+            + np.array(self.folded_tt_S_directional)).tolist(), self.pulses_location_in_seq_A)
         self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + self.avg_num_of_photons_per_pulse_N_live
         self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_live
 
@@ -1895,14 +1903,12 @@ class OPX:
 
             # fold reflections and transmission
             self.Single_det_foldeded = np.zeros((len(Num_Of_dets), self.QRAM_sequence_len))
-            self.folded_transmission, self.folded_reflection = \
-                self.fold_tt_histogram(exp_sequence_len=self.QRAM_sequence_len, delay_S=delay_in_detection_S,
-                                       delay_N=delay_in_detection_N)
+            self.fold_tt_histogram(exp_sequence_len=self.QRAM_sequence_len)
 
             # get the average number of photons in detection pulse
-            self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S,
+            self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S_directional,
                                                                                                  self.pulses_location_in_seq_S)
-            self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N,
+            self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N_directional,
                                                                                                  self.pulses_location_in_seq_N)
             self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + self.avg_num_of_photons_per_pulse_N_live
 
@@ -1926,9 +1932,6 @@ class OPX:
                                                                    + self.num_of_det_reflections_per_seq_N
 
                 self.seq_transit_events_live = np.zeros(self.number_of_sprint_sequences)
-
-                self.folded_transmission_accumulated += self.folded_transmission
-                self.folded_reflection_accumulated += self.folded_reflection
 
                 ### Find transits and build histogram:  ###
                 self.find_transits_and_sprint_events_changed(cond=transit_condition, minimum_number_of_seq_detected=2)
