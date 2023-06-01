@@ -1293,29 +1293,29 @@ class OPX:
 
         end_of_det_pulse_in_seq = max(self.pulses_location_in_seq_N[num_of_det_pulses - 1][1],
                                       self.pulses_location_in_seq_S[num_of_det_pulses - 1][1])
-        tt_small_perturb = []
-        for element in self.tt_N_measure:
+        # tt_small_perturb = []
+        for element in self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure:
             tt_inseq = element % self.QRAM_sequence_len
             if tt_inseq <= end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
                 self.num_of_det_reflections_per_seq_S[(element-1)//self.QRAM_sequence_len] += self.filter_S[tt_inseq]
                 self.num_of_det_transmissions_per_seq_N[(element-1)//self.QRAM_sequence_len] += self.filter_N[tt_inseq]
-            else:  # The part of the SPRINT pulses in the sequence
-                SPRINT_pulse_num = (tt_inseq - end_of_det_pulse_in_seq) // (sprint_pulse_len + Config.num_between_zeros)
-                if SPRINT_pulse_num < self.number_of_SPRINT_pulses_per_seq:
-                    self.num_of_SPRINT_reflections_per_seq_S[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
-                    self.num_of_SPRINT_transmissions_per_seq_N[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
-                    tt_small_perturb+=[element]
+            # else:  # The part of the SPRINT pulses in the sequence
+            #     SPRINT_pulse_num = (tt_inseq - end_of_det_pulse_in_seq) // (sprint_pulse_len + Config.num_between_zeros)
+            #     if SPRINT_pulse_num < self.number_of_SPRINT_pulses_per_seq:
+            #         self.num_of_SPRINT_reflections_per_seq_S[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
+            #         self.num_of_SPRINT_transmissions_per_seq_N[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
+            #         tt_small_perturb+=[element]
 
-        for element in self.tt_S_measure:
+        for element in self.tt_S_measure + self.tt_FS_measure:
             tt_inseq = element % self.QRAM_sequence_len
             if tt_inseq <= end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
                 self.num_of_det_reflections_per_seq_N[(element-1)//self.QRAM_sequence_len] += self.filter_N[tt_inseq]
                 self.num_of_det_transmissions_per_seq_S[(element-1)//self.QRAM_sequence_len] += self.filter_S[tt_inseq]
-            else:  # The part of the SPRINT pulses in the sequence
-                SPRINT_pulse_num = (tt_inseq - end_of_det_pulse_in_seq) // (sprint_pulse_len + Config.num_between_zeros)
-                if SPRINT_pulse_num < self.number_of_SPRINT_pulses_per_seq:
-                    self.num_of_SPRINT_reflections_per_seq_N[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
-                    self.num_of_SPRINT_transmissions_per_seq_S[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
+            # else:  # The part of the SPRINT pulses in the sequence
+            #     SPRINT_pulse_num = (tt_inseq - end_of_det_pulse_in_seq) // (sprint_pulse_len + Config.num_between_zeros)
+            #     if SPRINT_pulse_num < self.number_of_SPRINT_pulses_per_seq:
+            #         self.num_of_SPRINT_reflections_per_seq_N[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
+            #         self.num_of_SPRINT_transmissions_per_seq_S[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
 
     def plot_folded_tt_histogram(self):
 
@@ -1491,20 +1491,20 @@ class OPX:
                                         ).tolist()
         self.folded_tt_BP_timebins = self.folded_tt_BP[:self.end_of_det_pulse_in_seq]
         self.folded_tt_DP_timebins = self.folded_tt_DP[:self.end_of_det_pulse_in_seq]
-        if self.pulses_location_in_seq_A:
+        if self.pulses_location_in_seq_A.any() or (Config.sprint_pulse_amp_N[0] > 0):
             self.folded_tt_N_directional = (np.array(self.folded_tt_N_directional)
                                             + Config.sprint_pulse_amp_Early[1]
-                                            * np.array(self.folded_tt_BP[self.pulses_location_in_seq_A[-1][0]:self.pulses_location_in_seq_A[-1][0]])
+                                            * np.array(self.folded_tt_BP[self.pulses_location_in_seq_A[-1][0]:self.pulses_location_in_seq_A[-1][1]])
                                             + Config.sprint_pulse_amp_Early[1]
-                                            * np.array(self.folded_tt_DP[self.pulses_location_in_seq_A[-1][0]:self.pulses_location_in_seq_A[-1][0]])
+                                            * np.array(self.folded_tt_DP[self.pulses_location_in_seq_A[-1][0]:self.pulses_location_in_seq_A[-1][1]])
                                             ).tolist()
             self.folded_tt_BP_timebins = (np.array(self.folded_tt_BP_timebins)
                                           - Config.sprint_pulse_amp_Early[1]
-                                          * np.array(self.folded_tt_BP[self.pulses_location_in_seq_A[-1][0]:self.pulses_location_in_seq_A[-1][0]])
+                                          * np.array(self.folded_tt_BP[self.pulses_location_in_seq_A[-1][0]:self.pulses_location_in_seq_A[-1][1]])
                                           ).tolist()
             self.folded_tt_DP_timebins = (np.array(self.folded_tt_DP_timebins)
                                           - Config.sprint_pulse_amp_Early[1]
-                                          * np.array(self.folded_tt_DP[self.pulses_location_in_seq_A[-1][0]:self.pulses_location_in_seq_A[-1][0]])
+                                          * np.array(self.folded_tt_DP[self.pulses_location_in_seq_A[-1][0]:self.pulses_location_in_seq_A[-1][1]])
                                           ).tolist()
 
     def plt_pulses_roll(self, delay_det_N, delay_det_S, delay_rf_N, delay_rf_S):
@@ -1522,7 +1522,7 @@ class OPX:
         self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
         self.tt_N_measure_batch = self.tt_N_measure_batch[-(N - 1):] + [self.tt_N_measure]
 
-    def plot_sprint_figures(self,ax,Num_Of_dets):
+    def plot_sprint_figures(self,ax ,Num_Of_dets):
 
         ax[0].clear()
         ax[1].clear()
@@ -1548,39 +1548,47 @@ class OPX:
         textstr_total_SPRINT_reflections = 'Total reflections from SPRINT pulses during transits = %d' % (self.total_number_of_reflections_from_SPRINT_pulses_in_transits,)
 
 
-        ax[0].plot(self.folded_tt_N, label='"N" detectors')
-        ax[0].plot(self.folded_tt_S, label='"S" detectors')
+        for n in Num_Of_dets:
+            ax[0].plot(self.Single_det_foldeded_accumulated[n], label='detectors %d' % n)
+        # ax[0].plot(self.folded_tt_N, label='"N" detectors')
+        # ax[0].plot(self.folded_tt_S, label='"S" detectors')
         ax[0].plot((self.filter_S) * max(self.folded_tt_N + self.folded_tt_S), '--', color='orange', label='Filter "S"')
-        # ax[0].set_xlim(420, 820)
-        # ax[0].set_ylim(0, 5)
-        for i in range(len(self.Num_of_photons_txt_box_y_loc_live)):
-            ax[0].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc_live[i],
-                       '%.2f' % self.avg_num_of_photons_per_pulse_live[i],
-                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
         ax[0].set_title('binned timetags from all detectors folded (Live)', fontweight="bold")
         ax[0].legend(loc='upper right')
         ax[0].text(0.4, 1.4, textstr_thresholds, transform=ax[0].transAxes, fontsize=28,
                    verticalalignment='top', bbox=props_thresholds)
 
-        ax[1].plot(self.folded_tt_N_batch, label='"N" detectors')
-        ax[1].plot(self.folded_tt_S_batch, label='"S" detectors')
+        for n in Num_Of_dets:
+            ax[1].plot(self.Single_det_foldeded_accumulated[n], label='detectors %d' % n)
+        # ax[1].plot(self.folded_tt_N_batch, label='"N" detectors')
+        # ax[1].plot(self.folded_tt_S_batch, label='"S" detectors')
         ax[1].plot((self.filter_N) * max(self.folded_tt_N_batch + self.folded_tt_S_batch), '--b', label='Filter "N"')
-        for i in range(len(self.Num_of_photons_txt_box_y_loc)):
-            ax[1].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc[i],
-                     '%.2f' % self.avg_num_of_photons_per_pulse[i],
-                     horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
         ax[1].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
         ax[1].legend(loc='upper right')
 
         # ax[0].plot(self.folded_tt_N, label='"N" detectors')
         # ax[0].plot(self.folded_tt_S, label='"S" detectors')
         # ax[0].plot((self.filter_S) * max(self.folded_tt_N + self.folded_tt_S), '--', color='orange', label='Filter "S"')
+        # # ax[0].set_xlim(420, 820)
+        # # ax[0].set_ylim(0, 5)
         # for i in range(len(self.Num_of_photons_txt_box_y_loc_live)):
         #     ax[0].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc_live[i],
         #                '%.2f' % self.avg_num_of_photons_per_pulse_live[i],
         #                horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
         # ax[0].set_title('binned timetags from all detectors folded (Live)', fontweight="bold")
         # ax[0].legend(loc='upper right')
+        # ax[0].text(0.4, 1.4, textstr_thresholds, transform=ax[0].transAxes, fontsize=28,
+        #            verticalalignment='top', bbox=props_thresholds)
+        #
+        # ax[1].plot(self.folded_tt_N_batch, label='"N" detectors')
+        # ax[1].plot(self.folded_tt_S_batch, label='"S" detectors')
+        # ax[1].plot((self.filter_N) * max(self.folded_tt_N_batch + self.folded_tt_S_batch), '--b', label='Filter "N"')
+        # for i in range(len(self.Num_of_photons_txt_box_y_loc)):
+        #     ax[1].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc[i],
+        #              '%.2f' % self.avg_num_of_photons_per_pulse[i],
+        #              horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
+        # ax[1].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
+        # ax[1].legend(loc='upper right')
 
         ax[2].plot(self.num_of_det_reflections_per_seq, label='Num of reflections per sequence (Live)')
         ax[2].set_title('Num of reflections per sequence (live)', fontweight="bold")
@@ -1666,7 +1674,7 @@ class OPX:
             preComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
 
         # set constant parameters for the function
-        Num_Of_dets = [1, 2, 3, 6, 7, 8, 9, 15]
+        Num_Of_dets = [1, 2, 3, 4, 5, 6, 7, 8]
         delay_in_detection_N = 30 # choose the correct delay in samples to the first detection pulse # TODO: 40?
         delay_in_detection_S = 20 # choose the correct delay in samples to the first detection pulse # TODO: 40?
         det_pulse_len = Config.det_pulse_len+Config.num_between_zeros
@@ -1677,6 +1685,9 @@ class OPX:
         self.init_params_for_save_sprint(qram_sequence_len, Num_Of_dets)
 
         # get pulses location south and north
+        self.pulses_location_in_seq, self.filter_gen = self.get_pulses_location_in_seq(0,
+                                                                                       Config.QRAM_Exp_Gaussian_samples_General,
+                                                                                       smearing=5)  # smearing=int(Config.num_between_zeros/2))
         self.pulses_location_in_seq_S, self.filter_S = self.get_pulses_location_in_seq(filter_delay[0],
                                                                                        Config.QRAM_Exp_Gaussian_samples_S,
                                                                                        smearing=5)  # smearing=int(Config.num_between_zeros/2))
@@ -1689,6 +1700,7 @@ class OPX:
         self.Num_of_photons_txt_box_x_loc = np.concatenate((self.num_of_photons_txt_box_loc(self.pulses_location_in_seq_S),
                                                            self.num_of_photons_txt_box_loc(self.pulses_location_in_seq_N),
                                                            self.num_of_photons_txt_box_loc(self.pulses_location_in_seq_A)))
+        self.Num_of_photons_txt_box_x_loc_for_MZ_ports = self.num_of_photons_txt_box_loc(self.pulses_location_in_seq[-2:])
         self.num_of_detection_pulses = max(len([x for x in Config.det_pulse_amp_S if x > 0]),
                                            len([x for x in Config.det_pulse_amp_N if x > 0]))
         self.end_of_det_pulse_in_seq = max(self.pulses_location_in_seq_N[self.num_of_detection_pulses - 1][1],
@@ -1739,10 +1751,10 @@ class OPX:
                                                   + self.num_of_det_reflections_per_seq_N
             # self.num_of_det_reflections_per_seq = self.num_of_det_transmissions_per_seq_S \
             #                                       + self.num_of_det_transmissions_per_seq_N
-            self.num_of_SPRINT_reflections_per_seq = self.num_of_SPRINT_reflections_per_seq_S \
-                                                     + self.num_of_SPRINT_reflections_per_seq_N
-            self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_S \
-                                                       + self.num_of_SPRINT_transmissions_per_seq_N
+            # self.num_of_SPRINT_reflections_per_seq = self.num_of_SPRINT_reflections_per_seq_S \
+            #                                          + self.num_of_SPRINT_reflections_per_seq_N
+            # self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_S \
+            #                                            + self.num_of_SPRINT_transmissions_per_seq_N
             self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.QRAM_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
             print(self.lock_err, self.lock_err > lock_err_threshold, self.sum_for_threshold)
             if exp_flag:
@@ -1800,16 +1812,36 @@ class OPX:
         self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S_directional, self.pulses_location_in_seq_S)
         self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N_directional, self.pulses_location_in_seq_N)
         self.avg_num_of_photons_per_pulse_A_live = self.get_avg_num_of_photons_in_seq_pulses(
-            (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_S_directional)
-            + np.array(self.folded_tt_S_directional)).tolist(), self.pulses_location_in_seq_A)
-        self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + self.avg_num_of_photons_per_pulse_N_live
+            (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_directional)
+            + np.array(self.folded_tt_DP_directional)).tolist(), self.pulses_location_in_seq_A)
+        self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(
+            self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:])
+        self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(
+            self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:])
+        self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + \
+                                                 self.avg_num_of_photons_per_pulse_N_live + \
+                                                 self.avg_num_of_photons_per_pulse_A_live
+        self.avg_num_of_photons_per_pulse_live_MZ = self.avg_num_of_photons_per_pulse_BP_live + \
+                                                    self.avg_num_of_photons_per_pulse_DP_live
         self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_live
+        self.avg_num_of_photons_per_pulse_MZ = self.avg_num_of_photons_per_pulse_live_MZ
 
         # get box location on the y-axis:
-        self.max_value_per_pulse_S_live = self.get_max_value_in_seq_pulses(self.folded_tt_S, self.pulses_location_in_seq_S)
-        self.max_value_per_pulse_N_live = self.get_max_value_in_seq_pulses(self.folded_tt_N, self.pulses_location_in_seq_N)
-        self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + self.max_value_per_pulse_N_live
+        self.max_value_per_pulse_S_live = self.get_max_value_in_seq_pulses(self.folded_tt_S_directional, self.pulses_location_in_seq_S)
+        self.max_value_per_pulse_N_live = self.get_max_value_in_seq_pulses(self.folded_tt_N_directional, self.pulses_location_in_seq_N)
+        self.max_value_per_pulse_A_live = self.get_max_value_in_seq_pulses(
+            (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_directional) +
+             np.array(self.folded_tt_DP_directional)).tolist(), self.pulses_location_in_seq_A)
+        self.max_value_per_pulse_BP_live = self.get_max_value_in_seq_pulses(
+            self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:])
+        self.max_value_per_pulse_DP_live = self.get_max_value_in_seq_pulses(
+            self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:])
+        self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + \
+                                                 self.max_value_per_pulse_N_live + \
+                                                 self.max_value_per_pulse_A_live
+        self.Num_of_photons_txt_box_y_loc_live_MZ = self.max_value_per_pulse_BP_live + self.max_value_per_pulse_DP_live
         self.Num_of_photons_txt_box_y_loc = self.Num_of_photons_txt_box_y_loc_live
+        self.Num_of_photons_txt_box_y_loc_MZ = self.Num_of_photons_txt_box_y_loc_live_MZ
 
         ## record time
         timest = time.strftime("%Y%m%d-%H%M%S")
@@ -1895,10 +1927,10 @@ class OPX:
             self.divide_tt_to_reflection_trans(sprint_pulse_len, self.num_of_detection_pulses)
             self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
                                                   + self.num_of_det_reflections_per_seq_N
-            self.num_of_SPRINT_reflections_per_seq = self.num_of_SPRINT_reflections_per_seq_N \
-                                                     + self.num_of_SPRINT_reflections_per_seq_S
-            self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_N \
-                                                       + self.num_of_SPRINT_transmissions_per_seq_S
+            # self.num_of_SPRINT_reflections_per_seq = self.num_of_SPRINT_reflections_per_seq_N \
+            #                                          + self.num_of_SPRINT_reflections_per_seq_S
+            # self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_N \
+            #                                            + self.num_of_SPRINT_transmissions_per_seq_S
             self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.QRAM_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
 
             # fold reflections and transmission

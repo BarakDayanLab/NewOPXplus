@@ -223,11 +223,19 @@ def get_pulses_location_in_seq(delay, seq, smearing = 0):
 
 det_pulse_len = 40
 sprint_pulse_len = 100
+num_between_zeros = 20
+
+# For general sequence pulses shape
+num_init_zeros = 12  # For only det pulses sequence
+num_mid_zeros = 12
+num_fin_zeros = 0  # For only det pulses sequence
+det_pulse_amp_General = [1, 1, 1, 1, 1, 1, 1, 1]
+sprint_pulse_amp_General = [1, 1, 1, 1]
+
 
 num_init_zeros_S = 12  # For only det pulses sequence
 num_mid_zeros_S = 12
 num_fin_zeros_S = 0  # For only det pulses sequence
-num_between_zeros = 20
 # det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
 # sprint_pulse_amp_S = [0.075, 0, 0.075, 0]
 # For pulse sync
@@ -294,6 +302,15 @@ sprint_pulse_amp_Ancilla = [0, 0, 0.085, 0]
 # # |1c, (0 + 1)t>
 # det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_Ancilla = [0, 0, 0, 0]
+
+QRAM_Exp_Gaussian_samples_General = QRAM_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
+                                                              det_pulse_len=det_pulse_len,
+                                                              det_pulses_amp=det_pulse_amp_General,
+                                                              sprint_pulses_amp=sprint_pulse_amp_General,
+                                                              num_between_zeros=num_between_zeros,
+                                                              num_init_zeros=num_init_zeros,
+                                                              num_mid_zeros=num_mid_zeros,
+                                                              num_fin_zeros=num_fin_zeros)
 
 QRAM_Exp_Gaussian_samples_Ancilla = QRAM_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
                                                               det_pulse_len=det_pulse_len,
