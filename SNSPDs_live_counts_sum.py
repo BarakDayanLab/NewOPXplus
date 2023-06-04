@@ -143,6 +143,8 @@ Super_Sprint_Config = {
                 6: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
                 7: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
                 8: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                9: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
+                10: {'polarity': 'RISING', "threshold": 0.5, "deadtime": 4},
             },
         }
     },
@@ -214,6 +216,8 @@ Super_Sprint_Config = {
                 "out6": (controller, 6),
                 "out7": (controller, 7),
                 "out8": (controller, 8),
+                "out9": (controller, 9),
+                "out10": (controller, 10),
             },
             'outputs': {
                 'out1': (controller, 1)
@@ -252,6 +256,8 @@ Super_Sprint_Config = {
                 "out6": (controller, 6),
                 "out7": (controller, 7),
                 "out8": (controller, 8),
+                "out9": (controller, 9),
+                "out10": (controller, 10),
             },
             'outputs': {
                 'out1': (controller, 1)
@@ -457,6 +463,8 @@ with program() as dig:
     counts6 = declare(int)
     counts7 = declare(int)
     counts8 = declare(int)
+    counts9 = declare(int)
+    counts10 = declare(int)
 
     counts_st_N = declare_stream()
     counts_st_S = declare_stream()
@@ -468,6 +476,8 @@ with program() as dig:
     counts_st6 = declare_stream()
     counts_st7 = declare_stream()
     counts_st8 = declare_stream()
+    counts_st9 = declare_stream()
+    counts_st10 = declare_stream()
 
     n = declare(int)
 
@@ -485,10 +495,10 @@ with program() as dig:
     with infinite_loop_():
         with for_(n, 0, n < rep, n+1):
 
-            # play("Const_open_triggered", "PULSER_N")
-            play("Const_open", "PULSER_N")
+            play("Const_open_triggered", "PULSER_N")
+            # play("Const_open", "PULSER_N")
             play("Const_open", "PULSER_S")
-            play("Const_open", "PULSER_E/L")
+            # play("Const_open", "PULSER_E/L")
             # play("Square_Pulse", "PULSER_LO")
             # play("Const_open"*amp(0.7), "PULSER_LO")
             # play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
@@ -504,6 +514,8 @@ with program() as dig:
                     counting.digital(counts6, m_window, element_outputs="out6"),
                     counting.digital(counts7, m_window, element_outputs="out7"),
                     counting.digital(counts8, m_window, element_outputs="out8"),
+                    counting.digital(counts9, m_window, element_outputs="out9"),
+                    counting.digital(counts10, m_window, element_outputs="out10"),
                     )
 
             ## Save Data: ##
@@ -515,6 +527,8 @@ with program() as dig:
             save(counts6, counts_st6)
             save(counts7, counts_st7)
             save(counts8, counts_st8)
+            save(counts9, counts_st9)
+            save(counts10, counts_st10)
 
     with stream_processing():
         counts_st1.buffer(rep).save("avg_counts_1")
@@ -525,6 +539,8 @@ with program() as dig:
         counts_st6.buffer(rep).save("avg_counts_6")
         counts_st7.buffer(rep).save("avg_counts_7")
         counts_st8.buffer(rep).save("avg_counts_8")
+        counts_st9.buffer(rep).save("avg_counts_9")
+        counts_st10.buffer(rep).save("avg_counts_10")
 
 
 job = qm_ss.execute(dig)
@@ -536,6 +552,8 @@ avg_count5_handle = job.result_handles.get('avg_counts_5')
 avg_count6_handle = job.result_handles.get('avg_counts_6')
 avg_count7_handle = job.result_handles.get('avg_counts_7')
 avg_count8_handle = job.result_handles.get('avg_counts_8')
+avg_count9_handle = job.result_handles.get('avg_counts_9')
+avg_count10_handle = job.result_handles.get('avg_counts_10')
 
 avg_count1_handle.wait_for_values(1)
 avg_count2_handle.wait_for_values(1)
@@ -545,9 +563,12 @@ avg_count5_handle.wait_for_values(1)
 avg_count6_handle.wait_for_values(1)
 avg_count7_handle.wait_for_values(1)
 avg_count8_handle.wait_for_values(1)
+avg_count9_handle.wait_for_values(1)
+avg_count10_handle.wait_for_values(1)
 
 south_vals = []
 north_vals = []
+SPCMs_vals = []
 
 fig = plt.figure()
 font = font_manager.FontProperties(family='Comic Sans MS', weight='bold', style='normal', size=16)
@@ -562,22 +583,27 @@ while avg_count1_handle.is_processing():
     avg_counts_res6 = avg_count6_handle.fetch_all()
     avg_counts_res7 = avg_count7_handle.fetch_all()
     avg_counts_res8 = avg_count8_handle.fetch_all()
+    avg_counts_res9 = avg_count9_handle.fetch_all()
+    avg_counts_res10 = avg_count10_handle.fetch_all()
 
-    print(str(sum(avg_counts_res1 + avg_counts_res2 + avg_counts_res3 + avg_counts_res4)) + ' , ' + str(sum(avg_counts_res5 + avg_counts_res6 + avg_counts_res7 + avg_counts_res8)))
+    print(str(sum(avg_counts_res1 + avg_counts_res2 + avg_counts_res3 + avg_counts_res4 + avg_counts_res8)) + ' , ' + str(sum(avg_counts_res6 + avg_counts_res7 + avg_counts_res5)))
 
     # plot:
     # north_vals.append(sum(avg_counts_res1 + avg_counts_res2 + avg_counts_res3 + avg_counts_res4))
     # south_vals.append(sum(avg_counts_res5 + avg_counts_res6 + avg_counts_res7 + avg_counts_res8))
     #Ziv
-    south_vals.append(sum(avg_counts_res5 + avg_counts_res6 + avg_counts_res7 + avg_counts_res8))
-    north_vals.append(sum(avg_counts_res1 + avg_counts_res2 + avg_counts_res3 + avg_counts_res4))
+    south_vals.append(sum(avg_counts_res6 + avg_counts_res7 + avg_counts_res5))
+    north_vals.append(sum(avg_counts_res1 + avg_counts_res2 + avg_counts_res3 + avg_counts_res4 + avg_counts_res8))
+    SPCMs_vals.append(sum(avg_counts_res9 + avg_counts_res10))
     ##
     N_counts = "{:,}".format(north_vals[-1]*2)
     S_counts = "{:,}".format(south_vals[-1]*2)
+    SPCMs_counts = "{:,}".format(SPCMs_vals[-1]*2)
 
     plt.clf()
     plt.plot(north_vals[-100:], label='North Counts: ' + N_counts + ' Hz')
     plt.plot(south_vals[-100:], label='South Counts: ' + S_counts + ' Hz')
+    plt.plot(SPCMs_vals[-100:], label='SPCMs Counts: ' + SPCMs_counts + ' Hz')
     plt.title("counts")
     plt.legend(loc='upper left', prop=font)
     plt.show()
