@@ -498,7 +498,7 @@ with program() as dig:
             play("Const_open_triggered", "PULSER_N")
             # play("Const_open", "PULSER_N")
             play("Const_open", "PULSER_S")
-            # play("Const_open", "PULSER_E/L")
+            play("Const_open", "PULSER_E/L")
             # play("Square_Pulse", "PULSER_LO")
             # play("Const_open"*amp(0.7), "PULSER_LO")
             # play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
