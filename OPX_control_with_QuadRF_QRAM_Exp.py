@@ -88,7 +88,7 @@ def MOT(mot_repetitions):
     m = declare(int)
     play("Detection" * amp(FLR * 0), "FLR_detection", duration=4)  # we dont know why this works, but Yoav from QM made us write this line to solve an alignment problem we had in the next 2 for loops
     with for_(n, 1, n <= mot_repetitions, n + 1):
-        play("MOT" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0")
+        play("MOT_with_EOM" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0")
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
         # play("Const_open", "PULSER_N")
@@ -305,14 +305,14 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
     play("OD_FS", "AOM_2-2/3'", duration=OD_pulse_duration)
 
 
-def MZ_balancing(m_time, m_window, counts_st_B, counts_st_D):
+def MZ_balancing(m_time, m_window, counts_st_B1, counts_st_B2, counts_st_D1, counts_st_D2):
 
-    counts_B = declare(int)
-    counts_D = declare(int)
+    counts_B1 = declare(int)
+    counts_B2 = declare(int)
+    counts_D1 = declare(int)
+    counts_D2 = declare(int)
 
     t = declare(int)
-    # n = declare(int)
-    # m = declare(int)
 
     last_extinction_ratio = declare(fixed, value=0)
     phase_correction = declare(fixed, value=0.1)
@@ -324,32 +324,31 @@ def MZ_balancing(m_time, m_window, counts_st_B, counts_st_D):
 
     wait(293, "AOM_Early", "AOM_Late")
     with for_(t, 0, t < (m_time * 4), t + m_window):
-        # with for_(t, 0, t < m_window, t + int(len(Config.QRAM_MZ_balance_pulse_Early))):
-            # play("MZ_balancing_pulses", "AOM_Early")
-            # play("MZ_balancing_pulses", "AOM_Late")
+
         measure("MZ_balancing_pulses", "AOM_Early", None,
-                counting.digital(counts_B, int(len(Config.QRAM_MZ_balance_pulse_Early)), "outBright"))
+         #       counting.digital(counts_B1, int(len(Config.QRAM_MZ_balance_pulse_Early)), "OutBright1"),
+                counting.digital(counts_B2, int(len(Config.QRAM_MZ_balance_pulse_Early)), "OutBright2"))
         measure("MZ_balancing_pulses", "AOM_Late", None,
-                counting.digital(counts_D, int(len(Config.QRAM_MZ_balance_pulse_Late)), "outDark"))
+         #       counting.digital(counts_D1, int(len(Config.QRAM_MZ_balance_pulse_Late)), "OutDark1"),
+                counting.digital(counts_D2, int(len(Config.QRAM_MZ_balance_pulse_Late)), "OutDark2"))
+        #
+        # with if_(t > 0):
+        #     # assign(phase_correction, Util.cond(last_counts_D > 0, (counts_D - last_counts_D)/last_counts_D, 0))
+        #     assign(phase_correction, Util.cond((counts_D1 + counts_D2) > 0,
+        #                                        # Cast.to_fixed((counts_D - last_counts_D)/(counts_D + counts_B)), 0))
+        #                                        Cast.to_fixed((counts_D1 + counts_D2)/(counts_D1 + counts_D2
+        #                                                                               + counts_B1 + counts_B2))
+        #                                        - last_extinction_ratio, 0))
 
-        with if_(t > 0):
-            # assign(phase_correction, Util.cond(last_counts_D > 0, (counts_D - last_counts_D)/last_counts_D, 0))
-            assign(phase_correction, Util.cond(counts_D > 0,
-                                               # Cast.to_fixed((counts_D - last_counts_D)/(counts_D + counts_B)), 0))
-                                               Cast.to_fixed(counts_D/(counts_D + counts_B)) - last_extinction_ratio, 0))
-                                               # Cast.to_fixed(counts_D/(counts_D + counts_B))))
-        #     assign(sign, Util.cond(counts_D > last_counts_D, -1, 1))
+        save(counts_B1, counts_st_B1)
+        save(counts_B2, counts_st_B2)
+        save(counts_D1, counts_st_D1)
+        save(counts_D2, counts_st_D2)
 
-        save(counts_B, counts_st_B)
-        save(counts_D, counts_st_D)
-        # assign(phase_correction, sign / 10)
-        # assign(phase_correction, Util.cond(last_counts_D > 0, (counts_D - last_counts_D) / last_counts_D, 0.0))
-        # frame_rotation_2pi(0.1, "AOM_Early")
-        # frame_rotation_2pi(sign * (counts_B - counts_D) / counts_B, "AOM_Early")
-        frame_rotation_2pi(phase_correction, "AOM_Early")
-
-        # assign(last_counts_D, counts_D)
-        assign(last_extinction_ratio, Cast.to_fixed(counts_D/(counts_D + counts_B)))
+        # frame_rotation_2pi(phase_correction, "AOM_Early")
+        #
+        # assign(last_extinction_ratio, Cast.to_fixed((counts_D1 + counts_D2)/(counts_D1 + counts_D2
+        #                                                                               + counts_B1 + counts_B2)))
         # assign(sign, 1)
 
 
@@ -527,8 +526,10 @@ def opx_control(obj, qm):
         shutter_open_time = declare(int, value=int(obj.Shutter_open_time * 1e6 / 4))
 
         # Stream processing:
-        counts_st_B = declare_stream()
-        counts_st_D = declare_stream()
+        counts_st_B1 = declare_stream()
+        counts_st_B2 = declare_stream()
+        counts_st_D1 = declare_stream()
+        counts_st_D2 = declare_stream()
         ON_counts_st1 = declare_stream()
         ON_counts_st2 = declare_stream()
         ON_counts_st3 = declare_stream()
@@ -601,7 +602,8 @@ def opx_control(obj, qm):
             with if_(QRAM_Exp_ON):
                 wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
                 # play("Depump", "AOM_2-2'", duration=(PrePulse_duration - shutter_open_time))
-                MZ_balancing((PrePulse_duration - shutter_open_time), len(Config.QRAM_MZ_balance_pulse_Late), counts_st_B, counts_st_D)
+                MZ_balancing((PrePulse_duration - shutter_open_time), len(Config.QRAM_MZ_balance_pulse_Late),
+                             counts_st_B1, counts_st_B2, counts_st_D1, counts_st_D2)
             with else_():
                 # play("Depump", "AOM_2-2'", duration=PrePulse_duration)
                 wait(PrePulse_duration, "Cooling_Sequence")
@@ -694,8 +696,8 @@ def opx_control(obj, qm):
                 assign(i, IO1)
 
         with stream_processing():
-            counts_st_B.buffer(obj.rep_MZ).save('Bright_Port_Counts')
-            counts_st_D.buffer(obj.rep_MZ).save('Dark_Port_Counts')
+            (counts_st_B1 + counts_st_B2).buffer(obj.rep_MZ).save('Bright_Port_Counts')
+            (counts_st_D1 + counts_st_D2).buffer(obj.rep_MZ).save('Dark_Port_Counts')
             ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
             ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
             ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
@@ -865,7 +867,7 @@ class OPX:
         self.rep = int(self.M_time / self.M_window)
         self.vec_size = Config.vec_size
         self.rep_MZ = int((self.prepulse_duration - self.Shutter_open_time) * 1e6 /
-                          (len(Config.QRAM_MZ_balance_pulse_Late) + 240))
+                          len(Config.QRAM_MZ_balance_pulse_Late))
 
         # MW spectroscopy parameters:
         self.MW_start_frequency = int(100e6)  # [Hz]
@@ -1197,7 +1199,8 @@ class OPX:
                                     enumerate(counts_res[i])])
             # self.tt_measure[i] = [[elm for elm in self.tt_measure[i][0] if ((elm % self.M_window != 0) & (elm != 7999984))]]  # Due to an unresolved bug in the OPD there are "ghost" readings of timetags equal to the maximum time of measuring window.
             self.tt_measure[i] = [[elm + Config.detector_delays[i] for elm in self.tt_measure[i][0]
-                                   if ((elm % self.M_window != 0) & (elm != 9999984))]]  # Due to an unresolved bug in the OPD there are "ghost" readings of timetags equal to the maximum time of measuring window.
+                                   if ((elm % self.M_window != 0) & (elm != 9999984) &
+                                       ((elm + Config.detector_delays[i]) <= self.M_window))]]  # Due to an unresolved bug in the OPD there are "ghost" readings of timetags equal to the maximum time of measuring window.
             self.tt_measure[i].sort()
         # unify detectors and windows within detectors and create vector of tt's for each direction (bright port, dark port, north, south and from FS) and sort them
         self.tt_BP_measure = sorted(sum(sum(self.tt_measure[:2], []), [])) # unify detectors 1-3 and windows within detectors
@@ -1523,7 +1526,7 @@ class OPX:
         self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
         self.tt_N_measure_batch = self.tt_N_measure_batch[-(N - 1):] + [self.tt_N_measure]
 
-    def plot_sprint_figures(self,ax ,Num_Of_dets):
+    def plot_sprint_figures(self, ax, Num_Of_dets):
 
         ax[0].clear()
         ax[1].clear()
@@ -1531,6 +1534,7 @@ class OPX:
         ax[3].clear()
         ax[4].clear()
         ax[5].clear()
+
         #
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
         if self.acquisition_flag:
@@ -1620,8 +1624,11 @@ class OPX:
         # ax[5].text(0.05, 0.95, textstr_transit_event_counter, transform=ax[5].transAxes, fontsize=14,
         #            verticalalignment='top', bbox=props)
 
-        # plt.figure(2)
-        # plt.plot(self.single_det_folded_accumulated[1], label='detectors %d' % 1)
+
+        ax[4].plot(self.MZ_BP_counts_res, label='MZ Bright port')
+        ax[4].plot(self.MZ_DP_counts_res, label='MZ Dark port')
+        ax[4].set_title('MZ outputs while locking', fontweight="bold")
+        ax[4].legend(loc='upper right')
 
         plt.show()
         plt.pause(1.0)
@@ -1884,6 +1891,7 @@ class OPX:
         ax5 = plt.subplot2grid((3, 2), (2, 0), colspan=1, rowspan=1)
         ax6 = plt.subplot2grid((3, 2), (2, 1), colspan=1, rowspan=1)
         #
+
         while True:
             if self.keyPress == 'ESC':
                 print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue

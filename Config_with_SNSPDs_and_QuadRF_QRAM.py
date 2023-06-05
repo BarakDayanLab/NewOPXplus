@@ -54,7 +54,7 @@ opx_max_per_window = vec_size*num_of_detectors/2
 
 # Pulse_durations
 readout_pulse_len = 10000000
-MOT_pulse_len = 10e6
+MOT_pulse_len = 2e6
 Short_pulse_len = 40
 PGC_pulse_len = 40
 Fountain_pulse_len = 40
@@ -423,11 +423,11 @@ QRAM_Exp_digital_samples_FS_North = get_pulses_location_in_seq(delay=0,
                                                                smearing=0)
 
 
-MZ_delay = int(len(QRAM_Exp_Gaussian_samples_N))
+MZ_delay = int(len(QRAM_Exp_Gaussian_samples_N) / 4)
 AOM_risetime = 120
-Seq_rep = 20
-QRAM_MZ_balance_pulse_Early = ([Pulses_Amp] * (MZ_delay - AOM_risetime) + [0] * (MZ_delay + AOM_risetime)) * Seq_rep
-QRAM_MZ_balance_pulse_Late = ([0] * (MZ_delay + AOM_risetime) + [Pulses_Amp] * (MZ_delay - AOM_risetime)) * Seq_rep
+MZ_balancing_seq_rep = 100
+QRAM_MZ_balance_pulse_Early = ([Pulses_Amp] * (MZ_delay - AOM_risetime) + [0] * MZ_delay + [0] * AOM_risetime) * MZ_balancing_seq_rep
+QRAM_MZ_balance_pulse_Late = ([0] * MZ_delay + [Pulses_Amp] * (MZ_delay - AOM_risetime) + [0] * AOM_risetime) * MZ_balancing_seq_rep
 
 # readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/1.5)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
 readout_pulse_sprint_len_N = 10*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
@@ -562,6 +562,7 @@ config = {
             },
             'operations': {
                 'MOT': "MOT_lock",
+                'MOT_with_EOM': "MOT_with_EOM_pulses",
                 'Linear': "Linear_pulse",
                 'Const': "Const_pulse",
             },
@@ -749,7 +750,8 @@ config = {
                 },
             },
             "digitalOutputs": {
-                "outBright": (controller, 4),
+                "OutBright1": (controller, 1),
+                "OutBright2": (controller, 2),
             },
             'outputs': {
                 'out1': (controller, 1)
@@ -769,7 +771,8 @@ config = {
                 "port": (controller, 7),
             },
             "digitalOutputs": {
-                "outDark": (controller, 5),
+                "OutDark1": (controller, 3),
+                "OutDark2": (controller, 4),
             },
             'outputs': {
                 'out1': (controller, 1)
@@ -863,6 +866,15 @@ config = {
             'waveforms': {
                 'single': 'const_wf'
             },
+        },
+
+        "MOT_with_EOM_pulses": {
+            'operation': 'control',
+            'length': MOT_pulse_len,
+            'waveforms': {
+                'single': 'const_wf'
+            },
+            'digital_marker': 'Trig_EOM_MOT',
         },
 
         "MOT_lock_ON": {
@@ -1018,7 +1030,7 @@ config = {
             'waveforms': {
                 'single': 'QRAM_Square_wf_Early'
             },
-            'digital_marker': 'Trig_AWG'
+            'digital_marker': 'Trig_EOM'
         },
 
         "Square_pulse_seq_MZ_Late": {
@@ -1178,7 +1190,7 @@ config = {
             'waveforms': {
                 'single': 'early_late_wf'
             },
-            'digital_marker': 'ON'
+            'digital_marker': 'Trig_EOM_MZ'
         },
 
         "MZ_balance_pulses_Late": {
@@ -1187,7 +1199,7 @@ config = {
             'waveforms': {
                 'single': 'late_early_wf'
             },
-            'digital_marker': 'ON'
+            # 'digital_marker': 'ON'
         },
 
         'pulse1_in': {
@@ -1351,8 +1363,14 @@ config = {
         "Trig_ns": {
             "samples": [(1, 250), (0, 0)]
         },
-        "Trig_AWG": {
+        "Trig_EOM": {
             "samples": [(1, 250), (0, 250), (1, 250), (0, 0)]
+        },
+        "Trig_EOM_MZ": {
+            "samples": [(1, 250), (0, 250)] * MZ_balancing_seq_rep + [(0, 0)]
+        },
+        "Trig_EOM_MOT": {
+            "samples": [(1, 250), (0, 250)] * int(MOT_pulse_len / (MZ_delay * 2)) + [(0, 0)]
         },
         "FS_North": {
             "samples": QRAM_Exp_digital_samples_FS_North

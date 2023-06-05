@@ -1,6 +1,7 @@
 import numpy as np
 import Config_with_SNSPDs_and_QuadRF as Config
 import Config_with_SNSPDs_and_QuadRF_Sprint as Config_Sprint # opx configuration for sprint experiments
+import Config_with_SNSPDs_and_QuadRF_QRAM as Config_QRAM # opx configuration for sprint experiments
 
 # ------------- AOM Double-Pass calibration ---------------------------------------
 from scipy.interpolate import griddata
@@ -29,7 +30,8 @@ Initial_Values = {
     # 'Operation_Mode': 'Spectrum_Exp',
     # 'Operation_Mode': 'CRUS_Exp',
     # 'Operation_Mode': 'SPRINT_2-3_Exp',
-    'Operation_Mode': 'SPRINT_Exp',
+    # 'Operation_Mode': 'SPRINT_Exp',
+    'Operation_Mode': 'QRAM_Exp',
     # 'Operation_ModB-e': 'Continuous',
     'Imaging_Phase': 'Pulse_1',
     'Triggering_Phase': -1,  # Don't change this. Triggering phase should be defined within each operation mode (see below)
@@ -159,6 +161,7 @@ Phases_Names = ['MOT', 'Fountain', 'PGC', 'Free_Fall', 'Pulse_1', 'Inter_Pulses'
 
 Operation_Modes = {
                     'Default_Values': {
+                                        'MOT_rep': int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config.MOT_pulse_len)),
                                         'Triggering_Phase': 'Pulse_1',
                                         'Pulse_1_CH1_Freq_i': Initial_Values['MOT_freq'],
                                         # 'Pulse_1_CH1_Freq_i': Initial_Values['Flash_freq'],
@@ -299,6 +302,8 @@ Operation_Modes = {
                                  'PGC_duration': 5.1 #[msec] EXTREMELY IMOPRTANT for OPX-QuadRF sync
                                  },
                     'SPRINT_Exp':  {'Triggering_Phase': 'Free_Fall',
+                                    'MOT_rep': int(
+                                        np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config_Sprint.MOT_pulse_len)),
                                     'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
                                     'PrePulse_Repump_amp': 0.000001,  # relative
                                     'PrePulse_CH2_freq': 133.325e6, # Hz
@@ -322,6 +327,7 @@ Operation_Modes = {
                                     'M_off_time': 5,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
                                     },
                     'QRAM_Exp':  {'Triggering_Phase': 'Free_Fall',
+                                  'MOT_rep': int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config_QRAM.MOT_pulse_len)),
                                   'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
                                   'PrePulse_Repump_amp': 0.000001,  # relative
                                   'PrePulse_CH2_freq': 133.325e6, # Hz
@@ -333,15 +339,15 @@ Operation_Modes = {
                                   'Imaging_Phase': 'Pulse_1',
                                   'PrePulse_duration': 13,  # [msec]
                                   'Shutter_open_time': 3.5,  # [msec]
-                                  'Pulse_1_duration': int(max(Config_Sprint.readout_pulse_sprint_len_N,
-                                                              Config_Sprint.readout_pulse_sprint_len_S)) / 1e6,  # [msec]
+                                  'Pulse_1_duration': int(max(Config_QRAM.readout_pulse_sprint_len_N,
+                                                              Config_QRAM.readout_pulse_sprint_len_S)) / 1e6,  # [msec]
                                   ## If with fountain:
                                   'Fountain_duration': 0.5,  # [msec]
                                   'Fountain_prep_duration': 0.5,  # [msec], Can't be zero!!!
-                                  'M_window': int(max(Config_Sprint.readout_pulse_sprint_len_N,
-                                                      Config_Sprint.readout_pulse_sprint_len_S)), # [nsec]
-                                  'M_time': int(max(Config_Sprint.readout_pulse_sprint_len_N,
-                                                    Config_Sprint.readout_pulse_sprint_len_S)) / 1e6,  # Pulse_length[nsec] * 1000 repetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
+                                  'M_window': int(max(Config_QRAM.readout_pulse_sprint_len_N,
+                                                      Config_QRAM.readout_pulse_sprint_len_S)), # [nsec]
+                                  'M_time': int(max(Config_QRAM.readout_pulse_sprint_len_N,
+                                                    Config_QRAM.readout_pulse_sprint_len_S)) / 1e6,  # Pulse_length[nsec] * 1000 repetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
                                   'M_off_time': 5,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
                                   },
                     'SPRINT_2-3_Exp':  {'Triggering_Phase': 'Free_Fall',
@@ -703,9 +709,10 @@ def verifyKeysForCaseSensitivity():
 verifyKeysForCaseSensitivity()
 
 
-def updateMOT_rep():
-    Initial_Values['MOT_rep'] = int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config.MOT_pulse_len))
-    return(Initial_Values['MOT_rep'])
-
-updateMOT_rep()
+# def updateMOT_rep():
+#
+#     Initial_Values['MOT_rep'] = int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config.MOT_pulse_len))
+#     return(Initial_Values['MOT_rep'])
+#
+# updateMOT_rep()
 
