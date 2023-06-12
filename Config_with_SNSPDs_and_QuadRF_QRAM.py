@@ -54,7 +54,8 @@ opx_max_per_window = vec_size*num_of_detectors/2
 
 # Pulse_durations
 readout_pulse_len = 10000000
-MOT_pulse_len = 2e6
+# MOT_pulse_len = 2e6
+MOT_pulse_len = 10e6
 Short_pulse_len = 40
 PGC_pulse_len = 40
 Fountain_pulse_len = 40
@@ -266,8 +267,8 @@ num_fin_zeros_N = 0  # For only det pulses sequence
 # det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
 # sprint_pulse_amp_N = [0, 0.085, 0, 0.085]
 # For pulse sync
-det_pulse_amp_N = [0.45, 0, 0, 0, 0, 0, 0, 0]
-sprint_pulse_amp_N = [0.45, 0, 0, 0]
+det_pulse_amp_N = [0, 0, 0, 0, 0, 0, 0, 0]
+sprint_pulse_amp_N = [0.45, 0, 0.45, 0]
 # For Bell |(0 + 1)c, 1t>
 # det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
 # sprint_pulse_amp_N = [0, 0, 0, 0.085]
@@ -292,14 +293,14 @@ num_mid_zeros_Ancilla = 10
 num_fin_zeros_Ancilla = 0  # For only det pulses sequence
 
 # For pulse sync
-# det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0, 0, 0]
-# sprint_pulse_amp_Ancilla = [0, 0, 0, 0]
+det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0, 0, 0]
+sprint_pulse_amp_Ancilla = [0, 0, 0, 0]
 # For Bell |(0 + 1)c, 1t>
 # det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_Ancilla = [0, 0, 0.085, 0]
 # |0c, (0 + 1)t>
-det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0, 0, 0]
-sprint_pulse_amp_Ancilla = [0, 0, 0.085, 0]
+# det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0, 0, 0]
+# sprint_pulse_amp_Ancilla = [0, 0, 0.085, 0]
 # # |1c, (0 + 1)t>
 # det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_Ancilla = [0, 0, 0, 0]
@@ -346,8 +347,8 @@ num_mid_val_Early = 10
 num_fin_val_Early = 0  # For only det pulses sequence
 Pulses_Amp = 0.45
 # For pulse sync
-det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 0, 0]
-sprint_pulse_amp_Early = [0, 0, 0, 0]
+det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 1, 1]
+sprint_pulse_amp_Early = [1, 0, 0, 0]
 # For Bell |(0 + 1)c, 1t>
 # det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 1, 1]
 # sprint_pulse_amp_Early = [1, 0, 0, 0]
@@ -373,8 +374,8 @@ num_init_val_Late = 10  # For only det pulses sequence
 num_mid_val_Late = 10
 num_fin_val_Late = 0  # For only det pulses sequence
 # For pulse sync
-det_pulse_amp_Late = [1, 1, 0, 0, 0, 0, 1, 1]
-sprint_pulse_amp_Late = [1, 0, 0, 1]
+det_pulse_amp_Late = [0, 0, 0, 0, 0, 0, 0, 0]
+sprint_pulse_amp_Late = [0, 1, 1, 0]
 # For Bell |(0 + 1)c, 1t>
 # det_pulse_amp_Late = [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0, 0]
 # sprint_pulse_amp_Late = [0, 0, 0, 0]
@@ -426,7 +427,7 @@ QRAM_Exp_digital_samples_FS_North = get_pulses_location_in_seq(delay=0,
 MZ_delay = int(len(QRAM_Exp_Gaussian_samples_N) / 4)
 AOM_risetime = 120
 MZ_balancing_seq_rep = 100
-QRAM_MZ_balance_pulse_Early = ([Pulses_Amp] * (MZ_delay - AOM_risetime) + [0] * MZ_delay + [0] * AOM_risetime) * MZ_balancing_seq_rep
+QRAM_MZ_balance_pulse_Early = ([Pulses_Amp*0.5] * (MZ_delay - AOM_risetime) + [0] * MZ_delay + [0] * AOM_risetime) * MZ_balancing_seq_rep
 QRAM_MZ_balance_pulse_Late = ([0] * MZ_delay + [Pulses_Amp] * (MZ_delay - AOM_risetime) + [0] * AOM_risetime) * MZ_balancing_seq_rep
 
 # readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/1.5)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
@@ -559,6 +560,13 @@ config = {
         "MOT_AOM_0": {
             'singleInput': {
                 "port": (controller, 2)
+            },
+            'digitalInputs': {
+                "AWG_Switch": {
+                    "port": (controller, 10),
+                    "delay": 210,
+                    "buffer": 0,
+                },
             },
             'operations': {
                 'MOT': "MOT_lock",
@@ -694,7 +702,6 @@ config = {
             'intermediate_frequency': IF_TOP2,
         },
 
-
         "FLR_detection": {
             # open fake:#
             "singleInput": {
@@ -745,7 +752,8 @@ config = {
             'digitalInputs': {
                 "AWG_Switch": {
                     "port": (controller, 10),
-                    "delay": 210,
+                    # "delay": 200, # OPX control EOM
+                    "delay": 400, # AWG control EOM
                     "buffer": 0,
                 },
             },
@@ -874,7 +882,7 @@ config = {
             'waveforms': {
                 'single': 'const_wf'
             },
-            'digital_marker': 'Trig_EOM_MOT',
+            'digital_marker': 'Trig_AWG_MOT',
         },
 
         "MOT_lock_ON": {
@@ -1030,7 +1038,8 @@ config = {
             'waveforms': {
                 'single': 'QRAM_Square_wf_Early'
             },
-            'digital_marker': 'Trig_EOM'
+            # 'digital_marker': 'Trig_EOM'
+            'digital_marker': 'ON'
         },
 
         "Square_pulse_seq_MZ_Late": {
@@ -1190,7 +1199,8 @@ config = {
             'waveforms': {
                 'single': 'early_late_wf'
             },
-            'digital_marker': 'Trig_EOM_MZ'
+            # 'digital_marker': 'Trig_EOM_MZ'
+            'digital_marker': 'ON'
         },
 
         "MZ_balance_pulses_Late": {
@@ -1371,6 +1381,9 @@ config = {
         },
         "Trig_EOM_MOT": {
             "samples": [(1, 250), (0, 250)] * int(MOT_pulse_len / (MZ_delay * 2)) + [(0, 0)]
+        },
+        "Trig_AWG_MOT": {
+            "samples": [(1, 20000), (0, 0)]
         },
         "FS_North": {
             "samples": QRAM_Exp_digital_samples_FS_North

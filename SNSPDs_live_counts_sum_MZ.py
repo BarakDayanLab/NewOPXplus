@@ -61,7 +61,7 @@ PGC_pulse_len = 500
 Probe_pulse_len =500
 Fountain_pulse_len = 500
 Depump_pulse_len = 500
-OD_pulse_len = int(1 * 1e6)
+OD_pulse_len = int(100 * 1e3)
 Repump_pulse_len = 500
 Trigger_pulse_len = 1
 AntiHelmholtz_pulse_len = 60
@@ -367,7 +367,7 @@ Super_Sprint_Config = {
             'waveforms': {
                 'single': 'const_wf'
             },
-            'digital_marker': 'ON'
+            # 'digital_marker': 'ON'
         },
         "Depump_pulse": {
             'operation': 'control',
@@ -494,26 +494,25 @@ with program() as dig:
 
     n = declare(int)
 
-    m_window = int(1 * 1e6)  # [nsec]
+    m_window = OD_pulse_len # [nsec]
     # diff = declare(int)
     # g2 = declare(fixed, size=m_window)
     # g2_idx = declare(int)
     # g2_st = declare_stream()
-    Measuring_time = 10 * 1e6  # [nsec]
+    Measuring_time = 500 * 1e6  # [nsec]
     rep = int(Measuring_time / m_window)
     # with infinite_loop_():
     #     play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
         # play("Depump", "AOM_2-2'")
         # play("MOT", "AOM_TOP_1")
+
     with infinite_loop_():
+        play("Const_open_triggered", "PULSER_N", duration=int(Measuring_time / 4))
+        # play("Const_open", "PULSER_N")
+        play("Const_open", "PULSER_S", duration=int(Measuring_time / 4))
+        play("Const_open" * amp(0.65), "AOM_Early", duration=int(Measuring_time / 4))
+        play("Const_open", "AOM_Late", duration=int(Measuring_time / 4))
         with for_(n, 0, n < rep, n+1):
-
-            play("Const_open_triggered", "PULSER_N")
-            # play("Const_open", "PULSER_N")
-            play("Const_open", "PULSER_S")
-            play("Const_open" * amp(0.5), "AOM_Early")
-            play("Const_open", "AOM_Late")
-
             measure("OD_measure", "digital_detectors_N", None,
                     counting.digital(counts1, m_window, element_outputs="out1"),
                     counting.digital(counts2, m_window, element_outputs="out2"),
@@ -579,6 +578,7 @@ BP_vals = []
 DP_vals = []
 sum_vals = []
 SPCMs_vals = []
+counter = 0
 
 fig = plt.figure()
 font = font_manager.FontProperties(family='Comic Sans MS', weight='bold', style='normal', size=16)
@@ -611,20 +611,35 @@ while avg_count1_handle.is_processing():
     DP_counts = "{:,}".format(DP_vals[-1])
     sum_counts = "{:,}".format(sum_vals[-1])
     SPCMs_counts = "{:,}".format(SPCMs_vals[-1])
-
+    # print(counter)
+    # if (counter % 100) == 0:
     plt.clf()
-    plt.plot(BP_vals[-100:], label='Bright Port Counts: ' + BP_counts + ' Hz')
-    plt.plot(DP_vals[-100:], label='Dark Port Counts: ' + DP_counts + ' Hz')
-    plt.plot(sum_vals[-100:], label='Sum Counts: ' + sum_counts + ' Hz')
-    # plt.plot(SPCMs_vals[-100:], label='SPCMs Counts: ' + SPCMs_counts + ' Hz')
-    plt.title("counts")
-    plt.legend(loc='upper left', prop=font)
-    plt.show()
-    plt.text(0, 50000, str(np.round(abs(DP_vals[-1]-BP_vals[-1])/(DP_vals[-1]+BP_vals[-1]),decimals=2)), fontsize=28,
+    # plt.plot(BP_vals[-100:], label='Bright Port Counts: ' + BP_counts + ' Hz')
+    # plt.plot(DP_vals[-100:], label='Dark Port Counts: ' + DP_counts + ' Hz')
+    # plt.plot(sum_vals[-100:], label='Sum Counts: ' + sum_counts + ' Hz')
+    # # plt.plot(SPCMs_vals[-100:], label='SPCMs Counts: ' + SPCMs_counts + ' Hz')
+    # plt.title("counts")
+    # plt.legend(loc='upper left', prop=font)
+    # plt.show()
+    # plt.text(0, 8000, str(np.round(abs(DP_vals[-1]-BP_vals[-1])/(DP_vals[-1]+BP_vals[-1]),decimals=2)), fontsize=28,
+    #                        verticalalignment='top')
+    #
+    # plt.pause(0.01)
+    # print(str(abs(DP_vals[-1]-BP_vals[-1])/(DP_vals[-1]+BP_vals[-1])))
+
+    # counter = counter + 1
+    B_arr = (np.array(avg_counts_res2) + np.array(avg_counts_res1))[:-int(0.05*len(avg_counts_res2))]
+    D_arr = (np.array(avg_counts_res3) + np.array(avg_counts_res4))[:-int(0.05*len(avg_counts_res2))]
+    plt.plot(B_arr + D_arr)
+    plt.plot(B_arr)
+    plt.plot(D_arr)
+    plt.text(0, np.mean(B_arr + D_arr), str(np.round(max(abs((B_arr-D_arr)/(B_arr+D_arr))), decimals=2)), fontsize=28,
                            verticalalignment='top')
+    # plt.text(0, 200, str(np.round((max(D_arr)-min(D_arr)) / np.mean(D_arr + B_arr), decimals=3)), fontsize=28,
+    #          verticalalignment='top')
 
     plt.pause(0.01)
-    print(str(abs(DP_vals[-1]-BP_vals[-1])/(DP_vals[-1]+BP_vals[-1])))
+
 
 
 print('finished')

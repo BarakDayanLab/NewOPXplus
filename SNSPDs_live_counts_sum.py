@@ -286,7 +286,7 @@ Super_Sprint_Config = {
 
         "PULSER_E/L": {
             "singleInput": {
-                "port": (controller, 6),
+                "port": (controller, 7),
             },
             'operations': {
                 'Const_open': "MOT_lock",
