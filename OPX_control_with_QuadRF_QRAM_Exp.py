@@ -41,6 +41,7 @@ handler = StreamHandler(sys.stdout)
 handler.setFormatter(Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
 logger.addHandler(handler)
 
+
 ###            Support functions          ###
 def find_nearest(array, value):
     array = np.asarray(array)
@@ -51,6 +52,7 @@ def moving_average(a, n=3) :
     ret = np.cumsum(a, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
+
 
 def assign_variables_to_element(element, *variables):
     """
@@ -72,6 +74,8 @@ def assign_variables_to_element(element, *variables):
     for variable in variables[1:]:
         _exp += variable
     wait(4 + 0 * _exp, element)
+
+
 ###  ------------------------------------ ###
 
 all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]
@@ -311,24 +315,30 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
     play("OD_FS", "AOM_2-2/3'", duration=OD_pulse_duration)
 
 
-def MZ_balancing(m_time, m_window, phase_rep, points_for_sum,
-                 counts_st_B1, counts_st_B2, counts_st_D1, counts_st_D2, phase_correction_st, phase_for_min_st):
+def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
+                 counts_st_B1, counts_st_B2, counts_st_D1, counts_st_D2, phase_correction_st, phase_for_min_st, tt_st_B2, tt_st_D2):
 
-    counts_B1 = declare(int)
+    counts_B1 = declare(int, value=0)
     counts_B2 = declare(int)
+    # tt_vec_B2 = declare(int, size=Config.vec_size)
     counts_B2_sum = declare(int, value=0)
-    counts_D1 = declare(int)
+    counts_D1 = declare(int, value=0)
     counts_D2 = declare(int)
+    # tt_vec_D2 = declare(int, size=Config.vec_size)
     counts_D2_sum = declare(int, value=0)
 
     assign_variables_to_element("AOM_Early", counts_B2_sum)
     assign_variables_to_element("AOM_Late", counts_D2_sum)
     t = declare(int)
-    i = declare(int)
+    i = declare(fixed)
+    j = declare(int)
+    k = declare(int)
 
+    phase_scan = declare(fixed, value=[1.0, 1.0])
     phase_correction = declare(fixed, value=(1/phase_rep))
+    phase_correction_per_scan = declare(fixed)
     phase_correction_value = declare(fixed)
-    phase_correction_min = declare(fixed, value=(1/phase_rep))
+    phase_correction_min = declare(fixed, value=0.0)
     min_counts_D = declare(int, value=0)
     max_counts_B = declare(int, value=0)
 
@@ -336,56 +346,66 @@ def MZ_balancing(m_time, m_window, phase_rep, points_for_sum,
     assign(min_counts_D, 0)
     assign(counts_B1, 0)
     assign(counts_D1, 0)
-    reset_frame("AOM_Early")
     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
+    play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
+    play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
+
+    align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
+    play("Const_open_triggered", "PULSER_N", duration=m_time)
     play("Const_open", "PULSER_S", duration=m_time)
-    play("Const_open", "PULSER_N", duration=m_time)
 
-    wait(287, "AOM_Early", "AOM_Late")
+    # reset_frame("AOM_Early")
+
+    # wait(287, "AOM_Early", "AOM_Late")
     # with for_(t, 0, t < (m_time * 4), t + m_window):
-    with for_(t, 1, t <= phase_rep, t + 1):
-        assign(counts_B2_sum, 0)
-        assign(counts_D2_sum, 0)
-        with for_(i, 1, i <= points_for_sum, i + 1):
-            measure("MZ_balancing_pulses", "AOM_Early", None,
-                    # counting.digital(counts_B1, int(len(Config.QRAM_MZ_balance_pulse_Early)), element_outputs="OutBright1"),
-                    counting.digital(counts_B2, m_window, element_outputs="OutBright2"))
-            measure("MZ_balancing_pulses", "AOM_Late", None,
-                    # counting.digital(counts_D1, int(len(Config.QRAM_MZ_balance_pulse_Late)), element_outputs="OutDark1"),
-                    counting.digital(counts_D2, m_window, element_outputs="OutDark2"))
-            assign(counts_B2_sum, counts_B2_sum + counts_B2)
-            assign(counts_D2_sum, counts_D2_sum + counts_D2)
+    with for_each_(i, phase_scan):
+        assign(phase_correction_per_scan, phase_correction * i)
+        assign(max_counts_B, 0)
+        reset_frame("AOM_Early", "AOM_Late")
+        # reset_frame("AOM_Early")
+        frame_rotation_2pi(phase_correction_min, "AOM_Early")
+        # frame_rotation_2pi(phase_correction_min - i * 0.5, "AOM_Early")
+        with for_(j, 1, j <= phase_rep, j + 1):
+            assign(counts_B2_sum, 0)
+            assign(counts_D2_sum, 0)
+            with for_(k, 1, k <= points_for_sum, k + 1):
+                measure("MZ_balancing_pulses", "AOM_Early", None,
+                        # counting.digital(counts_B1, int(len(Config.QRAM_MZ_balance_pulse_Early)), element_outputs="OutBright1"),
+                        counting.digital(counts_B2, m_window, element_outputs="OutBright2"))
+                        # time_tagging.digital(tt_vec_B2, m_window, element_output="OutBright2", targetLen=counts_B2))
 
-        assign(phase_correction_value, Cast.mul_fixed_by_int(phase_correction, t))
-        save(phase_correction_value, phase_correction_st)
+                measure("MZ_balancing_pulses", "AOM_Late", None,
+                        # counting.digital(counts_D1, int(len(Config.QRAM_MZ_balance_pulse_Late)), element_outputs="OutDark1"),
+                        counting.digital(counts_D2, m_window, element_outputs="OutDark2"))
+                        # time_tagging.digital(tt_vec_D2, m_window, element_output="OutDark2", targetLen=counts_D2))
 
-        save(counts_B1, counts_st_B1)
-        save(counts_B2_sum, counts_st_B2)
-        save(counts_D1, counts_st_D1)
-        save(counts_D2_sum, counts_st_D2)
+                assign(counts_B2_sum, counts_B2_sum + counts_B2)
+                assign(counts_D2_sum, counts_D2_sum + counts_D2)
 
-        # with if_(t == 1):
-        #     assign(min_counts_D, (counts_D1 + counts_D2_sum))
-        # with elif_((counts_D1 + counts_D2_sum) < min_counts_D):
-        #     assign(min_counts_D, (counts_D1 + counts_D2_sum))
-        #     assign(phase_correction_min, phase_correction_value)
+            assign(phase_correction_value, Cast.mul_fixed_by_int(phase_correction_per_scan, j))
+            save(phase_correction_value, phase_correction_st)
+            save(counts_B1, counts_st_B1)
+            save(counts_B2_sum, counts_st_B2)
+            save(counts_D1, counts_st_D1)
+            save(counts_D2_sum, counts_st_D2)
+
+            # with if_(t == 1):
+            #     assign(min_counts_D, (counts_D1 + counts_D2_sum))
+            # with elif_((counts_D1 + counts_D2_sum) < min_counts_D):
+            #     assign(min_counts_D, (counts_D1 + counts_D2_sum))
+            #     assign(phase_correction_min, phase_correction_value)
             # assign(min_counts_D, Util.cond((counts_D1 + counts_D2) > min_counts_D,
             #                                 min_counts_D, (counts_D1 + counts_D2)))
 
-        with if_((counts_B2_sum - counts_D2_sum) > max_counts_B):
-            assign(max_counts_B, (counts_B2_sum - counts_D2_sum))
-            assign(phase_correction_min, phase_correction_value)
+            with if_((counts_B2_sum - counts_D2_sum) > max_counts_B):
+                assign(max_counts_B, (counts_B2_sum - counts_D2_sum))
+                assign(phase_correction_min, phase_correction_value)
 
-        save(phase_correction_min, phase_for_min_st)
+            save(phase_correction_min, phase_for_min_st)
 
-        frame_rotation_2pi(phase_correction, "AOM_Early")
-        # frame_rotation_2pi(0.1, "AOM_Early")
-        #
-        # assign(last_extinction_ratio, Cast.to_fixed((counts_D1 + counts_D2)/(counts_D1 + counts_D2
-        #                                                                                + counts_B1 + counts_B2)))
-        # assign(sign, 1)
-    # save(phase_correction_min, phase_for_min_st)
-    reset_frame("AOM_Early")
+            frame_rotation_2pi(phase_correction_per_scan, "AOM_Early")
+
+    reset_frame("AOM_Early", "AOM_Late")
     frame_rotation_2pi(phase_correction_min, "AOM_Early")
 
 
@@ -504,9 +524,6 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
     assign_variables_to_element("Dig_detectors", counts1)
 
-    factor = declare(int, value=100)
-    factor = declare(int, value=100)
-
     n = declare(int)
     t = declare(int)
     m = declare(int)
@@ -514,9 +531,9 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
     # assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
     align("AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors") #, "AOM_2-2'")
     # play("Depump", "AOM_2-2'", duration=shutter_open_time)
-    play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
-    play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
-    align("AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors")
+    # play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
+    # play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
+    # align("AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors")
 
     with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.QRAM_Exp_Gaussian_samples_S))): #assaf comment debbuging
         play("QRAM_experiment_pulses_Ancilla", "PULSER_ANCILLA")
@@ -525,13 +542,8 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
         play("QRAM_experiment_pulses_Early", "AOM_Early")
         play("QRAM_experiment_pulses_Late", "AOM_Late")
 
-    # wait(137, "Dig_detectors")
-    # wait(293, "Dig_detectors")
     wait(297, "Dig_detectors")
-    # wait(117, "Dig_detectors") # For 20ns between pulses in sequence
-    # wait(298, "Dig_detectors") # For 20ns between pulses in sequence of only detections
     with for_(n, 0, n < m_time * 4, n + m_window):
-        # measure("readout_SPRINT", "Dig_detectors", None,
         measure("readout_QRAM", "Dig_detectors", None,
                 time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
                 time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
@@ -618,7 +630,7 @@ def opx_control(obj, qm):
 
         # General measurements variables:
         PrePulse_duration = declare(int, value=int(obj.Exp_Values['PrePulse_duration'] * 1e6 / 4))
-
+        Balancing_check_window = declare(int, value=int(obj.Balancing_check_window * 1e6 / 4))
         # Pulse_1_parameters:
         Pulse_1_duration = declare(int, value=int(obj.Exp_Values['Pulse_1_duration'] * 1e6 / 4))
         Pulse_1_decay_time = declare(int, value=int(obj.Exp_Values['Pulse_1_decay_duration'] * 1e6 / 4))
@@ -645,8 +657,10 @@ def opx_control(obj, qm):
         # Stream processing:
         counts_st_B1 = declare_stream()
         counts_st_B2 = declare_stream()
+        tt_st_B2 = declare_stream()
         counts_st_D1 = declare_stream()
         counts_st_D2 = declare_stream()
+        tt_st_D2 = declare_stream()
         phase_correction_st = declare_stream()
         phase_for_min_st = declare_stream()
         ON_counts_st1 = declare_stream()
@@ -721,9 +735,10 @@ def opx_control(obj, qm):
             with if_(QRAM_Exp_ON):
                 wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
                 # play("Depump", "AOM_2-2'", duration=(PrePulse_duration - shutter_open_time))
-                MZ_balancing((PrePulse_duration - shutter_open_time), len(Config.QRAM_MZ_balance_pulse_Late),
-                             obj.phase_rep_MZ, obj.points_for_sum, counts_st_B1, counts_st_B2, counts_st_D1, counts_st_D2,
-                             phase_correction_st, phase_for_min_st)
+                MZ_balancing((PrePulse_duration - shutter_open_time - Balancing_check_window), len(Config.QRAM_MZ_balance_pulse_Late),
+                             shutter_open_time, obj.phase_rep_MZ, obj.points_for_sum,
+                             counts_st_B1, counts_st_B2, counts_st_D1, counts_st_D2,
+                             phase_correction_st, phase_for_min_st, tt_st_B2, tt_st_D2)
             with else_():
                 # play("Depump", "AOM_2-2'", duration=PrePulse_duration)
                 wait(PrePulse_duration, "Cooling_Sequence")
@@ -816,10 +831,9 @@ def opx_control(obj, qm):
                 assign(i, IO1)
 
         with stream_processing():
-            (counts_st_B1 + counts_st_B2).buffer(obj.phase_rep_MZ).save('Bright_Port_Counts')
-            (counts_st_D1 + counts_st_D2).buffer(obj.phase_rep_MZ).save('Dark_Port_Counts')
-            phase_correction_st.buffer(obj.phase_rep_MZ).zip(phase_for_min_st.buffer(obj.phase_rep_MZ)).save('Phase_Correction_array')
-            # phase_for_min_st.save('Phase_Correction_for_min')
+            (counts_st_B1 + counts_st_B2).buffer(obj.total_phase_rep_MZ).save('Bright_Port_Counts')
+            (counts_st_D1 + counts_st_D2).buffer(obj.total_phase_rep_MZ).save('Dark_Port_Counts')
+            phase_correction_st.buffer(obj.total_phase_rep_MZ).zip(phase_for_min_st.buffer(obj.total_phase_rep_MZ)).save('Phase_Correction_array')
             ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
             ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
             ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
@@ -988,10 +1002,16 @@ class OPX:
         # self.rep = int(self.M_time / (self.M_window + 28 + 170))
         self.rep = int(self.M_time / self.M_window)
         self.vec_size = Config.vec_size
-        self.rep_MZ = int((self.prepulse_duration - self.Shutter_open_time) * 1e6 /
-                          len(Config.QRAM_MZ_balance_pulse_Late))
+
+        # MZ balancing:
+        self.Balancing_check_window = 2 # [msec]
+        self.rep_MZ_fast_scan = int(0.5 * (self.prepulse_duration - self.Shutter_open_time - self.Balancing_check_window)
+                                    * 1e6 / len(Config.QRAM_MZ_balance_pulse_Late))
+        self.rep_MZ_slow_scan = int(0.5 * (self.prepulse_duration - self.Shutter_open_time - self.Balancing_check_window)
+                                    * 1e6 / len(Config.QRAM_MZ_balance_pulse_Late))
         self.points_for_sum = 5
-        self.phase_rep_MZ = int(self.rep_MZ/self.points_for_sum)
+        self.phase_rep_MZ = int(self.rep_MZ_fast_scan/self.points_for_sum)
+        self.total_phase_rep_MZ = int(2 * self.rep_MZ_fast_scan/self.points_for_sum)
 
         # MW spectroscopy parameters:
         self.MW_start_frequency = int(100e6)  # [Hz]
@@ -1329,7 +1349,7 @@ class OPX:
         for i in range(len(Num_Of_dets)):  # for different detectors
             # self.tt_measure.append([self.tt_res[i][(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts in
             #                         enumerate(self.counts_res[i])])
-            self.tt_measure.append(self.tt_res[i][1: self.tt_res[i][0]].tolist())
+            self.tt_measure.append(self.tt_res[i][1:(self.tt_res[i][0])].tolist())
             self.tt_measure[i] = [elm + Config.detector_delays[i] for elm in self.tt_measure[i]
                                   if ((elm % self.M_window != 0) & (elm != 9999984) &
                                       ((elm + Config.detector_delays[i]) <= self.M_window))]  # Due to an unresolved bug in the OPD there are "ghost" readings of timetags equal to the maximum time of measuring window.
@@ -1464,7 +1484,6 @@ class OPX:
             if tt_inseq > self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
                 self.num_of_BP_counts_per_n_sequences[(element-1)//(self.QRAM_sequence_len * num_of_seq_per_count)] += \
                     np.ceil(Config.QRAM_Exp_Square_samples_Late[tt_inseq])
-
 
         for element in self.tt_DP_measure:
             tt_inseq = element % self.QRAM_sequence_len
@@ -1626,7 +1645,7 @@ class OPX:
         return box_loc
 
     def fold_tt_histogram(self, exp_sequence_len):
-        
+
         self.folded_tt_S = np.zeros(exp_sequence_len, dtype=int)
         self.folded_tt_N = np.zeros(exp_sequence_len, dtype=int)
         self.folded_tt_BP = np.zeros(exp_sequence_len, dtype=int)
@@ -1713,6 +1732,9 @@ class OPX:
             playsound('C:/Windows/Media/cricket-1.wav')
             props_thresholds = dict(boxstyle='round', edgecolor='red', linewidth=2, facecolor='red', alpha=0.5)
 
+        avg_BP = np.average(self.num_of_BP_counts_per_n_sequences)
+        avg_DP = np.average(self.num_of_DP_counts_per_n_sequences)
+
         textstr_thresholds = '# %d - ' % self.Counter + 'Reflections: %d, ' % self.sum_for_threshold + \
                              'Efficiency: %.2f, ' % self.lockingEfficiency + \
                              'Flr: %.2f, ' % (1000 * np.average(self.FLR_res.tolist())) + \
@@ -1721,7 +1743,9 @@ class OPX:
                                     + 'Total reflections per cycle "S" = %d' % (sum(self.num_of_det_reflections_per_seq_S),)
         textstr_avg_reflections = r'Average reflections per cycle = %.2f' % (sum(self.num_of_det_reflections_per_seq_accumulated/self.Counter),)
         textstr_total_SPRINT_reflections = 'Total reflections from SPRINT pulses during transits = %d' % (self.total_number_of_reflections_from_SPRINT_pulses_in_transits,)
-
+        textstr_BP_DP = 'Average Bright counts = %.2f \n' % (avg_BP,) + \
+                        'Average Dark counts = %.2f \n' % (avg_DP,) + \
+                        'Infidelity = %.2f' % (avg_DP/(avg_DP + avg_BP),)
 
         # for n in range(len(Num_Of_dets)):
         #     ax[0].plot(self.single_det_folded[n], label='detectors %d' % (n+1))
@@ -1741,26 +1765,30 @@ class OPX:
         # ax[1].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
         # ax[1].legend(loc='upper right')
 
-        ax[0].plot(self.folded_tt_N_directional, label='"N" detectors')
-        ax[0].plot(self.folded_tt_S_directional, label='"S" detectors')
-        ax[0].plot(self.folded_tt_BP_timebins, label='"BP" detectors')
-        ax[0].plot(self.folded_tt_DP_timebins, label='"DP" detectors')
+        # ax[0].plot(self.folded_tt_N_directional, label='"N" detectors')
+        # ax[0].plot(self.folded_tt_S_directional, label='"S" detectors')
+        ax[0].plot(self.folded_tt_BP, label='"BP" detectors')
+        # ax[0].plot(self.folded_tt_BP_timebins, label='"BP" detectors')
+        ax[0].plot(self.folded_tt_DP, label='"DP" detectors')
+        # ax[0].plot(self.folded_tt_DP_timebins, label='"DP" detectors')
         ax[0].plot((self.filter_S) * max(self.folded_tt_N_directional + self.folded_tt_S_directional),
                    '--', color='orange', label='Filter "S"')
         for i in range(len(self.Num_of_photons_txt_box_y_loc_live)):
             ax[0].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc_live[i],
                        '%.2f' % self.avg_num_of_photons_per_pulse_live[i],
                        horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
-        ax[0].set_ylim(0, 400)
+        # ax[0].set_ylim(0, 400)
         ax[0].set_title('binned timetags from all detectors folded (Live)', fontweight="bold")
-        ax[0].legend(loc='upper right')
+        ax[0].legend(loc='upper left')
         ax[0].text(0.05, 1.4, textstr_thresholds, transform=ax[0].transAxes, fontsize=28,
                    verticalalignment='top', bbox=props_thresholds)
 
-        ax[1].plot(self.folded_tt_N_directional_batch, label='"N" detectors')
-        ax[1].plot(self.folded_tt_S_directional_batch, label='"S" detectors')
-        ax[1].plot(self.folded_tt_BP_timebins_batch, label='"BP" detectors')
-        ax[1].plot(self.folded_tt_DP_timebins_batch, label='"DP" detectors')
+        # ax[1].plot(self.folded_tt_N_directional_batch, label='"N" detectors')
+        # ax[1].plot(self.folded_tt_S_directional_batch, label='"S" detectors')
+        # ax[1].plot(self.folded_tt_BP_timebins_batch, label='"BP" detectors')
+        ax[1].plot(self.folded_tt_BP_batch, label='"BP" detectors')
+        # ax[1].plot(self.folded_tt_DP_timebins_batch, label='"DP" detectors')
+        ax[1].plot(self.folded_tt_DP_batch, label='"DP" detectors')
         ax[1].plot((self.filter_N) * max(self.folded_tt_N_directional_batch + self.folded_tt_S_directional_batch),
                    '--b', label='Filter "N"')
         for i in range(len(self.Num_of_photons_txt_box_y_loc)):
@@ -1779,14 +1807,24 @@ class OPX:
         # ax[3].set_title('Num of reflections per sequence (Average)', fontweight="bold")
         # ax[3].text(0.1, 0.9*max(self.num_of_det_reflections_per_seq_accumulated/self.Counter), textstr_avg_reflections, fontsize=14,
         #            verticalalignment='top', bbox=props)
-        #
-        # if self.number_of_transits_live:
-        #     textstr_transit_counts = r'$N_{Transits} = %s $' % (self.number_of_transits_live,) + r'$[Counts]$'
-        # else:
-        #     textstr_transit_counts = r'$N_{Transits} = %s $' % (0,) + r'$[Counts]$'
-        # textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (self.number_of_transits_total,) + '[Counts]\n'\
-        #                                 + textstr_total_SPRINT_reflections
-        #
+
+        ax[2].plot(self.num_of_det_transmissions_per_seq, label='Num of reflections per sequence (Live)')
+        ax[2].set_title('Num of reflections per sequence (live)', fontweight="bold")
+        ax[2].text(0.1, 0.9*max(self.num_of_det_transmissions_per_seq), textstr_total_reflections, fontsize=14,
+                   verticalalignment='top', bbox=props)
+
+        ax[3].plot(self.num_of_det_transmissions_per_seq_accumulated/self.Counter, label='Num of reflections per sequence (Live)')
+        ax[3].set_title('Num of reflections per sequence (Average)', fontweight="bold")
+        ax[3].text(0.1, 0.9*max(self.num_of_det_transmissions_per_seq_accumulated/self.Counter), textstr_avg_reflections, fontsize=14,
+                   verticalalignment='top', bbox=props)
+
+        if self.number_of_transits_live:
+            textstr_transit_counts = r'$N_{Transits} = %s $' % (self.number_of_transits_live,) + r'$[Counts]$'
+        else:
+            textstr_transit_counts = r'$N_{Transits} = %s $' % (0,) + r'$[Counts]$'
+        textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (self.number_of_transits_total,) + '[Counts]\n'\
+                                        + textstr_total_SPRINT_reflections
+
         # ax[4].plot(range(self.number_of_QRAM_sequences), self.seq_transit_events_live, label='Current transit events')
         # ax[4].set(xlabel='Sequence [#]', ylabel='Counts [Photons]')
         # ax[4].set_title('Transits per sequence (live)', fontweight="bold")
@@ -1800,24 +1838,28 @@ class OPX:
         #            verticalalignment='top', bbox=props)
 
 
-        # ax[4].plot(moving_average(self.MZ_BP_counts_res, 5), label='MZ Bright port')
-        # ax[4].plot(moving_average(self.MZ_DP_counts_res, 5), label='MZ Dark port')
-        ax[4].plot(self.Phase_Correction_vec, self.MZ_BP_counts_res, label='MZ Bright port')
-        ax[4].plot(self.Phase_Correction_vec, self.MZ_DP_counts_res, label='MZ Dark port')
-        ax[4].plot(self.Phase_Correction_vec, self.MZ_BP_counts_res - self.MZ_DP_counts_res, label='Dif ports')
-        # ax[6].plot(self.Phase_Correction_values, label='Phase correction values', color='#2ca02c')
-        # ax[6].axhline(self.Phase_Correction, linestyle='--', label='Phase correction', color='red')
-        ax[4].axvline(self.Phase_Correction_value, linestyle='--', label='Phase correction', color='red')
+        ax[4].plot(self.MZ_BP_counts_res, label='MZ Bright port')
+        ax[4].plot(self.MZ_DP_counts_res, label='MZ Dark port')
+        # ax[4].plot(self.Phase_Correction_vec, self.MZ_BP_counts_res, label='MZ Bright port')
+        # ax[4].plot(self.Phase_Correction_vec, self.MZ_DP_counts_res, label='MZ Dark port')
+        # ax[4].plot(self.Phase_Correction_vec, self.MZ_BP_counts_res - self.MZ_DP_counts_res, label='Dif ports')
+        ax[4].plot(self.MZ_BP_counts_res - self.MZ_DP_counts_res, label='Dif ports')
+        ax[6].plot(self.Phase_Correction_vec, label='Phase correction values', color='#2ca02c')
+        # ax[6].axhline(self.Phase_Correction_value, linestyle='--', label='Phase correction', color='red')
+        # ax[4].axvline(self.Phase_Correction_value, linestyle='--', label='Phase correction', color='red')
+        ax[4].axvline(np.where(self.Phase_Correction_vec == self.Phase_Correction_value)[0][-1], linestyle='--', label='Phase correction', color='red')
         ax[4].set_ylim(0, 1.1 * np.max([self.MZ_BP_counts_res, self.MZ_DP_counts_res]))
         ax[4].set_title('MZ outputs while locking', fontweight="bold")
         ax[4].legend(loc='upper right')
-        # ax[6].legend(loc='upper left')
+        ax[6].legend(loc='upper left')
         print(self.Phase_Correction_value)
 
         ax[5].plot(self.num_of_BP_counts_per_n_sequences, label='MZ Bright port counts per %d seq' % 50)
         ax[5].plot(self.num_of_DP_counts_per_n_sequences, label='MZ Dark port counts per %d seq' % 50)
         ax[5].set_title('MZ outputs during experiment', fontweight="bold")
         ax[5].legend(loc='upper right')
+        ax[5].text(0.05, 0.95, textstr_BP_DP, transform=ax[5].transAxes, fontsize=14,
+                   verticalalignment='top', bbox=props)
 
 
         plt.show()
@@ -1854,6 +1896,7 @@ class OPX:
         self.single_det_folded = np.zeros((len(Num_Of_dets), self.QRAM_sequence_len))
         self.single_det_folded_accumulated = np.zeros((len(Num_Of_dets), self.QRAM_sequence_len))
         self.num_of_det_reflections_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
+        self.num_of_det_transmissions_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
 
     def Save_SNSPDs_QRAM_Measurement_with_tt(self, N, qram_sequence_len, preComment, lock_err_threshold, transit_condition,
                                              max_probe_counts, filter_delay, reflection_threshold, reflection_threshold_time,
@@ -1953,6 +1996,8 @@ class OPX:
             self.divide_BP_and_DP_counts(50)
             self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
                                                   + self.num_of_det_reflections_per_seq_N
+            self.num_of_det_transmissions_per_seq = self.num_of_det_transmissions_per_seq_S \
+                                                  + self.num_of_det_transmissions_per_seq_N
             # self.num_of_det_reflections_per_seq = self.num_of_det_transmissions_per_seq_S \
             #                                       + self.num_of_det_transmissions_per_seq_N
             # self.num_of_SPRINT_reflections_per_seq = self.num_of_SPRINT_reflections_per_seq_S \
@@ -1972,8 +2017,8 @@ class OPX:
 
         self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
                                                            + self.num_of_det_reflections_per_seq_N
-        # self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S \
-        #                                                    + self.num_of_det_transmissions_per_seq_N
+        self.num_of_det_transmissions_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S \
+                                                             + self.num_of_det_transmissions_per_seq_N
 
         # divide south and north into reflection and transmission
         self.tt_histogram_transmission, self.tt_histogram_reflection = \
@@ -2073,7 +2118,7 @@ class OPX:
 
         self.save_tt_to_batch(Num_Of_dets, N)
         self.Counter = 1  # Total number of successful cycles
-        self.rep = 1  # Total number of cycles
+        self.repitions = 1  # Total number of cycles
         self.acquisition_flag = True
         #
         # create figures template
@@ -2093,9 +2138,9 @@ class OPX:
                 self.update_parameters()
                 # Other actions can be added here
                 break
-            self.lockingEfficiency = self.Counter / self.rep
+            self.lockingEfficiency = self.Counter / self.repitions
             print(timest, self.Counter, 'Eff: %.2f' % self.lockingEfficiency, 'Flr: %.2f' % (1000 * np.average(self.FLR_res.tolist())))
-            self.rep += 1
+            self.repitions += 1
             ######################################## PLOT!!! ###########################################################
             ax = [ax1, ax2, ax3, ax4, ax5, ax6, ax7]
             self.plot_sprint_figures(ax, Num_Of_dets)
@@ -2141,6 +2186,8 @@ class OPX:
             self.divide_BP_and_DP_counts(50)
             self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
                                                   + self.num_of_det_reflections_per_seq_N
+            self.num_of_det_transmissions_per_seq = self.num_of_det_transmissions_per_seq_S \
+                                                  + self.num_of_det_transmissions_per_seq_N
             # self.num_of_SPRINT_reflections_per_seq = self.num_of_SPRINT_reflections_per_seq_N \
             #                                          + self.num_of_SPRINT_reflections_per_seq_S
             # self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_N \
@@ -2176,6 +2223,8 @@ class OPX:
                 print('Sum of reflections: %d' % self.sum_for_threshold)
                 self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
                                                                    + self.num_of_det_reflections_per_seq_N
+                self.num_of_det_transmissions_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S \
+                                                                   + self.num_of_det_transmissions_per_seq_N
 
                 self.seq_transit_events_live = np.zeros(self.number_of_QRAM_sequences)
 
@@ -2482,5 +2531,3 @@ if __name__ == "__main__":
     # experiment.update_parameters()
     # experiment.Repeat_Measurement(10)
     # experiment.Repeat_Measurement(10)
-
-

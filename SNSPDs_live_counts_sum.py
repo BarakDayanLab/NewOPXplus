@@ -52,16 +52,16 @@ controller = 'con1'
 # Parameters:0
 
 # Pulse_durations
-readout_pulse_len = int(1 * 1e6)
+readout_pulse_len = int(50 * 1e6)
 north_const_pulse_len = 500
 south_const_pulse_len = 500
 analyzer_const_pulse_len = 500
-MOT_pulse_len = 1000000
+MOT_pulse_len = int(50 * 1e6)
 PGC_pulse_len = 500
 Probe_pulse_len =500
 Fountain_pulse_len = 500
 Depump_pulse_len = 500
-OD_pulse_len = int(1 * 1e6)
+OD_pulse_len = int(50 * 1e6)
 Repump_pulse_len = 500
 Trigger_pulse_len = 1
 AntiHelmholtz_pulse_len = 60
@@ -286,7 +286,7 @@ Super_Sprint_Config = {
 
         "PULSER_E/L": {
             "singleInput": {
-                "port": (controller, 7),
+                "port": (controller, 6),
             },
             'operations': {
                 'Const_open': "MOT_lock",
@@ -481,7 +481,7 @@ with program() as dig:
 
     n = declare(int)
 
-    m_window = int(1 * 1e6)  # [nsec]
+    m_window = OD_pulse_len  # [nsec]
     # diff = declare(int)
     # g2 = declare(fixed, size=m_window)
     # g2_idx = declare(int)
@@ -495,8 +495,8 @@ with program() as dig:
     with infinite_loop_():
         with for_(n, 0, n < rep, n+1):
 
-            play("Const_open_triggered", "PULSER_N")
-            # play("Const_open", "PULSER_N")
+            # play("Const_open_triggered", "PULSER_N")
+            play("Const_open", "PULSER_N")
             play("Const_open", "PULSER_S")
             play("Const_open", "PULSER_E/L")
             # play("Square_Pulse", "PULSER_LO")

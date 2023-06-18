@@ -499,7 +499,7 @@ with program() as dig:
     # g2 = declare(fixed, size=m_window)
     # g2_idx = declare(int)
     # g2_st = declare_stream()
-    Measuring_time = 500 * 1e6  # [nsec]
+    Measuring_time = 100 * 1e6  # [nsec]
     rep = int(Measuring_time / m_window)
     # with infinite_loop_():
     #     play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
@@ -510,7 +510,7 @@ with program() as dig:
         play("Const_open_triggered", "PULSER_N", duration=int(Measuring_time / 4))
         # play("Const_open", "PULSER_N")
         play("Const_open", "PULSER_S", duration=int(Measuring_time / 4))
-        play("Const_open" * amp(0.65), "AOM_Early", duration=int(Measuring_time / 4))
+        play("Const_open" * amp(0.45), "AOM_Early", duration=int(Measuring_time / 4))
         play("Const_open", "AOM_Late", duration=int(Measuring_time / 4))
         with for_(n, 0, n < rep, n+1):
             measure("OD_measure", "digital_detectors_N", None,

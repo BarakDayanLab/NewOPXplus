@@ -338,7 +338,7 @@ Operation_Modes = {
                                   'Buffer_Cycles': 0,
                                   'Imaging_Phase': 'Pulse_1',
                                   'PrePulse_duration': 13,  # [msec]
-                                  'Shutter_open_time': 3.5,  # [msec]
+                                  'Shutter_open_time': 1,  # [msec]
                                   'Pulse_1_duration': int(max(Config_QRAM.readout_pulse_sprint_len_N,
                                                               Config_QRAM.readout_pulse_sprint_len_S)) / 1e6,  # [msec]
                                   ## If with fountain:
