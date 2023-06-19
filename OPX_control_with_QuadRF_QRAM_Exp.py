@@ -6,6 +6,7 @@ from quadRFFrequencyScannerController import QuadRFFrequencyScannerController
 
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
+from qm import generate_qua_script
 from qm.qua import lib
 from scipy import signal
 from qm import SimulationConfig
@@ -334,7 +335,8 @@ def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
     j = declare(int)
     k = declare(int)
 
-    phase_scan = declare(fixed, value=[1.0, 1.0])
+    phase_scan = declare(fixed, value=[1.4, 1.5])
+    # phase_scan = declare(fixed, value=[1.0, 1.0])
     phase_correction = declare(fixed, value=(1/phase_rep))
     phase_correction_per_scan = declare(fixed)
     phase_correction_value = declare(fixed)
@@ -363,9 +365,13 @@ def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
         assign(max_counts_B, 0)
         reset_frame("AOM_Early", "AOM_Late")
         # reset_frame("AOM_Early")
-        frame_rotation_2pi(phase_correction_min, "AOM_Early")
+        with if_(i==1.5):
+            frame_rotation_2pi(phase_correction_min, "AOM_Early")
+        with for_(j, 0, j < phase_rep, j + 1):
+            save(phase_correction_min, phase_for_min_st)
+        # save(0, phase_for_min_st)
         # frame_rotation_2pi(phase_correction_min - i * 0.5, "AOM_Early")
-        with for_(j, 1, j <= phase_rep, j + 1):
+        with for_(j, 0, j < phase_rep, j + 1):
             assign(counts_B2_sum, 0)
             assign(counts_D2_sum, 0)
             with for_(k, 1, k <= points_for_sum, k + 1):
@@ -401,9 +407,9 @@ def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
                 assign(max_counts_B, (counts_B2_sum - counts_D2_sum))
                 assign(phase_correction_min, phase_correction_value)
 
-            save(phase_correction_min, phase_for_min_st)
-
-            frame_rotation_2pi(phase_correction_per_scan, "AOM_Early")
+            # save(phase_correction_min, phase_for_min_st)
+            with if_(i==1.4):
+                frame_rotation_2pi(phase_correction_per_scan, "AOM_Early")
 
     reset_frame("AOM_Early", "AOM_Late")
     frame_rotation_2pi(phase_correction_min, "AOM_Early")
@@ -853,7 +859,12 @@ def opx_control(obj, qm):
             FLR_st.save('FLR_measure')
             AntiHelmholtz_ON_st.save("antihelmholtz_on")
 
+    # sourceFile = open('serialized_code.py', 'w')
+    # print(generate_qua_script(opx_control_prog, Config.config), file=sourceFile)
+    # sourceFile.close()
+
     job = qm.execute(opx_control_prog, flags=['auto-element-thread'])
+
 
     return job
 
@@ -1029,6 +1040,7 @@ class OPX:
             self.qmm.close_all_quantum_machines()
             self.qm = self.qmm.open_qm(config)
             self.job = opx_control(self, self.qm)
+
         except KeyboardInterrupt:
             self.job.halt()
             self.qmm.reset_data_processing()

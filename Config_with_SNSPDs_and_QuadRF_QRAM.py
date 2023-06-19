@@ -141,7 +141,7 @@ opx_max_per_window = vec_size*num_of_detectors/2
 # Pulse_durations
 readout_pulse_len = 10000000
 # MOT_pulse_len = 2e6
-MOT_pulse_len = 10e6
+MOT_pulse_len = 2e6
 Short_pulse_len = 40
 PGC_pulse_len = 40
 Fountain_pulse_len = 40
@@ -149,7 +149,7 @@ FreeFall_pulse_len = 40
 Probe_pulse_len = 5e6
 Depump_pulse_len = 40
 Measuring_pulse_len = 40
-OD_pulse_len = 10e6
+OD_pulse_len = 2e6
 Repump_pulse_len = 10e6
 north_const_pulse_len = 500
 south_const_pulse_len = 500
@@ -407,14 +407,14 @@ num_init_val_FS_North = 10  # For only det pulses sequence
 num_mid_val_FS_North = 10
 num_fin_val_FS_North = 0  # For only det pulses sequence
 # For Bell |(0 + 1)c, 1t>
-# det_pulse_amp_FS_North = [1, 1, 1, 1, 1, 1, 1, 1]
-# sprint_pulse_amp_FS_North = [1, 0, 0, 0]
+# det_pulse_amp_FS_North = [0, 0, 0, 0, 0, 0, 0, 0]  # 1=OFF, 0=ON
+# sprint_pulse_amp_FS_North = [0, 1, 1, 1]
 # |0c, (0 + 1)t>
-det_pulse_amp_FS_North = [1, 1, 1, 1, 1, 1, 1, 1]
-sprint_pulse_amp_FS_North = [1, 1, 1, 1]
+det_pulse_amp_FS_North = [0, 0, 0, 0, 0, 0, 0, 0]  # 1=OFF, 0=ON
+sprint_pulse_amp_FS_North = [0, 0, 0, 0]
 # # |1c, (0 + 1)t>
-# det_pulse_amp_Late = [1, 1, 1, 1, 1, 1, 1, 1]
-# sprint_pulse_amp_Late = [1, 1, 1, 1]
+# det_pulse_amp_Late = [0, 0, 0, 0, 0, 0, 0, 0]  # 1=OFF, 0=ON
+# sprint_pulse_amp_Late = [0, 0, 0, 0]
 
 QRAM_Exp_Square_samples_FS_North = QRAM_Exp_Square_samples(amp=Pulses_Amp,
                                                            sprint_pulse_len=sprint_pulse_len,
@@ -761,8 +761,8 @@ config = {
             'digitalInputs': {
                 "AWG_Switch": {
                     "port": (controller, 10),
-                    # "delay": 200, # OPX control EOM
-                    "delay": 400, # AWG control EOM
+                    "delay": 200, # OPX control EOM
+                    # "delay": 400, # AWG control EOM
                     "buffer": 0,
                 },
             },
@@ -891,7 +891,7 @@ config = {
             'waveforms': {
                 'single': 'const_wf'
             },
-            'digital_marker': 'Trig_AWG_MOT',
+            'digital_marker': 'Trig_EOM_MOT',
             # 'digital_marker': 'ON',
         },
 
@@ -1209,8 +1209,8 @@ config = {
             'waveforms': {
                 'single': 'early_late_wf'
             },
-            # 'digital_marker': 'Trig_EOM_MZ'
-            'digital_marker': 'ON'
+            'digital_marker': 'Trig_EOM_MZ'
+            # 'digital_marker': 'ON'
         },
 
         "MZ_balance_pulses_Late": {
