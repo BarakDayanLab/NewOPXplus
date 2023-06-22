@@ -10,6 +10,8 @@ from qm import generate_qua_script
 from qm.qua import lib
 from scipy import signal
 from qm import SimulationConfig
+# import matplotlib
+# matplotlib.use("Qt5agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import time, json
@@ -494,7 +496,9 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
              ON_counts_st1, ON_counts_st2, ON_counts_st3,
              ON_counts_st4, ON_counts_st5, ON_counts_st6,
              ON_counts_st7, ON_counts_st8,
-             tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st):
+             tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st,
+             balancing_check_window, length,
+             rep_MZ_check, counts_st_B_balanced, counts_st_D_balanced):
     """
      Generates train of 8 pulses (to be configured from config if each of thenm is north ore south)
      for SPRINT experiments
@@ -537,7 +541,7 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
     assign_variables_to_element("Dig_detectors", counts1)
 
-    n = declare(int)
+    n = declare(int, value=0)
     t = declare(int)
     m = declare(int)
 
@@ -555,20 +559,21 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
         play("QRAM_experiment_pulses_Early", "AOM_Early")
         play("QRAM_experiment_pulses_Late", "AOM_Late")
 
-    wait(297, "Dig_detectors")
-    with for_(n, 0, n < m_time * 4, n + m_window):
-        measure("readout_QRAM", "Dig_detectors", None,
-                time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
-                time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
-                time_tagging.digital(tt_vec3, m_window, element_output="out3", targetLen=counts3),
-                time_tagging.digital(tt_vec4, m_window, element_output="out4", targetLen=counts4),
-                time_tagging.digital(tt_vec5, m_window, element_output="out5", targetLen=counts5),
-                time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
-                time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
-                time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
-                )
+    # wait(297, "Dig_detectors")
+    wait(300, "Dig_detectors")
+    # with for_(n, 0, n < m_time * 4, n + m_window):
+    measure("readout_QRAM", "Dig_detectors", None,
+            time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
+            time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
+            time_tagging.digital(tt_vec3, m_window, element_output="out3", targetLen=counts3),
+            time_tagging.digital(tt_vec4, m_window, element_output="out4", targetLen=counts4),
+            time_tagging.digital(tt_vec5, m_window, element_output="out5", targetLen=counts5),
+            time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
+            time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
+            time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
+            )
 
-
+    MZ_balancing_check(balancing_check_window, length, rep_MZ_check, counts_st_B_balanced, counts_st_D_balanced)
 
     ## Save Data: ##
 
@@ -779,9 +784,9 @@ def opx_control(obj, qm):
                          ON_counts_st1, ON_counts_st2, ON_counts_st3,
                          ON_counts_st4, ON_counts_st5, ON_counts_st6,
                          ON_counts_st7, ON_counts_st8,
-                         tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st)
-                MZ_balancing_check(Balancing_check_window, len(Config.QRAM_MZ_balance_pulse_Late),
-                                   obj.rep_MZ_check, counts_st_B_balanced, counts_st_D_balanced)
+                         tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st,
+                         Balancing_check_window, len(Config.QRAM_MZ_balance_pulse_Late),
+                         obj.rep_MZ_check, counts_st_B_balanced, counts_st_D_balanced)
                 align("Dig_detectors", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S")
 
             save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
@@ -1915,7 +1920,7 @@ class OPX:
         ax[6].text(0.05, 0.6, textstr_BP_DP_BA, transform=ax[6].transAxes, fontsize=14,
                    verticalalignment='top', bbox=props)
 
-        plt.show()
+        plt.show(block=False)
         plt.pause(1.0)
         ###########################################################################################################
 
@@ -2352,36 +2357,53 @@ class OPX:
 
         #### ------ Save results ------
         #  -------   Create dir
-        root_dirname = f'U:\\Lab_2021-2022\\Experiment_results\\Sprint\\{datest}\\'
+        root_dirname = f'U:\\Lab_2023\\Experiment_results\\QRAM\\{datest}\\'
         dirname = root_dirname + f'{timest}_Photon_TimeTags\\'  # Specific experiment dir
         dirname_N = dirname + 'North\\'
         dirname_S = dirname + 'South\\'
+        dirname_D = dirname + 'Dark\\'
+        dirname_B = dirname + 'Bright\\'
+        dirname_FS = dirname + 'FastSwitch\\'
         if not os.path.exists(dirname):
             os.makedirs(dirname)
         if not os.path.exists(dirname_N):
             os.makedirs(dirname_N)
         if not os.path.exists(dirname_S):
             os.makedirs(dirname_S)
+        if not os.path.exists(dirname_D):
+            os.makedirs(dirname_D)
+        if not os.path.exists(dirname_B):
+            os.makedirs(dirname_B)
+        if not os.path.exists(dirname_FS):
+            os.makedirs(dirname_FS)
 
         # ----  msmnt files names  -----
         # Counter_str = (self.Counter)
-        filename_N_tt = f'North_timetags.npz'
         filename_Det_tt = []
         for i in Num_Of_dets:
             filename_Det_tt.append(f'Det'+str(i)+f'_timetags.npz')
         filename_S_tt = f'South_timetags.npz'
         filename_N_tt = f'North_timetags.npz'
+        filename_DP_tt = f'Dark_timetags.npz'
+        filename_BP_tt = f'Bright_timetags.npz'
+        filename_FS_tt = f'FS_timetags.npz'
         filename_N_folded = f'North_timetags_folded_to_seq.npz'
         filename_S_folded = f'South_timetags_folded_to_seq.npz'
+        filename_DP_folded = f'Dark_timetags_folded_to_seq.npz'
+        filename_BP_folded = f'Bright_timetags_folded_to_seq.npz'
+        filename_FS_folded = f'FS_timetags_folded_to_seq.npz'
         filename_FLR = f'Flouresence.npz'
         filename_timestamp = f'Drops_time_stamps.npz'
         filname_sequence_S = f'South_sequence_vector.npz'
         filname_sequence_N = f'North_sequence_vector.npz'
+        filname_sequence_Early = f'Early_sequence_vector.npz'
+        filname_sequence_Late = f'Late_sequence_vector.npz'
+        filname_sequence_FS = f'FS_sequence_vector.npz'
         filename_reflection_averaged = f'reflection_from_detection_pulses_per_seq_averaged.npz'
         filename_transits_events = f'seq_transit_events_batched.npz'
         filename_transits_batched = f'all_transits_seq_indx_batch.npz'
-        filename_SPRINT_reflections_batched = f'all_SPRINT_pulses_reflections_during_transits.npz'
-        filename_SPRINT_transmissions_batched = f'all_SPRINT_pulses_transmissions_during_transits.npz'
+        # filename_SPRINT_reflections_batched = f'all_SPRINT_pulses_reflections_during_transits.npz'
+        # filename_SPRINT_transmissions_batched = f'all_SPRINT_pulses_transmissions_during_transits.npz'
         filename_experimentPlot = f'Experiment_plot.png'
 
         if len(FLR_measurement) > 0:
@@ -2390,11 +2412,20 @@ class OPX:
             np.savez(dirname + filename_timestamp, Exp_timestr_batch)
             np.savez(dirname + filname_sequence_S, Config.QRAM_Exp_Gaussian_samples_S)
             np.savez(dirname + filname_sequence_N, Config.QRAM_Exp_Gaussian_samples_N)
+            np.savez(dirname + filname_sequence_Early, Config.QRAM_Exp_Square_samples_Early)
+            np.savez(dirname + filname_sequence_Late, Config.QRAM_Exp_Square_samples_Late)
+            np.savez(dirname + filname_sequence_FS, (1-np.array(Config.QRAM_Exp_Square_samples_FS_North)).tolist())
             plt.savefig(dirname + filename_experimentPlot, bbox_inches='tight')
         if len(self.folded_tt_N_batch) > 0:
             np.savez(dirname + filename_N_folded, self.folded_tt_N_batch)
         if len(self.folded_tt_S_batch) > 0:
             np.savez(dirname + filename_S_folded, self.folded_tt_S_batch)
+        if len(self.folded_tt_DP_batch) > 0:
+            np.savez(dirname + filename_DP_folded, self.folded_tt_DP_batch)
+        if len(self.folded_tt_BP_batch) > 0:
+            np.savez(dirname + filename_BP_folded, self.folded_tt_BP_batch)
+        if len(self.folded_tt_FS_batch) > 0:
+            np.savez(dirname + filename_FS_folded, self.folded_tt_FS_batch)
         for i in range(len(Num_Of_dets)):
             if len(self.tt_measure_batch[i]) > 0:
                 np.savez(dirname_S + filename_Det_tt[i], self.tt_measure_batch[i])
@@ -2402,14 +2433,20 @@ class OPX:
             np.savez(dirname_S + filename_S_tt, self.tt_S_measure_batch)
         if len(self.tt_N_measure_batch) > 0:
             np.savez(dirname_N + filename_N_tt, self.tt_N_measure_batch)
+        if len(self.tt_DP_measure_batch) > 0:
+            np.savez(dirname_D + filename_DP_tt, self.tt_DP_measure_batch)
+        if len(self.tt_BP_measure_batch) > 0:
+            np.savez(dirname_B + filename_BP_tt, self.tt_BP_measure_batch)
+        if len(self.tt_FS_measure_batch) > 0:
+            np.savez(dirname_FS + filename_FS_tt, self.tt_FS_measure_batch)
         if len(self.num_of_det_reflections_per_seq_accumulated) > 0:
             np.savez(dirname + filename_reflection_averaged, self.num_of_det_reflections_per_seq_accumulated/self.Counter)
         if len(self.seq_transit_events_batched) > 0:
             np.savez(dirname + filename_transits_events, self.seq_transit_events_batched)
         if len(self.all_transits_seq_indx_batch) > 0:
             np.savez(dirname + filename_transits_batched, self.all_transits_seq_indx_batch)
-            np.savez(dirname + filename_SPRINT_reflections_batched, self.reflection_SPRINT_data_per_transit_batch)
-            np.savez(dirname + filename_SPRINT_transmissions_batched, self.transmission_SPRINT_data_per_transit_batch)
+            # np.savez(dirname + filename_SPRINT_reflections_batched, self.reflection_SPRINT_data_per_transit_batch)
+            # np.savez(dirname + filename_SPRINT_transmissions_batched, self.transmission_SPRINT_data_per_transit_batch)
 
         # if len(all_transits_batch) > 0:
         #     np.savez(dirname_S + filename_S_transits, all_transits_batch)
