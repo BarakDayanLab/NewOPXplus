@@ -116,7 +116,6 @@ def MOT(mot_repetitions):
 
     return FLR
 
-
 def Pulse_const(total_pulse_duration):
     """
     This pulse id devided to two parts:
@@ -254,7 +253,7 @@ def FreeFall(freefall_duration, coils_timing):
     :param coils_timing: The time to turn the Zeeman coils - "Z_bias"
     """
 
-    update_frequency("MOT_AOM_0", Config.IF_AOM_MOT)
+    # update_frequency("MOT_AOM_0", Config.IF_AOM_MOT)
     update_frequency("MOT_AOM_-", Config.IF_AOM_MOT)
     update_frequency("MOT_AOM_+", Config.IF_AOM_MOT)
 
@@ -802,6 +801,8 @@ def opx_control(obj, qm):
                 pause()
             with while_(i > 0):
                 ## Boolean variables control: ##
+                with if_(i == 1):
+                    update_frequency("MOT_AOM_0", Config.IF_AOM_MOT_OFF)
                 with if_(i == 4):
                     assign(QRAM_Exp_ON, IO2)
                 # ## AntiHelmholtz control ##
@@ -1055,6 +1056,10 @@ class OPX:
         # Main Experiment:
         self.TOP2_pulse_len = int(Config.Probe_pulse_len / 4)  # [nsec]
         self.Calibration_time = 10  # [msec]
+
+        # run daily experiment
+        self.Stop_run_daily_experiment = False
+
 
         try:
             self.qmm = QuantumMachinesManager(host='132.77.54.230', port='80')
@@ -1958,7 +1963,7 @@ class OPX:
 
     def Save_SNSPDs_QRAM_Measurement_with_tt(self, N, qram_sequence_len, preComment, lock_err_threshold, transit_condition,
                                              max_probe_counts, filter_delay, reflection_threshold, reflection_threshold_time,
-                                             photons_per_det_pulse_threshold, FLR_threshold, exp_flag):
+                                             photons_per_det_pulse_threshold, FLR_threshold, exp_flag, with_atoms):
         """
         Function for analyzing,saving and displaying data from sprint experiment.
         :param N: Number of maximum experiments (free throws) saved and displayed.
@@ -2040,6 +2045,7 @@ class OPX:
                 print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
                 self.updateValue("Sprint_Exp_switch", False)
                 self.update_parameters()
+                self.Stop_run_daily_experiment=True
                 # Other actions can be added here
                 break
             if start:
@@ -2195,6 +2201,7 @@ class OPX:
             if self.keyPress == 'ESC':
                 print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
                 self.updateValue("QRAM_Exp_switch", False)
+                self.Stop_run_daily_experiment = True
                 self.update_parameters()
                 # Other actions can be added here
                 break
@@ -2337,18 +2344,25 @@ class OPX:
 
                 FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
+                self.save_tt_to_batch(Num_Of_dets, N)
                 if self.Counter < N:
                     self.Counter += 1
+                if self.Counter == N:
+                    print('\033[94m' + f'finished {N} Runs, {"with" if with_atoms else "without"} atoms' + '\033[0m')  # print blue
+                    self.updateValue("QRAM_Exp_switch", False)
+                    self.update_parameters()
+                    # Other actions can be added here
+                    break
 
-                self.save_tt_to_batch(Num_Of_dets, N)
         ############################################## END WHILE LOOP #################################################
 
         # For debuging:
         # self.most_common([x for vec in self.tt_S_measure_batch + self.tt_N_measure_batch for x in vec])
 
         ## Adding comment to measurement [prompt whether stopped or finished regularly]
-        aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
-        if aftComment == 'Timeout': aftComment = None
+        # aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
+        aftComment = f'{N} Cycles'
+        # if aftComment == 'Timeout': aftComment = None
 
         #### Handle file-names and directories #####
         ## Saving: np.savez(filedir, data = x) #note: @filedir is string of full directory; data is the queyword used to read @x from the file:
@@ -2487,15 +2501,16 @@ class OPX:
     def Start_QRAM_Exp_with_tt(self, N=100, qram_sequence_len=int(len(Config.QRAM_Exp_Gaussian_samples_S)),
                                transit_condition=[2, 2, 2], preComment=None, lock_err_threshold=0.01, filter_delay=[0,0,0],
                                reflection_threshold=100, reflection_threshold_time=1e6,
-                               photons_per_det_pulse_threshold=12, FLR_threshold=0.11, Exp_flag=True):
+                               photons_per_det_pulse_threshold=12, FLR_threshold=0.11, Exp_flag=True,with_atoms=True):
         # Max_probe_counts = self.Get_Max_Probe_counts(3)  # return the average maximum probe counts of 3 cycles.
         Max_probe_counts = None  # return the average maximum probe counts of 3 cycles.
         self.QRAM_Exp_switch(True)
+        self.MOT_switch(with_atoms)
         self.update_parameters()
         self.Save_SNSPDs_QRAM_Measurement_with_tt(N, qram_sequence_len, preComment, lock_err_threshold,
                                                   transit_condition, Max_probe_counts, filter_delay,
                                                   reflection_threshold, reflection_threshold_time,
-                                                  photons_per_det_pulse_threshold, FLR_threshold, exp_flag=Exp_flag)
+                                                  photons_per_det_pulse_threshold, FLR_threshold, exp_flag=Exp_flag,with_atoms=with_atoms)
 
     ## MW spectroscopy variable update functions: ##
 
@@ -2551,6 +2566,25 @@ class OPX:
 
         # pick the highest-count/earliest item
         return max(groups, key=_auxfun)[0]
+
+    def run_daily_experiment(self, day_experiment, transit_condition, preComment, lock_err_threshold, filter_delay,
+                       reflection_threshold
+                       , reflection_threshold_time, FLR_threshold):
+        with_atoms_bool = True
+        for i in range(len(day_experiment)):
+            if with_atoms_bool:
+                Comment = preComment + 'with atoms'
+            else:
+                Comment = preComment + 'without atoms'
+            self.Start_QRAM_Exp_with_tt(N=day_experiment[i], transit_condition=transit_condition, preComment=Comment,
+                                        lock_err_threshold=lock_err_threshold, filter_delay=filter_delay,
+                                        reflection_threshold=reflection_threshold,
+                                        reflection_threshold_time=reflection_threshold_time,
+                                        FLR_threshold=FLR_threshold,
+                                        with_atoms=with_atoms_bool)  # except KeyboardInterrupt:
+            with_atoms_bool = not with_atoms_bool
+            if self.Stop_run_daily_experiment:
+                break
 
     # @Values_Factor hold factoring for values - each key has an array:
     # So, as Prep_duration is written in ms, we have to factor it into an int value, but in 4ns, for the OPX.
@@ -2611,9 +2645,13 @@ class OPX:
 if __name__ == "__main__":
     # try:
     experiment = OPX(Config.config)
-    experiment.Start_QRAM_Exp_with_tt(N=1000, transit_condition=[2, 2, 2], preComment='ignore', lock_err_threshold=0.01,
+    # experiment.Start_QRAM_Exp_with_tt(N=1000, transit_condition=[2, 2, 2], preComment='ignore', lock_err_threshold=0.01,
+    #                                   filter_delay=[0, 0, 0],
+    #                                   reflection_threshold=10000, reflection_threshold_time=1e6, FLR_threshold=-0.11)   # except KeyboardInterrupt:
+    experiment.run_daily_experiment([100,50,200,50,300,50], transit_condition=[2, 2, 2], preComment='ignore', lock_err_threshold=0.01,
                                       filter_delay=[0, 0, 0],
-                                      reflection_threshold=10000, reflection_threshold_time=1e6, FLR_threshold=-0.11)   # except KeyboardInterrupt:
+                                      reflection_threshold=10000, reflection_threshold_time=1e6, FLR_threshold=-0.11)
+
     #     experiment.job.halt()
     #     experiment.qmm.reset_data_processing()
     # finally:
