@@ -129,8 +129,8 @@ controller = 'con1'
 # Parameters:
 # delays [ns]:
 detector_delays = [26, 30, 33, 27, 8, 8, 8, 0]  # For detectors [1,2,3,9,15,6,7,8]
-AOM_Late_delay = 100
-AOM_Early_delay = 565
+AOM_Late_delay = 85
+AOM_Early_delay = 550
 # time tags vector size
 # parameters of sizes
 vec_size = 8000
@@ -244,14 +244,15 @@ num_fin_zeros_S = 0  # For only det pulses sequence
 # det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
 # sprint_pulse_amp_S = [0.075, 0, 0.075, 0]
 # For pulse sync
-det_pulse_amp_S = [0.45, 0, 0, 0, 0, 0, 0, 0]
-sprint_pulse_amp_S = [0.45, 0, 0, 0]
+# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
+# sprint_pulse_amp_S = [0.45, 0, 0, 0]
+# sprint_pulse_amp_S = [1, 1, 1, 1]
 # For Bell |(0 + 1)c, 1t>
 # det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
 # sprint_pulse_amp_S = [0.075, 0, 0, 0]
 # |0c, (0 + 1)t>
-# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
-# sprint_pulse_amp_S = [0, 0, 0, 0]
+det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
+sprint_pulse_amp_S = [0, 0, 0, 0]
 # # |1c, (0 + 1)t>
 # det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
 # sprint_pulse_amp_S = [0, 0.075, 0, 0.075]
@@ -270,14 +271,17 @@ num_fin_zeros_N = 0  # For only det pulses sequence
 # det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
 # sprint_pulse_amp_N = [0, 0.085, 0, 0.085]
 # For pulse sync
-det_pulse_amp_N = [0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45]
-sprint_pulse_amp_N = [0.45, 0.45, 0.45, 0.45]
+# det_pulse_amp_N = [0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45]
+# det_pulse_amp_N = [0, 0, 0, 0, 0, 0, 0, 0]
+# sprint_pulse_amp_N = [0.45, 0.45, 0.45, 0.45]
+# sprint_pulse_amp_N = [0.45, 0, 0.45, 0]
+# sprint_pulse_amp_N = [1, 1, 1, 1]
 # For Bell |(0 + 1)c, 1t>
 # det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
 # sprint_pulse_amp_N = [0, 0, 0, 0.085]
 # |0c, (0 + 1)t>
-# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
-# sprint_pulse_amp_N = [0, 0.085, 0, 0.085]
+det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
+sprint_pulse_amp_N = [0, 0.085, 0, 0.085]
 # # |1c, (0 + 1)t>
 # det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
 # sprint_pulse_amp_N = [0.085, 0, 0, 0]
@@ -364,8 +368,27 @@ sprint_pulse_amp_Early = [0, 0, 0, 0]
 # det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_Early = [1, 1, 0, 0]
 
+# QRAM_Exp_Gaussian_samples_N = QRAM_Exp_Square_samples(amp=Pulses_Amp,
+#                                                       sprint_pulse_len=sprint_pulse_len,
+#                                                       det_pulse_len=det_pulse_len,
+#                                                       det_pulses_amp=det_pulse_amp_N,
+#                                                       sprint_pulses_amp=sprint_pulse_amp_N,
+#                                                       num_between_vals=num_between_vals,
+#                                                       num_init_val=num_init_val_Early,
+#                                                       num_mid_val=num_mid_val_Early,
+#                                                       num_fin_val=num_fin_val_Early)
 
-QRAM_Exp_Square_samples_Early = QRAM_Exp_Square_samples(amp=Pulses_Amp,
+# QRAM_Exp_Gaussian_samples_S = QRAM_Exp_Square_samples(amp=Pulses_Amp,
+#                                                       sprint_pulse_len=sprint_pulse_len,
+#                                                       det_pulse_len=det_pulse_len,
+#                                                       det_pulses_amp=det_pulse_amp_S,
+#                                                       sprint_pulses_amp=sprint_pulse_amp_S,
+#                                                       num_between_vals=num_between_vals,
+#                                                       num_init_val=num_init_val_Early,
+#                                                       num_mid_val=num_mid_val_Early,
+#                                                       num_fin_val=num_fin_val_Early)
+
+QRAM_Exp_Square_samples_Early = QRAM_Exp_Square_samples(amp=Pulses_Amp*1.1,
                                                         sprint_pulse_len=sprint_pulse_len,
                                                         det_pulse_len=det_pulse_len,
                                                         det_pulses_amp=det_pulse_amp_Early,
@@ -406,6 +429,9 @@ QRAM_Exp_Square_samples_Late_delayed = np.roll(QRAM_Exp_Square_samples_Late, AOM
 num_init_val_FS_North = 10  # For only det pulses sequence
 num_mid_val_FS_North = 10
 num_fin_val_FS_North = 0  # For only det pulses sequence
+# For pulse sync
+# det_pulse_FS_North = [1, 1, 1, 1, 1, 1, 1, 1]
+# sprint_pulse_FS_North = [1, 1, 1, 1]
 # For Bell |(0 + 1)c, 1t>
 # det_pulse_amp_FS_North = [0, 0, 0, 0, 0, 0, 0, 0]  # 1=OFF, 0=ON
 # sprint_pulse_amp_FS_North = [0, 1, 1, 1]
@@ -433,10 +459,17 @@ QRAM_Exp_digital_samples_FS_North = get_pulses_location_in_seq(delay=0,
 
 MZ_delay = int(len(QRAM_Exp_Gaussian_samples_N) / 4)
 AOM_risetime = 120
+AOM_risetime_pulsers = 130
 MZ_balancing_seq_rep = 80
-QRAM_MZ_balance_pulse_Early = ([Pulses_Amp*0.5] * (MZ_delay - AOM_risetime) + [0] * MZ_delay + [0] * AOM_risetime) * MZ_balancing_seq_rep
+# QRAM_MZ_balance_pulse_North = ([Pulses_Amp*0.5] * (MZ_delay - AOM_risetime_pulsers) + [0] * MZ_delay + [0] * AOM_risetime_pulsers) * MZ_balancing_seq_rep
+QRAM_MZ_balance_pulse_North = ([0] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp] * (AOM_risetime_pulsers - 20) + [0] * 20
+                               + [0] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp] * (AOM_risetime_pulsers - 20) + [0] * 20) * \
+                              MZ_balancing_seq_rep
+QRAM_MZ_balance_pulse_South = ([0] * MZ_delay + [Pulses_Amp] * (MZ_delay - AOM_risetime_pulsers) + [0] * AOM_risetime_pulsers) * MZ_balancing_seq_rep
+
+QRAM_MZ_balance_pulse_Early = ([Pulses_Amp] * MZ_delay + [0] * MZ_delay) * MZ_balancing_seq_rep
 QRAM_MZ_balance_pulse_Early_delayed = np.roll(QRAM_MZ_balance_pulse_Early, AOM_Early_delay-10)
-QRAM_MZ_balance_pulse_Late = ([0] * MZ_delay + [Pulses_Amp] * (MZ_delay - AOM_risetime) + [0] * AOM_risetime) * MZ_balancing_seq_rep
+QRAM_MZ_balance_pulse_Late = ([0] * MZ_delay + [Pulses_Amp] * (MZ_delay)) * MZ_balancing_seq_rep
 QRAM_MZ_balance_pulse_Late_delayed = np.roll(QRAM_MZ_balance_pulse_Late, AOM_Late_delay-10)
 
 # readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/1.5)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
@@ -590,8 +623,16 @@ config = {
             'singleInput': {
                 "port": (controller, 3)
             },
+            'digitalInputs': {
+                "RedPitaya": {
+                    "port": (controller, 4),
+                    "delay": 0,
+                    "buffer": 0,
+                },
+            },
             'operations': {
-                'MOT': "MOT_lock",
+                # 'MOT': "MOT_lock",
+                'MOT': "MOT_with_Trigger",
                 'Linear': "Linear_pulse",
                 'Const': "Const_pulse",
             },
@@ -761,7 +802,7 @@ config = {
             'digitalInputs': {
                 "AWG_Switch": {
                     "port": (controller, 10),
-                    "delay": 200, # OPX control EOM
+                    "delay": 160, # OPX control EOM
                     # "delay": 400, # AWG control EOM
                     "buffer": 0,
                 },
@@ -840,6 +881,7 @@ config = {
                 'Const_open_triggered': "MOT_lock_ON",
                 'Detection_pulses': "Square_detection_pulses",
                 'Homodyne_Pulse': "Homodyne_Pulse",
+                'MZ_balancing_pulses': "MZ_balance_pulses_N",
                 'QRAM_experiment_pulses_N': "QRAM_seq_pulse_N",
             },
             'intermediate_frequency': IF_AOM_N,
@@ -861,6 +903,7 @@ config = {
                 # 'Const_open_triggered': "MOT_lock_ON",
                 'Detection_pulses': "Square_detection_pulses",
                 'Homodyne_Pulse': "Homodyne_Pulse",
+                'MZ_balancing_pulses': "MZ_balance_pulses_S",
                 'QRAM_experiment_pulses_S': "QRAM_seq_pulse_S",
             },
             'intermediate_frequency': IF_AOM_S,
@@ -892,6 +935,16 @@ config = {
                 'single': 'const_wf'
             },
             'digital_marker': 'Trig_EOM_MOT',
+            # 'digital_marker': 'ON',
+        },
+
+        "MOT_with_Trigger": {
+            'operation': 'control',
+            'length': MOT_pulse_len,
+            'waveforms': {
+                'single': 'const_wf'
+            },
+            'digital_marker': 'Trig_AWG_MOT',
             # 'digital_marker': 'ON',
         },
 
@@ -1048,8 +1101,8 @@ config = {
             'waveforms': {
                 'single': 'QRAM_Square_wf_Early'
             },
-            # 'digital_marker': 'Trig_EOM'
-            'digital_marker': 'ON'
+            'digital_marker': 'Trig_EOM'
+            # 'digital_marker': 'ON'
         },
 
         "Square_pulse_seq_MZ_Late": {
@@ -1203,6 +1256,26 @@ config = {
             # 'digital_marker': 'ON'
         },
 
+        "MZ_balance_pulses_N": {
+            'length': len(QRAM_MZ_balance_pulse_North),
+            'operation': 'control',
+            'waveforms': {
+                'single': 'north_south_wf'
+            },
+            # 'digital_marker': 'Trig_EOM_MZ'
+            'digital_marker': 'ON'
+        },
+
+        "MZ_balance_pulses_S": {
+            'length': len(QRAM_MZ_balance_pulse_South),
+            'operation': 'control',
+            'waveforms': {
+                'single': 'south_north_wf'
+            },
+            # 'digital_marker': 'Trig_EOM_MZ'
+            # 'digital_marker': 'ON'
+        },
+
         "MZ_balance_pulses_Early": {
             'length': len(QRAM_MZ_balance_pulse_Early),
             'operation': 'control',
@@ -1309,6 +1382,14 @@ config = {
         'qram_wf': {
             'type': 'arbitrary',
             'samples': QRAM_Exp_TOP2_samples
+        },
+        'north_south_wf': {
+            'type': 'arbitrary',
+            'samples': QRAM_MZ_balance_pulse_North
+        },
+        'south_north_wf': {
+            'type': 'arbitrary',
+            'samples': QRAM_MZ_balance_pulse_South
         },
         'early_late_wf': {
             'type': 'arbitrary',

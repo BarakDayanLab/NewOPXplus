@@ -348,7 +348,7 @@ Operation_Modes = {
                                                       Config_QRAM.readout_pulse_sprint_len_S)), # [nsec]
                                   'M_time': int(max(Config_QRAM.readout_pulse_sprint_len_N,
                                                     Config_QRAM.readout_pulse_sprint_len_S)) / 1e6,  # Pulse_length[nsec] * 1000 repetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
-                                  'M_off_time': 5,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
+                                  'M_off_time': 1,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
                                   },
                     'SPRINT_2-3_Exp':  {'Triggering_Phase': 'Free_Fall',
                                         'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22

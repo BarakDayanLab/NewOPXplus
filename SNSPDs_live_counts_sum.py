@@ -286,7 +286,7 @@ Super_Sprint_Config = {
 
         "PULSER_E/L": {
             "singleInput": {
-                "port": (controller, 6),
+                "port": (controller, 7),
             },
             'operations': {
                 'Const_open': "MOT_lock",
@@ -331,8 +331,16 @@ Super_Sprint_Config = {
             "singleInput": {
                 "port": (controller, 10),
             },
+            'digitalInputs': {
+                "FS_North": {
+                    "port": (controller, 5),
+                    "delay": 0,
+                    "buffer": 0,
+                },
+            },
             'operations': {
                 'Const_open': "MOT_lock",
+                'Const_open_triggered': "MOT_lock_ON",
             },
             'intermediate_frequency': IF_AOM_S,
         },
