@@ -714,6 +714,7 @@ def opx_control(obj, qm):
             ##########################
 
             # MOT sequence:
+
             FLR = MOT(MOT_Repetitions)
             play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
 
@@ -802,6 +803,8 @@ def opx_control(obj, qm):
             with while_(i > 0):
                 ## Boolean variables control: ##
                 with if_(i == 1):
+                    update_frequency("MOT_AOM_0", Config.IF_AOM_MOT)
+                with if_(i == 2):
                     update_frequency("MOT_AOM_0", Config.IF_AOM_MOT_OFF)
                 with if_(i == 4):
                     assign(QRAM_Exp_ON, IO2)
@@ -1228,8 +1231,11 @@ class OPX:
         # self.update_exp_pgc_final_amplitude(final_amplitude)
         return x
 
-    def MOT_switch(self, Bool):
-        self.update_io_parameter(1, Bool)
+    def MOT_switch(self, with_atoms):
+        if with_atoms:
+            self.update_io_parameter(1, 0)
+        else:
+            self.update_io_parameter(2, 0)
 
     def Linear_PGC_switch(self, Bool):
         self.update_io_parameter(2, Bool)
@@ -1813,15 +1819,15 @@ class OPX:
         # ax[1].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
         # ax[1].legend(loc='upper right')
 
-        ax[0].plot(self.folded_tt_N_directional, label='"N" detectors')
         # ax[0].plot(self.folded_tt_N, label='"N" detectors')
-        ax[0].plot(self.folded_tt_S_directional, label='"S" detectors')
         # ax[0].plot(self.folded_tt_S, label='"S" detectors')
         # ax[0].plot(self.folded_tt_BP, label='"BP" detectors')
-        ax[0].plot(self.folded_tt_BP_timebins, label='"BP" detectors')
         # ax[0].plot(self.folded_tt_DP, label='"DP" detectors')
-        ax[0].plot(self.folded_tt_DP_timebins, label='"DP" detectors')
         # ax[0].plot(self.folded_tt_FS, label='"FS" detectors')
+        ax[0].plot(self.folded_tt_N_directional, label='"N" detectors')
+        ax[0].plot(self.folded_tt_S_directional, label='"S" detectors')
+        ax[0].plot(self.folded_tt_BP_timebins, label='"BP" detectors')
+        ax[0].plot(self.folded_tt_DP_timebins, label='"DP" detectors')
         ax[0].plot((self.filter_S) * max(self.folded_tt_N_directional + self.folded_tt_S_directional),
                    '--', color='orange', label='Filter "S"')
         for i in range(len(self.Num_of_photons_txt_box_y_loc_live)):
@@ -1859,10 +1865,28 @@ class OPX:
         # ax[3].text(0.1, 0.9*max(self.num_of_det_reflections_per_seq_accumulated/self.Counter), textstr_avg_reflections, fontsize=14,
         #            verticalalignment='top', bbox=props)
 
-        ax[2].plot(self.num_of_det_transmissions_per_seq, label='Num of reflections per sequence (Live)')
-        ax[2].set_title('Num of reflections per sequence (live)', fontweight="bold")
-        ax[2].text(0.1, 0.9*max(self.num_of_det_transmissions_per_seq), textstr_total_reflections, fontsize=14,
-                   verticalalignment='top', bbox=props)
+        # ax[2].plot(self.num_of_det_transmissions_per_seq, label='Num of reflections per sequence (Live)')
+        # ax[2].set_title('Num of reflections per sequence (live)', fontweight="bold")
+        # ax[2].text(0.1, 0.9*max(self.num_of_det_transmissions_per_seq), textstr_total_reflections, fontsize=14,
+        #            verticalalignment='top', bbox=props)
+
+        ax[2].plot(self.MZ_BP_counts_res['value_0'], label='MZ Bright port')
+        ax[2].plot(self.MZ_DP_counts_res['value_0'], label='MZ Dark port')
+        # ax[4].plot(self.Phase_Correction_vec, self.MZ_BP_counts_res, label='MZ Bright port')
+        # ax[4].plot(self.Phase_Correction_vec, self.MZ_DP_counts_res, label='MZ Dark port')
+        # ax[4].plot(self.Phase_Correction_vec, self.MZ_BP_counts_res - self.MZ_DP_counts_res, label='Dif ports')
+        ax[2].plot(self.MZ_BP_counts_res['value_0'] - self.MZ_DP_counts_res['value_0'], label='Dif ports')
+        ax[7].tick_params(axis="y", labelcolor='#8c564b')
+        ax[7].plot(self.Phase_Correction_vec, label='Phase correction values', color='#8c564b')
+        ax[7].plot(self.Phase_Correction_min_vec, label='Phase correction values', color='#9467bd')
+        # ax[6].axhline(self.Phase_Correction_value, linestyle='--', label='Phase correction', color='red')
+        # ax[4].axvline(self.Phase_Correction_value, linestyle='--', label='Phase correction', color='red')
+        # ax[4].axvline(np.where(self.Phase_Correction_vec == self.Phase_Correction_value)[0][-1], linestyle='--', label='Phase correction', color='red')
+        ax[2].set_ylim(0, 1.1 * np.max([self.MZ_BP_counts_res['value_0'], self.MZ_DP_counts_res['value_0']]))
+        ax[2].set_title('MZ outputs while locking', fontweight="bold")
+        ax[2].legend(loc='upper right')
+        ax[7].legend(loc='upper left')
+        print(self.Phase_Correction_value)
 
         max_reflect = max(self.num_of_det_transmissions_per_seq_accumulated/self.Counter)
         ax[3].plot(self.num_of_det_transmissions_per_seq_accumulated/self.Counter, label='Num of reflections per sequence')
@@ -1873,43 +1897,13 @@ class OPX:
         ax[3].text(0.1, 0.9*max_reflect, textstr_total_reflections, fontsize=14,
                    verticalalignment='top', bbox=props)
 
-        if self.number_of_transits_live:
-            textstr_transit_counts = r'$N_{Transits} = %s $' % (self.number_of_transits_live,) + r'$[Counts]$'
-        else:
-            textstr_transit_counts = r'$N_{Transits} = %s $' % (0,) + r'$[Counts]$'
-        textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (self.number_of_transits_total,) + '[Counts]\n'\
-                                        + textstr_total_SPRINT_reflections
-
-        # ax[4].plot(range(self.number_of_QRAM_sequences), self.seq_transit_events_live, label='Current transit events')
-        # ax[4].set(xlabel='Sequence [#]', ylabel='Counts [Photons]')
-        # ax[4].set_title('Transits per sequence (live)', fontweight="bold")
-        # ax[4].text(0.05, 0.95, textstr_transit_counts, transform=ax[4].transAxes, fontsize=14,
-        #            verticalalignment='top', bbox=props)
-        #
-        # ax[5].plot(range(self.number_of_QRAM_sequences), self.seq_transit_events_batched, label='Transit events histogram')
-        # ax[5].set(xlabel='Sequence [#]', ylabel='Counts [Photons]')
-        # ax[5].set_title('Transits per sequence (accumulated)', fontweight="bold")
-        # ax[5].text(0.05, 0.95, textstr_transit_event_counter, transform=ax[5].transAxes, fontsize=14,
-        #            verticalalignment='top', bbox=props)
-
-
-        ax[4].plot(self.MZ_BP_counts_res['value_0'], label='MZ Bright port')
-        ax[4].plot(self.MZ_DP_counts_res['value_0'], label='MZ Dark port')
-        # ax[4].plot(self.Phase_Correction_vec, self.MZ_BP_counts_res, label='MZ Bright port')
-        # ax[4].plot(self.Phase_Correction_vec, self.MZ_DP_counts_res, label='MZ Dark port')
-        # ax[4].plot(self.Phase_Correction_vec, self.MZ_BP_counts_res - self.MZ_DP_counts_res, label='Dif ports')
-        ax[4].plot(self.MZ_BP_counts_res['value_0'] - self.MZ_DP_counts_res['value_0'], label='Dif ports')
-        ax[7].tick_params(axis="y", labelcolor='#8c564b')
-        ax[7].plot(self.Phase_Correction_vec, label='Phase correction values', color='#8c564b')
-        ax[7].plot(self.Phase_Correction_min_vec, label='Phase correction values', color='#9467bd')
-        # ax[6].axhline(self.Phase_Correction_value, linestyle='--', label='Phase correction', color='red')
-        # ax[4].axvline(self.Phase_Correction_value, linestyle='--', label='Phase correction', color='red')
-        # ax[4].axvline(np.where(self.Phase_Correction_vec == self.Phase_Correction_value)[0][-1], linestyle='--', label='Phase correction', color='red')
-        ax[4].set_ylim(0, 1.1 * np.max([self.MZ_BP_counts_res['value_0'], self.MZ_DP_counts_res['value_0']]))
-        ax[4].set_title('MZ outputs while locking', fontweight="bold")
+        ax[4].plot(self.MZ_BP_counts_res['value_1'], label='MZ BP counts before and after')
+        ax[4].plot(self.MZ_DP_counts_res['value_1'], label='MZ DP port counts before and after')
+        ax[4].axvline(len(self.MZ_DP_counts_res['value_1'])/2, linestyle='--', color='red')
+        ax[4].set_title('MZ outputs around experiment', fontweight="bold")
         ax[4].legend(loc='upper right')
-        ax[7].legend(loc='upper left')
-        print(self.Phase_Correction_value)
+        ax[4].text(0.05, 0.6, textstr_BP_DP_BA, transform=ax[4].transAxes, fontsize=14,
+                   verticalalignment='top', bbox=props)
 
         ax[5].plot(self.num_of_BP_counts_per_n_sequences, label='MZ BP counts per %d seq' % 50)
         ax[5].plot(self.num_of_DP_counts_per_n_sequences, label='MZ DP counts per %d seq' % 50)
@@ -1918,11 +1912,25 @@ class OPX:
         ax[5].text(0.05, 0.6, textstr_BP_DP, transform=ax[5].transAxes, fontsize=14,
                    verticalalignment='top', bbox=props)
 
-        ax[6].plot(self.MZ_BP_counts_res['value_1'], label='MZ BP counts before and after')
-        ax[6].plot(self.MZ_DP_counts_res['value_1'], label='MZ DP port counts before and after')
-        ax[6].set_title('MZ outputs around experiment', fontweight="bold")
+        if self.number_of_transits_live:
+            textstr_transit_counts = r'$N_{Transits} = %s $' % (self.number_of_transits_live,) + r'$[Counts]$'
+        else:
+            textstr_transit_counts = r'$N_{Transits} = %s $' % (0,) + r'$[Counts]$'
+        textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (self.number_of_transits_total,) + '[Counts]\n'\
+                                        + textstr_transit_counts
+                                        # + textstr_total_SPRINT_reflections
+
+        # ax[4].plot(range(self.number_of_QRAM_sequences), self.seq_transit_events_live, label='Current transit events')
+        # ax[4].set(xlabel='Sequence [#]', ylabel='Counts [Photons]')
+        # ax[4].set_title('Transits per sequence (live)', fontweight="bold")
+        # ax[4].text(0.05, 0.95, textstr_transit_counts, transform=ax[4].transAxes, fontsize=14,
+        #            verticalalignment='top', bbox=props)
+        ax[6].plot(range(self.number_of_QRAM_sequences), self.seq_transit_events_batched, label='Transit Events Accumulated')
+        ax[6].plot(range(self.number_of_QRAM_sequences), self.seq_transit_events_live, label='Transit Events Live')
+        ax[6].set(xlabel='Sequence [#]', ylabel='Counts [Photons]')
+        ax[6].set_title('Transits per sequence', fontweight="bold")
         ax[6].legend(loc='upper right')
-        ax[6].text(0.05, 0.6, textstr_BP_DP_BA, transform=ax[6].transAxes, fontsize=14,
+        ax[6].text(0.05, 0.95, textstr_transit_event_counter, transform=ax[6].transAxes, fontsize=14,
                    verticalalignment='top', bbox=props)
 
         plt.show(block=False)
@@ -2191,10 +2199,10 @@ class OPX:
         ax2 = plt.subplot2grid((3, 4), (0, 2), colspan=2, rowspan=1)
         ax3 = plt.subplot2grid((3, 4), (1, 0), colspan=2, rowspan=1)
         ax4 = plt.subplot2grid((3, 4), (1, 2), colspan=2, rowspan=1)
-        ax5 = plt.subplot2grid((3, 4), (2, 0), colspan=2, rowspan=1)
-        ax6 = plt.subplot2grid((3, 4), (2, 2), colspan=1, rowspan=1)
-        ax7 = plt.subplot2grid((3, 4), (2, 3), colspan=1, rowspan=1)
-        ax8 = ax5.twinx()
+        ax5 = plt.subplot2grid((3, 4), (2, 0), colspan=1, rowspan=1)
+        ax6 = plt.subplot2grid((3, 4), (2, 1), colspan=1, rowspan=1)
+        ax7 = plt.subplot2grid((3, 4), (2, 2), colspan=2, rowspan=1)
+        ax8 = ax3.twinx()
         #
 
         while True:
@@ -2220,18 +2228,26 @@ class OPX:
                 datest = time.strftime("%Y%m%d")
                 self.get_tt_from_handles(Num_Of_dets, Counts_handle, tt_handle, FLR_handle)
 
-                # Check if new tt's arrived:
-                lenS = min(len(self.tt_S_measure), len(self.tt_S_measure_batch[-1]))
-                lenN = min(len(self.tt_N_measure), len(self.tt_N_measure_batch[-1]))
-                lenDP = min(len(self.tt_DP_measure), len(self.tt_DP_measure_batch[-1]))
-                lenBP = min(len(self.tt_BP_measure), len(self.tt_BP_measure_batch[-1]))
-                lenFS = min(len(self.tt_FS_measure), len(self.tt_FS_measure_batch[-1]))
+                # # Check if new tt's arrived:
+                # lenS = min(len(self.tt_S_measure), len(self.tt_S_measure_batch[-1]))
+                # lenN = min(len(self.tt_N_measure), len(self.tt_N_measure_batch[-1]))
+                # lenDP = min(len(self.tt_DP_measure), len(self.tt_DP_measure_batch[-1]))
+                # lenBP = min(len(self.tt_BP_measure), len(self.tt_BP_measure_batch[-1]))
+                # lenFS = min(len(self.tt_FS_measure), len(self.tt_FS_measure_batch[-1]))
+                # # Check if the number of same values in the new and last vector are less then 1/2 of the total number of values.
+                # is_new_tts_S = sum(np.array(self.tt_S_measure[:lenS]) == np.array(self.tt_S_measure_batch[-1][:lenS])) < lenS/2
+                # is_new_tts_N = sum(np.array(self.tt_N_measure[:lenN]) == np.array(self.tt_N_measure_batch[-1][:lenN])) < lenN/2
+                # is_new_tts_BP = sum(np.array(self.tt_BP_measure[:lenBP]) == np.array(self.tt_BP_measure_batch[-1][:lenBP])) < lenBP/2
+                # is_new_tts_DP = sum(np.array(self.tt_DP_measure[:lenDP]) == np.array(self.tt_DP_measure_batch[-1][:lenDP])) < lenDP/2
+                # is_new_tts_FS = sum(np.array(self.tt_FS_measure[:lenFS]) == np.array(self.tt_FS_measure_batch[-1][:lenFS])) < lenFS/2
+
                 # Check if the number of same values in the new and last vector are less then 1/2 of the total number of values.
-                is_new_tts_S = sum(np.array(self.tt_S_measure[:lenS]) == np.array(self.tt_S_measure_batch[-1][:lenS])) < lenS/2
-                is_new_tts_N = sum(np.array(self.tt_N_measure[:lenN]) == np.array(self.tt_N_measure_batch[-1][:lenN])) < lenN/2
-                is_new_tts_BP = sum(np.array(self.tt_BP_measure[:lenBP]) == np.array(self.tt_BP_measure_batch[-1][:lenBP])) < lenBP/2
-                is_new_tts_DP = sum(np.array(self.tt_DP_measure[:lenDP]) == np.array(self.tt_DP_measure_batch[-1][:lenDP])) < lenDP/2
-                is_new_tts_FS = sum(np.array(self.tt_FS_measure[:lenFS]) == np.array(self.tt_FS_measure_batch[-1][:lenFS])) < lenFS/2
+                is_new_tts_S = self.tt_S_measure[0] != self.tt_S_measure_batch[-1][0]
+                is_new_tts_N = self.tt_N_measure[0] != self.tt_N_measure_batch[-1][0]
+                is_new_tts_BP = self.tt_BP_measure[0] != self.tt_BP_measure_batch[-1][0]
+                is_new_tts_DP = self.tt_DP_measure[0] != self.tt_DP_measure_batch[-1][0]
+                is_new_tts_FS = self.tt_FS_measure[0] != self.tt_FS_measure_batch[-1][0]
+
                 print(count)
                 count += 1
                 if is_new_tts_N or is_new_tts_S or is_new_tts_BP or is_new_tts_DP or is_new_tts_FS:
@@ -2242,6 +2258,7 @@ class OPX:
                     self.update_parameters()
                     # Other actions can be added here
                     break
+
             # assaf - if x=self.M_window the index is out of range so i added 1
             try:
                 self.lock_err = np.abs(np.load(
@@ -2249,8 +2266,10 @@ class OPX:
             except:
                 pass
                 print('error in loading file')
+
             self.divide_tt_to_reflection_trans(sprint_pulse_len, self.num_of_detection_pulses)
             self.divide_BP_and_DP_counts(50)
+
             self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
                                                   + self.num_of_det_reflections_per_seq_N
             self.num_of_det_transmissions_per_seq = self.num_of_det_transmissions_per_seq_S \
@@ -2648,7 +2667,7 @@ if __name__ == "__main__":
     # experiment.Start_QRAM_Exp_with_tt(N=1000, transit_condition=[2, 2, 2], preComment='ignore', lock_err_threshold=0.01,
     #                                   filter_delay=[0, 0, 0],
     #                                   reflection_threshold=10000, reflection_threshold_time=1e6, FLR_threshold=-0.11)   # except KeyboardInterrupt:
-    experiment.run_daily_experiment([100,50,200,50,300,50], transit_condition=[2, 2, 2], preComment='ignore', lock_err_threshold=0.01,
+    experiment.run_daily_experiment([10,5,10,5], transit_condition=[2, 2, 2], preComment='ignore', lock_err_threshold=0.01,
                                       filter_delay=[0, 0, 0],
                                       reflection_threshold=10000, reflection_threshold_time=1e6, FLR_threshold=-0.11)
 
