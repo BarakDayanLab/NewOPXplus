@@ -1612,8 +1612,8 @@ class OPX:
                     if bool(set(current_transit) & set(self.all_transits_seq_indx[-1])):
                         current_transit = self.all_transits_seq_indx[-1] + current_transit[1:]
                         self.all_transits_seq_indx = self.all_transits_seq_indx[:-1]
-                        self.reflection_SPRINT_data_per_transit = self.reflection_SPRINT_data_per_transit[:-1]
-                        self.transmission_SPRINT_data_per_transit = self.transmission_SPRINT_data_per_transit[:-1]
+                        # self.reflection_SPRINT_data_per_transit = self.reflection_SPRINT_data_per_transit[:-1]
+                        # self.transmission_SPRINT_data_per_transit = self.transmission_SPRINT_data_per_transit[:-1]
                 self.all_transits_seq_indx.append(current_transit)
                 # self.reflection_SPRINT_data_per_transit.append([self.num_of_SPRINT_reflections_per_seq[elem].tolist()
                 #                                                 for elem in current_transit[:-1]])
@@ -1627,8 +1627,8 @@ class OPX:
                 if bool(set(current_transit) & set(self.all_transits_seq_indx[-1])):
                     current_transit = self.all_transits_seq_indx[-1] + current_transit[1:]
                     self.all_transits_seq_indx = self.all_transits_seq_indx[:-1]
-                    self.reflection_SPRINT_data_per_transit = self.reflection_SPRINT_data_per_transit[:-1]
-                    self.transmission_SPRINT_data_per_transit = self.transmission_SPRINT_data_per_transit[:-1]
+                    # self.reflection_SPRINT_data_per_transit = self.reflection_SPRINT_data_per_transit[:-1]
+                    # self.transmission_SPRINT_data_per_transit = self.transmission_SPRINT_data_per_transit[:-1]
             self.all_transits_seq_indx.append(current_transit)
             # self.reflection_SPRINT_data_per_transit.append([self.num_of_SPRINT_reflections_per_seq[elem].tolist()
             #                                                 for elem in current_transit[:-1]])
@@ -1795,12 +1795,13 @@ class OPX:
                                     + 'Total reflections per cycle "S" = %d \n' % (sum(self.num_of_det_reflections_per_seq_S),) \
                                     +'Average reflections per cycle = %.2f' % (sum(self.num_of_det_reflections_per_seq_accumulated/self.Counter),)
         # textstr_avg_reflections = r'Average reflections per cycle = %.2f' % (sum(self.num_of_det_reflections_per_seq_accumulated/self.Counter),)
-        textstr_total_SPRINT_reflections = 'Total reflections from SPRINT pulses during transits = %d' % (self.total_number_of_reflections_from_SPRINT_pulses_in_transits,)
+        # textstr_total_SPRINT_reflections = 'Total reflections from SPRINT pulses during transits = %d' % (self.total_number_of_reflections_from_SPRINT_pulses_in_transits,)
         textstr_BP_DP = 'Average Bright counts = %.2f \n' % (avg_BP,) + \
                         'Average Dark counts = %.2f \n' % (avg_DP,) + \
                         'Infidelity = %.2f' % (avg_DP/(avg_DP + avg_BP),)
         textstr_BP_DP_BA = 'Infidelity before = %.2f \n' % (avg_DP_before / (avg_DP_before + avg_BP_before),) + \
                            'Infidelity after= %.2f' % (avg_DP_after / (avg_DP_after + avg_BP_after),)
+
         # for n in range(len(Num_Of_dets)):
         #     ax[0].plot(self.single_det_folded[n], label='detectors %d' % (n+1))
         # # ax[0].plot(self.folded_tt_N, label='"N" detectors')
@@ -1834,54 +1835,47 @@ class OPX:
             ax[0].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc_live[i],
                        '%.2f' % self.avg_num_of_photons_per_pulse_live[i],
                        horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
+        for j in range(len(self.Num_of_photons_txt_box_y_loc_live_MZ)):
+            ax[0].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j], self.Num_of_photons_txt_box_y_loc_live_MZ[j][0],
+                       '%.2f' % self.avg_num_of_photons_per_pulse_live_MZ[j][0],
+                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'], color='#2ca02c')
+            ax[0].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j], self.Num_of_photons_txt_box_y_loc_live_MZ[j][1],
+                       '%.2f' % self.avg_num_of_photons_per_pulse_live_MZ[j][1],
+                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'], color='#d62728')
         # ax[0].set_ylim(0, 400)
         ax[0].set_title('binned timetags from all detectors folded (Live)', fontweight="bold")
         ax[0].legend(loc='upper right')
         ax[0].text(0.05, 1.4, textstr_thresholds, transform=ax[0].transAxes, fontsize=28,
                    verticalalignment='top', bbox=props_thresholds)
 
-        # ax[1].plot(self.folded_tt_N_directional_batch, label='"N" detectors')
-        # ax[1].plot(self.folded_tt_S_directional_batch, label='"S" detectors')
-        # ax[1].plot(self.folded_tt_BP_timebins_batch, label='"BP" detectors')
-        ax[1].plot(self.folded_tt_BP_batch, label='"BP" detectors')
-        # ax[1].plot(self.folded_tt_DP_timebins_batch, label='"DP" detectors')
-        ax[1].plot(self.folded_tt_DP_batch, label='"DP" detectors')
+        # ax[1].plot(self.folded_tt_BP_batch, label='"BP" detectors')
+        # ax[1].plot(self.folded_tt_DP_batch, label='"DP" detectors')
+        ax[1].plot(self.folded_tt_N_directional_batch, label='"N" detectors')
+        ax[1].plot(self.folded_tt_S_directional_batch, label='"S" detectors')
+        ax[1].plot(self.folded_tt_BP_timebins_batch, label='"BP" detectors')
+        ax[1].plot(self.folded_tt_DP_timebins_batch, label='"DP" detectors')
         ax[1].plot((self.filter_N) * max(self.folded_tt_N_directional_batch + self.folded_tt_S_directional_batch),
                    '--b', label='Filter "N"')
         for i in range(len(self.Num_of_photons_txt_box_y_loc)):
             ax[1].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc[i],
                      '%.2f' % self.avg_num_of_photons_per_pulse[i],
                      horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
+        for j in range(len(self.Num_of_photons_txt_box_y_loc_MZ)):
+            ax[1].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j], self.Num_of_photons_txt_box_y_loc_MZ[j][0],
+                       '%.2f' % self.avg_num_of_photons_per_pulse_MZ[j][0],
+                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'], color='#2ca02c')
+            ax[1].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j], self.Num_of_photons_txt_box_y_loc_MZ[j][1],
+                       '%.2f' % self.avg_num_of_photons_per_pulse_MZ[j][1],
+                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'], color='#d62728')
         ax[1].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
         ax[1].legend(loc='upper right')
 
-        # ax[2].plot(self.num_of_det_reflections_per_seq, label='Num of reflections per sequence (Live)')
-        # ax[2].set_title('Num of reflections per sequence (live)', fontweight="bold")
-        # ax[2].text(0.1, 0.9*max(self.num_of_det_reflections_per_seq), textstr_total_reflections, fontsize=14,
-        #            verticalalignment='top', bbox=props)
-        #
-        # ax[3].plot(self.num_of_det_reflections_per_seq_accumulated/self.Counter, label='Num of reflections per sequence (Live)')
-        # ax[3].set_title('Num of reflections per sequence (Average)', fontweight="bold")
-        # ax[3].text(0.1, 0.9*max(self.num_of_det_reflections_per_seq_accumulated/self.Counter), textstr_avg_reflections, fontsize=14,
-        #            verticalalignment='top', bbox=props)
-
-        # ax[2].plot(self.num_of_det_transmissions_per_seq, label='Num of reflections per sequence (Live)')
-        # ax[2].set_title('Num of reflections per sequence (live)', fontweight="bold")
-        # ax[2].text(0.1, 0.9*max(self.num_of_det_transmissions_per_seq), textstr_total_reflections, fontsize=14,
-        #            verticalalignment='top', bbox=props)
-
         ax[2].plot(self.MZ_BP_counts_res['value_0'], label='MZ Bright port')
         ax[2].plot(self.MZ_DP_counts_res['value_0'], label='MZ Dark port')
-        # ax[4].plot(self.Phase_Correction_vec, self.MZ_BP_counts_res, label='MZ Bright port')
-        # ax[4].plot(self.Phase_Correction_vec, self.MZ_DP_counts_res, label='MZ Dark port')
-        # ax[4].plot(self.Phase_Correction_vec, self.MZ_BP_counts_res - self.MZ_DP_counts_res, label='Dif ports')
         ax[2].plot(self.MZ_BP_counts_res['value_0'] - self.MZ_DP_counts_res['value_0'], label='Dif ports')
         ax[7].tick_params(axis="y", labelcolor='#8c564b')
         ax[7].plot(self.Phase_Correction_vec, label='Phase correction values', color='#8c564b')
         ax[7].plot(self.Phase_Correction_min_vec, label='Phase correction values', color='#9467bd')
-        # ax[6].axhline(self.Phase_Correction_value, linestyle='--', label='Phase correction', color='red')
-        # ax[4].axvline(self.Phase_Correction_value, linestyle='--', label='Phase correction', color='red')
-        # ax[4].axvline(np.where(self.Phase_Correction_vec == self.Phase_Correction_value)[0][-1], linestyle='--', label='Phase correction', color='red')
         ax[2].set_ylim(0, 1.1 * np.max([self.MZ_BP_counts_res['value_0'], self.MZ_DP_counts_res['value_0']]))
         ax[2].set_title('MZ outputs while locking', fontweight="bold")
         ax[2].legend(loc='upper right')
@@ -2011,7 +2005,7 @@ class OPX:
                                                                                        smearing=5)  # smearing=int(Config.num_between_zeros/2))
         self.pulses_location_in_seq_N, self.filter_N = self.get_pulses_location_in_seq(filter_delay[1],
                                                                                        Config.QRAM_Exp_Gaussian_samples_N,
-                                                                                       smearing=5)  # smearing=int(Config.num_between_zeros/2))
+                                                                                       smearing=0)  # smearing=int(Config.num_between_zeros/2))
         self.pulses_location_in_seq_A, self.filter_A = self.get_pulses_location_in_seq(filter_delay[2],
                                                                                        Config.QRAM_Exp_Gaussian_samples_Ancilla,
                                                                                        smearing=5)  # smearing=int(Config.num_between_zeros/2))
@@ -2070,8 +2064,6 @@ class OPX:
                                                   + self.num_of_det_reflections_per_seq_N
             self.num_of_det_transmissions_per_seq = self.num_of_det_transmissions_per_seq_S \
                                                   + self.num_of_det_transmissions_per_seq_N
-            # self.num_of_det_reflections_per_seq = self.num_of_det_transmissions_per_seq_S \
-            #                                       + self.num_of_det_transmissions_per_seq_N
             # self.num_of_SPRINT_reflections_per_seq = self.num_of_SPRINT_reflections_per_seq_S \
             #                                          + self.num_of_SPRINT_reflections_per_seq_N
             # self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_S \
@@ -2142,8 +2134,10 @@ class OPX:
         self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + \
                                                  self.avg_num_of_photons_per_pulse_N_live + \
                                                  self.avg_num_of_photons_per_pulse_A_live
-        self.avg_num_of_photons_per_pulse_live_MZ = self.avg_num_of_photons_per_pulse_BP_live + \
-                                                    self.avg_num_of_photons_per_pulse_DP_live
+        self.avg_num_of_photons_per_pulse_live_MZ = [[x]+[y] for x, y in zip(self.avg_num_of_photons_per_pulse_BP_live,
+                                                                             self.avg_num_of_photons_per_pulse_DP_live)]
+            #                                         self.avg_num_of_photons_per_pulse_BP_live + \
+            #                                         self.avg_num_of_photons_per_pulse_DP_live
         self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_live
         self.avg_num_of_photons_per_pulse_MZ = self.avg_num_of_photons_per_pulse_live_MZ
 
@@ -2160,7 +2154,10 @@ class OPX:
         self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + \
                                                  self.max_value_per_pulse_N_live + \
                                                  self.max_value_per_pulse_A_live
-        self.Num_of_photons_txt_box_y_loc_live_MZ = self.max_value_per_pulse_BP_live + self.max_value_per_pulse_DP_live
+
+        self.Num_of_photons_txt_box_y_loc_live_MZ = [[x]+[y] for x, y in zip(self.max_value_per_pulse_BP_live,
+                                                                             self.max_value_per_pulse_DP_live)]
+        # self.Num_of_photons_txt_box_y_loc_live_MZ = self.max_value_per_pulse_BP_live + self.max_value_per_pulse_DP_live
         self.Num_of_photons_txt_box_y_loc = self.Num_of_photons_txt_box_y_loc_live
         self.Num_of_photons_txt_box_y_loc_MZ = self.Num_of_photons_txt_box_y_loc_live_MZ
 
@@ -2178,14 +2175,14 @@ class OPX:
         self.seq_transit_events_live[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
         self.seq_transit_events_batched[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
         self.all_transits_seq_indx_batch = self.all_transits_seq_indx_batch[-(N-1):] + [self.all_transits_seq_indx]
-        self.reflection_SPRINT_data_per_transit_batch = self.reflection_SPRINT_data_per_transit_batch[-(N-1):]\
-                                                        + [self.reflection_SPRINT_data_per_transit]
-        self.transmission_SPRINT_data_per_transit_batch = self.transmission_SPRINT_data_per_transit_batch[-(N-1):]\
-                                                          + [self.transmission_SPRINT_data_per_transit]
+        # self.reflection_SPRINT_data_per_transit_batch = self.reflection_SPRINT_data_per_transit_batch[-(N-1):]\
+        #                                                 + [self.reflection_SPRINT_data_per_transit]
+        # self.transmission_SPRINT_data_per_transit_batch = self.transmission_SPRINT_data_per_transit_batch[-(N-1):]\
+        #                                                   + [self.transmission_SPRINT_data_per_transit]
         self.number_of_transits_live = len(self.all_transits_seq_indx)
         self.number_of_transits_total = len([vec for lst in self.all_transits_seq_indx_batch for vec in lst])
-        self.total_number_of_reflections_from_SPRINT_pulses_in_transits = \
-            np.sum(np.sum([vec for lst in self.reflection_SPRINT_data_per_transit_batch for vec in lst]))
+        # self.total_number_of_reflections_from_SPRINT_pulses_in_transits = \
+        #     np.sum(np.sum([vec for lst in self.reflection_SPRINT_data_per_transit_batch for vec in lst]))
         ###################
 
         self.save_tt_to_batch(Num_Of_dets, N)
@@ -2228,25 +2225,25 @@ class OPX:
                 datest = time.strftime("%Y%m%d")
                 self.get_tt_from_handles(Num_Of_dets, Counts_handle, tt_handle, FLR_handle)
 
-                # # Check if new tt's arrived:
-                # lenS = min(len(self.tt_S_measure), len(self.tt_S_measure_batch[-1]))
-                # lenN = min(len(self.tt_N_measure), len(self.tt_N_measure_batch[-1]))
-                # lenDP = min(len(self.tt_DP_measure), len(self.tt_DP_measure_batch[-1]))
-                # lenBP = min(len(self.tt_BP_measure), len(self.tt_BP_measure_batch[-1]))
-                # lenFS = min(len(self.tt_FS_measure), len(self.tt_FS_measure_batch[-1]))
-                # # Check if the number of same values in the new and last vector are less then 1/2 of the total number of values.
-                # is_new_tts_S = sum(np.array(self.tt_S_measure[:lenS]) == np.array(self.tt_S_measure_batch[-1][:lenS])) < lenS/2
-                # is_new_tts_N = sum(np.array(self.tt_N_measure[:lenN]) == np.array(self.tt_N_measure_batch[-1][:lenN])) < lenN/2
-                # is_new_tts_BP = sum(np.array(self.tt_BP_measure[:lenBP]) == np.array(self.tt_BP_measure_batch[-1][:lenBP])) < lenBP/2
-                # is_new_tts_DP = sum(np.array(self.tt_DP_measure[:lenDP]) == np.array(self.tt_DP_measure_batch[-1][:lenDP])) < lenDP/2
-                # is_new_tts_FS = sum(np.array(self.tt_FS_measure[:lenFS]) == np.array(self.tt_FS_measure_batch[-1][:lenFS])) < lenFS/2
-
+                # Check if new tt's arrived:
+                lenS = min(len(self.tt_S_measure), len(self.tt_S_measure_batch[-1]))
+                lenN = min(len(self.tt_N_measure), len(self.tt_N_measure_batch[-1]))
+                lenDP = min(len(self.tt_DP_measure), len(self.tt_DP_measure_batch[-1]))
+                lenBP = min(len(self.tt_BP_measure), len(self.tt_BP_measure_batch[-1]))
+                lenFS = min(len(self.tt_FS_measure), len(self.tt_FS_measure_batch[-1]))
                 # Check if the number of same values in the new and last vector are less then 1/2 of the total number of values.
-                is_new_tts_S = self.tt_S_measure[0] != self.tt_S_measure_batch[-1][0]
-                is_new_tts_N = self.tt_N_measure[0] != self.tt_N_measure_batch[-1][0]
-                is_new_tts_BP = self.tt_BP_measure[0] != self.tt_BP_measure_batch[-1][0]
-                is_new_tts_DP = self.tt_DP_measure[0] != self.tt_DP_measure_batch[-1][0]
-                is_new_tts_FS = self.tt_FS_measure[0] != self.tt_FS_measure_batch[-1][0]
+                is_new_tts_S = sum(np.array(self.tt_S_measure[:lenS]) == np.array(self.tt_S_measure_batch[-1][:lenS])) < lenS/2
+                is_new_tts_N = sum(np.array(self.tt_N_measure[:lenN]) == np.array(self.tt_N_measure_batch[-1][:lenN])) < lenN/2
+                is_new_tts_BP = sum(np.array(self.tt_BP_measure[:lenBP]) == np.array(self.tt_BP_measure_batch[-1][:lenBP])) < lenBP/2
+                is_new_tts_DP = sum(np.array(self.tt_DP_measure[:lenDP]) == np.array(self.tt_DP_measure_batch[-1][:lenDP])) < lenDP/2
+                is_new_tts_FS = sum(np.array(self.tt_FS_measure[:lenFS]) == np.array(self.tt_FS_measure_batch[-1][:lenFS])) < lenFS/2
+
+                # # Check if the number of same values in the new and last vector are less then 1/2 of the total number of values.
+                # is_new_tts_S = self.tt_S_measure[0] != self.tt_S_measure_batch[-1][0]
+                # is_new_tts_N = self.tt_N_measure[0] != self.tt_N_measure_batch[-1][0]
+                # is_new_tts_BP = self.tt_BP_measure[0] != self.tt_BP_measure_batch[-1][0]
+                # is_new_tts_DP = self.tt_DP_measure[0] != self.tt_DP_measure_batch[-1][0]
+                # is_new_tts_FS = self.tt_FS_measure[0] != self.tt_FS_measure_batch[-1][0]
 
                 print(count)
                 count += 1
@@ -2285,21 +2282,49 @@ class OPX:
             self.fold_tt_histogram(exp_sequence_len=self.QRAM_sequence_len)
 
             # get the average number of photons in detection pulse
-            self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S_directional,
-                                                                                                 self.pulses_location_in_seq_S)
-            self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N_directional,
-                                                                                                 self.pulses_location_in_seq_N)
-            self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + self.avg_num_of_photons_per_pulse_N_live
+            self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(
+                self.folded_tt_S_directional, self.pulses_location_in_seq_S)
+            self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(
+                self.folded_tt_N_directional, self.pulses_location_in_seq_N)
+            self.avg_num_of_photons_per_pulse_A_live = self.get_avg_num_of_photons_in_seq_pulses(
+                (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins)
+                 + np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A)
+            self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(
+                self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:])
+            self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(
+                self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:])
+            self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + \
+                                                     self.avg_num_of_photons_per_pulse_N_live + \
+                                                     self.avg_num_of_photons_per_pulse_A_live
+            self.avg_num_of_photons_per_pulse_live_MZ = [[x] + [y] for x, y in
+                                                         zip(self.avg_num_of_photons_per_pulse_BP_live,
+                                                             self.avg_num_of_photons_per_pulse_DP_live)]
+
+            # self.avg_num_of_photons_per_pulse_live_MZ = self.avg_num_of_photons_per_pulse_BP_live + \
+            #                                             self.avg_num_of_photons_per_pulse_DP_live
 
             # get box location on the y-axis:
-            self.max_value_per_pulse_S_live = self.get_max_value_in_seq_pulses(self.folded_tt_S,
+            self.max_value_per_pulse_S_live = self.get_max_value_in_seq_pulses(self.folded_tt_S_directional,
                                                                                self.pulses_location_in_seq_S)
-            self.max_value_per_pulse_N_live = self.get_max_value_in_seq_pulses(self.folded_tt_N,
+            self.max_value_per_pulse_N_live = self.get_max_value_in_seq_pulses(self.folded_tt_N_directional,
                                                                                self.pulses_location_in_seq_N)
-            self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + self.max_value_per_pulse_N_live
+            self.max_value_per_pulse_A_live = self.get_max_value_in_seq_pulses(
+                (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins) +
+                 np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A)
+            self.max_value_per_pulse_BP_live = self.get_max_value_in_seq_pulses(
+                self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:])
+            self.max_value_per_pulse_DP_live = self.get_max_value_in_seq_pulses(
+                self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:])
+            self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + \
+                                                     self.max_value_per_pulse_N_live + \
+                                                     self.max_value_per_pulse_A_live
+            self.Num_of_photons_txt_box_y_loc_live_MZ = [[x] + [y] for x, y in zip(self.max_value_per_pulse_BP_live,
+                                                                                   self.max_value_per_pulse_DP_live)]
+            # self.Num_of_photons_txt_box_y_loc_live_MZ = self.max_value_per_pulse_BP_live + self.max_value_per_pulse_DP_live
 
             if exp_flag:
-                if (self.lock_err > lock_err_threshold) or (1000 * np.average(self.FLR_res.tolist()) < FLR_threshold) or \
+                if (self.lock_err > lock_err_threshold) or \
+                        ((1000 * np.average(self.FLR_res.tolist()) < FLR_threshold) and with_atoms) or \
                         (np.average(experiment.avg_num_of_photons_per_pulse_live) > photons_per_det_pulse_threshold):
                     self.acquisition_flag = False
                 else:
@@ -2320,14 +2345,14 @@ class OPX:
                 self.seq_transit_events_batched[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
                 self.all_transits_seq_indx_batch = self.all_transits_seq_indx_batch[-(N - 1):]\
                                                    + [self.all_transits_seq_indx]
-                self.reflection_SPRINT_data_per_transit_batch = self.reflection_SPRINT_data_per_transit_batch[-(N - 1):] \
-                                                                + [self.reflection_SPRINT_data_per_transit]
-                self.transmission_SPRINT_data_per_transit_batch = self.transmission_SPRINT_data_per_transit_batch[-(N - 1):] \
-                                                                  + [self.transmission_SPRINT_data_per_transit]
+                # self.reflection_SPRINT_data_per_transit_batch = self.reflection_SPRINT_data_per_transit_batch[-(N - 1):] \
+                #                                                 + [self.reflection_SPRINT_data_per_transit]
+                # self.transmission_SPRINT_data_per_transit_batch = self.transmission_SPRINT_data_per_transit_batch[-(N - 1):] \
+                #                                                   + [self.transmission_SPRINT_data_per_transit]
                 self.number_of_transits_live = len(self.all_transits_seq_indx)
                 self.number_of_transits_total = len([vec for lst in self.all_transits_seq_indx_batch for vec in lst])
-                self.total_number_of_reflections_from_SPRINT_pulses_in_transits = \
-                    np.sum(np.sum([vec for lst in self.reflection_SPRINT_data_per_transit_batch for vec in lst]))
+                # self.total_number_of_reflections_from_SPRINT_pulses_in_transits = \
+                #     np.sum(np.sum([vec for lst in self.reflection_SPRINT_data_per_transit_batch for vec in lst]))
                 ###########################################
 
                 # Batch folded tt "N" and "S"
@@ -2346,14 +2371,42 @@ class OPX:
                                                     + self.folded_tt_DP_timebins) / self.Counter
 
                 # get the average number of photons in detection pulse
-                self.avg_num_of_photons_per_pulse_S = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S_batch, self.pulses_location_in_seq_S)
-                self.avg_num_of_photons_per_pulse_N = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N_batch, self.pulses_location_in_seq_N)
-                self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_S + self.avg_num_of_photons_per_pulse_N
-
+                self.avg_num_of_photons_per_pulse_S = self.get_avg_num_of_photons_in_seq_pulses(
+                    self.folded_tt_S_directional_batch, self.pulses_location_in_seq_S)
+                self.avg_num_of_photons_per_pulse_N = self.get_avg_num_of_photons_in_seq_pulses(
+                    self.folded_tt_N_directional_batch, self.pulses_location_in_seq_N)
+                self.avg_num_of_photons_per_pulse_A = self.get_avg_num_of_photons_in_seq_pulses(
+                    (np.array(self.folded_tt_S_directional_batch) + np.array(self.folded_tt_BP_timebins_batch)
+                     + np.array(self.folded_tt_DP_timebins_batch)).tolist(), self.pulses_location_in_seq_A)
+                self.avg_num_of_photons_per_pulse_BP = self.get_avg_num_of_photons_in_seq_pulses(
+                    self.folded_tt_BP_timebins_batch, self.pulses_location_in_seq[-2:])
+                self.avg_num_of_photons_per_pulse_DP = self.get_avg_num_of_photons_in_seq_pulses(
+                    self.folded_tt_DP_timebins_batch, self.pulses_location_in_seq[-2:])
+                self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_S + \
+                                                    self.avg_num_of_photons_per_pulse_N + \
+                                                    self.avg_num_of_photons_per_pulse_A
+                self.avg_num_of_photons_per_pulse_MZ = [[x] + [y] for x, y in
+                                                             zip(self.avg_num_of_photons_per_pulse_BP,
+                                                                 self.avg_num_of_photons_per_pulse_DP)]
+                # self.avg_num_of_photons_per_pulse_MZ = self.avg_num_of_photons_per_pulse_BP + \
+                #                                        self.avg_num_of_photons_per_pulse_DP
                 # get box location on the y-axis:
-                self.max_value_per_pulse_S = self.get_max_value_in_seq_pulses(self.folded_tt_S_batch, self.pulses_location_in_seq_S)
-                self.max_value_per_pulse_N = self.get_max_value_in_seq_pulses(self.folded_tt_N_batch, self.pulses_location_in_seq_N)
-                self.Num_of_photons_txt_box_y_loc = self.max_value_per_pulse_S + self.max_value_per_pulse_N
+                self.max_value_per_pulse_S = self.get_max_value_in_seq_pulses(self.folded_tt_S_directional_batch,
+                                                                              self.pulses_location_in_seq_S)
+                self.max_value_per_pulse_N = self.get_max_value_in_seq_pulses(self.folded_tt_N_directional_batch,
+                                                                              self.pulses_location_in_seq_N)
+                self.max_value_per_pulse_A = self.get_max_value_in_seq_pulses(
+                    (np.array(self.folded_tt_S_directional_batch) + np.array(self.folded_tt_BP_timebins_batch) +
+                     np.array(self.folded_tt_DP_timebins_batch)).tolist(), self.pulses_location_in_seq_A)
+                self.max_value_per_pulse_BP = self.get_max_value_in_seq_pulses(
+                    self.folded_tt_BP_timebins_batch, self.pulses_location_in_seq[-2:])
+                self.max_value_per_pulse_DP = self.get_max_value_in_seq_pulses(
+                    self.folded_tt_DP_timebins_batch, self.pulses_location_in_seq[-2:])
+                self.Num_of_photons_txt_box_y_loc = self.max_value_per_pulse_S + self.max_value_per_pulse_N + \
+                                                    self.max_value_per_pulse_A
+                self.Num_of_photons_txt_box_y_loc_MZ = [[x] + [y] for x, y in zip(self.max_value_per_pulse_BP,
+                                                                                       self.max_value_per_pulse_DP)]
+                # self.Num_of_photons_txt_box_y_loc_MZ = self.max_value_per_pulse_BP + self.max_value_per_pulse_DP
 
                 # fold for different detectors: # TODO: delete after everything works
                 for i in range(len(Num_Of_dets)):
@@ -2380,7 +2433,7 @@ class OPX:
 
         ## Adding comment to measurement [prompt whether stopped or finished regularly]
         # aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
-        aftComment = f'{N} Cycles'
+        aftComment = f'{self.Counter} Cycles'
         # if aftComment == 'Timeout': aftComment = None
 
         #### Handle file-names and directories #####
@@ -2392,13 +2445,16 @@ class OPX:
         #  -------   Create dir
         root_dirname = f'U:\\Lab_2023\\Experiment_results\\QRAM\\{datest}\\'
         dirname = root_dirname + f'{timest}_Photon_TimeTags\\'  # Specific experiment dir
-        dirname_N = dirname + 'North\\'
-        dirname_S = dirname + 'South\\'
-        dirname_D = dirname + 'Dark\\'
-        dirname_B = dirname + 'Bright\\'
-        dirname_FS = dirname + 'FastSwitch\\'
+        dirname_Det = dirname + 'AllDetectors\\'
+        dirname_N = dirname + 'North(8)\\'
+        dirname_S = dirname + 'South(5)\\'
+        dirname_D = dirname + 'Dark(3,4)\\'
+        dirname_B = dirname + 'Bright(1,2)\\'
+        dirname_FS = dirname + 'FastSwitch(6,7)\\'
         if not os.path.exists(dirname):
             os.makedirs(dirname)
+        if not os.path.exists(dirname_Det):
+            os.makedirs(dirname_Det)
         if not os.path.exists(dirname_N):
             os.makedirs(dirname_N)
         if not os.path.exists(dirname_S):
@@ -2447,8 +2503,11 @@ class OPX:
             np.savez(dirname + filname_sequence_N, Config.QRAM_Exp_Gaussian_samples_N)
             np.savez(dirname + filname_sequence_Early, Config.QRAM_Exp_Square_samples_Early)
             np.savez(dirname + filname_sequence_Late, Config.QRAM_Exp_Square_samples_Late)
-            np.savez(dirname + filname_sequence_FS, (1-np.array(Config.QRAM_Exp_Square_samples_FS_North)).tolist())
+            np.savez(dirname + filname_sequence_FS, (1-np.array(Config.QRAM_Exp_Square_samples_FS)).tolist())
             plt.savefig(dirname + filename_experimentPlot, bbox_inches='tight')
+        for i in range(len(Num_Of_dets)):
+            if len(self.tt_measure_batch[i]) > 0:
+                np.savez(dirname_Det + filename_Det_tt[i], self.tt_measure_batch[i])
         if len(self.folded_tt_N_batch) > 0:
             np.savez(dirname + filename_N_folded, self.folded_tt_N_batch)
         if len(self.folded_tt_S_batch) > 0:
@@ -2459,9 +2518,6 @@ class OPX:
             np.savez(dirname + filename_BP_folded, self.folded_tt_BP_batch)
         if len(self.folded_tt_FS_batch) > 0:
             np.savez(dirname + filename_FS_folded, self.folded_tt_FS_batch)
-        for i in range(len(Num_Of_dets)):
-            if len(self.tt_measure_batch[i]) > 0:
-                np.savez(dirname_S + filename_Det_tt[i], self.tt_measure_batch[i])
         if len(self.tt_S_measure_batch) > 0:
             np.savez(dirname_S + filename_S_tt, self.tt_S_measure_batch)
         if len(self.tt_N_measure_batch) > 0:
@@ -2586,15 +2642,15 @@ class OPX:
         # pick the highest-count/earliest item
         return max(groups, key=_auxfun)[0]
 
-    def run_daily_experiment(self, day_experiment, transit_condition, preComment, lock_err_threshold, filter_delay,
+    def  run_daily_experiment(self, day_experiment, transit_condition, preComment, lock_err_threshold, filter_delay,
                        reflection_threshold
                        , reflection_threshold_time, FLR_threshold):
         with_atoms_bool = True
         for i in range(len(day_experiment)):
             if with_atoms_bool:
-                Comment = preComment + 'with atoms'
+                Comment = preComment + ' with atoms'
             else:
-                Comment = preComment + 'without atoms'
+                Comment = preComment + ' without atoms'
             self.Start_QRAM_Exp_with_tt(N=day_experiment[i], transit_condition=transit_condition, preComment=Comment,
                                         lock_err_threshold=lock_err_threshold, filter_delay=filter_delay,
                                         reflection_threshold=reflection_threshold,
@@ -2667,7 +2723,7 @@ if __name__ == "__main__":
     # experiment.Start_QRAM_Exp_with_tt(N=1000, transit_condition=[2, 2, 2], preComment='ignore', lock_err_threshold=0.01,
     #                                   filter_delay=[0, 0, 0],
     #                                   reflection_threshold=10000, reflection_threshold_time=1e6, FLR_threshold=-0.11)   # except KeyboardInterrupt:
-    experiment.run_daily_experiment([10,5,10,5], transit_condition=[2, 2, 2], preComment='ignore', lock_err_threshold=0.01,
+    experiment.run_daily_experiment([1000, 1000]*2, transit_condition=[2, 2, 2], preComment='ignore', lock_err_threshold=0.01,
                                       filter_delay=[0, 0, 0],
                                       reflection_threshold=10000, reflection_threshold_time=1e6, FLR_threshold=-0.11)
 
