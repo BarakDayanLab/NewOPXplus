@@ -372,6 +372,7 @@ Operation_Modes = {
                                         },
                     'PrePGC_Fountain': {'Triggering_Phase': 'Pulse_1',
                                         'Fountain_final_Delta_freq': 0.45e6,
+                                        'PrePulse_CH2_freq': 133.325e6,  # Hz #Ziv Added for Cooling optimization
                                         'Pulse_1_CH1_Freq_f': Initial_Values['Flash_freq'],
                                         'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'],
                                         # Fountain

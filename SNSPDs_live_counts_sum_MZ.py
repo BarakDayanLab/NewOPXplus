@@ -367,7 +367,7 @@ Super_Sprint_Config = {
             'waveforms': {
                 'single': 'const_wf'
             },
-            # 'digital_marker': 'ON'
+            'digital_marker': 'ON'
         },
         "Depump_pulse": {
             'operation': 'control',
@@ -633,12 +633,12 @@ while avg_count1_handle.is_processing():
     plt.plot(B_arr + D_arr)
     plt.plot(B_arr)
     plt.plot(D_arr)
-    plt.text(0, np.mean(B_arr + D_arr), str(np.round(max(abs((B_arr-D_arr)/(B_arr+D_arr))), decimals=2)), fontsize=28,
+    plt.text(0, np.mean(B_arr + D_arr), str(np.round(max(abs((B_arr-D_arr)/(B_arr+D_arr))), decimals=2)), fontsize=48,
                            verticalalignment='top')
     # plt.text(0, 200, str(np.round((max(D_arr)-min(D_arr)) / np.mean(D_arr + B_arr), decimals=3)), fontsize=28,
     #          verticalalignment='top')
 
-    plt.pause(0.01)
+    plt.pause(0.1)
 
 
 

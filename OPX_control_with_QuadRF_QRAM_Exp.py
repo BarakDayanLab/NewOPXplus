@@ -1822,13 +1822,13 @@ class OPX:
 
         # ax[0].plot(self.folded_tt_N, label='"N" detectors')
         # ax[0].plot(self.folded_tt_S, label='"S" detectors')
-        # ax[0].plot(self.folded_tt_BP, label='"BP" detectors')
-        # ax[0].plot(self.folded_tt_DP, label='"DP" detectors')
+        ax[0].plot(self.folded_tt_BP, label='"BP" detectors')
+        ax[0].plot(self.folded_tt_DP, label='"DP" detectors')
         # ax[0].plot(self.folded_tt_FS, label='"FS" detectors')
-        ax[0].plot(self.folded_tt_N_directional, label='"N" detectors')
-        ax[0].plot(self.folded_tt_S_directional, label='"S" detectors')
-        ax[0].plot(self.folded_tt_BP_timebins, label='"BP" detectors')
-        ax[0].plot(self.folded_tt_DP_timebins, label='"DP" detectors')
+        # ax[0].plot(self.folded_tt_N_directional, label='"N" detectors')
+        # ax[0].plot(self.folded_tt_S_directional, label='"S" detectors')
+        # ax[0].plot(self.folded_tt_BP_timebins, label='"BP" detectors')
+        # ax[0].plot(self.folded_tt_DP_timebins, label='"DP" detectors')
         ax[0].plot((self.filter_S) * max(self.folded_tt_N_directional + self.folded_tt_S_directional),
                    '--', color='orange', label='Filter "S"')
         for i in range(len(self.Num_of_photons_txt_box_y_loc_live)):
