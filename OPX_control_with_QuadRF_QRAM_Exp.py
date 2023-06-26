@@ -2221,7 +2221,8 @@ class OPX:
 
             while True:
                 # record time:
-                timest = time.strftime("%Y%m%d-%H%M%S") # TODO: is it needed? already writen above..
+                # timest = time.strftime("%Y%m%d,%H%M%S") # TODO: is it needed? already writen above..
+                timest = time.strftime("%H%M%S")
                 datest = time.strftime("%Y%m%d")
                 self.get_tt_from_handles(Num_Of_dets, Counts_handle, tt_handle, FLR_handle)
 
@@ -2432,8 +2433,9 @@ class OPX:
         # self.most_common([x for vec in self.tt_S_measure_batch + self.tt_N_measure_batch for x in vec])
 
         ## Adding comment to measurement [prompt whether stopped or finished regularly]
-        # aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
-        aftComment = f'{self.Counter} Cycles'
+        if self.Counter < N:
+            aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
+
         # if aftComment == 'Timeout': aftComment = None
 
         #### Handle file-names and directories #####
@@ -2541,17 +2543,30 @@ class OPX:
         #     np.savez(dirname_S + filename_S_transits, all_transits_batch)
 
         ### Edit comments file ####
-        cmntDir = root_dirname + '\\daily_experiment_comments.txt'
-        cmnt = timest + ' - '  #+'max probe counts:' #+max_probe_counts+'-'
-        if preComment is not None: cmnt = cmnt + preComment + '; '
-        if aftComment is not None: cmnt = cmnt + aftComment
-        if preComment is None and aftComment is None: cmnt = cmnt + 'No comment. '
+        cmntDir =  os.path.join(root_dirname,'daily_experiment_comments.txt')
+        cmnt_header = 'Date,Time,IgnoreValid,Atoms,Cycles,Comment'
+        if not os.path.exists(cmntDir):
+            # Write header line
+            try:
+                with open(cmntDir, "a") as commentsFile:
+                    commentsFile.write(cmnt_header + '\n')
+            except:
+                print('Could not save comments, error writing to comments-file.')
+
+        if preComment is not None: cmnt = preComment + '; '
+        if aftComment is not None: cmnt = aftComment
+        if preComment is None and aftComment is None: cmnt = 'No comment.'
+        if 'ignore' in cmnt:
+            experiment_success = 'ignore'
+        else:
+            experiment_success = 'valid'
+        full_line = f'{datestr},{timestr},{experiment_success},{with_atoms},{self.Counter},{cmnt}' % \
+                    (datestr,timestr,experiment_success,with_atoms,self.Counter,cmnt)
         try:
             with open(cmntDir, "a") as commentsFile:
-                commentsFile.write(cmnt + '\n')
+                commentsFile.write(full_line + '\n')
         except:
             print('Could not save comments, error writing to comments-file.')
-            print(cmnt)
 
         experiment_cmnt = 'transit condition: ' + str(transit_condition) + '; ' +\
                           'reflection threshold: ' + str(reflection_threshold) + '@' +\
