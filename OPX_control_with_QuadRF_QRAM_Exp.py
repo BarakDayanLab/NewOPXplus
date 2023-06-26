@@ -834,10 +834,10 @@ def opx_control(obj, qm):
                 #     assign(fountain_aom_chirp_rate, IO2)
                 #
                 # ## Measurement variables control: ##
-                # with if_(i == 42):
-                #     assign(PrePulse_duration, IO2)
-                # with if_(i == 43):
-                #     assign(Pulse_1_duration, IO2)
+                with if_(i == 42):
+                    assign(PrePulse_duration, IO2)
+                with if_(i == 43):
+                    assign(Pulse_1_duration, IO2)
                 # with if_(i == 44):
                 #     assign(Pulse_1_decay_time, IO2)
                 # with if_(i == 45):  # The number of frames(snaps) to take for a video with growing snap time intervals
@@ -1047,7 +1047,10 @@ class OPX:
         self.rep_MZ_slow_scan = int(0.5 * (self.prepulse_duration - self.Shutter_open_time - self.Balancing_check_window)
                                     * 1e6 / len(Config.QRAM_MZ_balance_pulse_Late))
         self.points_for_sum = 4
-        self.phase_rep_MZ = int(self.rep_MZ_fast_scan/self.points_for_sum)
+        if self.rep_MZ_fast_scan == 0:
+            self.phase_rep_MZ = 1
+        else:
+            self.phase_rep_MZ = int(self.rep_MZ_fast_scan/self.points_for_sum)
         self.total_phase_rep_MZ = int(2 * self.rep_MZ_fast_scan/self.points_for_sum)
         self.rep_MZ_check = int(self.Balancing_check_window * 1e6 / len(Config.QRAM_MZ_balance_pulse_North))
 
@@ -1822,13 +1825,13 @@ class OPX:
 
         # ax[0].plot(self.folded_tt_N, label='"N" detectors')
         # ax[0].plot(self.folded_tt_S, label='"S" detectors')
-        ax[0].plot(self.folded_tt_BP, label='"BP" detectors')
-        ax[0].plot(self.folded_tt_DP, label='"DP" detectors')
+        # ax[0].plot(self.folded_tt_BP, label='"BP" detectors')
+        # ax[0].plot(self.folded_tt_DP, label='"DP" detectors')
         # ax[0].plot(self.folded_tt_FS, label='"FS" detectors')
-        # ax[0].plot(self.folded_tt_N_directional, label='"N" detectors')
-        # ax[0].plot(self.folded_tt_S_directional, label='"S" detectors')
-        # ax[0].plot(self.folded_tt_BP_timebins, label='"BP" detectors')
-        # ax[0].plot(self.folded_tt_DP_timebins, label='"DP" detectors')
+        ax[0].plot(self.folded_tt_N_directional, label='"N" detectors')
+        ax[0].plot(self.folded_tt_S_directional, label='"S" detectors')
+        ax[0].plot(self.folded_tt_BP_timebins, label='"BP" detectors')
+        ax[0].plot(self.folded_tt_DP_timebins, label='"DP" detectors')
         ax[0].plot((self.filter_S) * max(self.folded_tt_N_directional + self.folded_tt_S_directional),
                    '--', color='orange', label='Filter "S"')
         for i in range(len(self.Num_of_photons_txt_box_y_loc_live)):
@@ -1882,11 +1885,11 @@ class OPX:
         ax[7].legend(loc='upper left')
         print(self.Phase_Correction_value)
 
-        max_reflect = max(self.num_of_det_transmissions_per_seq_accumulated/self.Counter)
-        ax[3].plot(self.num_of_det_transmissions_per_seq_accumulated/self.Counter, label='Num of reflections per sequence')
-        ax[3].plot(self.num_of_det_transmissions_per_seq*0.3*max_reflect, label='Num of reflections per sequence (Live)')
+        max_reflect = max(self.num_of_det_reflections_per_seq_accumulated/self.Counter)
+        ax[3].plot(self.num_of_det_reflections_per_seq_accumulated/self.Counter, label='Num of reflections per sequence')
+        ax[3].plot(self.num_of_det_reflections_per_seq*0.3, label='Num of reflections per sequence (Live)')
         ax[3].set_title('Num of reflections per sequence', fontweight="bold")
-        # ax[3].legend(loc='upper right')
+        ax[3].legend(loc='upper right')
         # ax[3].text(0.1, 0.9*max(self.num_of_det_transmissions_per_seq_accumulated/self.Counter), textstr_avg_reflections, fontsize=14,
         ax[3].text(0.1, 0.9*max_reflect, textstr_total_reflections, fontsize=14,
                    verticalalignment='top', bbox=props)
@@ -2005,7 +2008,7 @@ class OPX:
                                                                                        smearing=5)  # smearing=int(Config.num_between_zeros/2))
         self.pulses_location_in_seq_N, self.filter_N = self.get_pulses_location_in_seq(filter_delay[1],
                                                                                        Config.QRAM_Exp_Gaussian_samples_N,
-                                                                                       smearing=0)  # smearing=int(Config.num_between_zeros/2))
+                                                                                       smearing=5)  # smearing=int(Config.num_between_zeros/2))
         self.pulses_location_in_seq_A, self.filter_A = self.get_pulses_location_in_seq(filter_delay[2],
                                                                                        Config.QRAM_Exp_Gaussian_samples_Ancilla,
                                                                                        smearing=5)  # smearing=int(Config.num_between_zeros/2))
@@ -2041,8 +2044,6 @@ class OPX:
         cycle = 0
         # Place holders for results # TODO: ask dor - is it works as we expect?
         while ((self.lock_err > lock_err_threshold) or (self.sum_for_threshold > reflection_threshold)) or start:
-            # lock_err = np.abs(np.load(
-            #     'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
             if self.keyPress == 'ESC':
                 print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
                 self.updateValue("Sprint_Exp_switch", False)
@@ -2073,7 +2074,7 @@ class OPX:
             if exp_flag:
                 try:
                     self.lock_err = np.abs(np.load(
-                        'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
+                        'U:\Lab_2023\Experiment_results\QRAM\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
                 except:
                     pass
                     print('error in loading file')
@@ -2260,7 +2261,7 @@ class OPX:
             # assaf - if x=self.M_window the index is out of range so i added 1
             try:
                 self.lock_err = np.abs(np.load(
-                    'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
+                    'U:\Lab_2023\Experiment_results\QRAM\Locking_PID_Error\locking_err.npy'))  # the error of locking the resontor to Rb line
             except:
                 pass
                 print('error in loading file')
@@ -2418,14 +2419,15 @@ class OPX:
                 FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
                 self.save_tt_to_batch(Num_Of_dets, N)
-                if self.Counter < N:
-                    self.Counter += 1
                 if self.Counter == N:
                     print('\033[94m' + f'finished {N} Runs, {"with" if with_atoms else "without"} atoms' + '\033[0m')  # print blue
                     self.updateValue("QRAM_Exp_switch", False)
                     self.update_parameters()
                     # Other actions can be added here
                     break
+                if self.Counter < N:
+                    self.Counter += 1
+
 
         ############################################## END WHILE LOOP #################################################
 
@@ -2435,6 +2437,8 @@ class OPX:
         ## Adding comment to measurement [prompt whether stopped or finished regularly]
         if self.Counter < N:
             aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
+        else:
+            aftComment = ''
 
         # if aftComment == 'Timeout': aftComment = None
 
@@ -2554,14 +2558,13 @@ class OPX:
                 print('Could not save comments, error writing to comments-file.')
 
         if preComment is not None: cmnt = preComment + '; '
-        if aftComment is not None: cmnt = aftComment
+        if aftComment is not None: cmnt = preComment + aftComment
         if preComment is None and aftComment is None: cmnt = 'No comment.'
         if 'ignore' in cmnt:
             experiment_success = 'ignore'
         else:
             experiment_success = 'valid'
-        full_line = f'{datestr},{timestr},{experiment_success},{with_atoms},{self.Counter},{cmnt}' % \
-                    (datestr,timestr,experiment_success,with_atoms,self.Counter,cmnt)
+        full_line = f'{datest},{timest},{experiment_success},{with_atoms},{self.Counter},{cmnt}'
         try:
             with open(cmntDir, "a") as commentsFile:
                 commentsFile.write(full_line + '\n')
@@ -2738,9 +2741,9 @@ if __name__ == "__main__":
     # experiment.Start_QRAM_Exp_with_tt(N=1000, transit_condition=[2, 2, 2], preComment='ignore', lock_err_threshold=0.01,
     #                                   filter_delay=[0, 0, 0],
     #                                   reflection_threshold=10000, reflection_threshold_time=1e6, FLR_threshold=-0.11)   # except KeyboardInterrupt:
-    experiment.run_daily_experiment([1000, 1000]*2, transit_condition=[2, 2, 2], preComment='ignore', lock_err_threshold=0.01,
+    experiment.run_daily_experiment([10, 5]*2, transit_condition=[2, 2, 2], preComment='|1c, (0 + 1)t> experiment', lock_err_threshold=1,
                                       filter_delay=[0, 0, 0],
-                                      reflection_threshold=10000, reflection_threshold_time=1e6, FLR_threshold=-0.11)
+                                      reflection_threshold=10000, reflection_threshold_time=10e6, FLR_threshold=-0.11)
 
     #     experiment.job.halt()
     #     experiment.qmm.reset_data_processing()

@@ -337,6 +337,7 @@ Operation_Modes = {
                                   'N_Snaps': 1,
                                   'Buffer_Cycles': 0,
                                   'Imaging_Phase': 'Pulse_1',
+                                  # 'PrePulse_duration': 4,  # [msec]
                                   'PrePulse_duration': 13,  # [msec]
                                   'Shutter_open_time': 1,  # [msec]
                                   'Pulse_1_duration': int(max(Config_QRAM.readout_pulse_sprint_len_N,
@@ -356,10 +357,12 @@ Operation_Modes = {
                                         'PrePulse_CH2_freq': 133.325e6,  # Hz
                                         'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],
                                         'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'] + 30e6,
+                                        # 'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'],
                                         'Pulse_1_Repump_amp': 0.000001,
                                         'N_Snaps': 1,
                                         'Buffer_Cycles': 0,
                                         'Imaging_Phase': 'Pulse_1',
+                                        # 'PrePulse_duration': 3,  # [msec]
                                         'PrePulse_duration': 13,  # [msec]
                                         'Shutter_open_time': 5,  # [msec]
                                         'Pulse_1_duration': 8,  # [msec]
