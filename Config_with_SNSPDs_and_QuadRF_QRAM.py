@@ -475,9 +475,9 @@ QRAM_MZ_balance_pulse_Late_delayed = np.roll(QRAM_MZ_balance_pulse_Late, AOM_Lat
 
 QRAM_Exp_Gaussian_samples_N = ([0] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp] * (AOM_risetime_pulsers - 20) + [0] * 20
                                + [0] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp] * (AOM_risetime_pulsers - 20) + [0] * 20) * 2
-# QRAM_Exp_Square_samples_Late = ([0] * MZ_delay + [Pulses_Amp] * (MZ_delay)) * 2
+QRAM_Exp_Square_samples_Late = ([0] * MZ_delay + [Pulses_Amp] * (MZ_delay)) * 2
 # QRAM_Exp_Square_samples_Early = ([Pulses_Amp] * MZ_delay + [0] * MZ_delay) * 2
-# QRAM_Exp_Square_samples_Late_delayed = np.roll(QRAM_Exp_Square_samples_Late, AOM_Late_delay)
+QRAM_Exp_Square_samples_Late_delayed = np.roll(QRAM_Exp_Square_samples_Late, AOM_Late_delay)
 # QRAM_Exp_Square_samples_Early_delayed = np.roll(QRAM_Exp_Square_samples_Early, AOM_Early_delay)
 
 

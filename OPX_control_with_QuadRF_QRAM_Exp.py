@@ -2031,7 +2031,7 @@ class OPX:
         if exp_flag:
             try:
                 self.lock_err = np.abs(np.load(
-                    'U:\Lab_2021-2022\Experiment_results\Sprint\Locking_PID_Error\locking_err.npy', allow_pickle=True))  # the error of locking the resontor to Rb line
+                    'U:\Lab_2023\Experiment_results\QRAM\Locking_PID_Error\locking_err.npy', allow_pickle=True))  # the error of locking the resontor to Rb line
             except:
                 print('error in loading file')
         else:
@@ -2543,7 +2543,7 @@ class OPX:
         #     np.savez(dirname_S + filename_S_transits, all_transits_batch)
 
         ### Edit comments file ####
-        cmntDir =  os.path.join(root_dirname,'daily_experiment_comments.txt')
+        cmntDir =  os.path.join(root_dirname,'daily_experiment_comments.csv')
         cmnt_header = 'Date,Time,IgnoreValid,Atoms,Cycles,Comment'
         if not os.path.exists(cmntDir):
             # Write header line
