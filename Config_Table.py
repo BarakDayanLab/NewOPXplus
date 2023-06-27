@@ -56,12 +56,12 @@ Initial_Values = {
     'Post_MOT_delay': 1,  # [msec] All lights are off (except depump) between MOT and PGC prep stages
 
     # PGC parameters:
-    'PGC_final_freq': 93e6, #98e6 - until 13.11,
+    'PGC_final_freq': 91e6, #98e6 - until 13.11,
     'PGC_initial_freq': -1,  # By default, taken from previous phase (see @Operation_Modes['DefaulValues'])
-    'PGC_duration': 6,# 4 until 30.10.22
+    'PGC_duration': 3,# 4 until 30.10.22
     # 'PGC_prep_duration': 4,        # [msec]
-    'PGC_prep_duration': 6,  # 4 until 30.10.22        # [msec]
-    'PGC_final_amp': 0.1, # 0.244 - till 13.11,         # Relative AOM amplitude between 0 to 1 - (0.12 yields 3.5 mW)
+    'PGC_prep_duration': 3,  # 4 until 30.10.22        # [msec]
+    'PGC_final_amp': 0.07, # 0.244 - till 13.11,         # Relative AOM amplitude between 0 to 1 - (0.12 yields 3.5 mW)
     'PGC_final_amp_0': 1,         # Relative AOM amplitude between 0 to 1 - (0.12 yields 3.5 mW)
     'PGC_final_amp_minus': 1,         # Relative AOM amplitude between 0 to 1 - (0.12 yields 3.5 mW)
     'PGC_final_amp_plus': 1,         # Relative AOM amplitude between 0 to 1 - (0.26 yields 3.6 mW)
@@ -338,7 +338,7 @@ Operation_Modes = {
                                   'Buffer_Cycles': 0,
                                   'Imaging_Phase': 'Pulse_1',
                                   # 'PrePulse_duration': 4,  # [msec]
-                                  'PrePulse_duration': 13,  # [msec]
+                                  'PrePulse_duration': 14,  # [msec]
                                   'Shutter_open_time': 1,  # [msec]
                                   'Pulse_1_duration': int(max(Config_QRAM.readout_pulse_sprint_len_N,
                                                               Config_QRAM.readout_pulse_sprint_len_S)) / 1e6,  # [msec]
