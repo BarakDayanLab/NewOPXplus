@@ -255,7 +255,7 @@ num_fin_zeros_S = 0  # For only det pulses sequence
 # sprint_pulse_amp_S = [0, 0, 0, 0]
 # # |1c, (0 + 1)t>
 det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
-sprint_pulse_amp_S = [0, 0.075, 0, 0.075]
+sprint_pulse_amp_S = [0, 0.06, 0, 0.06]
 
 # Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
 #                                                             det_pulse_len=det_pulse_len,
@@ -285,7 +285,8 @@ num_fin_zeros_N = 0  # For only det pulses sequence
 # sprint_pulse_amp_N = [0, 0.085, 0, 0.085]
 # # |1c, (0 + 1)t>
 det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
-sprint_pulse_amp_N = [0.085, 0, 0, 0]
+# sprint_pulse_amp_N = [0.085, 0, 0, 0]
+sprint_pulse_amp_N = [0.115, 0, 0, 0]
 
 # Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
 #                                                             det_pulse_len=det_pulse_len,

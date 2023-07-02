@@ -2021,8 +2021,13 @@ class OPX:
         self.pulses_location_in_seq_S, self.filter_S = self.get_pulses_location_in_seq(filter_delay[0],
                                                                                        Config.QRAM_Exp_Gaussian_samples_S,
                                                                                        smearing=5)  # smearing=int(Config.num_between_zeros/2))
+        self.QRAM_Exp_Gaussian_samples_N = Config.QRAM_Exp_Gaussian_samples_N
+        self.QRAM_Exp_Gaussian_samples_N[self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]] =\
+            (np.array(Config.QRAM_Exp_Gaussian_samples_N[self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]]) + \
+             np.array(Config.QRAM_Exp_Gaussian_samples_General[self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]]) * \
+             Config.sprint_pulse_amp_Early[0]).tolist()
         self.pulses_location_in_seq_N, self.filter_N = self.get_pulses_location_in_seq(filter_delay[1],
-                                                                                       Config.QRAM_Exp_Gaussian_samples_N,
+                                                                                       self.QRAM_Exp_Gaussian_samples_N,
                                                                                        smearing=5)  # smearing=int(Config.num_between_zeros/2))
         self.pulses_location_in_seq_A, self.filter_A = self.get_pulses_location_in_seq(filter_delay[2],
                                                                                        Config.QRAM_Exp_Gaussian_samples_Ancilla,
@@ -2215,6 +2220,7 @@ class OPX:
         self.Counter = 1  # Total number of successful cycles
         self.repitions = 1  # Total number of cycles
         self.acquisition_flag = True
+        self.threshold_flag = True
         #
         # create figures template
         fig = plt.figure()
@@ -2360,14 +2366,16 @@ class OPX:
             if exp_flag:
                 if (self.lock_err > lock_err_threshold) or \
                         ((1000 * np.average(self.FLR_res.tolist()) < FLR_threshold) and with_atoms) or \
-                        (np.average(experiment.avg_num_of_photons_per_pulse_live) > photons_per_det_pulse_threshold) or \
-                        (self.Infidelity_before > MZ_inidelity_threshold) or \
-                        (self.Infidelity_after > MZ_inidelity_threshold):
+                        (np.average(experiment.avg_num_of_photons_per_pulse_live) > photons_per_det_pulse_threshold):
                     self.acquisition_flag = False
                 else:
                     self.acquisition_flag = True
 
-            if (self.sum_for_threshold < reflection_threshold or not exp_flag) and self.acquisition_flag:
+            self.threshold_flag = (self.sum_for_threshold < reflection_threshold) and \
+                                  (self.Infidelity_before <= MZ_inidelity_threshold) and \
+                                  (self.Infidelity_after <= MZ_inidelity_threshold)
+
+            if (self.threshold_flag or not exp_flag) and self.acquisition_flag:
                 print('Sum of reflections: %d' % self.sum_for_threshold)
                 self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
                                                                    + self.num_of_det_reflections_per_seq_N
@@ -2795,9 +2803,9 @@ if __name__ == "__main__":
     # experiment.Start_QRAM_Exp_with_tt(N=1000, transit_condition=[2, 2, 2], preComment='ignore', lock_err_threshold=0.01,
     #                                   filter_delay=[0, 0, 0],
     #                                   reflection_threshold=10000, reflection_threshold_time=1e6, FLR_threshold=-0.11)   # except KeyboardInterrupt:
-    experiment.run_daily_experiment([10000, 20] * 2, transit_condition=[2, 1, 2], preComment='"|1c, (0 + 1)t> experiment"', lock_err_threshold=0.005,
-                                      filter_delay=[0, 9, 0],
-                                      reflection_threshold=400, reflection_threshold_time=10e6, FLR_threshold=0.06, Exp_flag=False)
+    experiment.run_daily_experiment([200, 50] * 5, transit_condition=[2, 1, 2], preComment='"|1c, (0 + 1)t> experiment"', lock_err_threshold=0.004,
+                                    filter_delay=[0, 9, 0], reflection_threshold=350, reflection_threshold_time=10e6,
+                                    FLR_threshold=0.06, MZ_inidelity_threshold=0.05, Exp_flag=False)
 
     #     experiment.job.halt()
     #     experiment.qmm.reset_data_processing()
