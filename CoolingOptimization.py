@@ -166,9 +166,9 @@ class CoolingSequenceOptimizer(OPX):
 
         # ---- Define parameters space ------
         xs_key = "PGC_final_freq"
-        xs = np.linspace(105e6, 93e6,10) # e.g., PGCFinalFreq
+        xs = np.linspace(97e6, 90e6,7) # e.g., PGCFinalFreq
         ys_key = "PGC_final_amp"
-        ys = np.linspace(0.4, 0.05,10) # e.g., PGCFinalAmp
+        ys = np.linspace(0.3, 0.05,7) # e.g., PGCFinalAmp
 
         # --- Begin measurement -----
         for ppd in PrePulseDurations:

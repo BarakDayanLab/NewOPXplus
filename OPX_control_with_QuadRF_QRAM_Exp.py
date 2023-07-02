@@ -370,7 +370,7 @@ def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
                 play("MZ_balancing_pulses", "PULSER_N")
                 # play("MZ_balancing_pulses", "PULSER_S")
                 measure("MZ_balancing_pulses", "AOM_Early", None,
-                        counting.digital(counts_B, m_window, element_outputs="OutBright2"))
+                        counting.digital(counts_B, m_window, element_outputs="OutBright1"))
                         # time_tagging.digital(tt_vec_B2, m_window, element_output="OutBright2", targetLen=counts_B2))
 
                 measure("MZ_balancing_pulses", "AOM_Late", None,
@@ -1666,10 +1666,10 @@ class OPX:
                 seq_filter_with_smearing[j] = 1
         return pulses_loc,  seq_filter_with_smearing
 
-    def get_avg_num_of_photons_in_seq_pulses(self, seq, pulse_loc):
+    def get_avg_num_of_photons_in_seq_pulses(self, seq, pulse_loc, tt_measure):
         avg_num_of_photons_in_seq_pulses = []
         try:
-            real_number_of_seq = math.ceil(max(self.tt_S_measure)/len(Config.QRAM_Exp_Gaussian_samples_S))
+            real_number_of_seq = math.ceil(max(tt_measure)/len(Config.QRAM_Exp_Gaussian_samples_S))
             # print('Real number of seq = %d' %real_number_of_seq)
         except:
             real_number_of_seq = self.number_of_QRAM_sequences
@@ -1791,11 +1791,11 @@ class OPX:
             props_thresholds = dict(boxstyle='round', edgecolor='red', linewidth=2, facecolor='red', alpha=0.5)
 
         avg_BP = np.average(self.num_of_BP_counts_per_n_sequences)
-        avg_BP_before = np.average(self.MZ_BP_counts_res['value_1'][:self.rep_MZ_check])
-        avg_BP_after = np.average(self.MZ_BP_counts_res['value_1'][self.rep_MZ_check:])
+        # avg_BP_before = np.average(self.MZ_BP_counts_res['value_1'][:self.rep_MZ_check])
+        # avg_BP_after = np.average(self.MZ_BP_counts_res['value_1'][self.rep_MZ_check:])
         avg_DP = np.average(self.num_of_DP_counts_per_n_sequences)
-        avg_DP_before = np.average(self.MZ_DP_counts_res['value_1'][:self.rep_MZ_check])
-        avg_DP_after = np.average(self.MZ_DP_counts_res['value_1'][self.rep_MZ_check:])
+        # avg_DP_before = np.average(self.MZ_DP_counts_res['value_1'][:self.rep_MZ_check])
+        # avg_DP_after = np.average(self.MZ_DP_counts_res['value_1'][self.rep_MZ_check:])
 
         textstr_thresholds = '# %d - ' % self.Counter + 'Reflections: %d, ' % self.sum_for_threshold + \
                              'Efficiency: %.2f, ' % self.lockingEfficiency + \
@@ -1809,8 +1809,8 @@ class OPX:
         textstr_BP_DP = 'Average Bright counts = %.2f \n' % (avg_BP,) + \
                         'Average Dark counts = %.2f \n' % (avg_DP,) + \
                         'Infidelity = %.2f' % (avg_DP/(avg_DP + avg_BP),)
-        textstr_BP_DP_BA = 'Infidelity before = %.2f \n' % (avg_DP_before / (avg_DP_before + avg_BP_before),) + \
-                           'Infidelity after= %.2f' % (avg_DP_after / (avg_DP_after + avg_BP_after),)
+        textstr_BP_DP_BA = 'Infidelity before = %.2f \n' % (self.Infidelity_before,) + \
+                           'Infidelity after= %.2f' % (self.Infidelity_after,)
 
         # for n in range(len(Num_Of_dets)):
         #     ax[0].plot(self.single_det_folded[n], label='detectors %d' % (n+1))
@@ -1982,7 +1982,8 @@ class OPX:
 
     def Save_SNSPDs_QRAM_Measurement_with_tt(self, N, qram_sequence_len, preComment, lock_err_threshold, transit_condition,
                                              max_probe_counts, filter_delay, reflection_threshold, reflection_threshold_time,
-                                             photons_per_det_pulse_threshold, FLR_threshold, exp_flag, with_atoms):
+                                             photons_per_det_pulse_threshold, FLR_threshold, exp_flag, with_atoms,
+                                             MZ_inidelity_threshold):
         """
         Function for analyzing,saving and displaying data from sprint experiment.
         :param N: Number of maximum experiments (free throws) saved and displayed.
@@ -2057,7 +2058,7 @@ class OPX:
         self.sum_for_threshold = reflection_threshold
         cycle = 0
         # Place holders for results # TODO: ask dor - is it works as we expect?
-        while ((self.lock_err > lock_err_threshold) or (self.sum_for_threshold > reflection_threshold)) or start:
+        while ((self.lock_err > lock_err_threshold) or (self.sum_for_threshold > reflection_threshold) and exp_flag) or start:
             if self.keyPress == 'ESC':
                 print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
                 self.updateValue("Sprint_Exp_switch", False)
@@ -2137,15 +2138,18 @@ class OPX:
         self.folded_tt_DP_timebins_batch = self.folded_tt_DP_timebins
 
         # get the average number of photons in detection pulse
-        self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S_directional, self.pulses_location_in_seq_S)
-        self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N_directional, self.pulses_location_in_seq_N)
+        self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(
+            self.folded_tt_S_directional, self.pulses_location_in_seq_S, self.tt_FS_measure)
+        self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(
+            self.folded_tt_N_directional, self.pulses_location_in_seq_N, self.tt_BP_measure + self.tt_DP_measure)
         self.avg_num_of_photons_per_pulse_A_live = self.get_avg_num_of_photons_in_seq_pulses(
             (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins)
-            + np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A)
+            + np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A,
+            self.tt_BP_measure + self.tt_DP_measure)
         self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(
-            self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:])
+            self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:], self.tt_BP_measure)
         self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(
-            self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:])
+            self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:], self.tt_DP_measure)
         self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + \
                                                  self.avg_num_of_photons_per_pulse_N_live + \
                                                  self.avg_num_of_photons_per_pulse_A_live
@@ -2175,6 +2179,13 @@ class OPX:
         # self.Num_of_photons_txt_box_y_loc_live_MZ = self.max_value_per_pulse_BP_live + self.max_value_per_pulse_DP_live
         self.Num_of_photons_txt_box_y_loc = self.Num_of_photons_txt_box_y_loc_live
         self.Num_of_photons_txt_box_y_loc_MZ = self.Num_of_photons_txt_box_y_loc_live_MZ
+
+        avg_BP_before = np.average(self.MZ_BP_counts_res['value_1'][:self.rep_MZ_check])
+        avg_BP_after = np.average(self.MZ_BP_counts_res['value_1'][self.rep_MZ_check:])
+        avg_DP_before = np.average(self.MZ_DP_counts_res['value_1'][:self.rep_MZ_check])
+        avg_DP_after = np.average(self.MZ_DP_counts_res['value_1'][self.rep_MZ_check:])
+        self.Infidelity_before = avg_DP_before / (avg_DP_before + avg_BP_before)
+        self.Infidelity_after = avg_DP_after / (avg_DP_after + avg_BP_after)
 
         ## record time
         timest = time.strftime("%Y%m%d-%H%M%S")
@@ -2299,16 +2310,17 @@ class OPX:
 
             # get the average number of photons in detection pulse
             self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(
-                self.folded_tt_S_directional, self.pulses_location_in_seq_S)
+                self.folded_tt_S_directional, self.pulses_location_in_seq_S, self.tt_FS_measure)
             self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(
-                self.folded_tt_N_directional, self.pulses_location_in_seq_N)
+                self.folded_tt_N_directional, self.pulses_location_in_seq_N, self.tt_BP_measure + self.tt_DP_measure)
             self.avg_num_of_photons_per_pulse_A_live = self.get_avg_num_of_photons_in_seq_pulses(
                 (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins)
-                 + np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A)
+                 + np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A,
+                self.tt_BP_measure + self.tt_DP_measure)
             self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(
-                self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:])
+                self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:], self.tt_BP_measure)
             self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(
-                self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:])
+                self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:], self.tt_DP_measure)
             self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + \
                                                      self.avg_num_of_photons_per_pulse_N_live + \
                                                      self.avg_num_of_photons_per_pulse_A_live
@@ -2338,10 +2350,19 @@ class OPX:
                                                                                    self.max_value_per_pulse_DP_live)]
             # self.Num_of_photons_txt_box_y_loc_live_MZ = self.max_value_per_pulse_BP_live + self.max_value_per_pulse_DP_live
 
+            avg_BP_before = np.average(self.MZ_BP_counts_res['value_1'][:self.rep_MZ_check])
+            avg_BP_after = np.average(self.MZ_BP_counts_res['value_1'][self.rep_MZ_check:])
+            avg_DP_before = np.average(self.MZ_DP_counts_res['value_1'][:self.rep_MZ_check])
+            avg_DP_after = np.average(self.MZ_DP_counts_res['value_1'][self.rep_MZ_check:])
+            self.Infidelity_before = avg_DP_before / (avg_DP_before + avg_BP_before)
+            self.Infidelity_after = avg_DP_after / (avg_DP_after + avg_BP_after)
+
             if exp_flag:
                 if (self.lock_err > lock_err_threshold) or \
                         ((1000 * np.average(self.FLR_res.tolist()) < FLR_threshold) and with_atoms) or \
-                        (np.average(experiment.avg_num_of_photons_per_pulse_live) > photons_per_det_pulse_threshold):
+                        (np.average(experiment.avg_num_of_photons_per_pulse_live) > photons_per_det_pulse_threshold) or \
+                        (self.Infidelity_before > MZ_inidelity_threshold) or \
+                        (self.Infidelity_after > MZ_inidelity_threshold):
                     self.acquisition_flag = False
                 else:
                     self.acquisition_flag = True
@@ -2388,16 +2409,16 @@ class OPX:
 
                 # get the average number of photons in detection pulse
                 self.avg_num_of_photons_per_pulse_S = self.get_avg_num_of_photons_in_seq_pulses(
-                    self.folded_tt_S_directional_batch, self.pulses_location_in_seq_S)
+                    self.folded_tt_S_directional_batch, self.pulses_location_in_seq_S,[])
                 self.avg_num_of_photons_per_pulse_N = self.get_avg_num_of_photons_in_seq_pulses(
-                    self.folded_tt_N_directional_batch, self.pulses_location_in_seq_N)
+                    self.folded_tt_N_directional_batch, self.pulses_location_in_seq_N,[])
                 self.avg_num_of_photons_per_pulse_A = self.get_avg_num_of_photons_in_seq_pulses(
                     (np.array(self.folded_tt_S_directional_batch) + np.array(self.folded_tt_BP_timebins_batch)
-                     + np.array(self.folded_tt_DP_timebins_batch)).tolist(), self.pulses_location_in_seq_A)
+                     + np.array(self.folded_tt_DP_timebins_batch)).tolist(), self.pulses_location_in_seq_A,[])
                 self.avg_num_of_photons_per_pulse_BP = self.get_avg_num_of_photons_in_seq_pulses(
-                    self.folded_tt_BP_timebins_batch, self.pulses_location_in_seq[-2:])
+                    self.folded_tt_BP_timebins_batch, self.pulses_location_in_seq[-2:],[])
                 self.avg_num_of_photons_per_pulse_DP = self.get_avg_num_of_photons_in_seq_pulses(
-                    self.folded_tt_DP_timebins_batch, self.pulses_location_in_seq[-2:])
+                    self.folded_tt_DP_timebins_batch, self.pulses_location_in_seq[-2:],[])
                 self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_S + \
                                                     self.avg_num_of_photons_per_pulse_N + \
                                                     self.avg_num_of_photons_per_pulse_A
@@ -2486,6 +2507,8 @@ class OPX:
             os.makedirs(dirname_B)
         if not os.path.exists(dirname_FS):
             os.makedirs(dirname_FS)
+        if not os.path.exists(dirname_balancing):
+            os.makedirs(dirname_balancing)
 
         # ----  msmnt files names  -----
         # Counter_str = (self.Counter)
@@ -2622,7 +2645,8 @@ class OPX:
     def Start_QRAM_Exp_with_tt(self, N=100, qram_sequence_len=int(len(Config.QRAM_Exp_Gaussian_samples_S)),
                                transit_condition=[2, 2, 2], preComment=None, lock_err_threshold=0.01, filter_delay=[0,0,0],
                                reflection_threshold=100, reflection_threshold_time=1e6,
-                               photons_per_det_pulse_threshold=12, FLR_threshold=0.11, Exp_flag=True,with_atoms=True):
+                               photons_per_det_pulse_threshold=12, FLR_threshold=0.11, MZ_inidelity_threshold=0.05,
+                               Exp_flag=True, with_atoms=True):
         # Max_probe_counts = self.Get_Max_Probe_counts(3)  # return the average maximum probe counts of 3 cycles.
         Max_probe_counts = None  # return the average maximum probe counts of 3 cycles.
         self.QRAM_Exp_switch(True)
@@ -2631,8 +2655,8 @@ class OPX:
         self.Save_SNSPDs_QRAM_Measurement_with_tt(N, qram_sequence_len, preComment, lock_err_threshold,
                                                   transit_condition, Max_probe_counts, filter_delay,
                                                   reflection_threshold, reflection_threshold_time,
-                                                  photons_per_det_pulse_threshold, FLR_threshold, exp_flag=Exp_flag,with_atoms=with_atoms)
-
+                                                  photons_per_det_pulse_threshold, FLR_threshold, exp_flag=Exp_flag,
+                                                  with_atoms=with_atoms,MZ_inidelity_threshold=MZ_inidelity_threshold)
     ## MW spectroscopy variable update functions: ##
 
     def MW_spec_frequency(self, freq):
@@ -2689,8 +2713,8 @@ class OPX:
         return max(groups, key=_auxfun)[0]
 
     def run_daily_experiment(self, day_experiment, transit_condition, preComment, lock_err_threshold, filter_delay,
-                       reflection_threshold
-                       , reflection_threshold_time, FLR_threshold):
+                             reflection_threshold, reflection_threshold_time, FLR_threshold, MZ_inidelity_threshold,
+                             Exp_flag=True):
         with_atoms_bool = True
         for i in range(len(day_experiment)):
             if with_atoms_bool:
@@ -2702,6 +2726,8 @@ class OPX:
                                         reflection_threshold=reflection_threshold,
                                         reflection_threshold_time=reflection_threshold_time,
                                         FLR_threshold=FLR_threshold,
+                                        MZ_inidelity_threshold=MZ_inidelity_threshold,
+                                        Exp_flag=Exp_flag,
                                         with_atoms=with_atoms_bool)  # except KeyboardInterrupt:
             with_atoms_bool = not with_atoms_bool
             if self.Stop_run_daily_experiment:
@@ -2769,9 +2795,9 @@ if __name__ == "__main__":
     # experiment.Start_QRAM_Exp_with_tt(N=1000, transit_condition=[2, 2, 2], preComment='ignore', lock_err_threshold=0.01,
     #                                   filter_delay=[0, 0, 0],
     #                                   reflection_threshold=10000, reflection_threshold_time=1e6, FLR_threshold=-0.11)   # except KeyboardInterrupt:
-    experiment.run_daily_experiment([200, 50], transit_condition=[2, 1, 2], preComment='"|1c, (0 + 1)t> experiment"', lock_err_threshold=0.005,
+    experiment.run_daily_experiment([10000, 20] * 2, transit_condition=[2, 1, 2], preComment='"|1c, (0 + 1)t> experiment"', lock_err_threshold=0.005,
                                       filter_delay=[0, 9, 0],
-                                      reflection_threshold=375, reflection_threshold_time=10e6, FLR_threshold=-0.11)
+                                      reflection_threshold=400, reflection_threshold_time=10e6, FLR_threshold=0.06, Exp_flag=False)
 
     #     experiment.job.halt()
     #     experiment.qmm.reset_data_processing()

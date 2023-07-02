@@ -241,8 +241,8 @@ sprint_pulse_amp_General = [1, 1, 1, 1]
 num_init_zeros_S = 10  # For only det pulses sequence
 num_mid_zeros_S = 10
 num_fin_zeros_S = 0  # For only det pulses sequence
-# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
-# sprint_pulse_amp_S = [0.075, 0, 0.075, 0]
+# det_pulse_amp_S = [0, 0, 0, 0, 0, 0, 0, 0]
+# sprint_pulse_amp_S = [0, 0, 0, 0]
 # For pulse sync
 # det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
 # sprint_pulse_amp_S = [0.45, 0, 0, 0]
@@ -272,7 +272,7 @@ num_fin_zeros_N = 0  # For only det pulses sequence
 # sprint_pulse_amp_N = [0, 0.085, 0, 0.085]
 # For pulse sync
 # det_pulse_amp_N = [0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45]
-# det_pulse_amp_N = [0.45, 0, 0, 0, 0, 0, 0, 0]
+# det_pulse_amp_N = [0, 0, 0, 0, 0, 0, 0, 0]
 # det_pulse_amp_N = [1, 1, 1, 1, 1, 1, 1, 1]
 # sprint_pulse_amp_N = [0.45, 0.45, 0.45, 0.45]
 # sprint_pulse_amp_N = [0.45, 0, 0.45, 0]
