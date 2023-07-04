@@ -510,7 +510,7 @@ with program() as dig:
         play("Const_open_triggered", "PULSER_N", duration=int(Measuring_time / 4))
         # play("Const_open", "PULSER_N")
         play("Const_open", "PULSER_S", duration=int(Measuring_time / 4))
-        play("Const_open" * amp(0.45), "AOM_Early", duration=int(Measuring_time / 4))
+        play("Const_open" * amp(0.60), "AOM_Early", duration=int(Measuring_time / 4))
         play("Const_open", "AOM_Late", duration=int(Measuring_time / 4))
         with for_(n, 0, n < rep, n+1):
             measure("OD_measure", "digital_detectors_N", None,

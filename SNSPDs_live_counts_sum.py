@@ -286,10 +286,11 @@ Super_Sprint_Config = {
 
         "PULSER_E/L": {
             "singleInput": {
-                "port": (controller, 6),
+                "port": (controller, 7),
             },
             'operations': {
                 'Const_open': "MOT_lock",
+                'Const_high_open': "MOT_lock_high",
                 'Square_Pulse': "square_pulse",
             },
             # 'intermediate_frequency': IF_AOM_LO,
@@ -302,7 +303,7 @@ Super_Sprint_Config = {
                 "port": (controller, 7),
             },
             'operations': {
-                'Const_open': "MOT_lock",
+                'Const_open': "MOT_lock_high",
                 'Square_Pulse': "square_pulse",
             },
             # 'intermediate_frequency': IF_AOM_LO,
@@ -378,6 +379,13 @@ Super_Sprint_Config = {
                 'single': 'const_wf'
             }
         },
+        "MOT_lock_high": {
+            'operation': 'control',
+            'length': MOT_pulse_len,
+            'waveforms': {
+                'single': 'const_high_wf'
+            }
+        },
         "MOT_lock_ON": {
             'operation': 'control',
             'length': MOT_pulse_len,
@@ -432,6 +440,11 @@ Super_Sprint_Config = {
             'type': 'constant',
             # 'sample': 0.1
             'sample': 0.45
+        },
+        'const_high_wf': {
+            'type': 'constant',
+            # 'sample': 0.1
+            'sample': 0.305
         },
         'square_wf': {
             'type': 'arbitrary',
@@ -507,6 +520,7 @@ with program() as dig:
             play("Const_open", "PULSER_N")
             play("Const_open", "PULSER_S")
             play("Const_open", "PULSER_E/L")
+            # play("Const_high_open", "PULSER_E/L")
             # play("Square_Pulse", "PULSER_LO")
             # play("Const_open"*amp(0.7), "PULSER_LO")
             # play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")

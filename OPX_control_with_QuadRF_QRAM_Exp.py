@@ -401,7 +401,7 @@ def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
             frame_rotation_2pi(phase_correction_per_scan, "AOM_Early")
 
     reset_frame("AOM_Early", "AOM_Late")
-    frame_rotation_2pi(phase_correction_min, "AOM_Early")
+    frame_rotation_2pi(phase_correction_min + 0.25, "AOM_Early")
 
 
 # def MZ_balancing(m_time, m_window, rep, points_for_sum,
@@ -1528,6 +1528,7 @@ class OPX:
         # self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences)
         self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences//num_of_seq_per_count)
         self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences//num_of_seq_per_count)
+        self.num_of_S_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences//num_of_seq_per_count)
 
         for element in self.tt_BP_measure:
             tt_inseq = element % self.QRAM_sequence_len
@@ -1539,6 +1540,12 @@ class OPX:
             tt_inseq = element % self.QRAM_sequence_len
             if tt_inseq > self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
                 self.num_of_DP_counts_per_n_sequences[(element-1)//(self.QRAM_sequence_len * num_of_seq_per_count)] += \
+                    np.ceil(Config.QRAM_Exp_Square_samples_Late[tt_inseq])
+
+        for element in self.tt_FS_measure + self.tt_S_measure:
+            tt_inseq = element % self.QRAM_sequence_len
+            if tt_inseq > self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
+                self.num_of_S_counts_per_n_sequences[(element-1)//(self.QRAM_sequence_len * num_of_seq_per_count)] += \
                     np.ceil(Config.QRAM_Exp_Square_samples_Late[tt_inseq])
 
     def plot_folded_tt_histogram(self):
@@ -1780,7 +1787,7 @@ class OPX:
         ax[4].clear()
         ax[5].clear()
         ax[6].clear()
-        # ax[7].clear()
+        ax[7].clear()
 
         #
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -1910,11 +1917,13 @@ class OPX:
         ax[4].text(0.05, 0.6, textstr_BP_DP_BA, transform=ax[4].transAxes, fontsize=14,
                    verticalalignment='top', bbox=props)
 
-        # ax[5].plot(self.num_of_BP_counts_per_n_sequences, label='MZ BP counts per %d seq' % 50)
-        # ax[5].plot(self.num_of_DP_counts_per_n_sequences, label='MZ DP counts per %d seq' % 50)
-        # ax[5].set_title('MZ outputs during experiment', fontweight="bold")
-        # ax[5].legend(loc='upper right')
-        # ax[5].text(0.05, 0.6, textstr_BP_DP, transform=ax[5].transAxes, fontsize=14,
+        ax[7].plot(self.num_of_BP_counts_per_n_sequences, label='MZ BP counts per %d seq' % 50)
+        ax[7].plot(self.num_of_DP_counts_per_n_sequences, label='MZ DP counts per %d seq' % 50)
+        ax[7].plot(self.num_of_S_counts_per_n_sequences, label='"S" transmission counts per %d seq' % 50)
+        ax[7].plot(self.num_of_S_counts_per_n_sequences + self.num_of_DP_counts_per_n_sequences + self.num_of_BP_counts_per_n_sequences, label='"S" total counts per %d seq' % 50)
+        ax[7].set_title('MZ outputs during experiment', fontweight="bold")
+        # ax[7].legend(loc='upper right')
+        # ax[7].text(0.05, 0.6, textstr_BP_DP, transform=ax[7].transAxes, fontsize=14,
         #            verticalalignment='top', bbox=props)
 
         if self.number_of_transits_live:
@@ -2051,12 +2060,15 @@ class OPX:
         ## take data only if
         start = True
         # take threshold from npz ( error from resonator lock PID)
+        self.lock_err = None
         if exp_flag:
-            try:
-                self.lock_err = np.abs(np.load(
-                    'U:\Lab_2023\Experiment_results\QRAM\Locking_PID_Error\locking_err.npy', allow_pickle=True))  # the error of locking the resontor to Rb line
-            except:
-                print('error in loading file')
+            while self.lock_err == None:
+                try:
+                    self.lock_err = np.abs(np.load(
+                        'U:\Lab_2023\Experiment_results\QRAM\Locking_PID_Error\locking_err.npy', allow_pickle=True))  # the error of locking the resontor to Rb line
+                except:
+                    print('error in loading file')
+                time.sleep(0.01)  # in seconds
         else:
             self.lock_err = lock_err_threshold / 2
 
@@ -2228,8 +2240,8 @@ class OPX:
         ax2 = plt.subplot2grid((3, 4), (0, 2), colspan=2, rowspan=1)
         ax3 = plt.subplot2grid((3, 4), (1, 0), colspan=2, rowspan=1)
         ax4 = plt.subplot2grid((3, 4), (1, 2), colspan=2, rowspan=1)
-        ax5 = plt.subplot2grid((3, 4), (2, 0), colspan=2, rowspan=1)
-        # ax6 = plt.subplot2grid((3, 4), (2, 1), colspan=0, rowspan=1)
+        ax5 = plt.subplot2grid((3, 4), (2, 0), colspan=1, rowspan=1)
+        ax8 = plt.subplot2grid((3, 4), (2, 1), colspan=1, rowspan=1)
         ax6 = plt.subplot2grid((3, 4), (2, 2), colspan=2, rowspan=1)
         ax7 = ax3.twinx()
         #
@@ -2246,7 +2258,7 @@ class OPX:
             print(timest, self.Counter, 'Eff: %.2f' % self.lockingEfficiency, 'Flr: %.2f' % (1000 * np.average(self.FLR_res.tolist())))
             self.repitions += 1
             ######################################## PLOT!!! ###########################################################
-            ax = [ax1, ax2, ax3, ax4, ax5, ax6, ax7] # , ax8]
+            ax = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
             self.plot_sprint_figures(fig, ax, Num_Of_dets)
             ############################################################################################################
             count = 1
@@ -2478,10 +2490,13 @@ class OPX:
         # self.most_common([x for vec in self.tt_S_measure_batch + self.tt_N_measure_batch for x in vec])
 
         ## Adding comment to measurement [prompt whether stopped or finished regularly]
-        if self.Counter < N:
-            aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
+        if exp_flag:
+            if self.Counter < N:
+                aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
+            else:
+                aftComment = ''
         else:
-            aftComment = ''
+            aftComment = 'ignore'
 
         # if aftComment == 'Timeout': aftComment = None
 
@@ -2803,9 +2818,9 @@ if __name__ == "__main__":
     # experiment.Start_QRAM_Exp_with_tt(N=1000, transit_condition=[2, 2, 2], preComment='ignore', lock_err_threshold=0.01,
     #                                   filter_delay=[0, 0, 0],
     #                                   reflection_threshold=10000, reflection_threshold_time=1e6, FLR_threshold=-0.11)   # except KeyboardInterrupt:
-    experiment.run_daily_experiment([200, 50] * 5, transit_condition=[2, 1, 2], preComment='"|1c, (0 + 1)t> experiment"', lock_err_threshold=0.004,
-                                    filter_delay=[0, 9, 0], reflection_threshold=350, reflection_threshold_time=10e6,
-                                    FLR_threshold=0.06, MZ_inidelity_threshold=0.05, Exp_flag=False)
+    experiment.run_daily_experiment([20000, 50] * 1, transit_condition=[2, 1, 2], preComment='"|1c, (0 + 1)t> experiment"', lock_err_threshold=0.004,
+                                    filter_delay=[0, 9, 0], reflection_threshold=450, reflection_threshold_time=10e6,
+                                    FLR_threshold=0.06, MZ_inidelity_threshold=0.10, Exp_flag=False)
 
     #     experiment.job.halt()
     #     experiment.qmm.reset_data_processing()
