@@ -125,6 +125,7 @@ Super_Sprint_Config = {
                 2: {},  # Switch AOM - / AOM 2-3'
                 3: {},  # AntiHelmholtz Coils
                 5: {},  # Camtrigger
+                6: {},  # APDs
                 7: {},  # Trigger STIRAP
                 8: {},  # Trigger FS
                 9: {},  # trigger
@@ -288,9 +289,16 @@ Super_Sprint_Config = {
             "singleInput": {
                 "port": (controller, 7),
             },
+            'digitalInputs': {
+                "APD_Switch": {
+                    "port": (controller, 6),
+                    "delay": 0,
+                    "buffer": 0,
+                },
+            },
             'operations': {
-                'Const_open': "MOT_lock",
-                'Const_high_open': "MOT_lock_high",
+                'Const_open': "Pulser_ON",
+                'Const_high_open': "Pulser_ON_high",
                 'Square_Pulse': "square_pulse",
             },
             # 'intermediate_frequency': IF_AOM_LO,
@@ -303,7 +311,7 @@ Super_Sprint_Config = {
                 "port": (controller, 7),
             },
             'operations': {
-                'Const_open': "MOT_lock_high",
+                'Const_open': "MOT_lock",
                 'Square_Pulse': "square_pulse",
             },
             # 'intermediate_frequency': IF_AOM_LO,
@@ -377,14 +385,24 @@ Super_Sprint_Config = {
             'length': MOT_pulse_len,
             'waveforms': {
                 'single': 'const_wf'
-            }
+            },
+            # 'digital_marker': 'ON',
         },
-        "MOT_lock_high": {
+        "Pulser_ON": {
+            'operation': 'control',
+            'length': MOT_pulse_len,
+            'waveforms': {
+                'single': 'const_wf'
+            },
+            'digital_marker': 'ON',
+        },
+        "Pulser_ON_high": {
             'operation': 'control',
             'length': MOT_pulse_len,
             'waveforms': {
                 'single': 'const_high_wf'
-            }
+            },
+            'digital_marker': 'ON',
         },
         "MOT_lock_ON": {
             'operation': 'control',
@@ -444,7 +462,7 @@ Super_Sprint_Config = {
         'const_high_wf': {
             'type': 'constant',
             # 'sample': 0.1
-            'sample': 0.305
+            'sample': 0.495
         },
         'square_wf': {
             'type': 'arbitrary',

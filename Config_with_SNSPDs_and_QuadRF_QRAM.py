@@ -242,8 +242,8 @@ sprint_pulse_amp_General = [1, 1, 1, 1]
 num_init_zeros_S = 10  # For only det pulses sequence
 num_mid_zeros_S = 10
 num_fin_zeros_S = 0  # For only det pulses sequence
-det_pulse_amp_S = [0, 0, 0, 0, 0, 0, 0, 0]
-sprint_pulse_amp_S = [0, 0.45, 0, 0.45]
+# det_pulse_amp_S = [0.15, 0, 0.15, 0, 0.15, 0, 0.15, 0]
+# sprint_pulse_amp_S = [0, 0.045, 0, 0.045]
 # For pulse sync
 # det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
 # sprint_pulse_amp_S = [0.45, 0, 0, 0]
@@ -257,6 +257,8 @@ sprint_pulse_amp_S = [0, 0.45, 0, 0.45]
 # |1c, (0 + 1)t>
 # det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
 # sprint_pulse_amp_S = [0, 0.07, 0, 0.07]
+det_pulse_amp_S = [0.155, 0, 0.155, 0, 0.155, 0, 0.155, 0]
+sprint_pulse_amp_S = [0, 0.068, 0, 0.068]
 
 # Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
 #                                                             det_pulse_len=det_pulse_len,
@@ -465,8 +467,8 @@ QRAM_Exp_digital_samples_FS = get_pulses_location_in_seq(delay=0,
 
 
 MZ_delay = int(len(QRAM_Exp_Gaussian_samples_N) / 4)
-Pulses_Amp_balance = 0.18
-# Pulses_Amp_balance = 0.45
+# Pulses_Amp_balance = 0.18
+Pulses_Amp_balance = 0.45
 AOM_risetime = 120
 AOM_risetime_pulsers = 130
 MZ_balancing_seq_rep = 40
@@ -818,13 +820,18 @@ config = {
                 "port": (controller, 6),
             },
             'digitalInputs': {
-                "AWG_Switch": {
-                    "port": (controller, 10),
-                    # "delay": 176, # OPX control EOM
-                    "delay": 160, # OPX control EOM double pass
-                    # "delay": 400, # AWG control EOM
+                "APD_Switch": {
+                    "port": (controller, 6),
+                    "delay": 0,
                     "buffer": 0,
                 },
+                # "AWG_Switch": {
+                #     "port": (controller, 10),
+                #     # "delay": 176, # OPX control EOM
+                #     "delay": 160, # OPX control EOM double pass
+                #     # "delay": 400, # AWG control EOM
+                #     "buffer": 0,
+                # },
             },
             "digitalOutputs": {
                 "OutBright1": (controller, 1),
@@ -846,6 +853,15 @@ config = {
         "AOM_Late": {
             "singleInput": {
                 "port": (controller, 7),
+            },
+            'digitalInputs': {
+                "AWG_Switch": {
+                    "port": (controller, 10),
+                    # "delay": 176, # OPX control EOM
+                    "delay": 160,  # OPX control EOM double pass
+                    # "delay": 400, # AWG control EOM
+                    "buffer": 0,
+                },
             },
             "digitalOutputs": {
                 "OutDark1": (controller, 3),
@@ -870,7 +886,7 @@ config = {
             },
             'digitalInputs': {
                 "Shutter_Switch": {
-                    "port": (controller, 6),
+                    "port": (controller, 9),
                     "delay": 0,
                     "buffer": 0,
                 },
@@ -886,7 +902,8 @@ config = {
 
         "PULSER_N": {
             "singleInput": {
-                "port": (controller, 9),
+                "port": (controller, 9
+                         ),
             },
             'digitalInputs': {
                 "Shutter_Switch": {
@@ -1123,8 +1140,8 @@ config = {
             'waveforms': {
                 'single': 'QRAM_Square_wf_Early'
             },
-            'digital_marker': 'Trig_EOM'
-            # 'digital_marker': 'ON'
+            # 'digital_marker': 'Trig_EOM'
+            'digital_marker': 'ON'
         },
 
         "Square_pulse_seq_MZ_Late": {
@@ -1132,7 +1149,8 @@ config = {
             'length': len(QRAM_Exp_Square_samples_Late),
             'waveforms': {
                 'single': 'QRAM_Square_wf_Late'
-            }
+            },
+            'digital_marker': 'Trig_EOM'
         },
 
         "QRAM_seq_pulse_Ancilla": {
@@ -1285,7 +1303,7 @@ config = {
                 'single': 'north_south_wf'
             },
             # 'digital_marker': 'Trig_EOM_MZ'
-            'digital_marker': 'ON'
+            # 'digital_marker': 'ON'
         },
 
         "MZ_balance_pulses_S": {
@@ -1295,7 +1313,7 @@ config = {
                 'single': 'south_north_wf'
             },
             # 'digital_marker': 'Trig_EOM_MZ'
-            'digital_marker': 'ON'
+            # 'digital_marker': 'ON'
         },
 
         "MZ_balance_pulses_Early": {
@@ -1304,8 +1322,8 @@ config = {
             'waveforms': {
                 'single': 'early_late_wf'
             },
-            'digital_marker': 'Trig_EOM_MZ'
-            # 'digital_marker': 'ON'
+            # 'digital_marker': 'Trig_EOM_MZ'
+            'digital_marker': 'ON'
         },
 
         "MZ_balance_pulses_Late": {
@@ -1314,6 +1332,7 @@ config = {
             'waveforms': {
                 'single': 'late_early_wf'
             },
+            'digital_marker': 'Trig_EOM_MZ'
             # 'digital_marker': 'ON'
         },
 

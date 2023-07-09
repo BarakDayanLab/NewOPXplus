@@ -316,7 +316,7 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
     wait(OD_sleep, "AOM_2-2/3'")
     play("OD_FS", "AOM_2-2/3'", duration=OD_pulse_duration)
 
-
+# From one direction
 # def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
 #                  counts_st_B, counts_st_D, phase_correction_st, phase_for_min_st, tt_st_B, tt_st_D):
 #
@@ -349,9 +349,9 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
 #     assign(phase_correction_min, 0.0)
 #     assign(phase_correction_start, 0.0)
 #
-#     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
-#     play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
-#     play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
+#     # align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
+#     # play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
+#     # play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
 #
 #     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
 #     # play("Const_open_triggered", "PULSER_N", duration=m_time)
@@ -367,8 +367,8 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
 #             assign(counts_B_sum, 0)
 #             assign(counts_D_sum, 0)
 #             with for_(k, 1, k <= points_for_sum, k + 1):
-#                 play("MZ_balancing_pulses", "PULSER_N")
-#                 # play("MZ_balancing_pulses", "PULSER_S")
+#                 play("MZ_balancing_pulses_N", "PULSER_N")
+#                 play("MZ_balancing_pulses_N", "PULSER_S")
 #                 measure("MZ_balancing_pulses", "AOM_Early", None,
 #                         counting.digital(counts_B, m_window, element_outputs="OutBright1"))
 #                         # time_tagging.digital(tt_vec_B2, m_window, element_output="OutBright2", targetLen=counts_B2))
@@ -405,30 +405,39 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
 #     # frame_rotation_2pi(0.25, "PULSER_S")
 #     return phase_correction_min
 
-
-def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
-                 counts_st_B, counts_st_D, phase_correction_st, phase_for_min_st, tt_st_B, tt_st_D):
+def MZ_balancing_2(m_time, m_window, shutter_open_time, phase_rep_fast, phase_rep_slow, points_for_sum_fast,
+                   points_for_sum_slow, counts_st_B, counts_st_D, phase_correction_st, phase_for_min_st):
 
     counts_B = declare(int)
-    # tt_vec_B2 = declare(int, size=Config.vec_size)
     counts_B_sum = declare(int, value=0)
     counts_D = declare(int)
-    # tt_vec_D2 = declare(int, size=Config.vec_size)
     counts_D_sum = declare(int, value=0)
+    tot_counts_S = declare(int)
 
     assign_variables_to_element("AOM_Early", counts_B_sum)
     assign_variables_to_element("AOM_Late", counts_D_sum)
-    t = declare(int)
-    i = declare(fixed)
+    tot_phase = declare(fixed)
+    phase_correction = declare(fixed)
+    phase_rep = declare(int)
+    points_for_sum = declare(int)
+    i = declare(int)
     j = declare(int)
-    k = declare(int)
 
-    # phase_scan = declare(fixed, value=[1, 0.25])
-    phase_scan = declare(fixed, value=[1.0, 1.0])
-    phase_correction = declare(fixed, value=(1/phase_rep))
+    phase_scan = declare(fixed, value=[1, 0.25])
+    # phase_scan = declare(fixed, value=[1.0, 1.0])
+    points_for_sum_vec = declare(int, value=[points_for_sum_fast, points_for_sum_slow])
+    phase_correction_fast = declare(fixed, value=(1/phase_rep_fast))
+    phase_correction_slow = declare(fixed, value=(1/phase_rep_slow))
+    phase_correction_vec = declare(fixed, value=[(1/phase_rep_fast), (1/phase_rep_slow)])
+    phase_rep_vec = declare(int, value=[phase_rep_fast, phase_rep_slow])
     phase_correction_per_scan = declare(fixed)
     phase_correction_value = declare(fixed)
     phase_correction_min = declare(fixed, value=0.0)
+    phase_correction_min_south = declare(fixed, value=0.0)
+    phase_correction_min_north = declare(fixed, value=0.0)
+    phase_correction_diff = declare(fixed, value=0.8)
+    phase_correction_diff_default = declare(fixed, value=0.8)
+    phase_correction_diff_std = declare(fixed, value=0.06)
     phase_correction_start = declare(fixed, value=0.0)
     min_counts_D = declare(int, value=0)
     max_counts_B = declare(int, value=0)
@@ -439,19 +448,19 @@ def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
     assign(phase_correction_start, 0.0)
 
     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
-    play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
-    play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
+    # play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
+    # play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
 
     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
-    assign(phase_correction_per_scan, phase_correction)
+    assign(phase_correction_per_scan, phase_correction_fast)
     # assign(phase_correction_start, -0.5)
     assign(max_counts_B, 0)
-    reset_frame("AOM_Early", "AOM_Late") #, "PULSER_S", "PULSER_N")
+    reset_frame("AOM_Early", "AOM_Late", "PULSER_S", "PULSER_N")
     # frame_rotation_2pi(phase_correction_start, "AOM_Early")
-    with for_(j, 0, j < phase_rep, j + 1):
+    with for_(j, 0, j < phase_rep_fast, j + 1):
         assign(counts_B_sum, 0)
         assign(counts_D_sum, 0)
-        with for_(k, 1, k <= points_for_sum, k + 1):
+        with for_(i, 1, i <= points_for_sum_fast, i + 1):
             play("MZ_balancing_pulses_S", "PULSER_N")
             play("MZ_balancing_pulses_S", "PULSER_S")
             measure("MZ_balancing_pulses", "AOM_Early", None,
@@ -477,25 +486,28 @@ def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
         save(phase_correction_min, phase_for_min_st)
         frame_rotation_2pi(phase_correction_per_scan, "AOM_Early")
 
+    assign(phase_correction_min_south, phase_correction_min)
+    assign(phase_correction_min, 0)
+
     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
-    assign(phase_correction_per_scan, phase_correction)
-    # assign(phase_correction_start, -0.5)
+    assign(phase_correction_per_scan, phase_correction_fast * 1)
+    # assign(phase_correction_start, phase_correction_min - 1 * 0.5)
     assign(max_counts_B, 0)
-    reset_frame("AOM_Early", "AOM_Late")  # , "PULSER_S", "PULSER_N")
+    reset_frame("AOM_Early", "AOM_Late", "PULSER_S", "PULSER_N")
     # frame_rotation_2pi(phase_correction_start, "AOM_Early")
-    with for_(j, 0, j < phase_rep, j + 1):
+    with for_(j, 0, j < phase_rep_fast, j + 1):
         assign(counts_B_sum, 0)
         assign(counts_D_sum, 0)
-        with for_(k, 1, k <= points_for_sum, k + 1):
+        with for_(i, 1, i <= points_for_sum_fast, i + 1):
             play("MZ_balancing_pulses_N", "PULSER_N")
             play("MZ_balancing_pulses_N", "PULSER_S")
             measure("MZ_balancing_pulses", "AOM_Early", None,
                     counting.digital(counts_B, m_window, element_outputs="OutBright1"))
-            # time_tagging.digital(tt_vec_B2, m_window, element_output="OutBright2", targetLen=counts_B2))
+                    # time_tagging.digital(tt_vec_B2, m_window, element_output="OutBright2", targetLen=counts_B2))
 
             measure("MZ_balancing_pulses", "AOM_Late", None,
                     counting.digital(counts_D, m_window, element_outputs="OutDark2"))
-            # time_tagging.digital(tt_vec_D2, m_window, element_output="OutDark2", targetLen=counts_D2))
+                    # time_tagging.digital(tt_vec_D2, m_window, element_output="OutDark2", targetLen=counts_D2))
 
             assign(counts_B_sum, counts_B_sum + counts_B)
             assign(counts_D_sum, counts_D_sum + counts_D)
@@ -512,10 +524,312 @@ def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
         save(phase_correction_min, phase_for_min_st)
         frame_rotation_2pi(phase_correction_per_scan, "AOM_Early")
 
-    # reset_frame("AOM_Early", "AOM_Late")  #, "PULSER_S", "PULSER_N")
-    # frame_rotation_2pi(phase_correction_min + 0.77, "AOM_Early")
+    align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
+    assign(phase_correction_per_scan, phase_correction_slow * 0.25)
+    assign(phase_correction_start, phase_correction_min - 0.25 * 0.5)
+    assign(max_counts_B, 0)
+    reset_frame("AOM_Early", "AOM_Late", "PULSER_S", "PULSER_N")
+    frame_rotation_2pi(phase_correction_start, "AOM_Early")
+    with for_(j, 0, j < phase_rep_slow, j + 1):
+        assign(counts_B_sum, 0)
+        assign(counts_D_sum, 0)
+        with for_(i, 1, i <= points_for_sum_slow, i + 1):
+            play("MZ_balancing_pulses_N", "PULSER_N")
+            play("MZ_balancing_pulses_N", "PULSER_S")
+            measure("MZ_balancing_pulses", "AOM_Early", None,
+                    counting.digital(counts_B, m_window, element_outputs="OutBright1"))
+                    # time_tagging.digital(tt_vec_B2, m_window, element_output="OutBright2", targetLen=counts_B2))
+
+            measure("MZ_balancing_pulses", "AOM_Late", None,
+                    counting.digital(counts_D, m_window, element_outputs="OutDark2"))
+                    # time_tagging.digital(tt_vec_D2, m_window, element_output="OutDark2", targetLen=counts_D2))
+
+            assign(counts_B_sum, counts_B_sum + counts_B)
+            assign(counts_D_sum, counts_D_sum + counts_D)
+
+        assign(phase_correction_value, phase_correction_start + Cast.mul_fixed_by_int(phase_correction_per_scan, j))
+        save(phase_correction_value, phase_correction_st)
+        save(counts_B_sum, counts_st_B)
+        save(counts_D_sum, counts_st_D)
+
+        with if_((counts_B_sum - counts_D_sum) > max_counts_B):
+            assign(max_counts_B, (counts_B_sum - counts_D_sum))
+            assign(phase_correction_min, phase_correction_value)
+
+        save(phase_correction_min, phase_for_min_st)
+        frame_rotation_2pi(phase_correction_per_scan, "AOM_Early")
+
+    # with for_each_((tot_phase, phase_correction, phase_rep, points_for_sum), (phase_scan, phase_correction_vec, phase_rep_vec, points_for_sum_vec)):
+    #     assign(phase_correction_per_scan, phase_correction * tot_phase)
+    #     assign(phase_correction_start, phase_correction_min - tot_phase * 0.5)
+    #     assign(max_counts_B, 0)
+    #     reset_frame("AOM_Early", "AOM_Late") #, "PULSER_S", "PULSER_N")
+    #     frame_rotation_2pi(phase_correction_start, "AOM_Early")
+    #     with for_(j, 0, j < phase_rep, j + 1):
+    #         assign(counts_B_sum, 0)
+    #         assign(counts_D_sum, 0)
+    #         with for_(i, 1, i <= points_for_sum, i + 1):
+    #             play("MZ_balancing_pulses_N", "PULSER_N")
+    #             play("MZ_balancing_pulses_N", "PULSER_S")
+    #             measure("MZ_balancing_pulses", "AOM_Early", None,
+    #                     counting.digital(counts_B, m_window, element_outputs="OutBright1"))
+    #                     # time_tagging.digital(tt_vec_B2, m_window, element_output="OutBright2", targetLen=counts_B2))
+    #
+    #             measure("MZ_balancing_pulses", "AOM_Late", None,
+    #                     counting.digital(counts_D, m_window, element_outputs="OutDark2"))
+    #                     # time_tagging.digital(tt_vec_D2, m_window, element_output="OutDark2", targetLen=counts_D2))
+    #
+    #             assign(counts_B_sum, counts_B_sum + counts_B)
+    #             assign(counts_D_sum, counts_D_sum + counts_D)
+    #
+    #         assign(phase_correction_value, phase_correction_start + Cast.mul_fixed_by_int(phase_correction_per_scan, j))
+    #         save(phase_correction_value, phase_correction_st)
+    #         save(counts_B_sum, counts_st_B)
+    #         save(counts_D_sum, counts_st_D)
+    #
+    #         with if_((counts_B_sum - counts_D_sum) > max_counts_B):
+    #             assign(max_counts_B, (counts_B_sum - counts_D_sum))
+    #             assign(phase_correction_min, phase_correction_value)
+    #
+    #         save(phase_correction_min, phase_for_min_st)
+    #         frame_rotation_2pi(phase_correction_per_scan, "AOM_Early")
+
+    assign(phase_correction_min_north, phase_correction_min)
+    assign(phase_correction_diff, phase_correction_min_south - phase_correction_min_north)
+    # assign(phase_correction_diff, Util.cond(phase_correction_min_south > phase_correction_min_north,
+    #                                         phase_correction_min_south - phase_correction_min_north,
+    #                                         phase_correction_min_north - phase_correction_min_south))
+    # # with if_((phase_correction_diff > (phase_correction_diff_default + phase_correction_diff_std)) |
+    #          (phase_correction_diff < (phase_correction_diff_default - phase_correction_diff_std))):
+    #     assign(phase_correction_diff, phase_correction_diff_default)
+
+    # reset_frame("AOM_Early", "AOM_Late") #, "PULSER_S", "PULSER_N")
+    # frame_rotation_2pi(phase_correction_min, "AOM_Early")
     # frame_rotation_2pi(0.25, "PULSER_S")
-    return phase_correction_min
+    return phase_correction_min, phase_correction_diff
+
+# ## From two direction
+# def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
+#                  counts_st_B, counts_st_D, phase_correction_st, phase_for_min_st, tt_st_B, tt_st_D):
+#
+#     counts_B = declare(int)
+#     # tt_vec_B2 = declare(int, size=Config.vec_size)
+#     counts_B_sum = declare(int, value=0)
+#     counts_D = declare(int)
+#     # tt_vec_D2 = declare(int, size=Config.vec_size)
+#     counts_D_sum = declare(int, value=0)
+#
+#     assign_variables_to_element("AOM_Early", counts_B_sum)
+#     assign_variables_to_element("AOM_Late", counts_D_sum)
+#     t = declare(int)
+#     i = declare(fixed)
+#     j = declare(int)
+#     k = declare(int)
+#
+#     # phase_scan = declare(fixed, value=[1, 0.25])
+#     phase_scan = declare(fixed, value=[1.0, 1.0])
+#     phase_correction = declare(fixed, value=(1/phase_rep))
+#     phase_correction_per_scan = declare(fixed)
+#     phase_correction_value = declare(fixed)
+#     phase_correction_min = declare(fixed, value=0.0)
+#     phase_correction_start = declare(fixed, value=0.0)
+#     min_counts_D = declare(int, value=0)
+#     max_counts_B = declare(int, value=0)
+#
+#     assign(max_counts_B, 0)
+#     assign(min_counts_D, 0)
+#     assign(phase_correction_min, 0.0)
+#     assign(phase_correction_start, 0.0)
+#
+#     # align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
+#     # play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
+#     # play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
+#
+#     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
+#     assign(phase_correction_per_scan, phase_correction)
+#     # assign(phase_correction_start, -0.5)
+#     assign(max_counts_B, 0)
+#     reset_frame("AOM_Early", "AOM_Late" , "PULSER_S", "PULSER_N")
+#     # frame_rotation_2pi(phase_correction_start, "AOM_Early")
+#     with for_(j, 0, j < phase_rep, j + 1):
+#         assign(counts_B_sum, 0)
+#         assign(counts_D_sum, 0)
+#         with for_(k, 1, k <= points_for_sum, k + 1):
+#             play("MZ_balancing_pulses_S", "PULSER_N")
+#             play("MZ_balancing_pulses_S", "PULSER_S")
+#             measure("MZ_balancing_pulses", "AOM_Early", None,
+#                     counting.digital(counts_B, m_window, element_outputs="OutBright1"))
+#                     # time_tagging.digital(tt_vec_B2, m_window, element_output="OutBright2", targetLen=counts_B2))
+#
+#             measure("MZ_balancing_pulses", "AOM_Late", None,
+#                     counting.digital(counts_D, m_window, element_outputs="OutDark2"))
+#                     # time_tagging.digital(tt_vec_D2, m_window, element_output="OutDark2", targetLen=counts_D2))
+#
+#             assign(counts_B_sum, counts_B_sum + counts_B)
+#             assign(counts_D_sum, counts_D_sum + counts_D)
+#
+#         assign(phase_correction_value, phase_correction_start + Cast.mul_fixed_by_int(phase_correction_per_scan, j))
+#         save(phase_correction_value, phase_correction_st)
+#         save(counts_B_sum, counts_st_B)
+#         save(counts_D_sum, counts_st_D)
+#
+#         with if_((counts_B_sum - counts_D_sum) > max_counts_B):
+#             assign(max_counts_B, (counts_B_sum - counts_D_sum))
+#             assign(phase_correction_min, phase_correction_value)
+#
+#         save(phase_correction_min, phase_for_min_st)
+#         frame_rotation_2pi(phase_correction_per_scan, "AOM_Early")
+#
+#     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
+#     assign(phase_correction_per_scan, phase_correction)
+#     # assign(phase_correction_start, -0.5)
+#     assign(max_counts_B, 0)
+#     reset_frame("AOM_Early", "AOM_Late", "PULSER_S", "PULSER_N")
+#     # frame_rotation_2pi(phase_correction_start, "AOM_Early")
+#     with for_(j, 0, j < phase_rep, j + 1):
+#         assign(counts_B_sum, 0)
+#         assign(counts_D_sum, 0)
+#         with for_(k, 1, k <= points_for_sum, k + 1):
+#             play("MZ_balancing_pulses_N", "PULSER_N")
+#             play("MZ_balancing_pulses_N", "PULSER_S")
+#             measure("MZ_balancing_pulses", "AOM_Early", None,
+#                     counting.digital(counts_B, m_window, element_outputs="OutBright1"))
+#             # time_tagging.digital(tt_vec_B2, m_window, element_output="OutBright2", targetLen=counts_B2))
+#
+#             measure("MZ_balancing_pulses", "AOM_Late", None,
+#                     counting.digital(counts_D, m_window, element_outputs="OutDark2"))
+#             # time_tagging.digital(tt_vec_D2, m_window, element_output="OutDark2", targetLen=counts_D2))
+#
+#             assign(counts_B_sum, counts_B_sum + counts_B)
+#             assign(counts_D_sum, counts_D_sum + counts_D)
+#
+#         assign(phase_correction_value, phase_correction_start + Cast.mul_fixed_by_int(phase_correction_per_scan, j))
+#         save(phase_correction_value, phase_correction_st)
+#         save(counts_B_sum, counts_st_B)
+#         save(counts_D_sum, counts_st_D)
+#
+#         with if_((counts_B_sum - counts_D_sum) > max_counts_B):
+#             assign(max_counts_B, (counts_B_sum - counts_D_sum))
+#             assign(phase_correction_min, phase_correction_value)
+#
+#         save(phase_correction_min, phase_for_min_st)
+#         frame_rotation_2pi(phase_correction_per_scan, "AOM_Early")
+#
+#     # reset_frame("AOM_Early", "AOM_Late")  #, "PULSER_S", "PULSER_N")
+#     # frame_rotation_2pi(phase_correction_min + 0.77, "AOM_Early")
+#     # frame_rotation_2pi(0.25, "PULSER_S")
+#     return phase_correction_min
+# ## From two direction
+# def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
+#                  counts_st_B, counts_st_D, phase_correction_st, phase_for_min_st, tt_st_B, tt_st_D):
+#
+#     counts_B = declare(int)
+#     # tt_vec_B2 = declare(int, size=Config.vec_size)
+#     counts_B_sum = declare(int, value=0)
+#     counts_D = declare(int)
+#     # tt_vec_D2 = declare(int, size=Config.vec_size)
+#     counts_D_sum = declare(int, value=0)
+#
+#     assign_variables_to_element("AOM_Early", counts_B_sum)
+#     assign_variables_to_element("AOM_Late", counts_D_sum)
+#     t = declare(int)
+#     i = declare(fixed)
+#     j = declare(int)
+#     k = declare(int)
+#
+#     # phase_scan = declare(fixed, value=[1, 0.25])
+#     phase_scan = declare(fixed, value=[1.0, 1.0])
+#     phase_correction = declare(fixed, value=(1/phase_rep))
+#     phase_correction_per_scan = declare(fixed)
+#     phase_correction_value = declare(fixed)
+#     phase_correction_min = declare(fixed, value=0.0)
+#     phase_correction_start = declare(fixed, value=0.0)
+#     min_counts_D = declare(int, value=0)
+#     max_counts_B = declare(int, value=0)
+#
+#     assign(max_counts_B, 0)
+#     assign(min_counts_D, 0)
+#     assign(phase_correction_min, 0.0)
+#     assign(phase_correction_start, 0.0)
+#
+#     # align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
+#     # play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
+#     # play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
+#
+#     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
+#     assign(phase_correction_per_scan, phase_correction)
+#     # assign(phase_correction_start, -0.5)
+#     assign(max_counts_B, 0)
+#     reset_frame("AOM_Early", "AOM_Late" , "PULSER_S", "PULSER_N")
+#     # frame_rotation_2pi(phase_correction_start, "AOM_Early")
+#     with for_(j, 0, j < phase_rep, j + 1):
+#         assign(counts_B_sum, 0)
+#         assign(counts_D_sum, 0)
+#         with for_(k, 1, k <= points_for_sum, k + 1):
+#             play("MZ_balancing_pulses_S", "PULSER_N")
+#             play("MZ_balancing_pulses_S", "PULSER_S")
+#             measure("MZ_balancing_pulses", "AOM_Early", None,
+#                     counting.digital(counts_B, m_window, element_outputs="OutBright1"))
+#                     # time_tagging.digital(tt_vec_B2, m_window, element_output="OutBright2", targetLen=counts_B2))
+#
+#             measure("MZ_balancing_pulses", "AOM_Late", None,
+#                     counting.digital(counts_D, m_window, element_outputs="OutDark2"))
+#                     # time_tagging.digital(tt_vec_D2, m_window, element_output="OutDark2", targetLen=counts_D2))
+#
+#             assign(counts_B_sum, counts_B_sum + counts_B)
+#             assign(counts_D_sum, counts_D_sum + counts_D)
+#
+#         assign(phase_correction_value, phase_correction_start + Cast.mul_fixed_by_int(phase_correction_per_scan, j))
+#         save(phase_correction_value, phase_correction_st)
+#         save(counts_B_sum, counts_st_B)
+#         save(counts_D_sum, counts_st_D)
+#
+#         with if_((counts_B_sum - counts_D_sum) > max_counts_B):
+#             assign(max_counts_B, (counts_B_sum - counts_D_sum))
+#             assign(phase_correction_min, phase_correction_value)
+#
+#         save(phase_correction_min, phase_for_min_st)
+#         frame_rotation_2pi(phase_correction_per_scan, "AOM_Early")
+#
+#     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
+#     assign(phase_correction_per_scan, phase_correction)
+#     # assign(phase_correction_start, -0.5)
+#     assign(max_counts_B, 0)
+#     reset_frame("AOM_Early", "AOM_Late", "PULSER_S", "PULSER_N")
+#     # frame_rotation_2pi(phase_correction_start, "AOM_Early")
+#     with for_(j, 0, j < phase_rep, j + 1):
+#         assign(counts_B_sum, 0)
+#         assign(counts_D_sum, 0)
+#         with for_(k, 1, k <= points_for_sum, k + 1):
+#             play("MZ_balancing_pulses_N", "PULSER_N")
+#             play("MZ_balancing_pulses_N", "PULSER_S")
+#             measure("MZ_balancing_pulses", "AOM_Early", None,
+#                     counting.digital(counts_B, m_window, element_outputs="OutBright1"))
+#             # time_tagging.digital(tt_vec_B2, m_window, element_output="OutBright2", targetLen=counts_B2))
+#
+#             measure("MZ_balancing_pulses", "AOM_Late", None,
+#                     counting.digital(counts_D, m_window, element_outputs="OutDark2"))
+#             # time_tagging.digital(tt_vec_D2, m_window, element_output="OutDark2", targetLen=counts_D2))
+#
+#             assign(counts_B_sum, counts_B_sum + counts_B)
+#             assign(counts_D_sum, counts_D_sum + counts_D)
+#
+#         assign(phase_correction_value, phase_correction_start + Cast.mul_fixed_by_int(phase_correction_per_scan, j))
+#         save(phase_correction_value, phase_correction_st)
+#         save(counts_B_sum, counts_st_B)
+#         save(counts_D_sum, counts_st_D)
+#
+#         with if_((counts_B_sum - counts_D_sum) > max_counts_B):
+#             assign(max_counts_B, (counts_B_sum - counts_D_sum))
+#             assign(phase_correction_min, phase_correction_value)
+#
+#         save(phase_correction_min, phase_for_min_st)
+#         frame_rotation_2pi(phase_correction_per_scan, "AOM_Early")
+#
+#     # reset_frame("AOM_Early", "AOM_Late")  #, "PULSER_S", "PULSER_N")
+#     # frame_rotation_2pi(phase_correction_min + 0.77, "AOM_Early")
+#     # frame_rotation_2pi(0.25, "PULSER_S")
+#     return phase_correction_min
 
 
 def MZ_balancing_check(m_time, m_window, rep,
@@ -528,10 +842,10 @@ def MZ_balancing_check(m_time, m_window, rep,
 
     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
     with for_(t, 0, t < rep, t + 1):
-        play("MZ_balancing_pulses", "PULSER_N")
-        # play("MZ_balancing_pulses", "PULSER_S")
+        play("MZ_balancing_pulses_N", "PULSER_N")
+        play("MZ_balancing_pulses_N", "PULSER_S")
         measure("MZ_balancing_pulses", "AOM_Early", None,
-                counting.digital(counts_B, m_window, element_outputs="OutBright2"))
+                counting.digital(counts_B, m_window, element_outputs="OutBright1"))
         measure("MZ_balancing_pulses", "AOM_Late", None,
                 counting.digital(counts_D, m_window, element_outputs="OutDark2"))
         save(counts_B, counts_st_B_balanced)
@@ -593,10 +907,10 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
     # assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
     align("AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors") #, "AOM_2-2'")
-    # play("Depump", "AOM_2-2'", duration=shutter_open_time)
-    # play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
-    # play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
-    # align("AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors")
+    play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
+    play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
+
+    align("AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors")
 
     with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.QRAM_Exp_Gaussian_samples_S))): #assaf comment debbuging
         play("QRAM_experiment_pulses_Ancilla", "PULSER_ANCILLA")
@@ -619,7 +933,7 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
             time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
             )
 
-    reset_frame("AOM_Early", "AOM_Late")  # , "PULSER_S", "PULSER_N")
+    reset_frame("AOM_Early", "AOM_Late", "PULSER_S", "PULSER_N")
     frame_rotation_2pi(phase_correction, "AOM_Early")
     MZ_balancing_check(balancing_check_window, length, rep_MZ_check, counts_st_B_balanced, counts_st_D_balanced)
 
@@ -721,7 +1035,11 @@ def opx_control(obj, qm):
         ## In fiber:
         M_off_time = declare(int, value=int(obj.M_off_time / 4))
         shutter_open_time = declare(int, value=int(obj.Shutter_open_time * 1e6 / 4))
+
+        # MZ balancing vaiables:
         phase_correction = declare(fixed)
+        phase_correction_diff = declare(fixed)
+        max_counts_MZ = declare(int, value=0)
 
         # Stream processing:
         counts_st_B = declare_stream()
@@ -732,6 +1050,7 @@ def opx_control(obj, qm):
         tt_st_D = declare_stream()
         phase_correction_st = declare_stream()
         phase_for_min_st = declare_stream()
+        phase_correction_diff_st = declare_stream()
         ON_counts_st1 = declare_stream()
         ON_counts_st2 = declare_stream()
         ON_counts_st3 = declare_stream()
@@ -806,10 +1125,17 @@ def opx_control(obj, qm):
             with if_(QRAM_Exp_ON):
                 wait(PrePulse_duration, "Cooling_Sequence")
                 # play("Depump", "AOM_2-2'", duration=(PrePulse_duration - shutter_open_time))
-                phase_correction = MZ_balancing((PrePulse_duration - shutter_open_time - Balancing_check_window), len(Config.QRAM_MZ_balance_pulse_Late),
-                                                 shutter_open_time, obj.phase_rep_MZ, obj.points_for_sum,
-                                                 counts_st_B, counts_st_D, phase_correction_st, phase_for_min_st, tt_st_B, tt_st_D)
-                reset_frame("AOM_Early", "AOM_Late")  # , "PULSER_S", "PULSER_N")
+                # phase_correction = MZ_balancing((PrePulse_duration - shutter_open_time - Balancing_check_window), len(Config.QRAM_MZ_balance_pulse_Late),
+                #                                  shutter_open_time, obj.phase_rep_MZ, obj.points_for_sum,
+                #                                  counts_st_B, counts_st_D, phase_correction_st, phase_for_min_st, tt_st_B, tt_st_D)
+                phase_correction, phase_correction_diff = \
+                    MZ_balancing_2((PrePulse_duration - shutter_open_time - Balancing_check_window),
+                                   len(Config.QRAM_MZ_balance_pulse_Late), shutter_open_time,
+                                   obj.phase_rep_MZ_fast_scan, obj.phase_rep_MZ_slow_scan, obj.points_for_sum_fast,
+                                   obj.points_for_sum_slow, counts_st_B, counts_st_D, phase_correction_st,
+                                   phase_for_min_st, phase_correction_diff, max_counts_MZ)
+                save(phase_correction_diff, phase_correction_diff_st)
+                reset_frame("AOM_Early", "AOM_Late", "PULSER_S", "PULSER_N")
                 frame_rotation_2pi(phase_correction, "AOM_Early")
                 MZ_balancing_check(Balancing_check_window, len(Config.QRAM_MZ_balance_pulse_Late),
                                    obj.rep_MZ_check, counts_st_B_balanced, counts_st_D_balanced)
@@ -832,9 +1158,9 @@ def opx_control(obj, qm):
 
             with if_((Pulse_1_duration > 0) & QRAM_Exp_ON):
                 align("Dig_detectors", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S")
-                reset_frame("AOM_Early", "AOM_Late")  # , "PULSER_S", "PULSER_N")
-                # frame_rotation_2pi(phase_correction + 0.77, "AOM_Early")
-                frame_rotation_2pi(phase_correction, "AOM_Early")
+                reset_frame("AOM_Early", "AOM_Late", "PULSER_S", "PULSER_N")
+                frame_rotation_2pi(phase_correction + phase_correction_diff, "AOM_Early")
+                # frame_rotation_2pi(phase_correction, "AOM_Early")
                 QRAM_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
                          ON_counts_st1, ON_counts_st2, ON_counts_st3,
                          ON_counts_st4, ON_counts_st5, ON_counts_st6,
@@ -916,11 +1242,13 @@ def opx_control(obj, qm):
         with stream_processing():
             # counts_st_B.buffer(obj.total_phase_rep_MZ).save('Bright_Port_Counts')
             # counts_st_B_balanced.save('Bright_Port_Counts_check')
-            counts_st_B.buffer(obj.total_phase_rep_MZ).zip(counts_st_B_balanced.buffer(obj.rep_MZ_check*2)).save('Bright_Port_Counts')
+            counts_st_B.buffer(obj.total_phase_rep_MZ_scan).zip(counts_st_B_balanced.buffer(obj.rep_MZ_check*2)).save('Bright_Port_Counts')
+            # counts_st_B.buffer(obj.total_phase_rep_MZ_scan).save('Bright_Port_Counts')
             # counts_st_D.buffer(obj.total_phase_rep_MZ).save('Dark_Port_Counts')
             # counts_st_D_balanced.save('Dark_Port_Counts_check')
-            counts_st_D.buffer(obj.total_phase_rep_MZ).zip(counts_st_D_balanced.buffer(obj.rep_MZ_check*2)).save('Dark_Port_Counts')
-            phase_correction_st.buffer(obj.total_phase_rep_MZ).zip(phase_for_min_st.buffer(obj.total_phase_rep_MZ)).save('Phase_Correction_array')
+            counts_st_D.buffer(obj.total_phase_rep_MZ_scan).zip(counts_st_D_balanced.buffer(obj.rep_MZ_check*2)).save('Dark_Port_Counts')
+            phase_correction_st.buffer(obj.total_phase_rep_MZ_scan).zip(phase_for_min_st.buffer(obj.total_phase_rep_MZ_scan)).save('Phase_Correction_array')
+            phase_correction_diff_st.save('Phase_diff')
             ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
             ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
             ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
@@ -1097,16 +1425,27 @@ class OPX:
 
         # MZ balancing:
         self.Balancing_check_window = 2 # [msec]
-        self.rep_MZ_fast_scan = int(0.5 * (self.prepulse_duration - self.Shutter_open_time - self.Balancing_check_window)
+        self.rep_MZ_fast_scan = int(0.3 * (self.prepulse_duration - self.Shutter_open_time - self.Balancing_check_window)
                                     * 1e6 / len(Config.QRAM_MZ_balance_pulse_Late))
-        self.rep_MZ_slow_scan = int(0.5 * (self.prepulse_duration - self.Shutter_open_time - self.Balancing_check_window)
+        self.rep_MZ_slow_scan = int(0.4 * (self.prepulse_duration - self.Shutter_open_time - self.Balancing_check_window)
                                     * 1e6 / len(Config.QRAM_MZ_balance_pulse_Late))
-        self.points_for_sum = 4
+        self.points_for_sum = 3
+        self.points_for_sum_fast = 3
+        self.points_for_sum_slow = 4
         if self.rep_MZ_fast_scan == 0:
             self.phase_rep_MZ = 1
         else:
             self.phase_rep_MZ = int(self.rep_MZ_fast_scan/self.points_for_sum)
+        if self.rep_MZ_slow_scan == 0:
+            self.phase_rep_MZ_slow_scan = 1
+        else:
+            self.phase_rep_MZ_slow_scan = int(self.rep_MZ_slow_scan/self.points_for_sum_slow) - 1
+        if self.rep_MZ_fast_scan == 0:
+            self.phase_rep_MZ_fast_scan = 1
+        else:
+            self.phase_rep_MZ_fast_scan = int(self.rep_MZ_fast_scan/self.points_for_sum_fast)
         self.total_phase_rep_MZ = int(2 * self.phase_rep_MZ)
+        self.total_phase_rep_MZ_scan = 2 * self.phase_rep_MZ_fast_scan + self.phase_rep_MZ_slow_scan
         self.rep_MZ_check = int(self.Balancing_check_window * 1e6 / len(Config.QRAM_MZ_balance_pulse_North))
 
         # MW spectroscopy parameters:
@@ -1412,6 +1751,7 @@ class OPX:
         self.MZ_BP_counts_handle = self.job.result_handles.get("Bright_Port_Counts")
         self.MZ_DP_counts_handle = self.job.result_handles.get("Dark_Port_Counts")
         self.Phase_Correction_values_handle = self.job.result_handles.get("Phase_Correction_array")
+        self.Phase_diff_handle = self.job.result_handles.get("Phase_diff")
         # self.Phase_Correction_handle = self.job.result_handles.get("Phase_Correction_for_min")
         FLR_handle = self.job.result_handles.get("FLR_measure")
         return Counts_handle, tt_handle, FLR_handle
@@ -1428,6 +1768,7 @@ class OPX:
         self.MZ_BP_counts_handle.wait_for_values(1)
         self.MZ_DP_counts_handle.wait_for_values(1)
         self.Phase_Correction_values_handle.wait_for_values(1)
+        self.Phase_diff_handle.wait_for_values(1)
         # self.Phase_Correction_handle.wait_for_values(1)
 
         # add the tt and counts to python vars
@@ -1438,6 +1779,7 @@ class OPX:
         self.MZ_BP_counts_res = self.MZ_BP_counts_handle.fetch_all()
         self.MZ_DP_counts_res = self.MZ_DP_counts_handle.fetch_all()
         self.Phase_Correction_values = self.Phase_Correction_values_handle.fetch_all()
+        self.Phase_diff = self.Phase_diff_handle.fetch_all()
         # self.Phase_Correction = self.Phase_Correction_handle.fetch_all()
         self.FLR_res = -FLR_handle.fetch_all()
 
@@ -1876,7 +2218,8 @@ class OPX:
                         'Average Dark counts = %.2f \n' % (avg_DP,) + \
                         'Infidelity = %.2f' % (avg_DP/(avg_DP + avg_BP),)
         textstr_BP_DP_BA = 'Infidelity before = %.2f \n' % (self.Infidelity_before,) + \
-                           'Infidelity after= %.2f' % (self.Infidelity_after,)
+                           'Infidelity after= %.2f \n' % (self.Infidelity_after,) + \
+                           'phase difference S-N = %.2f' % (self.Phase_diff,)
 
         # for n in range(len(Num_Of_dets)):
         #     ax[0].plot(self.single_det_folded[n], label='detectors %d' % (n+1))
@@ -1946,19 +2289,22 @@ class OPX:
         ax[1].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
         ax[1].legend(loc='upper right')
 
-        self.Phase_Correction_min_diff += [(1 + (self.Phase_Correction_min_vec[-1] - self.Phase_Correction_min_vec[67])) % 1]
+        # self.Phase_Correction_min_diff += [(1 + (self.Phase_Correction_min_vec[-1] - self.Phase_Correction_min_vec[67])) % 1]
         ax[2].plot(self.MZ_BP_counts_res['value_0'], label='MZ Bright port')
         ax[2].plot(self.MZ_DP_counts_res['value_0'], label='MZ Dark port')
         ax[2].plot(self.MZ_BP_counts_res['value_0'] - self.MZ_DP_counts_res['value_0'], label='Dif ports')
         ax[6].tick_params(axis="y", labelcolor='#8c564b')
         ax[6].plot(self.Phase_Correction_vec, label='Phase correction values', color='#8c564b')
         ax[6].plot(self.Phase_Correction_min_vec, label='Phase correction values', color='#9467bd')
-        ax[6].plot(self.Phase_Correction_min_diff, label='Phase correction values', color='red')
+        # ax[6].plot(self.Phase_Correction_min_diff, label='Phase correction values', color='red')
         ax[2].set_ylim(0, 1.1 * np.max([self.MZ_BP_counts_res['value_0'], self.MZ_DP_counts_res['value_0']]))
         ax[2].set_title('MZ outputs while locking', fontweight="bold")
         ax[2].legend(loc='upper right')
-        ax[6].legend(loc='upper left')
-        print(np.average(self.Phase_Correction_min_diff))
+        # ax[6].legend(loc='upper left')
+        # print(self.Phase_Correction_min_diff[-1])
+        # print(np.average(self.Phase_Correction_min_diff))
+        # print(np.std(self.Phase_Correction_min_diff))
+
 
         max_reflect_avg = max(self.num_of_det_reflections_per_seq_accumulated/self.Counter)
         max_reflect = max(self.num_of_det_reflections_per_seq)
@@ -2880,9 +3226,10 @@ if __name__ == "__main__":
     # experiment.Start_QRAM_Exp_with_tt(N=1000, transit_condition=[2, 2, 2], preComment='ignore', lock_err_threshold=0.01,
     #                                   filter_delay=[0, 0, 0],
     #                                   reflection_threshold=10000, reflection_threshold_time=1e6, FLR_threshold=-0.11)   # except KeyboardInterrupt:
-    experiment.run_daily_experiment([2000, 50] * 5, transit_condition=[2, 1, 2], preComment='"|1c, (0 + 1)t> experiment"', lock_err_threshold=0.004,
+    # experiment.run_daily_experiment([2000, 50] * 1, transit_condition=[2, 1, 2], preComment='"|1c, (0 + 1)t> experiment"', lock_err_threshold=0.004,
+    experiment.run_daily_experiment([1000, 50] * 1, transit_condition=[2, 1, 2], preComment='"OFF resonance, Infidelity check"', lock_err_threshold=0.004,
                                     filter_delay=[0, 9, 0], reflection_threshold=450, reflection_threshold_time=10e6,
-                                    FLR_threshold=0.06, MZ_inidelity_threshold=0.10, Exp_flag=False)
+                                    FLR_threshold=0.01, MZ_inidelity_threshold=0.10, Exp_flag=False)
 
     #     experiment.job.halt()
     #     experiment.qmm.reset_data_processing()

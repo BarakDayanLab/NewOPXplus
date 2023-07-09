@@ -125,6 +125,7 @@ Super_Sprint_Config = {
                 2: {},  # Switch AOM - / AOM 2-3'
                 3: {},  # AntiHelmholtz Coils
                 5: {},  # Camtrigger
+                6: {},  # Camtrigger
                 7: {},  # Trigger STIRAP
                 8: {},  # Trigger FS
                 9: {},  # trigger
@@ -206,6 +207,11 @@ Super_Sprint_Config = {
                     "delay": 0,
                     "buffer": 0,
                 },
+                "switch3": {
+                    "port": (controller, 6),
+                    "delay": 0,
+                    "buffer": 0,
+                },
             },
             "digitalOutputs": {
                 "out1": (controller, 1),
@@ -243,6 +249,11 @@ Super_Sprint_Config = {
                 },
                 "switch2": {
                     "port": (controller, 5),
+                    "delay": 0,
+                    "buffer": 0,
+                },
+                "switch3": {
+                    "port": (controller, 6),
                     "delay": 0,
                     "buffer": 0,
                 },
@@ -499,7 +510,7 @@ with program() as dig:
     # g2 = declare(fixed, size=m_window)
     # g2_idx = declare(int)
     # g2_st = declare_stream()
-    Measuring_time = 100 * 1e6  # [nsec]
+    Measuring_time = 10 * 1e6  # [nsec]
     rep = int(Measuring_time / m_window)
     # with infinite_loop_():
     #     play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
@@ -510,7 +521,7 @@ with program() as dig:
         play("Const_open_triggered", "PULSER_N", duration=int(Measuring_time / 4))
         # play("Const_open", "PULSER_N")
         play("Const_open", "PULSER_S", duration=int(Measuring_time / 4))
-        play("Const_open" * amp(0.60), "AOM_Early", duration=int(Measuring_time / 4))
+        play("Const_open" * amp(0.55), "AOM_Early", duration=int(Measuring_time / 4))
         play("Const_open", "AOM_Late", duration=int(Measuring_time / 4))
         with for_(n, 0, n < rep, n+1):
             measure("OD_measure", "digital_detectors_N", None,
@@ -638,7 +649,7 @@ while avg_count1_handle.is_processing():
     # plt.text(0, 200, str(np.round((max(D_arr)-min(D_arr)) / np.mean(D_arr + B_arr), decimals=3)), fontsize=28,
     #          verticalalignment='top')
 
-    plt.pause(0.1)
+    plt.pause(0.01)
 
 
 
