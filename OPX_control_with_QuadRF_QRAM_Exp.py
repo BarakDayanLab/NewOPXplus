@@ -406,13 +406,15 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
 #     return phase_correction_min
 
 def MZ_balancing_2(m_time, m_window, shutter_open_time, phase_rep_fast, phase_rep_slow, points_for_sum_fast,
-                   points_for_sum_slow, counts_st_B, counts_st_D, phase_correction_st, phase_for_min_st):
+                   points_for_sum_slow, counts_st_B, counts_st_D, phase_correction_st, phase_for_min_st,
+                   phase_diff_last, max_tot_counts_MZ):
 
     counts_B = declare(int)
     counts_B_sum = declare(int, value=0)
     counts_D = declare(int)
     counts_D_sum = declare(int, value=0)
-    tot_counts_S = declare(int)
+    tot_counts_MZ_S = declare(int, value=0)
+    tot_counts_MZ_N = declare(int, value=0)
 
     assign_variables_to_element("AOM_Early", counts_B_sum)
     assign_variables_to_element("AOM_Late", counts_D_sum)
@@ -478,6 +480,7 @@ def MZ_balancing_2(m_time, m_window, shutter_open_time, phase_rep_fast, phase_re
         save(phase_correction_value, phase_correction_st)
         save(counts_B_sum, counts_st_B)
         save(counts_D_sum, counts_st_D)
+        assign(tot_counts_MZ_S, tot_counts_MZ_S + counts_D_sum + counts_B_sum)
 
         with if_((counts_B_sum - counts_D_sum) > max_counts_B):
             assign(max_counts_B, (counts_B_sum - counts_D_sum))
@@ -516,6 +519,7 @@ def MZ_balancing_2(m_time, m_window, shutter_open_time, phase_rep_fast, phase_re
         save(phase_correction_value, phase_correction_st)
         save(counts_B_sum, counts_st_B)
         save(counts_D_sum, counts_st_D)
+        assign(tot_counts_MZ_N, tot_counts_MZ_N + counts_D_sum + counts_B_sum)
 
         with if_((counts_B_sum - counts_D_sum) > max_counts_B):
             assign(max_counts_B, (counts_B_sum - counts_D_sum))
@@ -523,6 +527,7 @@ def MZ_balancing_2(m_time, m_window, shutter_open_time, phase_rep_fast, phase_re
 
         save(phase_correction_min, phase_for_min_st)
         frame_rotation_2pi(phase_correction_per_scan, "AOM_Early")
+
 
     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
     assign(phase_correction_per_scan, phase_correction_slow * 0.25)
@@ -595,7 +600,10 @@ def MZ_balancing_2(m_time, m_window, shutter_open_time, phase_rep_fast, phase_re
     #         frame_rotation_2pi(phase_correction_per_scan, "AOM_Early")
 
     assign(phase_correction_min_north, phase_correction_min)
-    assign(phase_correction_diff, phase_correction_min_south - phase_correction_min_north)
+    assign(phase_correction_diff, Util.cond(tot_counts_MZ_S > 0.1 * tot_counts_MZ_N,
+                                            phase_correction_min_south - phase_correction_min_north,
+                                            phase_correction_diff))
+    # assign(max_tot_counts_MZ, Util.cond(tot_counts_MZ > max_tot_counts_MZ, tot_counts_MZ, max_tot_counts_MZ))
     # assign(phase_correction_diff, Util.cond(phase_correction_min_south > phase_correction_min_north,
     #                                         phase_correction_min_south - phase_correction_min_north,
     #                                         phase_correction_min_north - phase_correction_min_south))
@@ -606,7 +614,8 @@ def MZ_balancing_2(m_time, m_window, shutter_open_time, phase_rep_fast, phase_re
     # reset_frame("AOM_Early", "AOM_Late") #, "PULSER_S", "PULSER_N")
     # frame_rotation_2pi(phase_correction_min, "AOM_Early")
     # frame_rotation_2pi(0.25, "PULSER_S")
-    return phase_correction_min, phase_correction_diff
+    # return phase_correction_min, phase_correction_diff
+    return phase_correction_min, phase_correction_diff, tot_counts_MZ_N
 
 # ## From two direction
 # def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
@@ -1051,6 +1060,7 @@ def opx_control(obj, qm):
         phase_correction_st = declare_stream()
         phase_for_min_st = declare_stream()
         phase_correction_diff_st = declare_stream()
+        max_counts_MZ_st = declare_stream()
         ON_counts_st1 = declare_stream()
         ON_counts_st2 = declare_stream()
         ON_counts_st3 = declare_stream()
@@ -1128,13 +1138,14 @@ def opx_control(obj, qm):
                 # phase_correction = MZ_balancing((PrePulse_duration - shutter_open_time - Balancing_check_window), len(Config.QRAM_MZ_balance_pulse_Late),
                 #                                  shutter_open_time, obj.phase_rep_MZ, obj.points_for_sum,
                 #                                  counts_st_B, counts_st_D, phase_correction_st, phase_for_min_st, tt_st_B, tt_st_D)
-                phase_correction, phase_correction_diff = \
+                phase_correction, phase_correction_diff, max_counts_MZ = \
                     MZ_balancing_2((PrePulse_duration - shutter_open_time - Balancing_check_window),
                                    len(Config.QRAM_MZ_balance_pulse_Late), shutter_open_time,
                                    obj.phase_rep_MZ_fast_scan, obj.phase_rep_MZ_slow_scan, obj.points_for_sum_fast,
                                    obj.points_for_sum_slow, counts_st_B, counts_st_D, phase_correction_st,
                                    phase_for_min_st, phase_correction_diff, max_counts_MZ)
                 save(phase_correction_diff, phase_correction_diff_st)
+                save(max_counts_MZ, max_counts_MZ_st)
                 reset_frame("AOM_Early", "AOM_Late", "PULSER_S", "PULSER_N")
                 frame_rotation_2pi(phase_correction, "AOM_Early")
                 MZ_balancing_check(Balancing_check_window, len(Config.QRAM_MZ_balance_pulse_Late),
@@ -1248,7 +1259,7 @@ def opx_control(obj, qm):
             # counts_st_D_balanced.save('Dark_Port_Counts_check')
             counts_st_D.buffer(obj.total_phase_rep_MZ_scan).zip(counts_st_D_balanced.buffer(obj.rep_MZ_check*2)).save('Dark_Port_Counts')
             phase_correction_st.buffer(obj.total_phase_rep_MZ_scan).zip(phase_for_min_st.buffer(obj.total_phase_rep_MZ_scan)).save('Phase_Correction_array')
-            phase_correction_diff_st.save('Phase_diff')
+            phase_correction_diff_st.zip(max_counts_MZ_st).save('Phase_diff')
             ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
             ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
             ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
@@ -1779,7 +1790,7 @@ class OPX:
         self.MZ_BP_counts_res = self.MZ_BP_counts_handle.fetch_all()
         self.MZ_DP_counts_res = self.MZ_DP_counts_handle.fetch_all()
         self.Phase_Correction_values = self.Phase_Correction_values_handle.fetch_all()
-        self.Phase_diff = self.Phase_diff_handle.fetch_all()
+        self.Phase_diff_res = self.Phase_diff_handle.fetch_all()
         # self.Phase_Correction = self.Phase_Correction_handle.fetch_all()
         self.FLR_res = -FLR_handle.fetch_all()
 
@@ -1810,6 +1821,8 @@ class OPX:
         self.Phase_Correction_vec = self.Phase_Correction_values['value_0']
         self.Phase_Correction_min_vec = self.Phase_Correction_values['value_1']
         self.Phase_Correction_value = self.Phase_Correction_values['value_1'][-1]
+        self.Phase_diff = self.Phase_diff_res['value_0']
+        self.MZ_N_tot_counts = self.Phase_diff_res['value_1']
 
 
     def get_pulses_bins(self,det_pulse_len,sprint_pulse_len,num_of_det_pulses,num_of_sprint_pulses,
@@ -2219,7 +2232,8 @@ class OPX:
                         'Infidelity = %.2f' % (avg_DP/(avg_DP + avg_BP),)
         textstr_BP_DP_BA = 'Infidelity before = %.2f \n' % (self.Infidelity_before,) + \
                            'Infidelity after= %.2f \n' % (self.Infidelity_after,) + \
-                           'phase difference S-N = %.2f' % (self.Phase_diff,)
+                           'phase difference S-N = %.2f \n' % (self.Phase_diff,) + \
+                           'Maximum counts MZ N = %.2f \n' % (self.MZ_N_tot_counts,)
 
         # for n in range(len(Num_Of_dets)):
         #     ax[0].plot(self.single_det_folded[n], label='detectors %d' % (n+1))
@@ -2353,6 +2367,9 @@ class OPX:
         ax[5].legend(loc='upper right')
         ax[5].text(0.05, 0.95, textstr_transit_event_counter, transform=ax[5].transAxes, fontsize=14,
                    verticalalignment='top', bbox=props)
+
+        figManager = plt.get_current_fig_manager()
+        figManager.window.showMaximized()
 
         plt.show(block=False)
         plt.pause(1.0)
