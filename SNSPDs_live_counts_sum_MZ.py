@@ -510,7 +510,7 @@ with program() as dig:
     # g2 = declare(fixed, size=m_window)
     # g2_idx = declare(int)
     # g2_st = declare_stream()
-    Measuring_time = 10 * 1e6  # [nsec]
+    Measuring_time = 100 * 1e6  # [nsec]
     rep = int(Measuring_time / m_window)
     # with infinite_loop_():
     #     play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
@@ -639,8 +639,8 @@ while avg_count1_handle.is_processing():
     # print(str(abs(DP_vals[-1]-BP_vals[-1])/(DP_vals[-1]+BP_vals[-1])))
 
     # counter = counter + 1
-    B_arr = (np.array(avg_counts_res2) + np.array(avg_counts_res1))[:-int(0.05*len(avg_counts_res2))]
-    D_arr = (np.array(avg_counts_res3) + np.array(avg_counts_res4))[:-int(0.05*len(avg_counts_res2))]
+    B_arr = (np.array(avg_counts_res2) + np.array(avg_counts_res1))#[:-int(0.05*len(avg_counts_res2))]
+    D_arr = (np.array(avg_counts_res3) + np.array(avg_counts_res4))#[:-int(0.05*len(avg_counts_res2))]
     plt.plot(B_arr + D_arr)
     plt.plot(B_arr)
     plt.plot(D_arr)
@@ -649,7 +649,7 @@ while avg_count1_handle.is_processing():
     # plt.text(0, 200, str(np.round((max(D_arr)-min(D_arr)) / np.mean(D_arr + B_arr), decimals=3)), fontsize=28,
     #          verticalalignment='top')
 
-    plt.pause(0.01)
+    plt.pause(0.1)
 
 
 

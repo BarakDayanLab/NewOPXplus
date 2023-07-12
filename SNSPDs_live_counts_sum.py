@@ -295,6 +295,11 @@ Super_Sprint_Config = {
                     "delay": 0,
                     "buffer": 0,
                 },
+                "SouthtoNorth_Shutter": {
+                    "port": (controller, 9),
+                    "delay": 0,
+                    "buffer": 0,
+                },
             },
             'operations': {
                 'Const_open': "Pulser_ON",
@@ -648,7 +653,7 @@ while avg_count1_handle.is_processing():
     plt.legend(loc='upper left', prop=font)
     plt.show()
 
-    plt.pause(0.5)
+    plt.pause(0.1)
 
 
 print('finished')
