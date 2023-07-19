@@ -52,16 +52,16 @@ controller = 'con1'
 # Parameters:0
 
 # Pulse_durations
-readout_pulse_len = int(50 * 1e6)
+readout_pulse_len = int(50 * 1e3)
 north_const_pulse_len = 500
 south_const_pulse_len = 500
 analyzer_const_pulse_len = 500
-MOT_pulse_len = int(50 * 1e6)
+MOT_pulse_len = int(50 * 1e3)
 PGC_pulse_len = 500
 Probe_pulse_len =500
 Fountain_pulse_len = 500
 Depump_pulse_len = 500
-OD_pulse_len = int(50 * 1e6)
+OD_pulse_len = int(50 * 1e3)
 Repump_pulse_len = 500
 Trigger_pulse_len = 1
 AntiHelmholtz_pulse_len = 60
@@ -124,11 +124,13 @@ Super_Sprint_Config = {
                 1: {},  # Switch AOM + / AOM 2-2'
                 2: {},  # Switch AOM - / AOM 2-3'
                 3: {},  # AntiHelmholtz Coils
+                4: {},  # Helmholtz Coils
                 5: {},  # Camtrigger
                 6: {},  # APDs
                 7: {},  # Trigger STIRAP
                 8: {},  # Trigger FS
                 9: {},  # trigger
+                10: {},  # EOM pulses
             },
             'analog_inputs': {
                 1: {'offset': +0.0},  # DET10
@@ -274,8 +276,13 @@ Super_Sprint_Config = {
 
         "AntiHelmholtz_Coils": {
             'digitalInputs': {
-                "AntiHelmholtz": {
-                    "port": (controller, 3),
+                # "AntiHelmholtz": {
+                #     "port": (controller, 3),
+                #     "delay": 0,
+                #     "buffer": 0,
+                # },
+                "Helmholtz": {
+                    "port": (controller, 4),
                     "delay": 0,
                     "buffer": 0,
                 },
@@ -287,17 +294,14 @@ Super_Sprint_Config = {
 
         "PULSER_E/L": {
             "singleInput": {
-                "port": (controller, 7),
+                "port": (controller, 6),
             },
             'digitalInputs': {
-                "APD_Switch": {
-                    "port": (controller, 6),
-                    "delay": 0,
-                    "buffer": 0,
-                },
-                "SouthtoNorth_Shutter": {
-                    "port": (controller, 9),
-                    "delay": 0,
+                "AWG_Switch": {
+                    "port": (controller, 10),
+                    # "delay": 176, # OPX control EOM
+                    "delay": 160,  # OPX control EOM double pass
+                    # "delay": 400, # AWG control EOM
                     "buffer": 0,
                 },
             },
@@ -346,8 +350,13 @@ Super_Sprint_Config = {
                 "port": (controller, 10),
             },
             'digitalInputs': {
-                "FS_North": {
-                    "port": (controller, 5),
+                "APD_Switch": {
+                    "port": (controller, 6),
+                    "delay": 0,
+                    "buffer": 0,
+                },
+                "SouthtoNorth_Shutter": {
+                    "port": (controller, 9),
                     "delay": 0,
                     "buffer": 0,
                 },
@@ -399,7 +408,8 @@ Super_Sprint_Config = {
             'waveforms': {
                 'single': 'const_wf'
             },
-            'digital_marker': 'ON',
+            # 'digital_marker': 'ON',
+            'digital_marker': 'Trig_EOM_MZ'
         },
         "Pulser_ON_high": {
             'operation': 'control',
@@ -483,6 +493,10 @@ Super_Sprint_Config = {
         "Trig": {
             "samples": [(1, 20), (0, 0)]
         },
+        "Trig_EOM_MZ": {
+            "samples": [(0, 250), (1, 250)] * int(MOT_pulse_len/500) + [(0, 0)]
+            # "samples": [(0, 270), (1, 230)] * MZ_balancing_seq_rep + [(0, 0)]
+        },
         "trig_wf0": {
             "samples": [(1, 0)]
         }
@@ -525,12 +539,12 @@ with program() as dig:
 
     n = declare(int)
 
-    m_window = OD_pulse_len  # [nsec]
+    m_window = MOT_pulse_len  # [nsec]
     # diff = declare(int)
     # g2 = declare(fixed, size=m_window)
     # g2_idx = declare(int)
     # g2_st = declare_stream()
-    Measuring_time = 500 * 1e6  # [nsec]
+    Measuring_time = 100 * 1e6  # [nsec]
     rep = int(Measuring_time / m_window)
     # with infinite_loop_():
     #     play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
@@ -541,12 +555,13 @@ with program() as dig:
 
             # play("Const_open_triggered", "PULSER_N")
             play("Const_open", "PULSER_N")
-            play("Const_open", "PULSER_S")
+            # play("Const_open", "PULSER_S")
+            play("Const_open_triggered", "PULSER_S")
             play("Const_open", "PULSER_E/L")
             # play("Const_high_open", "PULSER_E/L")
             # play("Square_Pulse", "PULSER_LO")
             # play("Const_open"*amp(0.7), "PULSER_LO")
-            # play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
+            play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
             # play("CRUS_pulse", "Pulser_CRUS")
 
             # measure("OD_measure", "digital_detectors_S", None,

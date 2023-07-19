@@ -339,6 +339,7 @@ def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
     k = declare(int)
 
     phase_scan = declare(fixed, value=[1, 0.25])
+    # phase_scan = declare(fixed, value=[1, 0.1])
     # phase_scan = declare(fixed, value=[1.0, 1.0])
     phase_correction = declare(fixed, value=(1/phase_rep))
     phase_correction_per_scan = declare(fixed)
@@ -870,7 +871,7 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
     # assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "PULSER_ANCILLA", "Dig_detectors")
-    play("Const_open" * amp(0), "PULSER_N", duration=shutter_open_time)
+    play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
     play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
     # play("Const_open_triggered" * amp(0), "PULSER_ANCILLA", duration=shutter_open_time)
 
@@ -885,8 +886,8 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
         play("QRAM_experiment_pulses_Early", "AOM_Early")
         play("QRAM_experiment_pulses_Late", "AOM_Late")
 
-    wait(298, "Dig_detectors")
-    # wait(300, "Dig_detectors")
+    # wait(298, "Dig_detectors")
+    wait(300, "Dig_detectors")
     # with for_(n, 0, n < m_time * 4, n + m_window):
     measure("readout_QRAM", "Dig_detectors", None,
             time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
@@ -1874,10 +1875,11 @@ class OPX:
 
         # tt_small_perturb = []
         for element in self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure:
-            tt_inseq = element % self.QRAM_sequence_len
-            if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
-                self.num_of_det_reflections_per_seq_S[(element-1)//self.QRAM_sequence_len] += self.filter_S[tt_inseq]
-                self.num_of_det_transmissions_per_seq_N[(element-1)//self.QRAM_sequence_len] += self.filter_N[tt_inseq]
+            if element > int(0.6e6):
+                tt_inseq = element % self.QRAM_sequence_len
+                if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
+                    self.num_of_det_reflections_per_seq_S[(element-1)//self.QRAM_sequence_len] += self.filter_S[tt_inseq]
+                    self.num_of_det_transmissions_per_seq_N[(element-1)//self.QRAM_sequence_len] += self.filter_N[tt_inseq]
             # else:  # The part of the SPRINT pulses in the sequence
             #     SPRINT_pulse_num = (tt_inseq - self.end_of_det_pulse_in_seq) // (sprint_pulse_len + Config.num_between_zeros)
             #     if SPRINT_pulse_num < self.number_of_SPRINT_pulses_per_seq:
@@ -1886,10 +1888,11 @@ class OPX:
             #         tt_small_perturb+=[element]
 
         for element in self.tt_S_measure + self.tt_FS_measure:
-            tt_inseq = element % self.QRAM_sequence_len
-            if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
-                self.num_of_det_reflections_per_seq_N[(element-1)//self.QRAM_sequence_len] += self.filter_N[tt_inseq]
-                self.num_of_det_transmissions_per_seq_S[(element-1)//self.QRAM_sequence_len] += self.filter_S[tt_inseq]
+            if element > int(0.6e6):
+                tt_inseq = element % self.QRAM_sequence_len
+                if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
+                    self.num_of_det_reflections_per_seq_N[(element-1)//self.QRAM_sequence_len] += self.filter_N[tt_inseq]
+                    self.num_of_det_transmissions_per_seq_S[(element-1)//self.QRAM_sequence_len] += self.filter_S[tt_inseq]
             # else:  # The part of the SPRINT pulses in the sequence
             #     SPRINT_pulse_num = (tt_inseq - self.end_of_det_pulse_in_seq) // (sprint_pulse_len + Config.num_between_zeros)
             #     if SPRINT_pulse_num < self.number_of_SPRINT_pulses_per_seq:
@@ -1993,7 +1996,7 @@ class OPX:
         self.reflection_SPRINT_data_per_transit = []  # Array of vectors with data on the number of reflections per SPRINT pulse in sequence.
         self.transmission_SPRINT_data_per_transit = []  # Array of vectors with data on the number of transmissions per SPRINT pulse in sequence.
 
-        for i in range(len(self.num_of_det_reflections_per_seq) - len(cond) + 1):
+        for i in range(len(self.num_of_det_reflections_per_seq[:]) - len(cond) + 1):
             cond_check = (self.num_of_det_reflections_per_seq[i:(i + len(cond))] >= cond).astype(int)
             if sum(cond_check) >= minimum_number_of_seq_detected:
                 current_transit = np.unique(
@@ -2642,6 +2645,10 @@ class OPX:
         ax8 = plt.subplot2grid((3, 4), (2, 1), colspan=1, rowspan=1)
         ax6 = plt.subplot2grid((3, 4), (2, 2), colspan=2, rowspan=1)
         ax7 = ax3.twinx()
+
+        figManager = plt.get_current_fig_manager()
+        figManager.window.showMaximized()
+
         #
 
         while True:
@@ -3217,9 +3224,9 @@ if __name__ == "__main__":
     #                                   filter_delay=[0, 0, 0],
     #                                   reflection_threshold=10000, reflection_threshold_time=1e6, FLR_threshold=-0.11)   # except KeyboardInterrupt:
     # experiment.run_daily_experiment([2000, 50] * 1, transit_condition=[2, 1, 2], preComment='"|1c, (0 + 1)t> experiment"', lock_err_threshold=0.004,
-    experiment.run_daily_experiment([500, 50] * 3, transit_condition=[2, 1, 2], preComment='"OFF resonance, Infidelity check"', lock_err_threshold=0.004,
-                                    filter_delay=[0, 9, 0], reflection_threshold=450, reflection_threshold_time=10e6,
-                                    FLR_threshold=0.01, MZ_inidelity_threshold=0.10, Exp_flag=False)
+    experiment.run_daily_experiment([500, 50] * 2, transit_condition=[2, 1, 2], preComment='"1c(0+1)t"', lock_err_threshold=0.008,
+                                    filter_delay=[0, 0, 0], reflection_threshold=600, reflection_threshold_time=9e6,
+                                    FLR_threshold=0.05, MZ_inidelity_threshold=0.12, Exp_flag=True)
 
     #     experiment.job.halt()
     #     experiment.qmm.reset_data_processing()

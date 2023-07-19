@@ -79,9 +79,10 @@ IF_AOM_OD = 93e6
 IF_AOM_Depump = 133.325e6
 # IF_AOM_Depump = 139.325e6
 IF_AOM_Repump = 78.4735e6
-IF_AOM_N = 129.2368e6
-IF_AOM_S = 129.2368e6
-IF_AOM_LO = 129.2368e6
+# IF_AOM_N = 129.2368e6
+IF_AOM_N = 129e6
+IF_AOM_S = 129e6
+IF_AOM_LO = 129e6
 IF_AOMs_MZ = 110e6
 IF_AOM_Anc = 184e6
 
@@ -323,7 +324,7 @@ Super_Sprint_Config = {
 
         "PULSER_LO": {
             "singleInput": {
-                "port": (controller,8),
+                "port": (controller, 8),
             },
             'operations': {
                 'Const_open': "MOT_lock",
@@ -521,7 +522,7 @@ with program() as dig:
         play("Const_open_triggered", "PULSER_N", duration=int(Measuring_time / 4))
         # play("Const_open", "PULSER_N")
         play("Const_open", "PULSER_S", duration=int(Measuring_time / 4))
-        play("Const_open" * amp(0.55), "AOM_Early", duration=int(Measuring_time / 4))
+        play("Const_open" * amp(0.51), "AOM_Early", duration=int(Measuring_time / 4))
         play("Const_open", "AOM_Late", duration=int(Measuring_time / 4))
         with for_(n, 0, n < rep, n+1):
             measure("OD_measure", "digital_detectors_N", None,
@@ -639,11 +640,11 @@ while avg_count1_handle.is_processing():
     # print(str(abs(DP_vals[-1]-BP_vals[-1])/(DP_vals[-1]+BP_vals[-1])))
 
     # counter = counter + 1
-    B_arr = (np.array(avg_counts_res2) + np.array(avg_counts_res1))#[:-int(0.05*len(avg_counts_res2))]
-    D_arr = (np.array(avg_counts_res3) + np.array(avg_counts_res4))#[:-int(0.05*len(avg_counts_res2))]
-    plt.plot(B_arr + D_arr)
+    B_arr = (np.array(avg_counts_res2[:-100]) + np.array(avg_counts_res1[:-100]))#[:-int(0.05*len(avg_counts_res2))]
+    D_arr = (np.array(avg_counts_res3[:-100]) + np.array(avg_counts_res4[:-100]))#[:-int(0.05*len(avg_counts_res2))]
     plt.plot(B_arr)
     plt.plot(D_arr)
+    # plt.plot(B_arr + D_arr)
     plt.text(0, np.mean(B_arr + D_arr), str(np.round(max(abs((B_arr-D_arr)/(B_arr+D_arr))), decimals=2)), fontsize=48,
                            verticalalignment='top')
     # plt.text(0, 200, str(np.round((max(D_arr)-min(D_arr)) / np.mean(D_arr + B_arr), decimals=3)), fontsize=28,
