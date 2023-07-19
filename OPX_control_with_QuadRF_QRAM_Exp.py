@@ -2199,10 +2199,12 @@ class OPX:
         # avg_DP_before = np.average(self.MZ_DP_counts_res['value_1'][:self.rep_MZ_check])
         # avg_DP_after = np.average(self.MZ_DP_counts_res['value_1'][self.rep_MZ_check:])
 
+        pause_str = ' , PAUSED!' if self.pause_flag else ''
         textstr_thresholds = '# %d - ' % self.Counter + 'Reflections: %d, ' % self.sum_for_threshold + \
                              'Efficiency: %.2f, ' % self.lockingEfficiency + \
                              'Flr: %.2f, ' % (1000 * np.average(self.FLR_res.tolist())) + \
-                             'Lock Error: %.3f' % self.lock_err
+                             'Lock Error: %.3f' % self.lock_err + pause_str
+
         textstr_total_reflections = 'Total reflections per cycle "N" = %d \n' % (sum(self.num_of_det_reflections_per_seq_N),)\
                                     + 'Total reflections per cycle "S" = %d \n' % (sum(self.num_of_det_reflections_per_seq_S),) \
                                     +'Average reflections per cycle = %.2f \n' % (sum(self.num_of_det_reflections_per_seq_accumulated/self.Counter),) \
@@ -2215,6 +2217,7 @@ class OPX:
         textstr_BP_DP = 'Average Bright counts = %.2f \n' % (avg_BP,) + \
                         'Average Dark counts = %.2f \n' % (avg_DP,) + \
                         'Infidelity = %.2f' % (avg_DP/(avg_DP + avg_BP),)
+
         textstr_BP_DP_BA = 'Infidelity before = %.2f \n' % (self.Infidelity_before,) + \
                            'Infidelity after= %.2f \n' % (self.Infidelity_after,) + \
                            'S total counts MZ = %.2f ' % (self.MZ_S_tot_counts,)
@@ -2462,8 +2465,10 @@ class OPX:
         self.end_of_det_pulse_in_seq = self.pulses_location_in_seq[self.num_of_detection_pulses - 1][1]
 
         ## Listen for keyboard
-        listener = keyboard.Listener(on_press=self.on_key_press)
-        listener.start()  # start to listen on a separate thread
+        # listener = keyboard.Listener(on_press=self.on_key_press)
+        # listener.start()  # start to listen on a separate thread
+        self.listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
+        self.listener.start()
         self.keyPress = None
         print('\033[94m' + 'Press ESC to stop measurement.' + '\033[0m')  # print blue
 
@@ -2646,6 +2651,7 @@ class OPX:
         self.repitions = 1  # Total number of cycles
         self.acquisition_flag = True
         self.threshold_flag = True
+        self.pause_flag = False
         self.Phase_Correction_min_diff = []
         #
         # create figures template
@@ -2672,6 +2678,10 @@ class OPX:
                 self.update_parameters()
                 # Other actions can be added here
                 break
+            if self.keyPress == 'SPACE':
+                print('\033[94m' + 'SPACE pressed. Pausing measurement.' + '\033[0m')  # print blue
+                self.pause_flag = not self.pause_flag
+                # Other actions can be added here
             self.lockingEfficiency = self.Counter / self.repitions
             print(timest, self.Counter, 'Eff: %.2f' % self.lockingEfficiency, 'Flr: %.2f' % (1000 * np.average(self.FLR_res.tolist())))
             self.repitions += 1
@@ -2718,7 +2728,9 @@ class OPX:
                     self.update_parameters()
                     # Other actions can be added here
                     break
-
+                if self.keyPress == 'SPACE':
+                    print('\033[94m' + 'SPACE pressed. Pausing measurement.' + '\033[0m')  # print blue
+                    self.pause_flag = not self.pause_flag
             # assaf - if x=self.M_window the index is out of range so i added 1
             try:
                 self.lock_err = np.abs(np.load(
@@ -2806,7 +2818,7 @@ class OPX:
                                   (self.Infidelity_before <= MZ_inidelity_threshold) and \
                                   (self.Infidelity_after <= MZ_inidelity_threshold)
 
-            if (self.threshold_flag or not exp_flag) and self.acquisition_flag:
+            if (self.threshold_flag or not exp_flag) and self.acquisition_flag and not self.pause_flag:
                 print('Sum of reflections: %d' % self.sum_for_threshold)
                 self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
                                                                    + self.num_of_det_reflections_per_seq_N
@@ -3132,6 +3144,24 @@ class OPX:
     def on_key_press(self, key):
         if key == keyboard.Key.esc:
             self.keyPress = 'ESC'
+
+    def on_press(self, key):
+        print(f'{key} pressed')
+        if key == keyboard.Key.shift:
+            self.alt_modifier = True
+
+    def on_release(self, key):
+        print(f'{key} released')
+        if key == keyboard.Key.esc and self.alt_modifier:
+            print('Alt-ESC released')
+            self.keyPress = 'ESC'
+
+        if key == keyboard.Key.space and self.alt_modifier:
+            print('Alt-Space released')
+            self.keyPress = 'SPACE'
+
+        if key == keyboard.Key.shift:
+            self.alt_modifier = False
 
     def most_common(self, lst):
         # get an iterable of (item, iterable) pairs
