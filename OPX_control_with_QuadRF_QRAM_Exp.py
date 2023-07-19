@@ -1797,6 +1797,12 @@ class OPX:
         # self.Phase_diff = self.Phase_diff_res
         self.MZ_S_tot_counts = self.Max_counts_res
 
+    def latched_detectors(self):
+        latched_detectors = []
+        for indx, det_tt_vec in enumerate(self.tt_measure):  # for different detectors
+            if not det_tt_vec:
+                latched_detectors.append(indx)
+        return latched_detectors
 
     def get_pulses_bins(self,det_pulse_len,sprint_pulse_len,num_of_det_pulses,num_of_sprint_pulses,
                         sprint_sequence_delay,num_of_sprint_sequences,num_init_zeros,num_fin_zeros,num_between_zeros):
@@ -1875,7 +1881,7 @@ class OPX:
 
         # tt_small_perturb = []
         for element in self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure:
-            if element > int(0.6e6):
+            if (element > int(0.6e6)) and (element < int(9.6e6)):
                 tt_inseq = element % self.QRAM_sequence_len
                 if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
                     self.num_of_det_reflections_per_seq_S[(element-1)//self.QRAM_sequence_len] += self.filter_S[tt_inseq]
@@ -1888,7 +1894,7 @@ class OPX:
             #         tt_small_perturb+=[element]
 
         for element in self.tt_S_measure + self.tt_FS_measure:
-            if element > int(0.6e6):
+            if (element > int(0.6e6)) and (element < int(9.6e6)):
                 tt_inseq = element % self.QRAM_sequence_len
                 if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
                     self.num_of_det_reflections_per_seq_N[(element-1)//self.QRAM_sequence_len] += self.filter_N[tt_inseq]
@@ -2137,7 +2143,6 @@ class OPX:
                  * np.array(self.folded_tt_DP[self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]]))
                  )
 
-
     def plt_pulses_roll(self, delay_det_N, delay_det_S, delay_rf_N, delay_rf_S):
         plt.figure()
         plt.plot(np.roll(self.folded_tt_S_delayed, delay_det_S), label='folded_S')
@@ -2162,7 +2167,6 @@ class OPX:
         self.Phase_Correction_vec_batch = self.Phase_Correction_vec_batch[-(N - 1):] + [self.Phase_Correction_vec]
         self.Phase_Correction_min_vec_batch = self.Phase_Correction_min_vec_batch[-(N - 1):] + [self.Phase_Correction_min_vec]
 
-
     def plot_sprint_figures(self, fig, ax, Num_Of_dets):
 
         ax[0].clear()
@@ -2174,13 +2178,19 @@ class OPX:
         ax[6].clear()
         ax[7].clear()
 
-        #
+        # Detectors display:
+        Detectors = []
+        for i, det in enumerate(Num_Of_dets):
+            Detectors.append(["Det %d" % det, -0.2, 1.375 - i * 0.25, 1])
+
+        # Threshold Box:
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
         if self.acquisition_flag:
-            props_thresholds = dict(boxstyle='round', edgecolor='green', linewidth=2, facecolor='green', alpha=0.5)
+            flag_color = 'green'
         else:
+            flag_color = 'red'
             playsound('C:/Windows/Media/cricket-1.wav')
-            props_thresholds = dict(boxstyle='round', edgecolor='red', linewidth=2, facecolor='red', alpha=0.5)
+        props_thresholds = dict(boxstyle='round', edgecolor=flag_color, linewidth=2, facecolor=flag_color, alpha=0.5)
 
         avg_BP = np.average(self.num_of_BP_counts_per_n_sequences)
         # avg_BP_before = np.average(self.MZ_BP_counts_res['value_1'][:self.rep_MZ_check])
@@ -2197,7 +2207,7 @@ class OPX:
                                     + 'Total reflections per cycle "S" = %d \n' % (sum(self.num_of_det_reflections_per_seq_S),) \
                                     +'Average reflections per cycle = %.2f \n' % (sum(self.num_of_det_reflections_per_seq_accumulated/self.Counter),) \
                                     +'Average transmissions per cycle = %.2f \n' % (sum(self.num_of_det_transmissions_per_seq_accumulated/self.Counter),) \
-                                    +'Average reflections precentage = %.2f \n' % (sum(self.num_of_det_reflections_per_seq_accumulated) /
+                                    +'Average reflections precentage = %.2f' % (sum(self.num_of_det_reflections_per_seq_accumulated) /
                                                                                 (sum(self.num_of_det_reflections_per_seq_accumulated) +
                                                                                 sum(self.num_of_det_transmissions_per_seq_accumulated)),)
         # textstr_avg_reflections = r'Average reflections per cycle = %.2f' % (sum(self.num_of_det_reflections_per_seq_accumulated/self.Counter),)
@@ -2207,7 +2217,7 @@ class OPX:
                         'Infidelity = %.2f' % (avg_DP/(avg_DP + avg_BP),)
         textstr_BP_DP_BA = 'Infidelity before = %.2f \n' % (self.Infidelity_before,) + \
                            'Infidelity after= %.2f \n' % (self.Infidelity_after,) + \
-                           'S total counts MZ = %.2f \n' % (self.MZ_S_tot_counts,)
+                           'S total counts MZ = %.2f ' % (self.MZ_S_tot_counts,)
                            # 'phase difference S-N = %.2f \n' % (self.Phase_diff,) + \
                            # 'S-N total counts ratio = %.2f \n' % (self.MZ_S_tot_counts,)
 
@@ -2291,6 +2301,9 @@ class OPX:
         ax[2].set_title('MZ outputs while locking', fontweight="bold")
         ax[2].legend(loc='upper right')
         # ax[6].legend(loc='upper left')
+        for det_circle in Detectors:
+            plt.text(det_circle[1], det_circle[2], det_circle[0], ha="center", va="center",
+                     bbox=dict(boxstyle=f"circle,pad={det_circle[3]}", fc=flag_color))
         # print(self.Phase_Correction_min_diff[-1])
         # print(np.average(self.Phase_Correction_min_diff))
         # print(np.std(self.Phase_Correction_min_diff))
@@ -2783,7 +2796,8 @@ class OPX:
             if exp_flag:
                 if (self.lock_err > lock_err_threshold) or \
                         ((1000 * np.average(self.FLR_res.tolist()) < FLR_threshold) and with_atoms) or \
-                        (np.average(experiment.avg_num_of_photons_per_pulse_live) > photons_per_det_pulse_threshold):
+                        (np.average(experiment.avg_num_of_photons_per_pulse_live) > photons_per_det_pulse_threshold) or \
+                        self.latched_detectors():
                     self.acquisition_flag = False
                 else:
                     self.acquisition_flag = True
