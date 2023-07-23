@@ -2181,7 +2181,7 @@ class OPX:
         # Detectors display:
         Detectors = []
         for i, det in enumerate(Num_Of_dets):
-            Detectors.append(["Det %d" % det, -0.2, 1.375 - i * 0.25, 1])
+            Detectors.append(["Det %d" % det, -0.15, 1.9 - i * 0.4, 1])
 
         # Threshold Box:
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -2304,9 +2304,13 @@ class OPX:
         ax[2].set_title('MZ outputs while locking', fontweight="bold")
         ax[2].legend(loc='upper right')
         # ax[6].legend(loc='upper left')
-        for det_circle in Detectors:
-            plt.text(det_circle[1], det_circle[2], det_circle[0], ha="center", va="center",
-                     bbox=dict(boxstyle=f"circle,pad={det_circle[3]}", fc=flag_color))
+        for indx, det_circle in enumerate(Detectors):
+            if indx in self.latched_detectors():
+                det_color = 'red'
+            else:
+                det_color = 'green'
+            ax[2].text(det_circle[1], det_circle[2], det_circle[0], ha="center", va="center", transform=ax[2].transAxes,
+                     bbox=dict(boxstyle=f"circle,pad={det_circle[3]}", edgecolor=det_color, linewidth=2, facecolor=det_color, alpha=0.5))
         # print(self.Phase_Correction_min_diff[-1])
         # print(np.average(self.Phase_Correction_min_diff))
         # print(np.std(self.Phase_Correction_min_diff))
@@ -2627,9 +2631,11 @@ class OPX:
         datest = time.strftime("%Y%m%d")
         FLR_measurement = []
         Exp_timestr_batch = []
+        lock_err_batch = []
 
         FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
         Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
+        lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
 
         ### Dor version ###
         self.find_transits_and_sprint_events_changed(cond=transit_condition, minimum_number_of_seq_detected=2)
@@ -2678,9 +2684,15 @@ class OPX:
                 self.update_parameters()
                 # Other actions can be added here
                 break
-            if self.keyPress == 'SPACE':
+            if self.keyPress == 'SPACE' and not self.pause_flag:
                 print('\033[94m' + 'SPACE pressed. Pausing measurement.' + '\033[0m')  # print blue
-                self.pause_flag = not self.pause_flag
+                self.pause_flag = True
+                self.keyPress = None
+                # Other actions can be added here
+            if self.keyPress == 'SPACE' and self.pause_flag:
+                print('\033[94m' + 'SPACE pressed. Continuing measurement.' + '\033[0m')  # print blue
+                self.pause_flag = False
+                self.keyPress = None
                 # Other actions can be added here
             self.lockingEfficiency = self.Counter / self.repitions
             print(timest, self.Counter, 'Eff: %.2f' % self.lockingEfficiency, 'Flr: %.2f' % (1000 * np.average(self.FLR_res.tolist())))
@@ -2728,9 +2740,6 @@ class OPX:
                     self.update_parameters()
                     # Other actions can be added here
                     break
-                if self.keyPress == 'SPACE':
-                    print('\033[94m' + 'SPACE pressed. Pausing measurement.' + '\033[0m')  # print blue
-                    self.pause_flag = not self.pause_flag
             # assaf - if x=self.M_window the index is out of range so i added 1
             try:
                 self.lock_err = np.abs(np.load(
@@ -2904,11 +2913,11 @@ class OPX:
 
                 FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
+                lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
                 self.save_tt_to_batch(Num_Of_dets, N)
                 if self.Counter == N:
                     print('\033[94m' + f'finished {N} Runs, {"with" if with_atoms else "without"} atoms' + '\033[0m')  # print blue
-                    self.updateValue("QRAM_Exp_switch", False)
-                    self.update_parameters()
+
                     # Other actions can be added here
                     break
                 if self.Counter < N:
@@ -2947,6 +2956,7 @@ class OPX:
         dirname_B = dirname + 'Bright(1,2)\\'
         dirname_FS = dirname + 'FastSwitch(6,7)\\'
         dirname_balancing = dirname + 'BalancingRes\\'
+        dirname_expfigures = root_dirname + 'Experiment_figures\\'
         if not os.path.exists(dirname):
             os.makedirs(dirname)
         if not os.path.exists(dirname_Det):
@@ -2963,6 +2973,8 @@ class OPX:
             os.makedirs(dirname_FS)
         if not os.path.exists(dirname_balancing):
             os.makedirs(dirname_balancing)
+        if not os.path.exists(dirname_expfigures):
+            os.makedirs(dirname_expfigures)
 
         # ----  msmnt files names  -----
         # Counter_str = (self.Counter)
@@ -2981,6 +2993,7 @@ class OPX:
         filename_FS_folded = f'FS_timetags_folded_to_seq.npz'
         filename_FLR = f'Flouresence.npz'
         filename_timestamp = f'Drops_time_stamps.npz'
+        filename_lockerr = f'Cavity_Lock_Error.npz'
         filname_sequence_S = f'South_sequence_vector.npz'
         filname_sequence_N = f'North_sequence_vector.npz'
         filname_sequence_Early = f'Early_sequence_vector.npz'
@@ -2998,17 +3011,20 @@ class OPX:
         # filename_SPRINT_reflections_batched = f'all_SPRINT_pulses_reflections_during_transits.npz'
         # filename_SPRINT_transmissions_batched = f'all_SPRINT_pulses_transmissions_during_transits.npz'
         filename_experimentPlot = f'Experiment_plot.png'
+        filename_experimentfigure = f'{timest}_Experiment_Figure.png'
 
         if len(FLR_measurement) > 0:
             np.savez(dirname + filename_FLR, FLR_measurement)
         if len(Exp_timestr_batch) > 0:
             np.savez(dirname + filename_timestamp, Exp_timestr_batch)
+            np.savez(dirname + filename_lockerr, lock_err_batch)
             np.savez(dirname + filname_sequence_S, Config.QRAM_Exp_Gaussian_samples_S)
             np.savez(dirname + filname_sequence_N, Config.QRAM_Exp_Gaussian_samples_N)
             np.savez(dirname + filname_sequence_Early, Config.QRAM_Exp_Square_samples_Early)
             np.savez(dirname + filname_sequence_Late, Config.QRAM_Exp_Square_samples_Late)
             np.savez(dirname + filname_sequence_FS, (1-np.array(Config.QRAM_Exp_Square_samples_FS)).tolist())
             plt.savefig(dirname + filename_experimentPlot, bbox_inches='tight')
+            plt.savefig(dirname_expfigures + filename_experimentfigure, bbox_inches='tight')
         for i in range(len(Num_Of_dets)):
             if len(self.tt_measure_batch[i]) > 0:
                 np.savez(dirname_Det + filename_Det_tt[i], self.tt_measure_batch[i])
@@ -3094,6 +3110,10 @@ class OPX:
             print(e)
         for qrdCtrl in self.QuadRFControllers:
             qrdCtrl.saveLinesAsCSV(f'{dirname}QuadRF_table.csv')
+
+        self.updateValue("QRAM_Exp_switch", False)
+        self.update_parameters()
+
         ## ------------------ end of saving section -------
 
     def Start_QRAM_Exp_with_tt(self, N=100, qram_sequence_len=int(len(Config.QRAM_Exp_Gaussian_samples_S)),
@@ -3146,18 +3166,18 @@ class OPX:
             self.keyPress = 'ESC'
 
     def on_press(self, key):
-        print(f'{key} pressed')
-        if key == keyboard.Key.shift:
+        # print(f'{key} pressed')
+        if key == keyboard.Key.shift or key == keyboard.Key.esc:
             self.alt_modifier = True
 
     def on_release(self, key):
-        print(f'{key} released')
+        # print(f'{key} released')
         if key == keyboard.Key.esc and self.alt_modifier:
-            print('Alt-ESC released')
+            # print('Alt-ESC released')
             self.keyPress = 'ESC'
 
         if key == keyboard.Key.space and self.alt_modifier:
-            print('Alt-Space released')
+            # print('Alt-Space released')
             self.keyPress = 'SPACE'
 
         if key == keyboard.Key.shift:
@@ -3187,7 +3207,7 @@ class OPX:
     def run_daily_experiment(self, day_experiment, transit_condition, preComment, lock_err_threshold, filter_delay,
                              reflection_threshold, reflection_threshold_time, FLR_threshold, MZ_inidelity_threshold,
                              Exp_flag=True):
-        with_atoms_bool = True
+        with_atoms_bool = False
         for i in range(len(day_experiment)):
             if with_atoms_bool:
                 Comment = preComment + ' with atoms'
@@ -3268,10 +3288,12 @@ if __name__ == "__main__":
     #                                   filter_delay=[0, 0, 0],
     #                                   reflection_threshold=10000, reflection_threshold_time=1e6, FLR_threshold=-0.11)   # except KeyboardInterrupt:
     # experiment.run_daily_experiment([2000, 50] * 1, transit_condition=[2, 1, 2], preComment='"|1c, (0 + 1)t> experiment"', lock_err_threshold=0.004,
-    experiment.run_daily_experiment([500, 50] * 2, transit_condition=[2, 1, 2], preComment='"1c(0+1)t"', lock_err_threshold=0.008,
+    experiment.run_daily_experiment([50, 500], transit_condition=[2, 1, 2], preComment='"|1c, (0 + 1)t> experiment"', lock_err_threshold=0.006,
                                     filter_delay=[0, 0, 0], reflection_threshold=600, reflection_threshold_time=9e6,
-                                    FLR_threshold=0.05, MZ_inidelity_threshold=0.12, Exp_flag=True)
-
+                                    FLR_threshold=0.11, MZ_inidelity_threshold=0.12, Exp_flag=True)
+    # experiment.run_daily_experiment([20, 50] * 2, transit_condition=[2, 1, 2], preComment='"1c(0+1)t"', lock_err_threshold=0.1,
+    #                                 filter_delay=[0, 0, 0], reflection_threshold=6000, reflection_threshold_time=9e6,
+    #                                 FLR_threshold=-0.01, MZ_inidelity_threshold=1, Exp_flag=True)
     #     experiment.job.halt()
     #     experiment.qmm.reset_data_processing()
     # finally:
