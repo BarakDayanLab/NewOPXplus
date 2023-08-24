@@ -1514,51 +1514,51 @@ class OPX:
         plt.plot(sum(np.reshape(self.tt_histogram_S, [int(len(self.tt_histogram_S) / 9), 9])), label='tt_hist_S')
         plt.legend()
 
-    def find_transit_events(self, N, minimum_transit_time, total_transit_reflections):
-
+    def find_transit_events(self, N, transit_time_threshold, transit_counts_threshold):
         current_transit = []
-        self.all_transits = []
-        self.all_transits_aligned_first = []
-        self.t_transit = []
-        self.transit_histogram = []
-        for t in self.tt_S_directional_measure:
-            if not current_transit:  # if the array is empty
-                current_transit.append(t)
-            elif (t - current_transit[-1]) < minimum_transit_time:
-                current_transit.append(t)
-            elif len(current_transit) > total_transit_reflections:
-                self.all_transits.append(current_transit)
-                for tt in current_transit:
-                    self.all_transits_accumulated[tt // self.histogram_bin_size] += 1
-                self.all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
-                current_transit = [t]
-            else:
-                current_transit = [t]
+        all_transits = []
+        all_transits_aligned_first = []
+        t_transit = []
+        transit_histogram = []
+        for index, value in enumerate(self.tt_S_binning_resonance):
+            if not current_transit and value:  # if the array is empty
+                current_transit.append(index)
+            elif value:
+                if ((index - current_transit[0]) * Config.frequency_sweep_duration*2) < transit_time_threshold:
+                    current_transit.append(index)
+                elif sum([self.tt_S_binning_resonance[i] for i in current_transit]) > transit_counts_threshold:
+                    all_transits.append(current_transit)
+                    all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
+                    # tt_S_transit_events[tuple(current_transit)] += 1
+                    for i in range(current_transit[0], current_transit[-1]):
+                        # building cavit-atom spectrum with the counts of the detuned time bins between the start and
+                        # finish of the transit:
+                        self.Cavity_atom_spectrum[((((i + 1) * len(Config.frequency_sweep_duration) * 2) %
+                                               experiment.M_window) // (
+                                                          len(Config.frequency_sweep_duration) * 1000)) %
+                                             self.spectrum_bin_number] += self.tt_S_binning_detuned[i + 1]
+                    current_transit = [index]
+                else:
+                    # Finding if there any index that was saved to current transit and is close enough to the new index
+                    t = [i for i, elem in enumerate(current_transit) if ((index - elem) * 480) < transit_time_threshold]
+                    if t:
+                        current_transit = current_transit[t[0]:] + [index]
+                    else:
+                        current_transit = [index]
 
-        if self.all_transits:
-            self.all_transits_batch = self.all_transits_batch[-(N - 1):] + [self.all_transits]
-            self.all_transits_aligned_first_batch = self.all_transits_aligned_first_batch[-(N - 1):] + [
-                self.all_transits_aligned_first]
-            self.transit_histogram = np.zeros((max([vec for elem in self.all_transits_aligned_first for vec in elem])
-                                               + self.histogram_bin_size) // self.Transit_profile_bin_size)
-            self.t_transit = np.linspace(0, len(self.transit_histogram) * self.Transit_profile_bin_size,
-                                         len(self.transit_histogram))
-            if len(self.transit_histogram_batch) == 0:
-                self.transit_histogram_batch = np.zeros((max(
-                    [vec for elem in [vec for elem in self.all_transits_aligned_first_batch for vec in elem] for vec in
-                     elem]) + self.histogram_bin_size) // self.Transit_profile_bin_size)
-            else:
-                self.transit_histogram_batch = np.pad(self.transit_histogram_batch, (0, (max(
-                    [vec for elem in [vec for elem in self.all_transits_aligned_first_batch for vec in elem] for vec in
-                     elem]) + self.histogram_bin_size) // self.Transit_profile_bin_size - len(
-                    self.transit_histogram_batch)),
-                                                      'constant')
-            for n in range(len(self.all_transits_aligned_first)):
-                for m in range(len(self.all_transits_aligned_first[n]) - 1):
-                    self.transit_histogram[
-                        self.all_transits_aligned_first[n][m + 1] // self.Transit_profile_bin_size] += 1
-                    self.transit_histogram_batch[
-                        self.all_transits_aligned_first[n][m + 1] // self.Transit_profile_bin_size] += 1
+        for index, value in enumerate(self.tt_S_binning_detuned):
+            if index not in [vec for elem in all_transits for vec in elem]:
+                self.Cavity_spectrum[(((index * len(Config.Spectrum_Exp_Gaussian_samples) * 2) %
+                                  experiment.M_window) // (len(Config.Spectrum_Exp_Gaussian_samples) * 1000)) %
+                                self.spectrum_bin_number] += value
+
+        self.tt_S_transit_events[[i for i in [vec for elem in all_transits for vec in elem]]] += 1
+
+        if all_transits:
+            self.all_transits_batch = self.all_transits_batch[-(N - 1):] + [all_transits]
+            transit_histogram = np.zeros((max([vec for elem in all_transits_aligned_first for vec in elem])
+                                          + self.histogram_bin_size) // self.Transit_profile_bin_size)
+            self.t_transit = np.linspace(0, len(transit_histogram) * self.Transit_profile_bin_size, len(transit_histogram))
 
     def get_pulses_location_in_seq(self, delay, seq=Config.QRAM_Exp_Gaussian_samples_S,
                                    smearing=int(Config.num_between_zeros / 2)):
@@ -1980,8 +1980,8 @@ class OPX:
         self.tt_S_transit_events[[i for i, x in enumerate(self.tt_S_binning) if x > transit_counts_threshold]] += 1
         self.tt_S_transit_events_accumulated = self.tt_S_transit_events
 
-        self.find_transit_events(N, minimum_transit_time=time_threshold,
-                                 total_transit_reflections=transit_counts_threshold)
+        self.find_transit_events(N, transit_time_threshold=time_threshold,
+                                 transit_counts_threshold=transit_counts_threshold)
 
         self.Counter = 1  # Total number of successful cycles
         self.repitions = 1  # Total number of cycles
@@ -2268,7 +2268,7 @@ class OPX:
 
         ## ------------------ end of saving section -------
 
-    def Save_SNSPDs_Spectrum_Measurement_with_tt(self, N, histogram_bin_size, transit_profile_bin_size, preComment,
+    def Save_SNSPDs_Spectrum_Measurement_with_tt(self, N, transit_profile_bin_size, preComment,
                                                  total_counts_threshold, transit_counts_threshold, FLR_threshold,
                                                  lock_err_threshold, exp_flag, with_atoms):
         """
@@ -2293,14 +2293,14 @@ class OPX:
         # set constant parameters for the function
         Num_Of_dets = [1, 2, 3, 4, 5, 6, 7, 8]
         self.histogram_bin_size = Config.frequency_sweep_duration * 2
-        self.histogram_bin_number = self.M_time // self.histogram_bin_size
+        self.histogram_bin_number = self.M_time // self.histogram_bin_size # num of bins in cycle of frequency sweep
         self.time_bins = np.linspace(0, self.M_time, self.histogram_bin_number)
         self.spectrum_bin_number = self.spectrum_bandwidth // self.frequency_diff  # TODO: ask natan how many freq steps he uses
         self.freq_bins = np.linspace(self.frequency_start, self.frequency_start + self.spectrum_bandwidth,
                                 self.spectrum_bin_number)
         self.Transit_profile_bin_size = transit_profile_bin_size
         time_threshold = int(
-            histogram_bin_size * 0.8)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
+            self.histogram_bin_size * 0.8)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
 
         ## Listen for keyboard
         self.listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
@@ -2336,7 +2336,7 @@ class OPX:
                (self.sum_for_threshold >= total_counts_threshold) and exp_flag) or start:
             if self.keyPress == 'ESC':
                 print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
-                self.updateValue("Sprint_Exp_switch", False)
+                self.updateValue("Spectrum_Exp_switch", False)
                 self.MOT_switch(True)
                 self.update_parameters()
                 self.Stop_run_daily_experiment = True
@@ -2369,9 +2369,12 @@ class OPX:
         self.tt_S_transit_events_accumulated = np.zeros(self.histogram_bin_number)
         self.all_transits_accumulated = np.zeros(self.histogram_bin_number)
 
+        self.Cavity_atom_spectrum = np.zeros(self.spectrum_bin_number)
+        self.Cavity_spectrum = np.zeros(self.spectrum_bin_number)
+
         # fold reflections and transmission
         for x in self.tt_N_directional_measure:
-            self.tt_N_binning[(x - 1) // Config.frequency_sweep_duration] += 1
+            self.tt_N_binning[(x - 1) // Config.frequency_sweep_duration] += 1 #TODO: x-1?? in spectrum its x
         self.tt_N_binning_avg = self.tt_N_binning
         for x in self.tt_S_directional_measure:
             self.tt_S_binning[(x - 1) // Config.frequency_sweep_duration] += 1
@@ -2409,8 +2412,8 @@ class OPX:
         self.tt_S_transit_events[[i for i, x in enumerate(self.tt_S_binning) if x > transit_counts_threshold]] += 1
         self.tt_S_transit_events_accumulated = self.tt_S_transit_events
 
-        self.find_transit_events(N, minimum_transit_time=time_threshold,
-                                 total_transit_reflections=transit_counts_threshold)
+        self.find_transit_events(N, transit_time_threshold=time_threshold,
+                                 transit_counts_threshold=transit_counts_threshold)
 
         self.Counter = 1  # Total number of successful cycles
         self.repitions = 1  # Total number of cycles
@@ -2513,17 +2516,17 @@ class OPX:
                 if self.Counter < N:
                     self.Counter += 1
 
-                self.tt_N_binning = np.zeros(histogram_bin_number)
-                self.tt_S_binning = np.zeros(histogram_bin_number)
-                self.tt_S_transit_events = np.zeros(histogram_bin_number)
+                self.tt_N_binning = np.zeros(self.histogram_bin_number)
+                self.tt_S_binning = np.zeros(self.histogram_bin_number)
+                self.tt_S_transit_events = np.zeros(self.histogram_bin_number)
 
                 self.tt_S_binning_avg = self.tt_S_binning_avg * (1 - 1 / self.Counter)
 
                 for x in self.tt_N_directional_measure:
-                    self.tt_N_binning[(x - 1) // histogram_bin_size] += 1
+                    self.tt_N_binning[(x - 1) // self.histogram_bin_size] += 1
                 for x in self.tt_S_directional_measure:
-                    self.tt_S_binning[(x - 1) // histogram_bin_size] += 1
-                    self.tt_S_binning_avg[(x - 1) // histogram_bin_size] += 1 / self.Counter
+                    self.tt_S_binning[(x - 1) // self.histogram_bin_size] += 1
+                    self.tt_S_binning_avg[(x - 1) // self.histogram_bin_size] += 1 / self.Counter
 
                 if len(self.tt_S_measure_batch) == N:
                     self.tt_N_transit_events[
@@ -2546,8 +2549,8 @@ class OPX:
                     [i for i, x in enumerate(self.tt_S_binning) if x > transit_counts_threshold]] += 1
                 self.tt_S_transit_events_accumulated = self.tt_S_transit_events_accumulated + self.tt_S_transit_events
 
-                self.find_transit_events(N, minimum_transit_time=time_threshold,
-                                         total_transit_reflections=transit_counts_threshold)
+                self.find_transit_events(N, transit_time_threshold=time_threshold,
+                                 transit_counts_threshold=transit_counts_threshold)
 
                 FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
