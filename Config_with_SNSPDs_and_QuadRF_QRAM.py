@@ -57,36 +57,38 @@ def Sprint_Exp_Gaussian_samples(sprint_pulse_len=110, det_pulse_len=30, det_puls
 
 def QRAM_Exp_Gaussian_samples(sprint_pulse_len=110, det_pulse_len=30, det_pulses_amp=[0.4]*6, sprint_pulses_amp=[0.4]*4,
                               num_between_zeros=10, num_init_zeros=12, num_mid_zeros=12, num_fin_zeros=0):
-    qram_exp_gaussian_samples = [0] * num_init_zeros
+    qram_exp_gaussian_samples = [0] * (num_init_zeros - 2 + 42 + 16) # -2 for echos from south
     for n in det_pulses_amp:
-        qram_exp_gaussian_samples += (signal.gaussian(det_pulse_len, std=(det_pulse_len * 0.5 / 2.355)) * n).tolist() + [0] * num_between_zeros
-    qram_exp_gaussian_samples += [0] * num_mid_zeros  # due to unresolved reflections
-    for m in sprint_pulses_amp:
-        qram_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len-4), std=((sprint_pulse_len-4) / 2.355)) * m).tolist() + [0] * (num_between_zeros + 4)
-    qram_exp_gaussian_samples += [0] * num_fin_zeros
+        qram_exp_gaussian_samples += (signal.gaussian(det_pulse_len, std=(det_pulse_len * 0.5 / 2.355)) * n).tolist() + [0] * (num_between_zeros - 3) # -3 for echos from south
+    # qram_exp_gaussian_samples += [0] * (num_mid_zeros - 10) # due to unresolved reflections +40 for S echos
+    qram_exp_gaussian_samples = qram_exp_gaussian_samples[:-(num_between_zeros - 3)] + [0] * (num_between_zeros - 3 + num_mid_zeros - 16) # due to unresolved reflections +40 for S echos
+    # for m in sprint_pulses_amp:
+    #     qram_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len-4), std=((sprint_pulse_len-4) / 2.355)) * m).tolist() + [0] * (num_between_zeros + 4)
+    # # qram_exp_gaussian_samples += [0] * num_fin_zeros
+    # qram_exp_gaussian_samples = qram_exp_gaussian_samples[:-(num_between_zeros + 4)] + [0] * (num_between_zeros + 4 + num_fin_zeros - 16) # -14 due to S echos
     return qram_exp_gaussian_samples
 
 
 def QRAM_Exp_Square_samples(amp=0.45, sprint_pulse_len=110, det_pulse_len=30, det_pulses_amp=[0.4]*6, sprint_pulses_amp=[0.4]*4,
                             num_between_vals=10, num_init_val=12, num_mid_val=12, num_fin_val=0):
 
-    qram_exp_gaussian_samples = [det_pulses_amp[0] * amp] * num_init_val
+    qram_exp_gaussian_samples = [det_pulses_amp[0] * amp] * (num_init_zeros - 2 + 42 + 16)
 
     for n in range(len(det_pulses_amp)-1):
         qram_exp_gaussian_samples += [det_pulses_amp[n] * amp] * det_pulse_len + \
-                                     [det_pulses_amp[n] * det_pulses_amp[n+1] * amp] * num_between_vals
+                                     [det_pulses_amp[n] * det_pulses_amp[n+1] * amp] * (num_between_vals - 3)
     qram_exp_gaussian_samples += [det_pulses_amp[-1] * amp] * det_pulse_len + \
-                                 [det_pulses_amp[-1] * sprint_pulses_amp[0] * amp] * num_between_vals
+                                 [det_pulses_amp[-1] * sprint_pulses_amp[0] * amp] * (num_between_vals - 16 - 3)
 
-    qram_exp_gaussian_samples += [sprint_pulses_amp[0] * amp] * num_mid_val  # due to unresolved reflections
+    qram_exp_gaussian_samples += [sprint_pulses_amp[0] * amp] * (num_mid_val)  # due to unresolved reflections
 
-    for m in range(len(sprint_pulses_amp)-1):
-        qram_exp_gaussian_samples += [sprint_pulses_amp[m] * amp] * (sprint_pulse_len - 4) + \
-                                     [sprint_pulses_amp[m] * sprint_pulses_amp[m + 1] * amp] * (num_between_vals + 4)
-    qram_exp_gaussian_samples += [sprint_pulses_amp[-1] * amp] * (sprint_pulse_len - 4) + \
-                                 [sprint_pulses_amp[-1] * det_pulses_amp[0] * amp] * (num_between_vals + 4)
-
-    qram_exp_gaussian_samples += [det_pulses_amp[0] * amp] * num_fin_val
+    # for m in range(len(sprint_pulses_amp)-1):
+    #     qram_exp_gaussian_samples += [sprint_pulses_amp[m] * amp] * (sprint_pulse_len - 4) + \
+    #                                  [sprint_pulses_amp[m] * sprint_pulses_amp[m + 1] * amp] * (num_between_vals + 4)
+    # qram_exp_gaussian_samples += [sprint_pulses_amp[-1] * amp] * (sprint_pulse_len - 4) + \
+    #                              [sprint_pulses_amp[-1] * det_pulses_amp[0] * amp] * (num_between_vals + 4)
+    #
+    # qram_exp_gaussian_samples += [det_pulses_amp[0] * amp] * num_fin_val
 
     return qram_exp_gaussian_samples
 
@@ -158,6 +160,7 @@ analyzer_const_pulse_len = 500
 Detection_pulse_len = 1000
 Flash_pulse_len = 10000
 spectrum_pulse = 240
+frequency_sweep_duration = 500
 
 # Intermediate frequencies
 IF_TOP1_MOT = 113e6
@@ -183,6 +186,7 @@ IF_AOM_SigmaPlus = 114.58e6
 IF_AOM_SigmaMinus = 114.58e6
 IF_AOM_Pi = 75.34e6
 IF_CRUS_pulser = 125e6
+IF_AOM_Spectrum = 133.325e6/2
 
 IF_Divert = 20e6
 # IF_AOM_Analyzer = np.abs(IF_AOM_N - IF_AOM_S) * 2
@@ -243,7 +247,7 @@ sprint_pulse_amp_General = [1, 1, 1, 1]
 num_init_zeros_S = 10  # For only det pulses sequence
 num_mid_zeros_S = 10
 num_fin_zeros_S = 0  # For only det pulses sequence
-# det_pulse_amp_S = [0, 0, 0, 0, 0, 0, 0, 0]
+det_pulse_amp_S = [0, 0, 0, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_S = [0, 0.45, 0, 0.45]
 # For pulse sync
 # det_pulse_amp_S = [0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45]
@@ -253,15 +257,16 @@ num_fin_zeros_S = 0  # For only det pulses sequence
 # det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
 # sprint_pulse_amp_S = [0.075, 0, 0, 0]
 # |0c, (0 + 1)t>
-# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
-# sprint_pulse_amp_S = [0, 0, 0, 0]
+# det_pulse_amp_S = [0, 0, 0.45, 0, 0.45, 0, 0.45, 0]
+# det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0]
+sprint_pulse_amp_S = [0, 0, 0, 0]
 # |1c, (0 + 1)t>
-det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
+# det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
 # sprint_pulse_amp_S = [0, 0.07, 0, 0.07]
 # sprint_pulse_amp_S = [0, 0.15, 0, 0.15]
 # det_pulse_amp_S = [0.155, 0, 0.155, 0, 0.155, 0, 0.155, 0]
-sprint_pulse_amp_S = [0, 0.078, 0, 0.078]
-# sprint_pulse_amp_S = [0, 0, 0, 0]
+# sprint_pulse_amp_S = [0, 0.078, 0, 0.078]
+# sprint_pulse_amp_S = [0.095, 0, 0, 0]
 # sprint_pulse_amp_S = [0.078, 0, 0.078, 0]
 
 # Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
@@ -275,13 +280,13 @@ sprint_pulse_amp_S = [0, 0.078, 0, 0.078]
 num_init_zeros_N = 10  # For only det pulses sequence
 num_mid_zeros_N = 10
 num_fin_zeros_N = 0  # For only det pulses sequence
-det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
+# det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
 # det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
 # sprint_pulse_amp_N = [0.45, 0, 0.45, 0]
 # sprint_pulse_amp_N = [0, 0.105, 0, 0.105]
-# sprint_pulse_amp_N = [0, 0.2, 0, 0.2]
+# sprint_pulse_amp_N = [0, 0.25, 0, 0.25]
 # For pulse sync
-# det_pulse_amp_N = [0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45]
+det_pulse_amp_N = [0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45]
 # det_pulse_amp_N = [0, 0, 0, 0, 0, 0, 0, 0]
 # det_pulse_amp_N = [1, 1, 1, 1, 1, 1, 1, 1]
 # sprint_pulse_amp_N = [0.45, 0.45, 0.45, 0]
@@ -292,12 +297,13 @@ det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
 # sprint_pulse_amp_N = [0, 0, 0, 0.085]
 # |0c, (0 + 1)t>
 # det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
+# det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
 # det_pulse_amp_N = [0, 0.155, 0, 0.155, 0, 0.155, 0, 0.155]
-# sprint_pulse_amp_N = [0, 0.085, 0, 0.085]
+# sprint_pulse_amp_N = [0, 0.078, 0, 0.078]
 # # |1c, (0 + 1)t>
 # det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
-sprint_pulse_amp_N = [0.15, 0, 0, 0]
-# sprint_pulse_amp_N = [0, 0, 0, 0]
+# sprint_pulse_amp_N = [0.095, 0, 0, 0]
+sprint_pulse_amp_N = [0, 0, 0, 0]
 
 # Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
 #                                                             det_pulse_len=det_pulse_len,
@@ -380,7 +386,8 @@ Pulses_Amp_Early = 0.495
 # sprint_pulse_amp_Early = [1, 1, 0, 0]
 # |1c, (0 + 1)t>
 det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 0, 0]
-sprint_pulse_amp_Early = [1, 1, 0, 0]
+# sprint_pulse_amp_Early = [1, 1, 0, 0]
+sprint_pulse_amp_Early = [0, 0, 0, 0]
 
 # QRAM_Exp_Gaussian_samples_N = QRAM_Exp_Square_samples(amp=Pulses_Amp,
 #                                                       sprint_pulse_len=sprint_pulse_len,
@@ -416,9 +423,12 @@ QRAM_Exp_Square_samples_Early_delayed = np.roll(QRAM_Exp_Square_samples_Early, A
 num_init_val_Late = 10  # For only det pulses sequence
 num_mid_val_Late = 10
 num_fin_val_Late = 0  # For only det pulses sequence
-Pulses_Amp_Late = 0.45  # For balancing with AOM Early (since added the switch)
+Pulses_Amp_Late = 0.35  # For balancing with AOM Early (since added the switch)
+# Pulses_Amp_Late = 0.45  # For balancing with AOM Early (since added the switch)
 # For pulse sync
-# det_pulse_amp_Late = [0, 0, 0, 0, 0, 0, 0, 0]
+det_pulse_amp_Late = [1, 1, 1, 1, 1, 1, 1, 1]
+# sprint_pulse_amp_Late = [0, 0, 0, 0]
+sprint_pulse_amp_Late = [1, 1, 1, 1]
 # sprint_pulse_amp_Late = [0, 1, 1, 0]
 # For Bell |(0 + 1)c, 1t>
 # det_pulse_amp_Late = [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0, 0]
@@ -427,8 +437,9 @@ Pulses_Amp_Late = 0.45  # For balancing with AOM Early (since added the switch)
 # det_pulse_amp_Late = [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
 # sprint_pulse_amp_Late = [0, 0, 1, 1]
 # # |1c, (0 + 1)t>
-det_pulse_amp_Late = [1, 1, 1, 1, 1, 1, 1, 1]
-sprint_pulse_amp_Late = [0, 0, 1, 1]
+# det_pulse_amp_Late = [1, 1, 1, 1, 1, 1, 1, 1]
+# sprint_pulse_amp_Late = [0, 0, 1, 1]
+# sprint_pulse_amp_Late = [1, 1, 1, 1]
 
 QRAM_Exp_Square_samples_Late = QRAM_Exp_Square_samples(amp=Pulses_Amp_Late,
                                                        sprint_pulse_len=sprint_pulse_len,
@@ -474,7 +485,7 @@ QRAM_Exp_digital_samples_FS = get_pulses_location_in_seq(delay=0,
 
 MZ_delay = int(len(QRAM_Exp_Gaussian_samples_N) / 4)
 # Pulses_Amp_balance = 0.18
-Pulses_Amp_balance = 0.45
+Pulses_Amp_balance = 0.3
 AOM_risetime = 120
 AOM_risetime_pulsers = 130
 MZ_balancing_seq_rep = 40
@@ -486,18 +497,25 @@ QRAM_MZ_balance_pulse_South = ([0] * (MZ_delay - AOM_risetime_pulsers) + [0] * (
                                + [0] * (MZ_delay - AOM_risetime_pulsers) + [0] * (AOM_risetime_pulsers - 20) + [0] * 20) * \
                               MZ_balancing_seq_rep
 QRAM_MZ_balance_pulse_Early = ([Pulses_Amp_Early] * MZ_delay + [0] * MZ_delay) * MZ_balancing_seq_rep
-QRAM_MZ_balance_pulse_Early_delayed = np.roll(QRAM_MZ_balance_pulse_Early, AOM_Early_delay-10+AOM_S_to_N_delay)
+QRAM_MZ_balance_pulse_Early_delayed = np.roll(QRAM_MZ_balance_pulse_Early, AOM_Early_delay-10)
+# QRAM_MZ_balance_pulse_Early_delayed = np.roll(QRAM_MZ_balance_pulse_Early, AOM_Early_delay-10+AOM_S_to_N_delay)
 QRAM_MZ_balance_pulse_Late = ([0] * MZ_delay + [Pulses_Amp_Late] * (MZ_delay)) * MZ_balancing_seq_rep
-QRAM_MZ_balance_pulse_Late_delayed = np.roll(QRAM_MZ_balance_pulse_Late, AOM_Late_delay-10+AOM_S_to_N_delay)
+QRAM_MZ_balance_pulse_Late_delayed = np.roll(QRAM_MZ_balance_pulse_Late, AOM_Late_delay-10)
+# QRAM_MZ_balance_pulse_Late_delayed = np.roll(QRAM_MZ_balance_pulse_Late, AOM_Late_delay-10+AOM_S_to_N_delay)
 
-# QRAM_Exp_Gaussian_samples_N = ([0] * (MZ_delay - AOM_risetime_pulsers) + [0] * (AOM_risetime_pulsers - 20) + [0] * 20
-#                                + [0] * (MZ_delay - AOM_risetime_pulsers) + [0] * (AOM_risetime_pulsers - 20) + [0] * 20) * 2
+QRAM_Exp_Gaussian_samples_N = ([0] * (MZ_delay - AOM_risetime_pulsers) + [0] * (AOM_risetime_pulsers - 20) + [0] * 20
+                               + [0] * (MZ_delay - AOM_risetime_pulsers) + [0] * (AOM_risetime_pulsers - 20) + [0] * 20) * 2
+# QRAM_Exp_Gaussian_samples_N = ([0] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp_balance] * (AOM_risetime_pulsers - 20) + [0] * 20
+#                                + [0] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp_balance] * (AOM_risetime_pulsers - 20) + [0] * 20) * 2
+QRAM_Exp_Gaussian_samples_S = ([Pulses_Amp_balance] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp_balance] * (AOM_risetime_pulsers - 20) + [Pulses_Amp_balance] * 20
+                               + [Pulses_Amp_balance] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp_balance] * (AOM_risetime_pulsers - 20) + [Pulses_Amp_balance] * 20) * 2
 # QRAM_Exp_Gaussian_samples_S = ([0] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp_balance] * (AOM_risetime_pulsers - 20) + [0] * 20
 #                                + [0] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp_balance] * (AOM_risetime_pulsers - 20) + [0] * 20) * 2
-# QRAM_Exp_Square_samples_Late = ([0] * MZ_delay + [Pulses_Amp_Late] * MZ_delay) * 2
+QRAM_Exp_Square_samples_Late = ([Pulses_Amp_Late] * MZ_delay + [Pulses_Amp_Late] * MZ_delay) * 2
 # QRAM_Exp_Square_samples_Early = ([Pulses_Amp_Early] * MZ_delay + [0] * MZ_delay) * 2
-# QRAM_Exp_Square_samples_Late_delayed = np.roll(QRAM_Exp_Square_samples_Late, AOM_Late_delay-10-AOM_S_to_N_delay)
-# QRAM_Exp_Square_samples_Early_delayed = np.roll(QRAM_Exp_Square_samples_Early, AOM_Early_delay-10-AOM_S_to_N_delay)
+QRAM_Exp_Square_samples_Early = ([0] * MZ_delay + [0] * MZ_delay) * 2
+QRAM_Exp_Square_samples_Late_delayed = np.roll(QRAM_Exp_Square_samples_Late, AOM_Late_delay-10-AOM_S_to_N_delay)
+QRAM_Exp_Square_samples_Early_delayed = np.roll(QRAM_Exp_Square_samples_Early, AOM_Early_delay-10-AOM_S_to_N_delay)
 
 
 # readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/1.5)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
@@ -532,7 +550,7 @@ OD_pulse_samples = np.convolve(square_samples, gaussian(x, 600, 20))[900 // 4 * 
 
 square_samples2 = ([0] * 400 + [0.8] * 400 + [0] * 400)
 xx = np.linspace(0, len(square_samples2), len(square_samples2))
-Gaussian_pulse_samples = gauss_adaptive(0.2, 1000)
+Gaussian_pulse_samples = gauss_adaptive(0.45, 500)
 
 ## Attenuators (global) for AOMs 0, + & - of MOT sequence
 # Factor 0.0-1.0
@@ -706,11 +724,11 @@ config = {
                     "delay": 0,
                     "buffer": 0,
                 },
-                "Shutter_Switch": {
-                    "port": (controller, 5),
-                    "delay": 0,
-                    "buffer": 0,
-                },
+                # "Shutter_Switch": {
+                #     "port": (controller, 5),
+                #     "delay": 0,
+                #     "buffer": 0,
+                # },
             },
             'operations': {
                 'OD': "OD_pulse",
@@ -720,15 +738,15 @@ config = {
             'intermediate_frequency': IF_AOM_OD,
         },
 
-        "AOM_2-2'": {
-            'singleInput': {
-                "port": (controller, 5)
-            },
-            'operations': {
-                'Depump': "Depump_pulse",
-            },
-            'intermediate_frequency': IF_AOM_Depump,
-        },
+        # "AOM_2-2'": {
+        #     'singleInput': {
+        #         "port": (controller, 5)
+        #     },
+        #     'operations': {
+        #         'Depump': "Depump_pulse",
+        #     },
+        #     'intermediate_frequency': IF_AOM_Depump,
+        # },
 
         "Measurement": {
             'digitalInputs': {
@@ -912,8 +930,19 @@ config = {
                 'Homodyne_Pulse': "Homodyne_Pulse",
                 # 'Balancing_support': "Balancing_support_Ancilla",
                 'QRAM_experiment_pulses_Ancilla': "QRAM_seq_pulse_Ancilla",
+                'Spectrum_pulse': "Frequency_Sweep"
             },
             'intermediate_frequency': IF_AOM_ANCILLA,
+        },
+
+        "AOM_Spectrum": {
+            'singleInput': {
+                "port": (controller, 8)
+            },
+            'operations': {
+                'Spectrum_pulse': "Frequency_Sweep",
+            },
+            'intermediate_frequency': IF_AOM_Spectrum,
         },
 
         "PULSER_N": {
@@ -1208,6 +1237,14 @@ config = {
             },
             'digital_marker': 'FS_North'
             # 'digital_marker': 'ON'
+        },
+
+        "Frequency_Sweep": {
+            'operation': 'control',
+            'length': frequency_sweep_duration,
+            'waveforms': {
+                'single': 'wf_gaus'
+            },
         },
 
         "DC_cal_pulse": {

@@ -371,8 +371,8 @@ def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
             assign(counts_B_sum, 0)
             assign(counts_D_sum, 0)
             with for_(k, 1, k <= points_for_sum, k + 1):
-                play("MZ_balancing_pulses_S", "PULSER_N")
-                play("MZ_balancing_pulses_S", "PULSER_S")
+                play("MZ_balancing_pulses_N", "PULSER_N")
+                play("MZ_balancing_pulses_N", "PULSER_S")
                 measure("MZ_balancing_pulses", "AOM_Early", None,
                         counting.digital(counts_B, m_window, element_outputs="OutBright1"))
                         # time_tagging.digital(tt_vec_B2, m_window, element_output="OutBright2", targetLen=counts_B2))
@@ -461,8 +461,8 @@ def MZ_balancing_2(m_time, m_window, shutter_open_time, phase_rep_fast, phase_re
         assign(counts_B_sum, 0)
         assign(counts_D_sum, 0)
         with for_(i, 1, i <= points_for_sum_fast, i + 1):
-            play("MZ_balancing_pulses_S", "PULSER_N")
-            play("MZ_balancing_pulses_S", "PULSER_S")
+            play("MZ_balancing_pulses_N", "PULSER_N")
+            play("MZ_balancing_pulses_N", "PULSER_S")
             measure("MZ_balancing_pulses", "AOM_Early", None,
                     counting.digital(counts_B, m_window, element_outputs="OutBright1"))
                     # time_tagging.digital(tt_vec_B2, m_window, element_output="OutBright2", targetLen=counts_B2))
@@ -806,8 +806,8 @@ def MZ_balancing_check(m_time, m_window, rep,
     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "PULSER_ANCILLA")
     # play("Const_open_triggered" * amp(0), "PULSER_ANCILLA", duration=m_time)
     with for_(t, 0, t < rep, t + 1):
-        play("MZ_balancing_pulses_S", "PULSER_N")
-        play("MZ_balancing_pulses_S", "PULSER_S")
+        play("MZ_balancing_pulses_N", "PULSER_N")
+        play("MZ_balancing_pulses_N", "PULSER_S")
         measure("MZ_balancing_pulses", "AOM_Early", None,
                 counting.digital(counts_B, m_window, element_outputs="OutBright1"))
         measure("MZ_balancing_pulses", "AOM_Late", None,
@@ -1799,9 +1799,9 @@ class OPX:
 
     def latched_detectors(self):
         latched_detectors = []
-        for indx, det_tt_vec in enumerate(self.tt_measure):  # for different detectors
-            if not det_tt_vec:
-                latched_detectors.append(indx)
+        # for indx, det_tt_vec in enumerate(self.tt_measure):  # for different detectors
+        #     if not det_tt_vec:
+        #         latched_detectors.append(indx)
         return latched_detectors
 
     def get_pulses_bins(self,det_pulse_len,sprint_pulse_len,num_of_det_pulses,num_of_sprint_pulses,
@@ -2264,7 +2264,7 @@ class OPX:
             ax[0].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j], self.Num_of_photons_txt_box_y_loc_live_MZ[j][1],
                        '%.2f' % self.avg_num_of_photons_per_pulse_live_MZ[j][1],
                        horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'], color='#d62728')
-        # ax[0].set_ylim(0, 400)
+        # ax[0].set_ylim(0, 0.3)
         ax[0].set_title('binned timetags from all detectors folded (Live)', fontweight="bold")
         ax[0].legend(loc='upper right')
         ax[0].text(0.05, 1.4, textstr_thresholds, transform=ax[0].transAxes, fontsize=28,
@@ -2289,6 +2289,7 @@ class OPX:
             ax[1].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j], self.Num_of_photons_txt_box_y_loc_MZ[j][1],
                        '%.2f' % self.avg_num_of_photons_per_pulse_MZ[j][1],
                        horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'], color='#d62728')
+        # ax[1].set_ylim(0, 0.3)
         ax[1].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
         ax[1].legend(loc='upper right')
 
@@ -2482,7 +2483,7 @@ class OPX:
         ## take data only if
         start = True
         # take threshold from npz ( error from resonator lock PID)
-        self.lock_err = None
+        self.lock_err = 0.001 #ZIV change back to None
         if exp_flag:
             while self.lock_err == None:
                 try:
@@ -2501,6 +2502,7 @@ class OPX:
             if self.keyPress == 'ESC':
                 print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
                 self.updateValue("Sprint_Exp_switch", False)
+                self.MOT_switch(True)
                 self.update_parameters()
                 self.Stop_run_daily_experiment=True
                 # Other actions can be added here
@@ -2680,6 +2682,7 @@ class OPX:
             if self.keyPress == 'ESC':
                 print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
                 self.updateValue("QRAM_Exp_switch", False)
+                self.MOT_switch(True)
                 self.Stop_run_daily_experiment = True
                 self.update_parameters()
                 # Other actions can be added here
@@ -2701,8 +2704,12 @@ class OPX:
             ax = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
             self.plot_sprint_figures(fig, ax, Num_Of_dets)
             ############################################################################################################
+            if self.Counter == N:
+                print(
+                    '\033[94m' + f'finished {N} Runs, {"with" if with_atoms else "without"} atoms' + '\033[0m')  # print blue
+                # Other actions can be added here
+                break
             count = 1
-
             while True:
                 # record time:
                 # timest = time.strftime("%Y%m%d,%H%M%S") # TODO: is it needed? already writen above..
@@ -2737,6 +2744,7 @@ class OPX:
                 if self.keyPress == 'ESC':
                     print('\033[94m' + 'ESC pressed. Stopping measurement.' + '\033[0m')  # print blue
                     self.updateValue("QRAM_Exp_switch", False)
+                    self.MOT_switch(True)
                     self.update_parameters()
                     # Other actions can be added here
                     break
@@ -2915,11 +2923,6 @@ class OPX:
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
                 lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
                 self.save_tt_to_batch(Num_Of_dets, N)
-                if self.Counter == N:
-                    print('\033[94m' + f'finished {N} Runs, {"with" if with_atoms else "without"} atoms' + '\033[0m')  # print blue
-
-                    # Other actions can be added here
-                    break
                 if self.Counter < N:
                     self.Counter += 1
 
@@ -3288,9 +3291,10 @@ if __name__ == "__main__":
     #                                   filter_delay=[0, 0, 0],
     #                                   reflection_threshold=10000, reflection_threshold_time=1e6, FLR_threshold=-0.11)   # except KeyboardInterrupt:
     # experiment.run_daily_experiment([2000, 50] * 1, transit_condition=[2, 1, 2], preComment='"|1c, (0 + 1)t> experiment"', lock_err_threshold=0.004,
-    experiment.run_daily_experiment([50, 500], transit_condition=[2, 1, 2], preComment='"|1c, (0 + 1)t> experiment"', lock_err_threshold=0.006,
-                                    filter_delay=[0, 0, 0], reflection_threshold=600, reflection_threshold_time=9e6,
-                                    FLR_threshold=0.11, MZ_inidelity_threshold=0.12, Exp_flag=True)
+    # experiment.run_daily_experiment([50, 500], transit_condition=[2, 1, 2], preComment='"|0c, (0 + 1)t> experiment"', lock_err_threshold=0.005,
+    experiment.run_daily_experiment([50, 500], transit_condition=[2, 1, 2], preComment='"N-N-N-N-N-N-N-N experiment"', lock_err_threshold=0.005,
+                                    filter_delay=[0, 0, 0], reflection_threshold=2550, reflection_threshold_time=9e6,
+                                    FLR_threshold=0.08, MZ_inidelity_threshold=1.12, Exp_flag=True)
     # experiment.run_daily_experiment([20, 50] * 2, transit_condition=[2, 1, 2], preComment='"1c(0+1)t"', lock_err_threshold=0.1,
     #                                 filter_delay=[0, 0, 0], reflection_threshold=6000, reflection_threshold_time=9e6,
     #                                 FLR_threshold=-0.01, MZ_inidelity_threshold=1, Exp_flag=True)
