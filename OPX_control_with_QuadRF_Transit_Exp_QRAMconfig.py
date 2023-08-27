@@ -489,7 +489,7 @@ def Spectrum_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
 
     # wait(298, "Dig_detectors")
-    wait(300, "Dig_detectors")
+    wait(345, "Dig_detectors")
     # with for_(n, 0, n < m_time * 4, n + m_window):
     measure("readout_QRAM", "Dig_detectors", None,
             time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
@@ -1353,7 +1353,9 @@ class OPX:
         :return:
 
         '''
-        self.tt_S_no_gaps = [x-(x//1e5)*300 for x in self.tt_S_directional_measure]
+        self.tt_S_no_gaps = [x-(x//(1e5 + 320))*320 for x in self.tt_S_directional_measure]
+        self.tt_S_no_gaps = [x-(x//(2e6 + 124))*124 for x in self.tt_S_no_gaps]
+        self.tt_S_no_gaps = [int(x) for x in self.tt_S_no_gaps]
     def latched_detectors(self):
         latched_detectors = []
         for indx, det_tt_vec in enumerate(self.tt_measure):  # for different detectors
@@ -1760,6 +1762,8 @@ class OPX:
         ax[3].legend(loc='upper right')
 
         ax[4].plot(np.linspace(0,self.histogram_bin_size-1,self.histogram_bin_size), self.folded_tt_S_acc, label='pulses folded', color='k')
+        ax[4].plot(np.linspace(0,self.histogram_bin_size-1,self.histogram_bin_size), self.folded_tt_S_acc_2, label='pulses folded_2', color='b')
+        ax[4].plot(np.linspace(0,self.histogram_bin_size-1,self.histogram_bin_size), self.folded_tt_S_acc_3, label='pulses folded_2', color='g')
         ax[4].set(xlabel='Time [nsec]', ylabel='Counts [#Number]')
         ax[4].legend(loc='upper right')
         # ax[4].plot(self.freq_bins, self.Cavity_spectrum, label='Cavity Spectrum', color='k')
@@ -1792,8 +1796,8 @@ class OPX:
             ax[5].text(0.25, 0.5, textstr_No_transits, transform=ax[5].transAxes, fontsize=24,
                      verticalalignment='center', bbox=props)
 
-        ax[1].set_ylim(0, 8)
-        ax[2].set_ylim(0, 8)
+        # ax[1].set_ylim(0, 8)
+        # ax[2].set_ylim(0, 8)
 
         # plt.tight_layout()
         plt.show()
@@ -2355,6 +2359,8 @@ class OPX:
         self.tt_S_transit_events_accumulated = np.zeros(self.histogram_bin_number*2)
         self.all_transits_accumulated = np.zeros(self.histogram_bin_number*2)
         self.folded_tt_S_acc = np.zeros(self.histogram_bin_size, dtype=int)
+        self.folded_tt_S_acc_2 = np.zeros(self.histogram_bin_size, dtype=int)
+        self.folded_tt_S_acc_3 = np.zeros(self.histogram_bin_size, dtype=int)
 
 
         self.Cavity_atom_spectrum = np.zeros(self.spectrum_bin_number)
@@ -2367,8 +2373,12 @@ class OPX:
         for x in self.tt_S_no_gaps:
             self.tt_S_binning[(x - 1) // Config.frequency_sweep_duration] += 1
         for x in self.tt_S_no_gaps:
-            if x < 100e3:
+            if x < 2e6:
                 self.folded_tt_S_acc[(x - 1) % self.histogram_bin_size] += 1
+            if 2e6 < x < 4e6:
+                self.folded_tt_S_acc_2[(x - 1) % self.histogram_bin_size] += 1
+            if 8e6 < x < 10e6:
+                self.folded_tt_S_acc_3[(x - 1) % self.histogram_bin_size] += 1
         self.tt_S_binning_avg = self.tt_S_binning
 
         # split the binning vector to odd and even - on and off resonance pulses
@@ -2509,8 +2519,12 @@ class OPX:
                 self.tt_S_binning[(x - 1) // Config.frequency_sweep_duration] += 1
             self.tt_S_binning_avg = self.tt_S_binning
             for x in self.tt_S_no_gaps:
-                if x < 100e3:
-                    self.folded_tt_S_acc[(x-1) % self.histogram_bin_size] += 1
+                # if x < (2e6 + 6400):
+                self.folded_tt_S_acc[(x-1) % self.histogram_bin_size] += 1
+                if (2e6 + 6400 + 120) < x < (4e6 + 6400*2 + 120):
+                    self.folded_tt_S_acc_2[(x - 1) % self.histogram_bin_size] += 1
+                if (8e6 + 6400*4 + 120*4) < x < (10e6):
+                    self.folded_tt_S_acc_3[(x - 1) % self.histogram_bin_size] += 1
 
             # split the binning vector to odd and even - on and off resonance pulses
             self.tt_N_binning_resonance = [self.tt_N_binning[x] for x in range(len(self.tt_N_binning)) if x % 2]  # odd

@@ -942,7 +942,7 @@ config = {
                 "port": (controller, 8)
             },
             'operations': {
-                'Spectrum_pulse': "Frequency_Sweep",
+                'Spectrum_pulse': "Frequency_Sweep2",
             },
             'intermediate_frequency': IF_AOM_Spectrum,
         },
@@ -1247,6 +1247,15 @@ config = {
             'waveforms': {
                 # 'single': 'const_wf'
                 'single': 'wf_gaus'
+            },
+        },
+
+        "Frequency_Sweep2": {
+            'operation': 'control',
+            'length': len(Gaussian_pulse_samples),
+            'waveforms': {
+                # 'single': 'const_wf'
+                'single': 'wf_gaus2'
             },
         },
 
