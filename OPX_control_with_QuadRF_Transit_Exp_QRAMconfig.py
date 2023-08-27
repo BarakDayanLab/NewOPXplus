@@ -1345,7 +1345,15 @@ class OPX:
         self.tt_FS_measure = sorted(sum(self.tt_measure[5:7], []))  # unify detectors 6-8 and windows within detectors
         self.tt_N_directional_measure = sorted(self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure)
         self.tt_S_directional_measure = sorted(self.tt_S_measure + self.tt_FS_measure)
+        self.fix_gaps_spectrum_exp_tts()
 
+    def fix_gaps_spectrum_exp_tts(self):
+        '''
+        fixes delays of 300 ns every 100 us in spectrum experiment
+        :return:
+
+        '''
+        self.tt_S_no_gaps = [x-(x//1e5)*300 for x in self.tt_S_directional_measure]
     def latched_detectors(self):
         latched_detectors = []
         for indx, det_tt_vec in enumerate(self.tt_measure):  # for different detectors
@@ -2319,6 +2327,7 @@ class OPX:
             else:
                 print('Above Threshold')
             self.get_tt_from_handles(Num_Of_dets, Counts_handle, tt_handle, FLR_handle)
+
             # sum_for_threshold [Mcounts /sec] = (number of photons * 10^-6 [Mcounts] / Measuring time [nsec] * 10^-9 [sec/nsec]):
             self.sum_for_threshold = (len(self.tt_S_directional_measure) * 1000) / self.M_time
             print(self.lock_err, self.lock_err > lock_err_threshold, self.sum_for_threshold)
@@ -2355,9 +2364,9 @@ class OPX:
         for x in self.tt_N_directional_measure:
             self.tt_N_binning[(x - 1) // Config.frequency_sweep_duration] += 1 #TODO: x-1?? in spectrum its x
         self.tt_N_binning_avg = self.tt_N_binning
-        for x in self.tt_S_directional_measure:
+        for x in self.tt_S_no_gaps:
             self.tt_S_binning[(x - 1) // Config.frequency_sweep_duration] += 1
-        for x in self.tt_S_directional_measure:
+        for x in self.tt_S_no_gaps:
             if x < 100e3:
                 self.folded_tt_S_acc[(x - 1) % self.histogram_bin_size] += 1
         self.tt_S_binning_avg = self.tt_S_binning
@@ -2377,7 +2386,7 @@ class OPX:
         # put into batches
         self.tt_N_measure_batch = self.tt_N_measure_batch[-(N - 1):] + [self.tt_N_directional_measure]
         self.tt_N_binning_batch = self.tt_N_binning_batch[-(N - 1):] + [self.tt_N_binning]
-        self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_directional_measure]
+        self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_no_gaps]
         self.tt_S_binning_batch = self.tt_S_binning_batch[-(N - 1):] + [self.tt_S_binning]
         self.tt_S_binning_resonance_batch = self.tt_S_binning_resonance_batch[-(N - 1):] + [self.tt_S_binning_resonance]
         self.tt_S_binning_detuned_batch = self.tt_S_binning_detuned_batch[-(N - 1):] + [self.tt_S_binning_detuned]
@@ -2496,10 +2505,10 @@ class OPX:
             for x in self.tt_N_directional_measure:
                 self.tt_N_binning[(x - 1) // Config.frequency_sweep_duration] += 1  # TODO: x-1?? in spectrum its x
             self.tt_N_binning_avg = self.tt_N_binning
-            for x in self.tt_S_directional_measure:
+            for x in self.tt_S_no_gaps:
                 self.tt_S_binning[(x - 1) // Config.frequency_sweep_duration] += 1
             self.tt_S_binning_avg = self.tt_S_binning
-            for x in self.tt_S_directional_measure:
+            for x in self.tt_S_no_gaps:
                 if x < 100e3:
                     self.folded_tt_S_acc[(x-1) % self.histogram_bin_size] += 1
 
@@ -2534,7 +2543,7 @@ class OPX:
 
                 for x in self.tt_N_directional_measure:
                     self.tt_N_binning[(x - 1) // self.histogram_bin_size] += 1
-                for x in self.tt_S_directional_measure:
+                for x in self.tt_S_no_gaps:
                     self.tt_S_binning[(x - 1) // self.histogram_bin_size] += 1
                     self.tt_S_binning_avg[(x - 1) // self.histogram_bin_size] += 1 / self.Counter
 
@@ -2542,7 +2551,7 @@ class OPX:
                 self.tt_N_binning_batch = self.tt_N_binning_batch[-(N - 1):] + [self.tt_N_binning]
                 self.tt_N_binning_resonance_batch = self.tt_N_binning_resonance_batch[-(N - 1):] + [self.tt_N_binning_resonance]
                 self.tt_N_binning_detuned_batch = self.tt_N_binning_detuned_batch[-(N - 1):] + [self.tt_N_binning_detuned]
-                self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_directional_measure]
+                self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_no_gaps]
                 self.tt_S_binning_batch = self.tt_S_binning_batch[-(N - 1):] + [self.tt_S_binning]
                 self.tt_S_binning_resonance_batch = self.tt_S_binning_resonance_batch[-(N - 1):] + [self.tt_S_binning_resonance]
                 self.tt_S_binning_detuned_batch = self.tt_S_binning_detuned_batch[-(N - 1):] + [self.tt_S_binning_detuned]
