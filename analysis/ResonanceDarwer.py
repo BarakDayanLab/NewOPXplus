@@ -33,6 +33,8 @@ y_T0 = transmission_func(f, 0, k_ex_0 * 1e6, k_i_0 * 1e6, h_0 * 1e6, f_offset, y
 y_R0 = reflection_func(f, 0, k_ex_0 * 1e6, k_i_0 * 1e6, h_0 * 1e6, f_offset, y0)
 HM = y_T0[max_Detuning//delta_f] + (1 - y_T0[max_Detuning//delta_f])/2
 FWHM = abs(2 * x[find_indx_for_nearest(y_T0, HM)])
+minimum_T = y_T0[int(len(y_T0)/2)+1]
+max_R = y_R0[int(len(y_R0)/2)+1]
 
 
 # General plot parameters
@@ -78,7 +80,7 @@ ax1.set_ylabel('T', fontsize=28)
 ax1.set_xlabel('$\Delta [MHz]$', fontsize=28)
 # ax1.minorticks_on()
 # ax1.grid(visible=True, which='both', axis='both', linestyle='-.')
-ax1.set_title('FWHM = %1.1f[MHz]' % FWHM)
+ax1.set_title('FWHM = %1.1f[MHz], ' % FWHM + '$T_{min}$ = %2.1f%%, ' % (100 * minimum_T) + '$R_{max}$ = %2.1f%%' % (100 * max_R))
 ax1.set_ylim([0, 1])
 
 ax2 = ax1.twinx()
@@ -96,8 +98,12 @@ def update(val):
     y_R = reflection_func(f, 0, Kex * 1e6, Ki * 1e6, h * 1e6, f_offset, y0)
     HM = y_T[max_Detuning // delta_f] + (1 - y_T[max_Detuning // delta_f]) / 2
     FWHM = abs(2 * x[find_indx_for_nearest(y_T, HM)])
+    minimum_T = y_T[int(len(y_T) / 2) + 1]
+    max_R = y_R[int(len(y_R) / 2) + 1]
     T.set_data(x, y_T)
-    ax1.set_title('FWHM = %1.1f[MHz]' % FWHM)
+    # ax1.set_title('FWHM = %1.1f[MHz]' % FWHM)
+    ax1.set_title('FWHM = %1.1f[MHz], ' % FWHM + '$T_{min}$ = %2.1f%%, ' % (100 * minimum_T) + '$R_{max}$ = %2.1f%%' % (
+                100 * max_R))
     R.set_data(x, y_R)
     fig.canvas.draw_idle()
 
