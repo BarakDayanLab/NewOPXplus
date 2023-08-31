@@ -84,6 +84,7 @@ IF_AOM_S = 129.2368e6
 IF_AOM_LO = 129.2368e6
 IF_AOMs_MZ = 110e6
 IF_AOM_Anc = 184e6
+IF_AOM_Spectrum = 133.325e6/2
 
 IF_Divert = 20e6
 #IF_AOM_N = 127.1e6
@@ -292,9 +293,32 @@ Super_Sprint_Config = {
             },
         },
 
-        "PULSER_E/L": {
+        "PULSER_E": {
             "singleInput": {
                 "port": (controller, 6),
+            },
+            'digitalInputs': {
+                "AWG_Switch": {
+                    "port": (controller, 10),
+                    # "delay": 176, # OPX control EOM
+                    "delay": 160,  # OPX control EOM double pass
+                    # "delay": 400, # AWG control EOM
+                    "buffer": 0,
+                },
+            },
+            'operations': {
+                'Const_open': "Pulser_ON",
+                'Const_high_open': "Pulser_ON_high",
+                'Square_Pulse': "square_pulse",
+            },
+            # 'intermediate_frequency': IF_AOM_LO,
+            'intermediate_frequency': IF_AOMs_MZ,
+            # 'intermediate_frequency': IF_AOM_Anc,
+        },
+
+        "PULSER_L": {
+            "singleInput": {
+                "port": (controller, 7),
             },
             'digitalInputs': {
                 "AWG_Switch": {
@@ -325,6 +349,16 @@ Super_Sprint_Config = {
             },
             # 'intermediate_frequency': IF_AOM_LO,
             'intermediate_frequency': IF_AOMs_MZ,
+        },
+
+        "AOM_Spectrum": {
+            'singleInput': {
+                "port": (controller, 8)
+            },
+            'operations': {
+                'Spectrum_pulse': "Frequency_Sweep",
+            },
+            'intermediate_frequency': IF_AOM_Spectrum,
         },
 
         "PULSER_N": {
@@ -435,6 +469,13 @@ Super_Sprint_Config = {
                 'single': 'square_wf'
             }
         },
+        "Frequency_Sweep": {
+            'operation': 'control',
+            'length': MOT_pulse_len,
+            'waveforms': {
+                'single': 'const_wf'
+            },
+        },
         "AntiHelmholtz_on": {
             'operation': 'control',
             'length': MOT_pulse_len,
@@ -472,12 +513,12 @@ Super_Sprint_Config = {
         'const_wf': {
             'type': 'constant',
             # 'sample': 0.1
-            'sample': 0.45
+            'sample': 0.35
         },
         'const_high_wf': {
             'type': 'constant',
             # 'sample': 0.1
-            'sample': 0.495
+            'sample': 0.49
         },
         'square_wf': {
             'type': 'arbitrary',
@@ -554,14 +595,15 @@ with program() as dig:
         with for_(n, 0, n < rep, n+1):
 
             # play("Const_open_triggered", "PULSER_N")
-            play("Const_open", "PULSER_N")
-            # play("Const_open", "PULSER_S")
-            play("Const_open_triggered", "PULSER_S")
-            play("Const_open", "PULSER_E/L")
-            # play("Const_high_open", "PULSER_E/L")
+            # play("Const_open", "PULSER_N")
+            # # play("Const_open", "PULSER_S")
+            # play("Const_open_triggered", "PULSER_S")
+            # play("Const_open", "PULSER_L")
+            # play("Const_high_open", "PULSER_E")
             # play("Square_Pulse", "PULSER_LO")
             # play("Const_open"*amp(0.7), "PULSER_LO")
             play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
+            play("Spectrum_pulse", "AOM_Spectrum")
             # play("CRUS_pulse", "Pulser_CRUS")
 
             # measure("OD_measure", "digital_detectors_S", None,

@@ -1555,6 +1555,8 @@ class OPX:
 
         # set constant parameters for the function
         Num_Of_dets = [1, 2, 3, 6, 7, 8]
+
+
         delay_in_detection_N = 30 # choose the correct delay in samples to the first detection pulse # TODO: 40?
         delay_in_detection_S = 20 # choose the correct delay in samples to the first detection pulse # TODO: 40?
         det_pulse_len = Config.det_pulse_len+Config.num_between_zeros
