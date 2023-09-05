@@ -137,12 +137,9 @@ s_Ki = Slider(ax=ax_Ki, label='$K_{i} $', valmin=0, valmax=20.0, valinit=k_i_0, 
 
 T, = ax1.plot(x, y_T0, label='Transmission of bare cavity', linewidth=2.5)
 T_sprint, = ax1.plot(x, y_T0_SPRINT, label='Transmission with atoms', linewidth=2.5, color='tab:green')
-ax1.set_ylabel('T', fontsize=28)
+ax1.set_ylabel('T \ R', fontsize=28)
 ax1.set_xlabel('$\Delta [MHz]$', fontsize=28)
-# ax1.minorticks_on()
-# ax1.grid(visible=True, which='both', axis='both', linestyle='-.')
-ax1.set_title(
-    'FWHM = %1.1f[MHz], ' % FWHM + '$T_{min}$ = %2.1f%%, ' % (100 * T_f0) + '$R_{max}$ = %2.1f%%' % (100 * R_f0))
+ax1.set_title('FWHM = %1.1f[MHz]' % FWHM)
 ann_T = ax1.annotate('%2.1f%%' % (100 * T_f0), (x[f0_indx], y_T0[f0_indx]),
                      xytext=(0, 10),  # vertical offset.
                      textcoords='offset points', ha="center", size=15)
@@ -151,25 +148,31 @@ ann_T_SPRINT = ax1.annotate('%2.1f%%' % (100 * T_SPRINT_f0), (x[f0_indx], y_T0_S
                             xytext=(0, 10),  # vertical offset.
                             textcoords='offset points', ha="center", size=15)
 T_SPRINT_f0_dot, = ax1.plot(x[f0_indx], y_T0_SPRINT[f0_indx], 'o', color='tab:green')
-ax1.legend(loc='upper right')
-ax1.set_ylim([0, 1])
 
-ax2 = ax1.twinx()
-R, = ax2.plot(x, y_R0, label='Reflection of bare cavity', linewidth=2.5, color='tab:red')
-R_sprint, = ax2.plot(x, y_R0_SPRINT, label='Reflection with atoms', linewidth=2.5, color='tab:orange')
-ax2.set_ylabel('R', fontsize=28, color='tab:red')
-ax2.tick_params(axis='y', labelcolor='tab:red')
-ann_R = ax2.annotate('%2.1f%%' % (100 * R_f0), (x[f0_indx], y_R0[f0_indx]),
+R, = ax1.plot(x, y_R0, label='Reflection of bare cavity', linewidth=2.5, color='tab:red')
+R_sprint, = ax1.plot(x, y_R0_SPRINT, label='Reflection with atoms', linewidth=2.5, color='tab:orange')
+# ax1.set_ylabel('R', fontsize=28, color='tab:red')
+# ax1.tick_params(axis='y', labelcolor='tab:red')
+ann_R = ax1.annotate('%2.1f%%' % (100 * R_f0), (x[f0_indx], y_R0[f0_indx]),
                      xytext=(0, 10),  # vertical offset.
                      textcoords='offset points', ha="center", size=15)
-R_f0_dot, = ax2.plot(x[f0_indx], y_R0[f0_indx], 'o', color='tab:red')
-ann_R_SPRINT = ax2.annotate('%2.1f%%' % (100 * R_SPRINT_f0), (x[f0_indx], y_R0_SPRINT[f0_indx]),
+R_f0_dot, = ax1.plot(x[f0_indx], y_R0[f0_indx], 'o', color='tab:red')
+ann_R_SPRINT = ax1.annotate('%2.1f%%' % (100 * R_SPRINT_f0), (x[f0_indx], y_R0_SPRINT[f0_indx]),
                             xytext=(0, 10),  # vertical offset.
                             textcoords='offset points', ha="center", size=15)
-R_SPRINT_f0_dot, = ax2.plot(x[f0_indx], y_R0_SPRINT[f0_indx], 'o', color='tab:orange')
-ax2.legend(loc='lower right')
-ax2.set_ylim([0, 1])
+R_SPRINT_f0_dot, = ax1.plot(x[f0_indx], y_R0_SPRINT[f0_indx], 'o', color='tab:orange')
+legend1 = ax1.legend(loc='center right')
+ax1.set_ylim([0, 1])
 
+list_of_plots = [[T, T_f0_dot, ann_T], [T_sprint, T_SPRINT_f0_dot, ann_T_SPRINT],
+                 [R, R_f0_dot, ann_R], [R_sprint, R_SPRINT_f0_dot, ann_R_SPRINT]]
+lined = dict()
+lined_T = dict()
+lined_R = dict()
+
+for legend_line, plot_line in zip(legend1.get_lines(), list_of_plots):
+    legend_line.set_picker(5)
+    lined[legend_line] = plot_line
 
 # Update values
 def update(val):
@@ -212,10 +215,20 @@ def update(val):
 
     fig.canvas.draw_idle()
 
+def onpick(event):
+    legend_line = event.artist
+    plot, dot, ann = lined[legend_line]
+    vis = not plot.get_visible()
+    plot.set_visible(vis)
+    dot.set_visible(vis)
+    ann.set(visible=vis)
+    legend_line.set_alpha(1.0 if vis else 0.2)
+    fig.canvas.draw()
 
 s_g1.on_changed(update)
 s_Kex.on_changed(update)
 s_h.on_changed(update)
 s_Ki.on_changed(update)
 
+fig.canvas.mpl_connect('pick_event', onpick)
 plt.show()
