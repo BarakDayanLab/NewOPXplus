@@ -942,7 +942,7 @@ config = {
                 "port": (controller, 8)
             },
             'operations': {
-                'Spectrum_pulse': "Frequency_Sweep2",
+                'Spectrum_pulse': "Frequency_Sweep",
             },
             'intermediate_frequency': IF_AOM_Spectrum,
         },

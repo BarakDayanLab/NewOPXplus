@@ -368,8 +368,8 @@ Operation_Modes = {
                                       'Buffer_Cycles': 0,
                                       'Imaging_Phase': 'Pulse_1',
                                       # 'PrePulse_duration': 4,  # [msec]
-                                      # 'PrePulse_duration': 14,  # [msec]
-                                      'PrePulse_duration': 12,  # [msec]
+                                      'PrePulse_duration': 14,  # [msec]
+                                      # 'PrePulse_duration': 12,  # [msec]
                                       'Shutter_open_time': 3.5,  # [msec]
                                       'Pulse_1_duration': int(max(Config_QRAM.readout_pulse_sprint_len_N,
                                                                   Config_QRAM.readout_pulse_sprint_len_S)) / 1e6,  # [msec]
