@@ -3,17 +3,22 @@ from OPX_control_with_QuadRF_TransitPLUS_Exp import OPX
 import Config_with_SNSPDs_and_QuadRF as Config
 # import Config_with_SNSPDs_and_QuadRF_Sprint as Config
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 import time, json, os
 from pathlib import Path
 import cv2, glob
 import scipy.optimize as opt
+from scipy import fftpack
 import matplotlib.pyplot as mtl
 import pylab as plt
 from mpl_toolkits.mplot3d import Axes3D
+from pynpunt import keyboard
+import numpy as np
+
 
 _Kb = 1.38e-23; #[J/K]
 _m = 1.443e-25; #[Kg] of Rb87
+
 # --------- Camera functionality ------------##
 try:
     from UtilityResources import MvCameraController
@@ -23,7 +28,9 @@ except:
     print('Warning! could not import MvCamera module; in MvCamera.py')
 
 class CoolingSequenceOptimizer(OPX):
+    DISTANCE_BETWEEN_FORKS_IN_INVENTOR = 20 # [mm]
     def __init__(self,  config, camera = None):
+
         super().__init__(config = config)
         # self.SPRINT_Exp_switch(False) # To enable trigger to camera in OPX_control_with_QuadRF_Sprint_Exp
         self.camera = camera
@@ -43,6 +50,123 @@ class CoolingSequenceOptimizer(OPX):
 
     def disconnectCamera(self):
         self.camera = None
+
+    def mm_to_pxl_auto_calibration(self, folder_path, backgroundPath=None, print_all_lines=False, apply_lpf=True, show_im=True):
+        """
+        This function tries to automaticlly calibrate the mm_to_pxl attribute by using image processing to calculate the distance between the two metal bars of the 
+        for and devide it by the known distance between them from the inventor file used to create it.
+        resulting calibration is stored in self.mm_to_pxl
+        :param folder_path: the folder path of the images taken by camera in the current measurement
+        :param backgroundPath: a known backgroundPath of an image used to run the function manually
+        :param print_all_lines: used for debugging why the algorithm failed and see all the lines identified by the algorithm HoughLinesP
+        :param apply_lpf: apply a low pass filter on image using fft and multiplying the image fft with a low pass filter using the function 
+                          image_low_pass_filter
+        :param show_im: open image with lines to show user the image with the lines in a pop-up fashion
+
+        :return value: returns if calibration was successful or not. 
+        """
+        # define constants
+        AUTO_CALIBRATION_MAXIMUM_LINES = 1000
+        OFFSET = 600
+        flag = True
+
+        if backgroundPath is None: backgroundPath = os.path.join(folder_path, 'extra_files\\background.bmp')
+        img = cv2.imread(backgroundPath)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        # find brightest pixel to cutout fiber if exists in image
+        ind = np.unravel_index(np.argmax(gray, axis=None), gray.shape)
+
+        if apply_lpf:
+            gray = self.image_low_pass_filter(gray)
+
+        gray = gray[:][ind[0] + OFFSET:]
+        img = img[:][ind[0] + OFFSET:]
+
+        edges = cv2.Canny(gray, 150, 200, apertureSize=3)
+
+        lines = cv2.HoughLinesP(
+                    edges, # Input edge image
+                        1, # Distance resolution in pixels
+                    np.pi/180, # Angle resolution in radians
+                    threshold=100, # Min number of votes for valid line
+                    minLineLength=5, # Min allowed length of line
+                    maxLineGap=10 # Max allowed gap between line for joining them
+                    )
+        if not lines:
+            print("HoughLinesP did not detect any line! make sure that both sides of the forks are in the image")
+            flag=False
+
+        if len(lines) > AUTO_CALIBRATION_MAXIMUM_LINES:
+            print("HoughLinesP detected to many lines! try using a low pass filter using the flag apply_lpf=True in function mm_to_pxl_auto_calibration \
+                  to filter some noise\
+                  from the image")
+            flag=False
+
+        if flag:
+            # abs on delta x is added to verify lines are perpendicular to the x axis
+            leftside_lines = np.array([line[0] for line in lines if line[0][0] < len(gray) / 2 and line[0][2] < len(gray) / 2 and abs(line[0][0] - line[0][2]) <= 1])
+            rightside_lines = np.array([line[0] for line in lines if line[0][0] > len(gray) / 2 and line[0][2] > len(gray) / 2 and abs(line[0][0] - line[0][2]) <= 1])
+            leftmost_line_in_rightside = rightside_lines[np.argmin(rightside_lines[:, 0])]
+            rightmost_line_in_leftside = leftside_lines[np.argmax(leftside_lines[:, 0])]
+            # calc distance between the two lines
+            d = self.distance_between_lines_in_place(leftmost_line_in_rightside, rightmost_line_in_leftside)
+
+            print(f"distance in pixels between lines {d}")
+            self.mm_to_pxl = self.DISTANCE_BETWEEN_FORKS_IN_INVENTOR / (d)
+            print(f"pixel to mm calibration: { self.mm_to_pxl }")
+        
+        # for debugging
+        if print_all_lines and lines:
+            for line in lines:
+                x0, y0, x1, y1 = line[0]
+                cv2.line(img, (x0, y0), (x1, y1), (0, 0, 255), 2)
+        else:
+            cv2.line(img, leftmost_line_in_rightside[:2], leftmost_line_in_rightside[2:], (0, 0, 255), 2)
+            cv2.line(img, rightmost_line_in_leftside[:2], rightmost_line_in_leftside[2:], (0, 0, 255), 2)
+
+        # for debugging
+        if show_im:
+            print("showing image with lines. to exit image and continue the run code press '0'")
+            cv2.imshow('image', img)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+
+        cv2.imwrite(backgroundPath.replace(backgroundPath.split(".")[-1], "with_lines_used_in_calibration.bmp"), img)        
+        return flag
+
+    def image_low_pass_filter(image1, e_x=500, e_y=500):
+        # taken from: https://stackoverflow.com/questions/54641616/low-pass-filter-for-blurring-an-image 
+        # e_x, e_y - size of circle
+        #convert image to numpy array
+        image1_np=np.array(image1)
+
+        #fft of image
+        fft1 = fftpack.fftshift(fftpack.fft2(image1_np))
+
+        #Create a low pass filter image
+        x,y = image1_np.shape[0],image1_np.shape[1]
+        
+        #create a box 
+        bbox=((x/2)-(e_x/2),(y/2)-(e_y/2),(x/2)+(e_x/2),(y/2)+(e_y/2))
+
+        low_pass=Image.new("L",(image1_np.shape[0],image1_np.shape[1]),color=0)
+
+        draw1=ImageDraw.Draw(low_pass)
+        draw1.ellipse(bbox, fill=1)
+
+        low_pass_np=np.array(low_pass)
+
+        #multiply both the images
+        filtered=np.multiply(fft1,low_pass_np.T)
+
+        #inverse fft
+        ifft2 = np.real(fftpack.ifft2(fftpack.ifftshift(filtered)))
+        ifft2 = np.maximum(0, np.minimum(ifft2, 255))
+        ifft2_as_int = ifft2.astype(np .uint8)
+
+        #save the image
+        return ifft2_as_int
 
     def createPathForTemperatureMeasurement(self, path = None, saveConfig = False):
         extraFilesPath = ''
@@ -123,11 +247,18 @@ class CoolingSequenceOptimizer(OPX):
 
             # ---- Take background picture ----
             self.updateValue("PrePulse_duration", float(50), update_parameters = True) # Presumbaly, after 20ms there's no visible cloud.
-            self.camera.saveAverageImage(extraFilesPath + 'background.bmp', NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+            bg_path = os.path.join(extraFilesPath, 'background.bmp')
+            self.camera.saveAverageImage(bg_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+
+        # --- try to auto-calibrate mm_to_pxl using background image --- 
+        r_val = self.mm_to_pxl_auto_calibration(backgroundPath=bg_path)
+        if not r_val:
+            print("Failed to finish temprature measurement because mm_to_pxl_auto_calibration failed.")
+            return
 
         # --- Gaussian Fit to results (to each photo) ----
-        gaussianFitResult = self.gaussianFitAllPicturesInPath(path, backgroundPath=extraFilesPath + 'background.bmp', saveFitsPath = extraFilesPath, imgBounds= self.imgBounds)
-
+        gaussianFitResult = self.gaussianFitAllPicturesInPath(path, backgroundPath=bg_path, saveFitsPath = extraFilesPath, imgBounds= self.imgBounds)
+        
         # ---- Take Gaussian fit results and get temperature (x,y) and launch speed -----------
         v_launch, alpha, v_launch_popt, v_launch_cov = self.fitVy_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult,extraFilesPath=extraFilesPath, plotResults=True)
         time_vector = np.array([res[0] for res in gaussianFitResult])
@@ -270,8 +401,7 @@ class CoolingSequenceOptimizer(OPX):
                 res.append(fileRes)
             except Exception as e:
                 print(e)
-        return (res)
-
+        return (res)        
 
     '''fit a gaussian to subtracted images
     # INPUT:
