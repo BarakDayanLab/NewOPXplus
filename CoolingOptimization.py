@@ -228,8 +228,12 @@ class CoolingSequenceOptimizer(OPX):
                                 title=f'Y Temperature fit, Sigma_y[mm]  vs. Time [ms]\n T_y = {T_y} [uK]',
                                 ylabel=f'Sigma_y [mm]', saveFilePath=extraFilesPath + 'Y_temp_fit.png', show=False)
         return (T_x, T_y)
+    
 
-    def measureTemperature(self, path = None, PrePulseDurations = np.arange(1,9), createVideo = False, fit_for_alpha = False):
+    def oneShotFitGuassian(self, path = None, PrePulseDuration= 1, auto_calibrate_mm_to_pxl=False, PLOT_IMG=True):
+        self.takePicturesAndGaussianFit(path=path, PrePulseDuration=[PrePulseDuration], auto_calibrate_mm_to_pxl=auto_calibrate_mm_to_pxl, PLOT_IMG=PLOT_IMG)
+
+    def takePicturesAndGaussianFit(self, path = None, PrePulseDurations = np.arange(1,9), createVideo = False, fit_for_alpha = False, auto_calibrate_mm_to_pxl=False, PLOT_IMG=False):
         extraFilesPath = ''
         if path:
             # if received path, assume there's no need to take new pictures and analyze these photos.
@@ -251,20 +255,27 @@ class CoolingSequenceOptimizer(OPX):
             self.camera.saveAverageImage(bg_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
 
         # --- try to auto-calibrate mm_to_pxl using background image --- 
-        r_val = self.mm_to_pxl_auto_calibration(backgroundPath=bg_path)
-        if not r_val:
-            print("Failed to finish temprature measurement because mm_to_pxl_auto_calibration failed.")
-            return
+        if auto_calibrate_mm_to_pxl:
+            r_val = self.mm_to_pxl_auto_calibration(backgroundPath=bg_path)
+            if not r_val:
+                print("Failed to finish temprature measurement because mm_to_pxl_auto_calibration failed.")
+                return
 
         # --- Gaussian Fit to results (to each photo) ----
-        gaussianFitResult = self.gaussianFitAllPicturesInPath(path, backgroundPath=bg_path, saveFitsPath = extraFilesPath, imgBounds= self.imgBounds)
+        gaussianFitResult = self.gaussianFitAllPicturesInPath(path, backgroundPath=bg_path, saveFitsPath = extraFilesPath, imgBounds= self.imgBounds, PLOT_IMG=PLOT_IMG)
+        return gaussianFitResult
+
+
+    def measureTemperature(self, path = None, PrePulseDurations = np.arange(1,9), createVideo = False, fit_for_alpha = False, auto_calibrate_mm_to_pxl=False):
+        extraFilesPath = ''
+        gaussianFitResult = self.takePicturesAndGaussianFit(path, PrePulseDurations, createVideo, fit_for_alpha, auto_calibrate_mm_to_pxl)
         
         # ---- Take Gaussian fit results and get temperature (x,y) and launch speed -----------
-        v_launch, alpha, v_launch_popt, v_launch_cov = self.fitVy_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult,extraFilesPath=extraFilesPath, plotResults=True)
+        v_launch, alpha, v_launch_popt, v_launch_cov = self.fitVy_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult, extraFilesPath=extraFilesPath, plotResults=True)
         time_vector = np.array([res[0] for res in gaussianFitResult])
         y_position_vector = np.array([res[-1][2] for res in gaussianFitResult])
 
-        # ------ Use v-launch fit to go from px to mm ------
+        # ------ Use v-launch fit to go from pxl to mm ------
         gaussian_amplitude_vector = alpha * np.array([res[-1][0] for res in gaussianFitResult])
         y_position_vector = alpha * y_position_vector
         x_position_vector = alpha * np.array([res[-1][1] for res in gaussianFitResult])
@@ -272,7 +283,7 @@ class CoolingSequenceOptimizer(OPX):
         sigma_y_vector = alpha * np.array([res[-1][4] for res in gaussianFitResult])
 
         # -------- Fit for x and y temperatures ----
-        T_x, T_y = self.fitTemperaturesFromGaussianFitResults(gaussianFitResult, alpha, extraFilesPath, plotResults= True)
+        T_x, T_y = self.fitTemperaturesFromGaussianFitResults(gaussianFitResult, alpha, extraFilesPath, plotResults = True)
 
         d = {'V_y Launch': v_launch, 'T_x': T_x,'T_y': T_y, 'alpha': alpha}
         print(d)
