@@ -38,7 +38,7 @@ class MOGDevice(object):
                 addr = '%s:%d'%(addr,port)
             self.connection = addr
             self.is_usb = False
-        self.reconnect(timeout,check)
+        self.reconnect(timeout, check)
 
     def __repr__(self):
         """Returns a simple string representation of the connection"""
@@ -50,7 +50,7 @@ class MOGDevice(object):
             self.dev.close()
             self.dev = None
     
-    def reconnect(self,timeout=1,check=True):
+    def reconnect(self, timeout=1, check=True):
         """Reestablish connection with unit"""
         # close the handle if open - this is _required_ on USB
         self.close()
@@ -64,7 +64,7 @@ class MOGDevice(object):
             self.dev.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.dev.settimeout(timeout)
             addr, port = self.connection.split(':')
-            self.dev.connect((addr,int(port)))
+            self.dev.connect((addr, int(port)))
         # check the connection?
         if check:
             try:

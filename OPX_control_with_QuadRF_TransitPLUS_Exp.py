@@ -11,7 +11,8 @@ from scipy import signal
 from qm import SimulationConfig
 import matplotlib.pyplot as plt
 import numpy as np
-import time, json
+import time
+import json
 import sys
 import os
 from pynput import keyboard
