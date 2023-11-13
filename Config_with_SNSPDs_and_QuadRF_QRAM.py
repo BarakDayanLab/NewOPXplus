@@ -943,6 +943,7 @@ config = {
             },
             'operations': {
                 'Spectrum_pulse': "Frequency_Sweep",
+                'Const_open': "MOT_lock",
             },
             'intermediate_frequency': IF_AOM_Spectrum,
         },

@@ -97,7 +97,7 @@ def MOT(mot_repetitions):
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
           "AOM_2-2/3'", "AOM_2-3'_for_interference", "FLR_detection",
           "Measurement")  # , "Dig_detectors") # , "PULSER_N", "PULSER_S")
-
+    update_frequency("AOM_Spectrum", Config.IF_AOM_Spectrum)
     ## MOT build-up ##
     n = declare(int)
     m = declare(int)
@@ -107,6 +107,7 @@ def MOT(mot_repetitions):
         play("MOT_with_EOM" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0")
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
+        play("Const_open", "AOM_Spectrum")
         # play("Const_open", "PULSER_N")
         # play("OD_FS" * amp(0.1), "AOM_2-2/3'")
         play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
@@ -488,8 +489,8 @@ def Spectrum_Exp(m_off_time, m_time, m_window, shutter_open_time,
                 play("Spectrum_pulse", "AOM_Spectrum")
 
 
-    # wait(298, "Dig_detectors")
-    wait(345, "Dig_detectors")
+    # wait(345, "Dig_detectors")
+    wait(330, "Dig_detectors")
     # with for_(n, 0, n < m_time * 4, n + m_window):
     measure("readout_QRAM", "Dig_detectors", None,
             time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
@@ -1001,17 +1002,18 @@ class OPX:
         self.frequency_sweep_rep = 5
         # self.same_frequency_rep = 100
         # self.spectrum_bandwidth = int(30e6)
-        self.spectrum_bandwidth = int(39e6)
+        # self.spectrum_bandwidth = int(39e6)
+        self.spectrum_bandwidth = int(45e6) # experiment 13/11/23
         self.frequency_start = int(80e6 - self.spectrum_bandwidth/2)
         # self.num_of_different_frequncies = self.Exp_Values['Pulse_1_duration'] * 1e6 / \
         #                                   (2 * Config.frequency_sweep_duration) / \
         #                                   (self.frequency_sweep_rep * self.same_frequency_rep)
         # self.frequency_diff = int(self.spectrum_bandwidth / self.num_of_different_frequncies)
-        self.frequency_diff = int(1.5e6)
+        self.frequency_diff = int(1.5e6) # difference between frequencies
         self.num_of_different_frequncies = int(self.spectrum_bandwidth // self.frequency_diff) + 1
         self.same_frequency_rep = int(self.Exp_Values['Pulse_1_duration'] * 1e6 /
                                       (2 * Config.frequency_sweep_duration) /
-                                      (self.num_of_different_frequncies * self.frequency_sweep_rep))
+                                      (self.num_of_different_frequncies * self.frequency_sweep_rep)) # total time[10ms]/((1us sequence - 2 pulses time)*(num of sweeps)*(num of different freqs) )
 
         # run daily experiment
         self.Stop_run_daily_experiment = False
@@ -1787,7 +1789,7 @@ class OPX:
                  verticalalignment='top', bbox=props)
         ax[0].text(0.05, 1.4, textstr_thresholds, transform=ax[0].transAxes, fontsize=28,
                    verticalalignment='top', bbox=props_thresholds)
-        ax[1].legend(loc='upper right')
+        ax[0].legend(loc='upper right')
 
         ax[1].plot(self.time_bins[::2], self.S_bins_detuned_acc, label='Counts histogram', color='b')
         # ax[1].plot([sum(time_bins[i:i+4]) for i in range(0, len(time_bins), 4)],
@@ -1800,6 +1802,7 @@ class OPX:
         ax[1].legend(loc='upper right')
 
         ax[2].plot(self.time_bins[::2], self.tt_S_binning_resonance, label='Counts histogram', color='b')
+        # ax[2].plot(self.time_bins[::2], self.tt_S_binning_detuned, label='Counts histogram detuned', color='g')
         # ax[2].plot([sum(time_bins[i:i+4]) for i in range(0, len(time_bins), 4)],
         #          [sum(tt_S_binning_resonance[i:i+4]) for i in range(0, len(tt_S_binning_resonance), 4)],
         #          label='Counts histogram', color='b')
@@ -1814,13 +1817,15 @@ class OPX:
                      bbox=dict(boxstyle=f"circle,pad={det_circle[3]}", edgecolor=det_color, linewidth=2, facecolor=det_color, alpha=0.5))
         ax[2].legend(loc='upper right')
 
-        ax[3].plot(self.freq_bins, self.Cavity_atom_spectrum, label='Cavity-atom Spectrum', color='k')
-        ax[3].set(xlabel='Frequency [MHz]', ylabel='Counts [#Number]')
+        # ax[3].plot(self.freq_bins, self.Cavity_atom_spectrum, label='Cavity-atom Spectrum', color='k')
+        ax[3].plot(self.freq_bins/1e6, self.Cavity_atom_spectrum_normalized, label='Cavity-atom Spectrum', color='k')
+        ax[3].plot(self.freq_bins/1e6, self.Cavity_spectrum_normalized, label='Cavity Spectrum', color='b')
+        ax[3].set(xlabel='Frequency [MHz]', ylabel='Transmission Normalized')
         ax[3].legend(loc='upper right')
 
-        ax[4].plot(np.linspace(0,self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc, label='pulses folded', color='k')
-        # ax[4].plot(np.linspace(0,self.histogram_bin_size-1,self.histogram_bin_size), self.folded_tt_S_acc_2, label='pulses folded_2', color='b')
-        # ax[4].plot(np.linspace(0,self.histogram_bin_size-1,self.histogram_bin_size), self.folded_tt_S_acc_3, label='pulses folded_2', color='g')
+        ax[4].plot(np.linspace(0, self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc, label='pulses folded', color='k')
+        ax[4].plot(np.linspace(0, self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc_2, label='pulses folded_2', color='b')
+        ax[4].plot(np.linspace(0, self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc_3, label='pulses folded_2', color='g')
         ax[4].set(xlabel='Time [nsec]', ylabel='Counts [#Number]')
         ax[4].legend(loc='upper right')
         # ax[4].plot(self.freq_bins, self.Cavity_spectrum, label='Cavity Spectrum', color='k')
@@ -1828,8 +1833,8 @@ class OPX:
         # ax[4].legend(loc='upper right')
 
         if len(self.all_transits_batch) > 0:
-            if self.all_transits:
-                textstr_transit_counts = r'$N_{Transits} = %s $' % (len(self.all_transits),) + r'$[Counts]$'
+            # if self.all_transits:
+            textstr_transit_counts = r'$N_{Transits} = %s $' % (len(self.all_transits),) + r'$[Counts]$'
             textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (
                                             len([vec for elem in self.all_transits_batch for vec in elem]),) \
                                             + r'$[Counts]$' + '\n' + textstr_transit_counts
@@ -1889,7 +1894,9 @@ class OPX:
         self.Exp_timestr_batch = []
 
     def AOM_power_per_freq_calibration(self, dirname):
-        if not os.path.exists(dirname) or dirname is None:
+        if dirname is None:
+            return np.full((1, self.spectrum_bin_number), 1)
+        if not os.path.exists(dirname):
             return np.full((1, self.spectrum_bin_number), 1)
         self.calibration_spectrum = np.load(dirname)
         return self.calibration_spectrum['arr_0']/max(self.calibration_spectrum['arr_0'])
@@ -2346,7 +2353,7 @@ class OPX:
                                      self.spectrum_bin_number)
         self.Transit_profile_bin_size = transit_profile_bin_size
 
-        time_threshold = int(self.histogram_bin_size*2)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
+        time_threshold = int(self.histogram_bin_size * 2)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
 
         ## Listen for keyboard
         self.listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
@@ -2376,7 +2383,7 @@ class OPX:
             self.lock_err = lock_err_threshold / 2
             self.sum_for_threshold = total_counts_threshold
 
-        self.sum_for_threshold = total_counts_threshold
+        self.sum_for_threshold = total_counts_threshold # is the resonance criticaly coupled enough
         cycle = 0
         # Place holders for results # TODO: ask dor - is it works as we expect?
         while ((self.lock_err > lock_err_threshold) or
@@ -2442,7 +2449,8 @@ class OPX:
         self.Cavity_spectrum = np.zeros(self.spectrum_bin_number)
         self.Cavity_spectrum_normalized = np.zeros(self.spectrum_bin_number)
 
-        # calibration_dirname = 'U:\\Lab_2023\\Experiment_results\\QRAM\\20230831\\115749_Photon_TimeTags\\Cavity_spectrum.npz'
+        calibration_dirname = 'U:\\Lab_2023\\Experiment_results\\QRAM\\20231109\\160748_Photon_TimeTags\\Cavity_spectrum.npz'
+        # calibration_dirname = None
         self.power_per_freq_weight = self.AOM_power_per_freq_calibration(calibration_dirname)
 
         # fold reflections and transmission
@@ -2598,6 +2606,7 @@ class OPX:
             self.tt_N_binning_avg = self.tt_N_binning
 
             self.tt_S_binning_avg = self.tt_S_binning
+            # for x in self.tt_S_directional_measure:
             for x in self.tt_S_no_gaps:
                 # if x < (2e6 + 6400):
                 self.folded_tt_S_acc[(x-1) % self.histogram_bin_size] += 1
@@ -2838,7 +2847,7 @@ class OPX:
 
     def Start_Spectrum_Exp_with_tt(self, N=500, Transit_profile_bin_size=100, preComment=None,
                                   total_counts_threshold=0.20, transit_counts_threshold=3, FLR_threshold=0.10,
-                                  lock_err_threshold=0.002, Exp_flag=False, with_atoms=True, Calibration_dirname=None):
+                                  lock_err_threshold=0.002, Exp_flag=True, with_atoms=True, Calibration_dirname=None):
         self.Spectrum_Exp_switch(True)
         self.MOT_switch(with_atoms)
         self.update_parameters()
@@ -2998,7 +3007,7 @@ class OPX:
 if __name__ == "__main__":
     # try:
     experiment = OPX(Config.config)
-    experiment.Start_Spectrum_Exp_with_tt()
+    # experiment.Start_Spectrum_Exp_with_tt()
     # experiment.run_daily_experiment([50, 500], Histogram_bin_size=1000, Transit_profile_bin_size=10,
     #                                 preComment='Transit experinment with 2uW of 731.30nm light coupled',
     #                                 total_counts_threshold=1, transit_counts_threshold=5, FLR_threshold=0.08,

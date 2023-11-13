@@ -49,7 +49,7 @@ vec_size = 2000
 
 # Pulse_durations
 readout_pulse_len = 10000000
-MOT_pulse_len = 10e6
+MOT_pulse_len = 2e6
 Short_pulse_len = 40
 PGC_pulse_len = 40
 Fountain_pulse_len = 40

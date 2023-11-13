@@ -594,10 +594,10 @@ with program() as dig:
     with infinite_loop_():
         with for_(n, 0, n < rep, n+1):
 
-            # play("Const_open_triggered", "PULSER_N")
+            play("Const_open_triggered", "PULSER_N")
             # play("Const_open", "PULSER_N")
-            # # play("Const_open", "PULSER_S")
-            # play("Const_open_triggered", "PULSER_S")
+            # play("Const_open", "PULSER_S")
+            play("Const_open_triggered", "PULSER_S")
             # play("Const_open", "PULSER_L")
             # play("Const_high_open", "PULSER_E")
             # play("Square_Pulse", "PULSER_LO")
