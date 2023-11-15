@@ -85,7 +85,7 @@ def assign_variables_to_element(element, *variables):
 all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]
 
 
-def MOT(mot_repetitions):
+def MOT(mot_repetitions, OD_freq):
     """
     The MOT function is used to play the MOT. To that end, we send RF signal to AOM_0, AOM_+, AOM_- for the duration of the MOT.
 
@@ -95,9 +95,8 @@ def MOT(mot_repetitions):
     """
     FLR = declare(fixed)
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-3'_for_interference", "FLR_detection",
-          "Measurement")  # , "Dig_detectors") # , "PULSER_N", "PULSER_S")
-    update_frequency("AOM_Spectrum", Config.IF_AOM_Spectrum)
+          "AOM_2-2/3'", "AOM_2-3'_for_interference", "FLR_detection", "Measurement")  # , "Dig_detectors") # , "PULSER_N", "PULSER_S")
+    # update_frequency("AOM_Spectrum", OD_freq)
     ## MOT build-up ##
     n = declare(int)
     m = declare(int)
@@ -547,7 +546,7 @@ def opx_control(obj, qm):
 
         # Boolean variables:
         AntiHelmholtz_ON = declare(bool, value=True)
-        QRAM_Exp_ON = declare(bool, value=True)
+        QRAM_Exp_ON = declare(bool, value=False)
 
         # MOT variables
         MOT_Repetitions = declare(int, value=obj.Exp_Values['MOT_rep'])
@@ -598,6 +597,7 @@ def opx_control(obj, qm):
         ## In fiber:
         M_off_time = declare(int, value=int(obj.M_off_time / 4))
         shutter_open_time = declare(int, value=int(obj.Shutter_open_time * 1e6 / 4))
+        OD_freq = declare(int, value=int(Config.IF_AOM_Spectrum))
 
         ## Spectrum experiment:
         frequency_sweep_rep = declare(int, value=obj.frequency_sweep_rep)
@@ -640,7 +640,7 @@ def opx_control(obj, qm):
 
             # MOT sequence:
 
-            FLR = MOT(MOT_Repetitions)
+            FLR = MOT(MOT_Repetitions, OD_freq)
             play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
 
             # Delay before fountain:
@@ -731,6 +731,10 @@ def opx_control(obj, qm):
                     update_frequency("MOT_AOM_0", Config.IF_AOM_MOT_OFF)
                 with if_(i == 4):
                     assign(QRAM_Exp_ON, IO2)
+                with if_(i == 5):
+                    # update_frequency("AOM_Spectrum", Config.IF_AOM_Spectrum + int(30e6))
+                    assign(OD_freq, IO2)
+                    update_frequency("AOM_Spectrum", OD_freq)
                 # ## AntiHelmholtz control ##
                 # with if_(i == 10):
                 #     assign(antihelmholtz_delay, IO2)
@@ -1003,7 +1007,7 @@ class OPX:
         # self.same_frequency_rep = 100
         # self.spectrum_bandwidth = int(30e6)
         # self.spectrum_bandwidth = int(39e6)
-        self.spectrum_bandwidth = int(45e6) # experiment 13/11/23
+        self.spectrum_bandwidth = int(50e6) # experiment 13/11/23
         self.frequency_start = int(80e6 - self.spectrum_bandwidth/2)
         # self.num_of_different_frequncies = self.Exp_Values['Pulse_1_duration'] * 1e6 / \
         #                                   (2 * Config.frequency_sweep_duration) / \
@@ -1209,6 +1213,11 @@ class OPX:
 
     def AntiHelmholtz_Delay_switch(self, Bool):
         self.update_io_parameter(5, Bool)
+
+    def Change_OD_freq(self, freq):
+        # self.update_io_parameter(5, int(Config.IF_AOM_Spectrum - 8e6 + freq))
+        self.update_io_parameter(5, int(74.65e6))
+
 
     def Max_Probe_counts_switch(self, Bool):
         self.update_io_parameter(6, Bool)
@@ -1586,10 +1595,10 @@ class OPX:
 #                                      )
 #                                     // self.same_frequency_rep] += value
 
-
-        self.Cavity_spectrum_normalized = (self.Cavity_spectrum / self.power_per_freq_weight)
+        self.power_per_freq_weight_0 = self.power_per_freq_weight[0]
+        self.Cavity_spectrum_normalized = (self.Cavity_spectrum / self.power_per_freq_weight_0)
         self.Cavity_spectrum_normalized = self.Cavity_spectrum_normalized / max(self.Cavity_spectrum_normalized)
-        self.Cavity_atom_spectrum_normalized = (self.Cavity_atom_spectrum / self.power_per_freq_weight)
+        self.Cavity_atom_spectrum_normalized = (self.Cavity_atom_spectrum / self.power_per_freq_weight_0)
         self.Cavity_atom_spectrum_normalized = self.Cavity_atom_spectrum_normalized / max(self.Cavity_atom_spectrum_normalized)
 
         self.tt_S_transit_events[[i for i in [vec for elem in self.all_transits for vec in elem]]] += 1
@@ -2449,8 +2458,9 @@ class OPX:
         self.Cavity_spectrum = np.zeros(self.spectrum_bin_number)
         self.Cavity_spectrum_normalized = np.zeros(self.spectrum_bin_number)
 
-        calibration_dirname = 'U:\\Lab_2023\\Experiment_results\\QRAM\\20231109\\160748_Photon_TimeTags\\Cavity_spectrum.npz'
-        # calibration_dirname = None
+        # calibration_dirname = 'U:\\Lab_2023\\Experiment_results\\QRAM\\20231109\\160748_Photon_TimeTags\\Cavity_spectrum.npz'
+        # calibration_dirname = r'U:\Lab_2023\Experiment_results\QRAM\20231114\104323_Photon_TimeTags\Cavity_spectrum.npz'  # Widening spectrum
+        calibration_dirname = None  # Set to None when you are running calibration process
         self.power_per_freq_weight = self.AOM_power_per_freq_calibration(calibration_dirname)
 
         # fold reflections and transmission
@@ -2845,7 +2855,7 @@ class OPX:
                                                      lock_err_threshold, exp_flag=Exp_flag,
                                                      with_atoms=with_atoms)
 
-    def Start_Spectrum_Exp_with_tt(self, N=500, Transit_profile_bin_size=100, preComment=None,
+    def Start_Spectrum_Exp_with_tt(self, N=1000, Transit_profile_bin_size=100, preComment=None,
                                   total_counts_threshold=0.20, transit_counts_threshold=3, FLR_threshold=0.10,
                                   lock_err_threshold=0.002, Exp_flag=True, with_atoms=True, Calibration_dirname=None):
         self.Spectrum_Exp_switch(True)
@@ -3008,6 +3018,9 @@ if __name__ == "__main__":
     # try:
     experiment = OPX(Config.config)
     # experiment.Start_Spectrum_Exp_with_tt()
+
+    # experiment.Start_Spectrum_Exp_with_tt(total_counts_threshold=0.3, Exp_flag=False)
+
     # experiment.run_daily_experiment([50, 500], Histogram_bin_size=1000, Transit_profile_bin_size=10,
     #                                 preComment='Transit experinment with 2uW of 731.30nm light coupled',
     #                                 total_counts_threshold=1, transit_counts_threshold=5, FLR_threshold=0.08,
