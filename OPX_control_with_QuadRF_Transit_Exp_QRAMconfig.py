@@ -535,7 +535,17 @@ def Spectrum_Exp(m_off_time, m_time, m_window, shutter_open_time,
         save(tt_vec8[m], tt_st_8)
         save(n, rep_st)
 
+def OD_Measure(OD_pulse_duration,between_OD_pulses_duration):
+    '''
+    Run OD experiment - short pulse of OD is transmitted, thenn wait, and then another pulse of OD is transmitted for calibration.
+    :param OD_pulse_duration: The duration of the OD pulses in [msec].
+    :param between_OD_pulses_duration: The spacing duration between pulses in [msec].
+    '''
+    play("Const_open", "AOM_Spectrum'", duration=OD_pulse_duration)
+    wait(between_OD_pulses_duration, "AOM_Spectrum")
+    play("Const_open", "AOM_Spectrum'", duration=OD_pulse_duration)
 
+## main function ##
 def opx_control(obj, qm):
     with program() as opx_control_prog:
         ## declaring program variables: ##
@@ -598,6 +608,9 @@ def opx_control(obj, qm):
         M_off_time = declare(int, value=int(obj.M_off_time / 4))
         shutter_open_time = declare(int, value=int(obj.Shutter_open_time * 1e6 / 4))
         OD_freq = declare(int, value=int(Config.IF_AOM_Spectrum))
+        OD_pulse_duration = declare(int, value=int(obj.OD_duration_pulse1*1e6 / 4)) #[nsec]
+        between_OD_pulses_duration = declare(int, value=int(obj.OD_sleep / 4)) #[nsec]
+
 
         ## Spectrum experiment:
         frequency_sweep_rep = declare(int, value=obj.frequency_sweep_rep)
@@ -690,11 +703,12 @@ def opx_control(obj, qm):
                 ################################################
             ## For taking an image:
             with if_((Pulse_1_duration > 0) & ~QRAM_Exp_ON):
-                align(*all_elements)
-                Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
-                                pulse_1_duration_minus, pulse_1_duration_plus)
-                Measure(Pulse_1_duration)  # This triggers camera (Control 7)
-                align(*all_elements)
+                align(*all_elements, "AOM_Spectrum")
+                # Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
+                #                 pulse_1_duration_minus, pulse_1_duration_plus)
+                # Measure(Pulse_1_duration)  # This triggers camera (Control 7)
+                OD_Measure(OD_pulse_duration,OD_sleep)
+                align(*all_elements, "AOM_Spectrum")
 
             with if_((Pulse_1_duration > 0) & QRAM_Exp_ON):
                 align("Dig_detectors", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "AOM_Spectrum")
@@ -955,8 +969,8 @@ class OPX:
         self.OD_delay = self.Exp_Values['OD_delay']  # [msec]
         self.M_window = self.Exp_Values['M_window']  # [nsec]
         self.OD_duration_pulse1 = self.Exp_Values['OD_duration_pulse1']  # [msec]
-        self.OD_sleep = self.Exp_Values['OD_sleep']  # [msec]
-        self.OD_duration_pulse2 = self.Exp_Values['OD_duration_pulse2']  # [msec]
+        self.OD_sleep =  self.Exp_Values['Pulse_1_duration']-2*self.OD_duration_pulse1 # [msec]
+        # self.OD_duration_pulse2 = self.Exp_Values['OD_duration_pulse2']  # [msec]
         self.M_time = int(self.Exp_Values['M_time'] * 1e6)  # [nsec]
         self.Shutter_open_time = self.Exp_Values['Shutter_open_time']  # [msec]
         self.M_off_time = int(self.Exp_Values['M_off_time'] * 1e6)  # [nsec]
