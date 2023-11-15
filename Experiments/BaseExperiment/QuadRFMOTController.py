@@ -1,7 +1,7 @@
 from topticaLockController import TopticaLockController
-from Experiments.Base.Config_Table import Initial_Values as config
-from Experiments.Base.Config_Table import Phases_Names as Phases_Names
-from Experiments.Base.QuadRFController import QuadRFController
+from Experiments.BaseExperiment.Config_Table import Initial_Values as config
+from Experiments.BaseExperiment.Config_Table import Phases_Names as Phases_Names
+from Experiments.BaseExperiment.QuadRFController import QuadRFController
 from Utilities.Utils import Utils
 
 

@@ -141,3 +141,130 @@ class Utils:
             if pair[0].lower() == pair[1].lower() and pair[0] != pair[1]:
                 print('\033[91m' + f'Warning: {pair[0]} is not the same as {pair[1]}' + '\033[0m')
         pass
+
+    @staticmethod
+    def bucket_timetags_SIMPLE(timetags, window_size, buckets_number=1, filter=None, start_time=-math.inf, end_time=math.inf):
+        """
+        This function takes a sequence of time-tags and divides thjem into buckets.
+        It does so scanning all time-tags from start to end and placing each timetag into the relevant bin.
+        Bins are opened dynamically (e.g. if all time tags fall into the same bin, only one will return.
+        The function returns both the counts and the time-tags themselves.
+
+        :param timetags: An array of time tags we need to put into buckets
+        :param window_size: The window size for the binning action
+        :param buckets_number: Pre-allocated the buckets. If no time-tags for a specific bucket, it will return 0
+                               If this param is None, there will be dynamic allocation until the last relevant timetag
+        :param filter: A filter to apply for each time-tag - whether to count it or not, or weight - can be "bucket index"
+        :param start_time: Filter out time-tags that come before this start time
+        :param end_time: Filter out time-tags that come after this end time
+
+        :return: Two arrays - (a) the buckets counts AND (b) the buckets with timetags
+        """
+
+        # TODO: a) Set local start/end times
+        # TODO: b) better name for abs/loc timings - "folded" ?
+        # TODO: c) add to buckets the folded or absolute?
+        # TODO: d) different bucketing conditions? to different bucket results?
+
+        # Initialize the data structures
+        buckets_counts = [0] * buckets_number
+        buckets_content = [[]]
+        for x in range(0, buckets_number-1):
+            buckets_content.append([])
+
+        # Perform the bucketing
+        for time_tag in timetags:
+            if time_tag > start_time and time_tag < end_time:
+                time_tag_in_sequence = time_tag % window_size
+                seq_num = (time_tag - 1) // window_size
+                increment = 1 if filter is None else filter[time_tag_in_sequence]
+
+                # If we skipped few buckets (no time tags for them, create zero-count/zero-content buckets
+                for i in range(len(buckets_counts), seq_num+1):
+                    buckets_counts.append(0)
+                    buckets_content.append([])
+                buckets_counts[seq_num] += increment
+                buckets_content[seq_num].append(time_tag)
+
+        return buckets_counts, buckets_content
+
+    @staticmethod
+    def bucket_timetags(timetags, window_size, buckets_number=1, filter=None, start_time=-math.inf, end_time=math.inf, filters=None):
+        """
+        This function takes a sequence of time-tags and divides thjem into buckets.
+        It does so scanning all time-tags from start to end and placing each timetag into the relevant bin.
+        Bins are opened dynamically (e.g. if all time tags fall into the same bin, only one will return.
+        The function returns both the counts and the time-tags themselves.
+
+        :param timetags: An array of time tags we need to put into buckets
+        :param window_size: The window size for the binning action
+        :param buckets_number: Pre-allocated the buckets. If no time-tags for a specific bucket, it will return 0
+                               If this param is None, there will be dynamic allocation until the last relevant timetag
+        :param filters: A filter to apply on each time-tag - (a) whether to count it or not, (b) weight
+        :param start_time: Filter out time-tags that come before this start time
+        :param end_time: Filter out time-tags that come after this end time
+
+        :return: Two arrays - (a) the buckets counts AND (b) the buckets with timetags
+        """
+
+        # Initialize the data structures
+        buckets = {}
+        for s in filters:
+            if len(s["filter"]) < window_size:
+                # TODO: Pad it or raise an exception? Add "strict" mode
+                #raise Exception('Filter size must be equal or greater than window size!')
+                gap = window_size - len(s["filter"])
+                s["filter"] = np.pad(s["filter"], (0,gap))
+            if len(s["filter"]) > window_size:
+                print(f'Warning: filter size {len(s["filter"])} is larger than window size ({window_size})')
+
+            #counts = [0] * buckets_number
+            counts = np.zeros(buckets_number)
+            content = [[]]
+            for x in range(0, buckets_number-1):
+                content.append([])
+            name = s["name"]
+            buckets[name] = {"name": name, "counts": counts, "content": content}
+
+        # Perform the bucketing
+        for absolute_time_tag in timetags:
+            if absolute_time_tag > start_time and absolute_time_tag < end_time:
+                relative_time_tag = absolute_time_tag % window_size
+                seq_num = (absolute_time_tag - 1) // window_size
+
+                # Decide with what bucket-set we are working
+                for s in filters:
+                    inc = s["filter"][relative_time_tag]
+                    if inc == 0:
+                        continue
+                    b = buckets[s["name"]]
+
+                    # If we skipped few buckets (no time tags for them, create zero-count/zero-content buckets
+                    for i in range(len(b["counts"]), seq_num+1):
+                        #b["counts"].append(0)
+                        b["counts"] = np.append(b["counts"], 0)
+                        b["content"].append([])
+                    b["counts"][seq_num] += inc
+                    b["content"][seq_num].append(absolute_time_tag)
+
+        return buckets
+
+    @staticmethod
+    def bucket_test():
+
+        time_tags = [1, 4, 15, 22, 24, 98, 99, 100]
+        # s_filter = [i//50 for i in range(0, 100)]
+        # n_filter = [1-(i//50) for i in range(0, 100)]
+        s_filter = [0,1,0,1,0,1,0,1,0,1]  # Bucket of only odd timetags
+        n_filter = [1,1,1,1,1,1,1,1,1,1]  # Bucket of all time tags
+
+        buckets = Utils.bucket_timetags(
+            timetags=time_tags,
+            window_size=10,
+            buckets_number=6,
+            filter=None,
+            start_time=1,
+            end_time=100,
+            filters=[{"name": "S", "filter": s_filter}, {"name": "N", "filter": n_filter}])
+
+        pass

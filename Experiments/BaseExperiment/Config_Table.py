@@ -1,6 +1,6 @@
 from enum import Enum
 import numpy as np
-import Experiments.Base.Config_with_SNSPDs_and_QuadRF as Config
+import Experiments.BaseExperiment.Config_with_SNSPDs_and_QuadRF as Config
 import Experiments.SPRINT.Config_with_SNSPDs_and_QuadRF_Sprint as Config_Sprint  # opx configuration for sprint experiments
 import Experiments.QRAM.Config_with_SNSPDs_and_QuadRF_QRAM as Config_QRAM  # opx configuration for sprint experiments
 from UtilityResources.AOMCalibration import calibrate, calibration_data
@@ -104,6 +104,7 @@ Initial_Values = {
     # Transits / In-fiber OD:
     'M_delay': 35,  # [msec]
     'OD_delay': 0,  # [msec]
+    # TODO Q: Why are we using both "M_window" and "readout_pulse_len" ?
     'M_window': int(Config.readout_pulse_len),  # [nsec]
     'OD_duration_pulse1': 0,  # [msec]
     'OD_sleep': 2,  # [msec]

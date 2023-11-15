@@ -1,0 +1,34 @@
+{
+  "infinite": true,
+  "menu_items": [
+    {
+      "order": 1,
+      "display": "Measure Temperature",
+      "func": "measureTemperature"
+    },
+    {
+      "order": 2,
+      "display": "Optimize PGC",
+      "func": "optimizePGC"
+    },
+    {
+      "order": 3,
+      "display": "Connect/Disconnect from camera",
+      "func": "connect_disconnect_camera"
+    },
+    {
+      "order": 4,
+      "display": "Change PrePulse duration",
+      "func": "input_value",
+      "variable": "xyz"
+    },
+    {
+      "spacer": true
+    },
+    {
+      "order": 9,
+      "display": "Exit",
+      "func": "exit"
+    }
+  ]
+}

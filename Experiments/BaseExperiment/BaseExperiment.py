@@ -3,13 +3,14 @@ import sys
 import time
 import json
 import socket
+import pathlib
 import matplotlib.pyplot as plt
 
 from Utilities.Utils import Utils
 from Utilities.BDLogger import BDLogger
-from Experiments.Base import Config_Table
-from Experiments.Base.Config_Table import Initial_Values, Values_Factor
-from Experiments.Base.QuadRFMOTController import QuadRFMOTController
+from Experiments.BaseExperiment import Config_Table
+from Experiments.BaseExperiment.Config_Table import Initial_Values, Values_Factor
+from Experiments.BaseExperiment.QuadRFMOTController import QuadRFMOTController
 
 import logging
 from logging import StreamHandler, Formatter, INFO, WARN, ERROR
@@ -23,8 +24,14 @@ class BaseExperiment:
 
     def __init__(self, opx_definitions):
 
+        # Setup console logger. We do this first, so rest of code can use logging functions.
+        self.logger = BDLogger()
+
         # This should be set later by run parameters. If not, no error file can be read
         self.lock_error_file = None
+
+        # Set paths map
+        self.set_paths_map()
 
         # Debugging plot
         self.dbg_plot = None
@@ -32,9 +39,6 @@ class BaseExperiment:
         self.Exp_Values = Initial_Values  # Initialize experiment values to be as in Config_Table.py
 
         self.opx_definitions = opx_definitions
-
-        # Setup console logger
-        self.logger = BDLogger()
 
         # Set mainloop flags
         self.halt_experiment = False
@@ -45,12 +49,7 @@ class BaseExperiment:
         #self._open_socket()
 
         # Attempt to initialize Camera functionality
-        try:
-            from UtilityResources import MvCameraController
-            from mvIMPACT import acquire
-            self.camera = MvCameraController.MvCameraController()
-        except:
-            self.logger.error('Warning! could not import MvCamera module')
+        self.connect_camera()
 
         # TODO: What is this?
         # Setup of MW spectroscopy
@@ -71,12 +70,13 @@ class BaseExperiment:
 
     def __del__(self):
         # Close all OPX related instances
-        #if self.job:
+        #if hasattr(self,'job'):
         # self.job.halt()
-        if self.qm:
+        if hasattr(self, 'qm'):
             self.qm.close()
-        if self.qmm:
+        if hasattr(self, 'qmm'):
             self.qmm.close()
+        pass
 
     # Initialize the OPX
     def initialize_OPX(self):
@@ -97,6 +97,13 @@ class BaseExperiment:
         self.io1_list = []
         self.io2_list = []
 
+    def set_paths_map(self):
+        self.paths_map = {
+            "cwd": os.getcwd(),
+            "root": str(pathlib.Path(__file__).parent.resolve())
+        }
+        pass
+
     # Determines whether mainloop should continue (e.g. ESC was pressed)
     def should_continue(self):
         return not self.halt_experiment
@@ -114,6 +121,7 @@ class BaseExperiment:
             try:
                 data = np.load(self.lock_error_file, allow_pickle=True)
                 lock_err = np.abs(data)
+                break
             except Exception as err:
                 self.logger.error(f'Error in loading lock-error file. {err}')
             time.sleep(0.01)  # in seconds
@@ -200,6 +208,31 @@ class BaseExperiment:
         return res
 
     # -------------------------------------------------------
+    # Camera connection methods
+    # -------------------------------------------------------
+    def connect_camera(self):
+        """
+        Attempt to connect to camera. Return if connected.
+        :return: True - if connected, False - failed to connect
+        """
+        try:
+            from UtilityResources import MvCameraController
+            self.camera = MvCameraController.MvCameraController()
+            return True
+        except Exception as e:
+            self.warn(f'Could not connect to camera ({e})')
+            return False
+
+    def disconnect_camera(self):
+        self.camera = None
+
+    def is_camera_connected(self):
+        return self.camera is not None
+
+    def is_camera_disconnected(self):
+        return self.camera is None
+
+    # -------------------------------------------------------
     # Experiment Management related methods
     # -------------------------------------------------------
 
@@ -237,6 +270,13 @@ class BaseExperiment:
     # OPX Stuff
     #----------------------------------------
 
+    # TODO: Q:
+    # TODO: Need to check what this does. It seems to do nothing as it multiplies by ZERO.
+    # TODO: Dor says it's a hack by Quantum Machine that is suppose to tie variables to elements
+    # TODO: Need to check it.
+    #
+    # TODO: Move this to a different file: opx_utils.... ?
+    @staticmethod
     def assign_variables_to_element(element, *variables):
         """
         Forces the given variables to be used by the given element thread. Useful as a workaround for when the compiler
@@ -258,6 +298,54 @@ class BaseExperiment:
             _exp += variable
         wait(4 + 0 * _exp, element)
 
+    """
+        There are two vectors we get from the OPX/OPD: Counts and Time-Tags
+        For each "cycle", we get two outputs:
+
+        +---------------+------------------+
+        +  Counts       |  Time-Tags Array |
+        +---------------+------------------+
+
+        Counts:
+        +------+------+------+------+------+------+
+        +  12  |  9   |   1  |  23  |  54  | ...  +
+        +------+------+------+------+------+------+
+
+        Timetags:
+        +------+------+------+------+------+------+
+        +  23  |  79  |  91  | 1023 | 2354 | ...  +
+        +------+------+------+------+------+------+
+
+        For example: the photon at position 0 was received at time 23ns on a time-window of 10e7 nano seconds
+        The size of this array is dynamic - it holds values as the number of counts received
+
+        NOTE: we have today an issue that the stream may still hold values from the previous detections        
+    """
+
+    def get_handles_from_OPX_server(self):
+        '''
+        Given the streams config, connect them to the OPX handles
+        '''
+        if self.streams is None:
+            return
+        self.streams = self.opx_definitions['streams']
+        for key, value in self.streams.items():
+            value['handler'] = self.job.result_handles.get(key)
+
+    def get_values_from_streams(self):
+        '''
+        Given the streams config and handles, wait and fetch the values from OPX
+        '''
+        if self.streams is None:
+            return
+        # TODO: Should we first "wait_for_values" on all and only then "fetch_all"?
+        for stream in self.streams.values():
+            stream['handler'].wait_for_values(1)
+
+        for stream in self.streams.values():
+            stream['results'] = stream['handler'].fetch_all()
+
+        pass
 
     #------------------------------------------------------------------------
     # Updates a specific value - either related to (a) Operation Mode (b) QuadRF or (c) OPX
@@ -391,7 +479,7 @@ class BaseExperiment:
 
         # quadController.plotTables()
 
-    def save_config_table(self, path='.\\Config_Table Archive\\'):
+    def save_config_table(self, default_path='.\\Config Table Archive\\'):
         time_stamp = time.strftime("%d-%m-%Y %H_%M_%S", time.localtime())
         helm_coils_state = 'Working on it'  # self.getHelmholtzCoilsState()
         experiment_values_to_save = self.Exp_Values
@@ -404,7 +492,11 @@ class BaseExperiment:
             'Helmholtz Coils': helm_coils_state
         }
         try:
-            filename = os.path.join(path, time_stamp+'.json')
+            # TODO: Once we know we want to write this file by-default, we need to uncomment the below
+            # if not os.path.exists(default_path):
+            #     os.makedirs(default_path)
+
+            filename = os.path.join(default_path, time_stamp + '.json')
             with open(filename, 'w') as file:
                 json.dump(save_data, file, indent=4)
         except Exception as err:
@@ -418,7 +510,7 @@ class BaseExperiment:
         if clear:
             plt.clf()
 
-        if self.dbg_plot == None or clear == True:
+        if self.dbg_plot==None or clear==True:
             plt.figure(1)
             self.dbg_plot = True
         # If first element is an array, we're dealing here with sequences (plural)

@@ -2,9 +2,9 @@ import Config_with_SNSPDs_and_QuadRF_QRAM as Config
 
 # TODO: fix this to import only what's needed - not to re-import again all the world...
 # TODO: fix this also in other files (other experiments)
-from Experiments.Base.Config_Table import Phases_Names, Values_Factor
+from Experiments.BaseExperiment.Config_Table import Phases_Names, Values_Factor
 
-from Experiments.Base.QuadRFMOTController import QuadRFMOTController
+from Experiments.BaseExperiment.QuadRFMOTController import QuadRFMOTController
 from qm.qua import *
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,34 +14,12 @@ import os
 import math
 from timeit import Timer
 from playsound import playsound
-from Experiments.Base import Config_Table
+from Experiments.BaseExperiment import Config_Table
 from UtilityResources.HMP4040Control import HMP4040Visa
-from Experiments.Base.BaseExperiment import BaseExperiment
+from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
+from Utilities.Utils import Utils
 
-# TODO: Need to check what this does. It seems to do nothing as it multiplies by ZERO.
-# TODO: Dor says it's a hack by Quantum Machine that is suppose to tie variables to elements
-# TODO: Need to check it.
-def assign_variables_to_element(element, *variables):
-    """
-    Forces the given variables to be used by the given element thread. Useful as a workaround for when the compiler
-    wrongly assigns variables which can cause gaps.
-    To be used at the beginning of a program, will add a 16ns wait to the given element. Use an `align()` if needed.
-
-    Example::
-
-        >>> with program() as program_name:
-        >>>     a = declare(int)
-        >>>     b = declare(fixed)
-        >>>     assign_variables_to_element('resonator', a, b)
-        >>>     align()
-        >>>     ...
-
-    """
-    _exp = variables[0]
-    for variable in variables[1:]:
-        _exp += variable
-    wait(4 + 0 * _exp, element)
-
+# TODO: Move this elsewhere...
 all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]
 
 
@@ -283,9 +261,9 @@ def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
     counts_D_sum = declare(int, value=0)
     tot_counts_MZ_S = declare(int, value=0)
 
-    assign_variables_to_element("AOM_Early", counts_B_sum)
-    assign_variables_to_element("AOM_Late", counts_D_sum)
-    assign_variables_to_element("PULSER_N", tot_counts_MZ_S)
+    BaseExperiment.assign_variables_to_element("AOM_Early", counts_B_sum)
+    BaseExperiment.assign_variables_to_element("AOM_Late", counts_D_sum)
+    BaseExperiment.assign_variables_to_element("PULSER_N", tot_counts_MZ_S)
 
     t = declare(int)
     i = declare(fixed)
@@ -364,10 +342,10 @@ def MZ_balancing_2(m_time, m_window, shutter_open_time, phase_rep_fast, phase_re
     tot_counts_MZ_S = declare(int, value=0)
     tot_counts_MZ_N = declare(int, value=0)
 
-    assign_variables_to_element("AOM_Early", counts_B_sum)
-    assign_variables_to_element("AOM_Late", counts_D_sum)
-    assign_variables_to_element("PULSER_S", tot_counts_MZ_S)
-    assign_variables_to_element("PULSER_N", tot_counts_MZ_N)
+    BaseExperiment.assign_variables_to_element("AOM_Early", counts_B_sum)
+    BaseExperiment.assign_variables_to_element("AOM_Late", counts_D_sum)
+    BaseExperiment.assign_variables_to_element("PULSER_S", tot_counts_MZ_S)
+    BaseExperiment.assign_variables_to_element("PULSER_N", tot_counts_MZ_N)
     tot_phase = declare(fixed)
     phase_correction = declare(fixed)
     ratio = declare(fixed)
@@ -536,8 +514,8 @@ def MZ_balancing_2(m_time, m_window, shutter_open_time, phase_rep_fast, phase_re
 #     # tt_vec_D2 = declare(int, size=Config.vec_size)
 #     counts_D_sum = declare(int, value=0)
 #
-#     assign_variables_to_element("AOM_Early", counts_B_sum)
-#     assign_variables_to_element("AOM_Late", counts_D_sum)
+#     BaseExperiment.assign_variables_to_element("AOM_Early", counts_B_sum)
+#     BaseExperiment.assign_variables_to_element("AOM_Late", counts_D_sum)
 #     t = declare(int)
 #     i = declare(fixed)
 #     j = declare(int)
@@ -647,8 +625,8 @@ def MZ_balancing_2(m_time, m_window, shutter_open_time, phase_rep_fast, phase_re
 #     # tt_vec_D2 = declare(int, size=Config.vec_size)
 #     counts_D_sum = declare(int, value=0)
 #
-#     assign_variables_to_element("AOM_Early", counts_B_sum)
-#     assign_variables_to_element("AOM_Late", counts_D_sum)
+#     BaseExperiment.assign_variables_to_element("AOM_Early", counts_B_sum)
+#     BaseExperiment.assign_variables_to_element("AOM_Late", counts_D_sum)
 #     t = declare(int)
 #     i = declare(fixed)
 #     j = declare(int)
@@ -818,13 +796,13 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
     tt_vec7 = declare(int, size=vec_size)
     tt_vec8 = declare(int, size=vec_size)
 
-    assign_variables_to_element("Dig_detectors", counts1)
+    BaseExperiment.assign_variables_to_element("Dig_detectors", counts1)
 
     n = declare(int, value=0)
     t = declare(int)
     m = declare(int)
 
-    # assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
+    # BaseExperiment.assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "PULSER_ANCILLA", "Dig_detectors")
     play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
     play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
@@ -1177,6 +1155,7 @@ def opx_control(obj, qm):
                 pause()
                 assign(i, IO1)
 
+        # TODO: we want to go over steams and use them to "save" the data to the streams
         with stream_processing():
             # counts_st_B.buffer(obj.total_phase_rep_MZ).save('Bright_Port_Counts')
             # counts_st_B_balanced.save('Bright_Port_Counts_check')
@@ -1187,27 +1166,32 @@ def opx_control(obj, qm):
             # counts_st_D_balanced.save('Dark_Port_Counts_check')
             counts_st_D.buffer(obj.total_phase_rep_MZ).zip(counts_st_D_balanced.buffer(obj.rep_MZ_check*2)).save('Dark_Port_Counts')
             # counts_st_D.buffer(obj.total_phase_rep_MZ_scan).zip(counts_st_D_balanced.buffer(obj.rep_MZ_check*2)).save('Dark_Port_Counts')
+
+            # ZIP together 'phase_correction_st' and 'phase_for_min_st'
             phase_correction_st.buffer(obj.total_phase_rep_MZ).zip(phase_for_min_st.buffer(obj.total_phase_rep_MZ)).save('Phase_Correction_array')
             # phase_correction_st.buffer(obj.total_phase_rep_MZ_scan).zip(phase_for_min_st.buffer(obj.total_phase_rep_MZ_scan)).save('Phase_Correction_array')
+
             # phase_correction_diff_st.save('Phase_diff')
             max_counts_MZ_st.save('Max_counts')
-            ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
-            ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
-            ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
-            ON_counts_st4.buffer(obj.rep).save('Det4_Counts')
-            ON_counts_st5.buffer(obj.rep).save('Det5_Counts')
-            ON_counts_st6.buffer(obj.rep).save('Det6_Counts')
-            ON_counts_st7.buffer(obj.rep).save('Det7_Counts')
-            ON_counts_st8.buffer(obj.rep).save('Det8_Counts')
-            (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep + 1).save('Det1_Probe_TT')
-            (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep + 1).save('Det2_Probe_TT')
-            (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep + 1).save('Det3_Probe_TT')
-            (tt_st_4 + rep_st).buffer(obj.vec_size * obj.rep + 1).save('Det4_Probe_TT')
-            (tt_st_5 + rep_st).buffer(obj.vec_size * obj.rep + 1).save('Det5_Probe_TT')
-            (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep + 1).save('Det6_Probe_TT')
-            (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep + 1).save('Det7_Probe_TT')
-            (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep + 1).save('Det8_Probe_TT')
+            ON_counts_st1.buffer(obj.rep).save('Detector_1_Counts')
+            ON_counts_st2.buffer(obj.rep).save('Detector_2_Counts')
+            ON_counts_st3.buffer(obj.rep).save('Detector_3_Counts')
+            ON_counts_st4.buffer(obj.rep).save('Detector_4_Counts')
+            ON_counts_st5.buffer(obj.rep).save('Detector_5_Counts')
+            ON_counts_st6.buffer(obj.rep).save('Detector_6_Counts')
+            ON_counts_st7.buffer(obj.rep).save('Detector_7_Counts')
+            ON_counts_st8.buffer(obj.rep).save('Detector_8_Counts')
+            (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep + 1).save('Detector_1_Timetags')
+            (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep + 1).save('Detector_2_Timetags')
+            (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep + 1).save('Detector_3_Timetags')
+            (tt_st_4 + rep_st).buffer(obj.vec_size * obj.rep + 1).save('Detector_4_Timetags')
+            (tt_st_5 + rep_st).buffer(obj.vec_size * obj.rep + 1).save('Detector_5_Timetags')
+            (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep + 1).save('Detector_6_Timetags')
+            (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep + 1).save('Detector_7_Timetags')
+            (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep + 1).save('Detector_8_Timetags')
             FLR_st.save('FLR_measure')
+
+            # TODO: this is not in the streams definitions. So where does it come from?
             AntiHelmholtz_ON_st.save("antihelmholtz_on")
 
     # sourceFile = open('serialized_code.py', 'w')
@@ -1221,6 +1205,9 @@ def opx_control(obj, qm):
 
 class QRAM_Experiment(BaseExperiment):
     def __init__(self, opx_config=Config.config):
+
+        # TODO: REMOVE REMOVE REMOVE
+        #Utils.bucket_test()
 
         # Call parent class - setup loggers, keyboard handlers, camera initialization, etc.
         super().__init__(opx_config)
@@ -1578,85 +1565,77 @@ class QRAM_Experiment(BaseExperiment):
             self.avg_num_of_photons_in_det_pulse[i] = \
                 np.sum(self.tt_S_SPRINT_events[detection_puls_ind]) / num_of_sprint_sequences
 
-    def get_handles_from_OPX_Server(self, Num_Of_dets):
-        '''
-         gets handles of timetags and counts from OPX
+
+    def ingest_time_tags(self, Num_Of_dets):
+        """
+        This method goes over the time tag streams we got from the detectors and does the following:
+        1) Filters out garbage values (OPX bugs)
+        2) Adds delays per each detector
+        3) Unify specific detectors into single time-tags arrays
+
+        :param Num_Of_dets:
         :return:
-        '''
-        Counts_handle = []
-        tt_handle = []
+        """
 
-        for i in Num_Of_dets:
-            Counts_handle.append(self.job.result_handles.get("Det"+str(i)+"_Counts"))
-            tt_handle.append(self.job.result_handles.get("Det"+str(i)+"_Probe_TT"))
-        self.MZ_BP_counts_handle = self.job.result_handles.get("Bright_Port_Counts")
-        self.MZ_DP_counts_handle = self.job.result_handles.get("Dark_Port_Counts")
-        self.Phase_Correction_values_handle = self.job.result_handles.get("Phase_Correction_array")
-        # self.Phase_diff_handle = self.job.result_handles.get("Phase_diff")
-        self.Max_counts_handle = self.job.result_handles.get("Max_counts")
-        # self.Phase_Correction_handle = self.job.result_handles.get("Phase_Correction_for_min")
-        FLR_handle = self.job.result_handles.get("FLR_measure")
-        return Counts_handle, tt_handle, FLR_handle
+        # Extract stream values from OPX handles
+        self.get_values_from_streams()
 
-    def get_tt_from_handles(self, Num_Of_dets, Counts_handle, tt_handle, FLR_handle):
-        self.counts_res = []
-        self.tt_res = []
+        # TODO: Q: why are we changing the sign?
+        self.streams['FLR_measure']['results'] *= -1
 
-        # handles wait for values
-        for i in range(len(Num_Of_dets)):
-            tt_handle[i].wait_for_values(1)
-            Counts_handle[i].wait_for_values(1)
-        FLR_handle.wait_for_values(1)
-        self.MZ_BP_counts_handle.wait_for_values(1)
-        self.MZ_DP_counts_handle.wait_for_values(1)
-        self.Phase_Correction_values_handle.wait_for_values(1)
-        # self.Phase_diff_handle.wait_for_values(1)
-        self.Max_counts_handle.wait_for_values(1)
-        # self.Phase_Correction_handle.wait_for_values(1)
-
-        # add the tt and counts to python vars
-        for i in range(len(Num_Of_dets)):
-            self.counts_res.append(Counts_handle[i].fetch_all())
-            self.tt_res.append(tt_handle[i].fetch_all())
-
-        self.MZ_BP_counts_res = self.MZ_BP_counts_handle.fetch_all()
-        self.MZ_DP_counts_res = self.MZ_DP_counts_handle.fetch_all()
-        self.Phase_Correction_values = self.Phase_Correction_values_handle.fetch_all()
-        # self.Phase_diff_res = self.Phase_diff_handle.fetch_all()
-        self.Max_counts_res = self.Max_counts_handle.fetch_all()
-        # self.Phase_Correction = self.Phase_Correction_handle.fetch_all()
-        self.FLR_res = -FLR_handle.fetch_all()
-
-        # clear tt's vecs from last data
+        # Clear time-tags vectors from last data
         self.tt_measure = []
+
+        # TODO: Q: the comment below seems irrelevant - we are not removing zero-padding...
+        # remove zero-padding from tt-res and append into tt_measure
+        for detector_index in range(len(Num_Of_dets)):  # for different detectors
+            tt_res = self.streams[f'Detector_{detector_index+1}_Timetags']['results']
+
+            # We transform the time-tags by giving them a delay of the specific detector
+            # We filter out some wrong time-tags that are result of OPX bugs:
+            # 1) If tt is 9999984
+            # 2) If tt is an exact modulus of the measurement window
+            # 3) If we will exceed measurement window by adding the delay
+            # M-Window - Measurement time (window) milli-seconds
+            self.tt_measure.append([])
+            for tt_index in range(1, tt_res[0]):  # First element in vector is the count, so we skip it
+                data = tt_res[tt_index]
+                if data % self.M_window != 0 and data != 9999984 and (data + Config.detector_delays[detector_index]) <= self.M_window:
+                    self.tt_measure[detector_index].append(data + Config.detector_delays[detector_index])
+            # Ensure time-tags of the specific detector are sorted
+            self.tt_measure[detector_index].sort()
+
+        #------------------------------------------
+        # Unify detectors and windows within detectors and create vector of tt's for each direction (bright port, dark port, north, south and from FS) and sort them
+        #------------------------------------------
         self.tt_BP_measure = []
         self.tt_DP_measure = []
         self.tt_N_measure = []
         self.tt_S_measure = []
         self.tt_FS_measure = []
 
-        # remove zero-padding from tt-res and append into tt_measure
-        for i in range(len(Num_Of_dets)):  # for different detectors
-            # self.tt_measure.append([self.tt_res[i][(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts in
-            #                         enumerate(self.counts_res[i])])
-            self.tt_measure.append(self.tt_res[i][1:(self.tt_res[i][0])].tolist())
-            self.tt_measure[i] = [elm + Config.detector_delays[i] for elm in self.tt_measure[i]
-                                  if ((elm % self.M_window != 0) & (elm != 9999984) &
-                                      ((elm + Config.detector_delays[i]) <= self.M_window))]  # Due to an unresolved bug in the OPD there are "ghost" readings of timetags equal to the maximum time of measuring window.
-            self.tt_measure[i].sort()
-        # unify detectors and windows within detectors and create vector of tt's for each direction (bright port, dark port, north, south and from FS) and sort them
-        self.tt_BP_measure = sorted(sum(self.tt_measure[:2], [])) # unify detectors 1-3 and windows within detectors
-        self.tt_DP_measure = sorted(sum(self.tt_measure[2:4], [])) # unify detectors 1-3 and windows within detectors
-        self.tt_N_measure = sorted(sum(self.tt_measure[7:], [])) # unify detectors 1-3 and windows within detectors
-        self.tt_S_measure = sorted(sum(self.tt_measure[4:5], [])) # unify detectors 6-8 and windows within detectors
-        self.tt_FS_measure = sorted(sum(self.tt_measure[5:7], [])) # unify detectors 6-8 and windows within detectors
-        # plt.plot(self.tt_S_measure)
-        self.Phase_Correction_vec = self.Phase_Correction_values['value_0']
-        self.Phase_Correction_min_vec = self.Phase_Correction_values['value_1']
-        self.Phase_Correction_value = self.Phase_Correction_values['value_1'][-1]
-        # self.Phase_diff = self.Phase_diff_res
-        self.MZ_S_tot_counts = self.Max_counts_res
+        # TODO: Q: the below unification means that if 2 detectors clicked, we may have double appearings
+        # Unify detectors 1 & 2
+        self.tt_BP_measure = sorted(sum(self.tt_measure[0:2], []))
+        # Unify detectors 3 & 4
+        self.tt_DP_measure = sorted(sum(self.tt_measure[2:4], []))
+        # Take detector 8
+        self.tt_N_measure = sorted(sum(self.tt_measure[7:], []))
+        # Detector 4
+        self.tt_S_measure = sorted(sum(self.tt_measure[4:5], []))
+        # Unify detectors 6 & 7
+        self.tt_FS_measure = sorted(sum(self.tt_measure[5:7], []))
 
+        # plt.plot(self.tt_S_measure)
+
+        # Phase Correction is a result of ZIP action in opx_control, thus we have "value_0" and "value_1" for the tupples
+        self.Phase_Correction_vec = self.streams['Phase_Correction_array']['results']['value_0']
+        self.Phase_Correction_min_vec = self.streams['Phase_Correction_array']['results']['value_1']
+        self.Phase_Correction_value = self.streams['Phase_Correction_array']['results']['value_1'][-1]
+        # self.Phase_diff = self.streams['Phase_diff']['results']
+        self.MZ_S_tot_counts = self.streams['Max_counts']['results']
+
+    # TODO: Q: this currently does nothing. What was the intention and why isn't it in use?
     def latched_detectors(self):
         latched_detectors = []
         # for indx, det_tt_vec in enumerate(self.tt_measure):  # for different detectors
@@ -1664,10 +1643,10 @@ class QRAM_Experiment(BaseExperiment):
         #         latched_detectors.append(indx)
         return latched_detectors
 
-    def get_pulses_bins(self,det_pulse_len,sprint_pulse_len,num_of_det_pulses,num_of_sprint_pulses,
-                        sprint_sequence_delay,num_of_sprint_sequences,num_init_zeros,num_fin_zeros,num_between_zeros):
+    def get_pulses_bins(self, det_pulse_len, sprint_pulse_len, num_of_det_pulses, num_of_sprint_pulses,
+                        sprint_sequence_delay, num_of_sprint_sequences, num_init_zeros, num_fin_zeros, num_between_zeros):
         '''
-        generating bin vwctor with edges at the efges of pulses (such that the histogram would give the number of
+        Generating bin vector with edges at the edges of pulses (such that the histogram would give the number of
         clicks within pulse).
         :param det_pulse_len:
         :param sprint_pulse_len:
@@ -1676,7 +1655,7 @@ class QRAM_Experiment(BaseExperiment):
         :param sprint_sequence_delay:
         :return:
         '''
-        pulses_bins = [np.maximum(sprint_sequence_delay,0)]
+        pulses_bins = [np.maximum(sprint_sequence_delay, 0)]
         for i in range(num_of_sprint_sequences):
             pulses_bins += (pulses_bins[-1]+np.arange(det_pulse_len,(num_of_det_pulses+1)*det_pulse_len,det_pulse_len)).tolist()
             pulses_bins += (pulses_bins[-1]+np.arange(sprint_pulse_len,(num_of_sprint_pulses+1)*sprint_pulse_len,sprint_pulse_len)).tolist()
@@ -1688,7 +1667,7 @@ class QRAM_Experiment(BaseExperiment):
                                    num_of_det_pulses,
                                    num_of_sprint_pulses,num_of_sprint_sequences):
         '''
-        dividing south and north tt's vectros into reflection and transmission vectors, by:
+        dividing south and north tt's vectors into reflection and transmission vectors, by:
         1. converting them into counts vector in same time spacing as the initial pulse.
         2. taking the relevant pulses from the sequence to each vector (reflection/transmission)
         :return:
@@ -1720,6 +1699,7 @@ class QRAM_Experiment(BaseExperiment):
 
         return tt_histogram_transmission, tt_histogram_reflection
 
+    # TODO: Q: the below function does not use the parameters it gets...
     def divide_tt_to_reflection_trans(self, sprint_pulse_len, num_of_det_pulses):
         '''
         A function designed to count the number of photons reflected or transmitted for each sequence, such that,
@@ -1741,11 +1721,13 @@ class QRAM_Experiment(BaseExperiment):
 
         # tt_small_perturb = []
         for element in self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure:
+            # TODO: Q: I assume this is a time-window to ignore some time on start/end, how did we decide on this time?
             if (element > int(0.6e6)) and (element < int(9.6e6)):
                 tt_inseq = element % self.QRAM_sequence_len
                 if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
-                    self.num_of_det_reflections_per_seq_S[(element-1)//self.QRAM_sequence_len] += self.filter_S[tt_inseq]
-                    self.num_of_det_transmissions_per_seq_N[(element-1)//self.QRAM_sequence_len] += self.filter_N[tt_inseq]
+                    seq_num = (element-1)//self.QRAM_sequence_len
+                    self.num_of_det_reflections_per_seq_S[seq_num] += self.filter_S[tt_inseq]
+                    self.num_of_det_transmissions_per_seq_N[seq_num] += self.filter_N[tt_inseq]
             # else:  # The part of the SPRINT pulses in the sequence
             #     SPRINT_pulse_num = (tt_inseq - self.end_of_det_pulse_in_seq) // (sprint_pulse_len + Config.num_between_zeros)
             #     if SPRINT_pulse_num < self.number_of_SPRINT_pulses_per_seq:
@@ -1757,14 +1739,25 @@ class QRAM_Experiment(BaseExperiment):
             if (element > int(0.6e6)) and (element < int(9.6e6)):
                 tt_inseq = element % self.QRAM_sequence_len
                 if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
-                    self.num_of_det_reflections_per_seq_N[(element-1)//self.QRAM_sequence_len] += self.filter_N[tt_inseq]
-                    self.num_of_det_transmissions_per_seq_S[(element-1)//self.QRAM_sequence_len] += self.filter_S[tt_inseq]
+                    seq_num = (element-1)//self.QRAM_sequence_len
+                    self.num_of_det_reflections_per_seq_N[seq_num] += self.filter_N[tt_inseq]
+                    self.num_of_det_transmissions_per_seq_S[seq_num] += self.filter_S[tt_inseq]
             # else:  # The part of the SPRINT pulses in the sequence
             #     SPRINT_pulse_num = (tt_inseq - self.end_of_det_pulse_in_seq) // (sprint_pulse_len + Config.num_between_zeros)
             #     if SPRINT_pulse_num < self.number_of_SPRINT_pulses_per_seq:
             #         self.num_of_SPRINT_reflections_per_seq_N[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
             #         self.num_of_SPRINT_transmissions_per_seq_S[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
 
+    """
+        Dor: "Method was built so we can debug coherence"
+        In this method we count the clicks on the Dark-Port and Bright-Port after the detection pulses
+        
+        Sequences:19231, Sequence-Len:520, End-of-detection-Pulse:510
+        +-------------+--------------+--------------+--------------+--------+---+
+        +      0      |      19      |      211     |      23      |    54  |   | ...  +
+        +-------------+--------------+--------------+--------------+--------+---+
+        <- 520 [ns] -> <- 520 [ns] -> <- 520 [ns] -> <- 520 [ns] -> <-510-><-10->     
+    """
     def divide_BP_and_DP_counts(self, num_of_seq_per_count=50):
         '''
         A function designed to count the number of photons reflected or transmitted for each sequence, such that,
@@ -1986,6 +1979,12 @@ class QRAM_Experiment(BaseExperiment):
         return max_value_in_seq_pulses
 
     def num_of_photons_txt_box_loc(self, pulse_loc):
+        '''
+        Finds the average value of the pulse indices - so it's the middle position. Used for the UI/UX
+
+        :param pulse_loc:
+        :return: returns an array - averages of the values of the pulses indices
+        '''
         if pulse_loc:
             box_loc = (np.sum(pulse_loc, axis=1)/2).astype(int)
         else:
@@ -2274,8 +2273,15 @@ class QRAM_Experiment(BaseExperiment):
 
     def init_params_for_save_sprint(self, qram_sequence_len, Num_Of_dets):
         # define empty variables
-        self.QRAM_sequence_len=qram_sequence_len
+        self.QRAM_sequence_len = qram_sequence_len
         self.number_of_QRAM_sequences = math.ceil(self.M_window / self.QRAM_sequence_len)
+
+        # Reformatting the above variables into an object - (a) for better clarity (b) make it "experiment-agnostic"
+        self.experiment = {
+            "sequence_length": qram_sequence_len,
+            "measurement_window": self.M_window,  # [ns]
+            "number_of_sequences": math.ceil(self.M_window / self.QRAM_sequence_len)
+        }
         self.number_of_SPRINT_pulses_per_seq = len(Config.sprint_pulse_amp_S)
 
         self.tt_measure = []
@@ -2310,6 +2316,7 @@ class QRAM_Experiment(BaseExperiment):
         self.num_of_det_reflections_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
         self.num_of_det_transmissions_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
 
+
     # TODO: Refactor/Rename (this method analyzes the results)
     def Save_SNSPDs_QRAM_Measurement_with_tt(self, N, qram_sequence_len, pre_comment, lock_err_threshold, transit_condition,
                                              max_probe_counts, filter_delay, reflection_threshold, reflection_threshold_time,
@@ -2333,6 +2340,7 @@ class QRAM_Experiment(BaseExperiment):
         :return:
         """
 
+        # TODO: need to move this elsewhere. We are setting here something that is used by base class
         # Prepare the full path for reading the error file - being written by the Cavity Lock process (running on a different computer)
         self.lock_error_file = os.path.join(experiment_folder_path, 'Locking_PID_Error', 'locking_err.npy')
 
@@ -2342,16 +2350,16 @@ class QRAM_Experiment(BaseExperiment):
         # set constant parameters for the function
 
         # TODO: Q: Are these just detector "names"/"Symbols"? And also used to define the number of detectors (e.g. 8)?
-
         Num_Of_dets = [1, 2, 3, 4, 5, 6, 7, 8]
         delay_in_detection_N = 30  # choose the correct delay in samples to the first detection pulse # TODO: 40?
         delay_in_detection_S = 20  # choose the correct delay in samples to the first detection pulse # TODO: 40?
         det_pulse_len = Config.det_pulse_len+Config.num_between_zeros
-        sprint_pulse_len = Config.sprint_pulse_len+Config.num_between_zeros
+        sprint_pulse_len = Config.sprint_pulse_len+Config.num_between_zeros  # TODO: Q: what is num_between_zeros ?
 
 
         # initialize parameters - set zeros vectors and empty lists
         # TODO: Q: why is this called "sprint" ?
+        # TODO: Do we need Num_Of_dets ?
         self.init_params_for_save_sprint(qram_sequence_len, Num_Of_dets)
 
         #----------------------------------------------------------
@@ -2386,43 +2394,94 @@ class QRAM_Experiment(BaseExperiment):
 
         self.Num_of_photons_txt_box_x_loc_for_MZ_ports = self.num_of_photons_txt_box_loc(self.pulses_location_in_seq[-2:])
         self.num_of_detection_pulses = len(Config.det_pulse_amp_N)
+
+        # Take the 2nd number in the last tuple (which is the time of the last pulse)
         self.end_of_det_pulse_in_seq = self.pulses_location_in_seq[self.num_of_detection_pulses - 1][1]
 
         self.logger.blue('Press ESC to stop measurement.')
 
-        ####     get tt and counts from OPX to python   #####
-        Counts_handle, tt_handle, FLR_handle = self.get_handles_from_OPX_Server(Num_Of_dets)
+        # Associate the streams filled in FPGA code with result handles
+        self.get_handles_from_OPX_server()
 
-        ## take data only if
-        start = True
-        self.lock_err = None
-        if exp_flag:
-            self.lock_err = self._read_locking_error()
-        else:
-            self.lock_err = lock_err_threshold / 2
+        ############################# WHILE 1 - START #############################
 
-        self.sum_for_threshold = reflection_threshold
+        WARMUP_CYCLES = 3
         cycle = 0
-        # Place holders for results # TODO: ask dor - is it works as we expect?
-        while ((self.lock_err > lock_err_threshold) or (self.sum_for_threshold > reflection_threshold) and exp_flag) or start:
-            if self.keyPress == 'ESC':
+        self.sum_for_threshold = reflection_threshold
+        while exp_flag and (cycle < WARMUP_CYCLES or self.sum_for_threshold > reflection_threshold):
+
+            if not self.should_continue():
                 self.logger.blue('ESC pressed. Stopping measurement.')
-                self.updateValue("QRAM_Exp_switch", False)
+                self.updateValue("Sprint_Exp_switch", False)  # TODO: why are we still using the SPRINT_EXP - we need a generic switch name
                 self.MOT_switch(True)
                 self.update_parameters()
-                self.Stop_run_daily_experiment = True
-                # Other actions can be added here
                 break
-            if start:
-                if cycle > 2:
-                    start = False
-                else:
-                    cycle += 1
-            else:
-                self.logger.debug('Above Threshold')
-            self.get_tt_from_handles(Num_Of_dets, Counts_handle, tt_handle, FLR_handle)
-            self.divide_tt_to_reflection_trans(sprint_pulse_len, self.num_of_detection_pulses)
-            self.divide_BP_and_DP_counts(50)
+
+            #-------------------------------------------
+            # Deal with the time-tags and counts
+            #-------------------------------------------
+
+            # Filter/Manipulate the values we got
+            self.ingest_time_tags(Num_Of_dets)
+
+            # TODO: Review:
+            # TODO: The below calls come instead of:          self.divide_tt_to_reflection_trans(...)
+
+            buckets = Utils.bucket_timetags(
+                timetags=self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure,
+                window_size=self.experiment["sequence_length"],  # [ns]
+                buckets_number=self.experiment["number_of_sequences"],
+                start_time=int(0.6e6),
+                end_time=int(9.6e6),
+                filters=[{"name": "reflections_south", "filter": self.filter_S}, {"name": "transmissions_north", "filter": self.filter_N}])
+
+            self.num_of_det_reflections_per_seq_S = buckets["reflections_south"]["counts"]
+            self.num_of_det_transmissions_per_seq_N = buckets["transmissions_north"]["counts"]
+
+            buckets = Utils.bucket_timetags(
+                timetags=self.tt_S_measure + self.tt_FS_measure,
+                window_size=self.experiment["sequence_length"],  # [ns]
+                buckets_number=self.experiment["number_of_sequences"],
+                start_time=int(0.6e6),
+                end_time=int(9.6e6),
+                filters=[{"name": "reflections_north", "filter": self.filter_N}, {"name": "transmissions_south", "filter": self.filter_S}])
+
+            self.num_of_det_reflections_per_seq_N = buckets["reflections_north"]["counts"]
+            self.num_of_det_transmissions_per_seq_S = buckets["transmissions_south"]["counts"]
+
+            #self.divide_tt_to_reflection_trans(sprint_pulse_len, self.num_of_detection_pulses)
+
+            # TODO: Review:
+            # TODO: The below calls come instead of:          self.divide_BP_and_DP_counts(50)
+            buckets = Utils.bucket_timetags(
+                timetags=self.tt_BP_measure,
+                window_size=self.experiment["sequence_length"],  # [ns]
+                buckets_number=self.experiment["number_of_sequences"]//50,
+                start_time=self.end_of_det_pulse_in_seq,
+                filters=[{"name": "BP_counts_per_n_sequences", "filter": np.ceil(Config.QRAM_Exp_Square_samples_Late)}]
+            )
+            self.num_of_BP_counts_per_n_sequences = buckets["BP_counts_per_n_sequences"]["counts"]
+
+            buckets = Utils.bucket_timetags(
+                timetags=self.tt_DP_measure,
+                window_size=self.experiment["sequence_length"],  # [ns]
+                buckets_number=self.experiment["number_of_sequences"]//50,
+                start_time=self.end_of_det_pulse_in_seq,
+                filters=[{"name": "DP_counts_per_n_sequences", "filter": np.ceil(Config.QRAM_Exp_Square_samples_Late)}]
+            )
+            self.num_of_DP_counts_per_n_sequences = buckets["DP_counts_per_n_sequences"]["counts"]
+
+            buckets = Utils.bucket_timetags(
+                timetags=self.tt_FS_measure + self.tt_S_measure,
+                window_size=self.experiment["sequence_length"],  # [ns]
+                buckets_number=self.experiment["number_of_sequences"]//50,
+                start_time=self.end_of_det_pulse_in_seq,
+                filters=[{"name": "S_counts_per_n_sequences", "filter": np.ceil(Config.QRAM_Exp_Square_samples_Late)}]
+            )
+            self.num_of_S_counts_per_n_sequences = buckets["S_counts_per_n_sequences"]["counts"]
+
+            #self.divide_BP_and_DP_counts(50)
+
             self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
                                                   + self.num_of_det_reflections_per_seq_N
             self.num_of_det_transmissions_per_seq = self.num_of_det_transmissions_per_seq_S \
@@ -2431,10 +2490,19 @@ class QRAM_Experiment(BaseExperiment):
             #                                          + self.num_of_SPRINT_reflections_per_seq_N
             # self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_S \
             #                                            + self.num_of_SPRINT_transmissions_per_seq_N
-            self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.QRAM_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
-            self.logger.debug(self.lock_err, self.lock_err > lock_err_threshold, self.sum_for_threshold)
-            if exp_flag:
-                self.lock_err = self._read_locking_error()
+
+            # Summing over the reflection from detection pulses of each sequence corresponding to the reflection_threshold_time
+            self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.QRAM_Exp_Gaussian_samples_S)):])
+
+            # Check locking error, break if we are above threshold
+            self.lock_err = (lock_err_threshold / 2) if exp_flag else self._read_locking_error()
+            self.logger.debug(f'{self.lock_err}, {self.lock_err > lock_err_threshold}, {self.sum_for_threshold}')
+            if self.lock_err > lock_err_threshold:
+                break
+
+            cycle += 1
+
+        ############################# WHILE 1 - END #############################
 
         ####    end get tt and counts from OPX to python   #####
 
@@ -2578,7 +2646,7 @@ class QRAM_Experiment(BaseExperiment):
         figManager = plt.get_current_fig_manager()
         figManager.window.showMaximized()
 
-        #
+        ############################################ START WHILE LOOP #################################################
 
         while True:
             if self.keyPress == 'ESC':
@@ -2616,7 +2684,10 @@ class QRAM_Experiment(BaseExperiment):
                 # timest = time.strftime("%Y%m%d,%H%M%S") # TODO: is it needed? already writen above..
                 timest = time.strftime("%H%M%S")
                 datest = time.strftime("%Y%m%d")
-                self.get_tt_from_handles(Num_Of_dets, Counts_handle, tt_handle, FLR_handle)
+
+                self.get_values_from_streams()
+
+                self.ingest_time_tags(Num_Of_dets)
 
                 # Check if new tt's arrived:
                 lenS = min(len(self.tt_S_measure), len(self.tt_S_measure_batch[-1]))
@@ -3004,7 +3075,7 @@ class QRAM_Experiment(BaseExperiment):
             self.logger.error(f'Could not save experiments comment: {err}')
             pass
 
-        self.save_config_table(path=dirname)
+        self.save_config_table(default_path=dirname)
         try:
             with open(f'{dirname}max_probe_counts.txt', 'w') as file: json.dump(max_probe_counts, file, indent=4)
         except Exception as e:
@@ -3065,8 +3136,13 @@ class QRAM_Experiment(BaseExperiment):
         # TODO: Can we move here to Enums?
         self.QRAM_Exp_switch(True)
         self.MOT_switch(rp['with_atoms'])
+
+        # TODO: Q: This is the first time we call this, it then calls save_config_table, but there's still no experiment, so it cannot save the config anywhere...
+        # TODO: this needs fixing
         self.update_parameters()
 
+        # TODO: Q: Config.QRAM_Exp_Gaussian_samples_S is constructed in a function, using the parameter "sprint_pulse_len" - so why not use it here?
+        # TODO: Q: (a) we don't want to use duplicate variables holding the same value, (b) it mentions "samples_S" - but it's the same for "N" as well...
         self.Save_SNSPDs_QRAM_Measurement_with_tt(N=rp['N'],
                                                   qram_sequence_len=len(Config.QRAM_Exp_Gaussian_samples_S),
                                                   pre_comment=rp['pre_comment'],
@@ -3093,6 +3169,7 @@ if __name__ == "__main__":
     opx_definitions = {
         'connection': {'host': '132.77.54.230', 'port': '80'},  # Connection details
         'config': Config.config,  # OPX Configuration
+        'streams': Config.streams,  # OPX streams we're using
         'control': opx_control  # OPX Control code
     }
     run_parameters = {
