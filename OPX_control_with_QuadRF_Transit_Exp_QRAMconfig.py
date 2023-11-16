@@ -106,6 +106,8 @@ def MOT(mot_repetitions, OD_freq):
         play("MOT_with_EOM" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0")
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
+        # with if_(n == mot_repetitions):
+        #     play("Const_open", "AOM_Spectrum", duration=50000)
         play("Const_open", "AOM_Spectrum")
         # play("Const_open", "PULSER_N")
         # play("OD_FS" * amp(0.1), "AOM_2-2/3'")
@@ -535,15 +537,15 @@ def Spectrum_Exp(m_off_time, m_time, m_window, shutter_open_time,
         save(tt_vec8[m], tt_st_8)
         save(n, rep_st)
 
-def OD_Measure(OD_pulse_duration,between_OD_pulses_duration):
+def OD_Measure(OD_pulse_duration, between_OD_pulses_duration):
     '''
     Run OD experiment - short pulse of OD is transmitted, thenn wait, and then another pulse of OD is transmitted for calibration.
     :param OD_pulse_duration: The duration of the OD pulses in [msec].
     :param between_OD_pulses_duration: The spacing duration between pulses in [msec].
     '''
-    play("Const_open", "AOM_Spectrum'", duration=OD_pulse_duration)
+    play("Const_open", "AOM_Spectrum", duration=OD_pulse_duration)
     wait(between_OD_pulses_duration, "AOM_Spectrum")
-    play("Const_open", "AOM_Spectrum'", duration=OD_pulse_duration)
+    play("Const_open", "AOM_Spectrum", duration=OD_pulse_duration)
 
 ## main function ##
 def opx_control(obj, qm):
@@ -608,8 +610,8 @@ def opx_control(obj, qm):
         M_off_time = declare(int, value=int(obj.M_off_time / 4))
         shutter_open_time = declare(int, value=int(obj.Shutter_open_time * 1e6 / 4))
         OD_freq = declare(int, value=int(Config.IF_AOM_Spectrum))
-        OD_pulse_duration = declare(int, value=int(obj.OD_duration_pulse1*1e6 / 4)) #[nsec]
-        between_OD_pulses_duration = declare(int, value=int(obj.OD_sleep / 4)) #[nsec]
+        OD_pulse_duration = declare(int, value=int(obj.OD_duration_pulse1 * 1e6 / 4)) #[nsec]
+        between_OD_pulses_duration = declare(int, value=int(obj.OD_sleep * 1e6 / 4)) #[nsec]
 
 
         ## Spectrum experiment:
@@ -661,11 +663,11 @@ def opx_control(obj, qm):
             align(*all_elements)
 
             # Fountain sequence:
-            wait(fountain_duration, "Cooling_Sequence")
-            Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
-                                       fountain_pulse_duration_0, fountain_pulse_duration_minus,
-                                       fountain_pulse_duration_plus, fountain_aom_chirp_rate,
-                                       fountain_delta_f)
+            # wait(fountain_duration, "Cooling_Sequence")
+            # Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
+            #                            fountain_pulse_duration_0, fountain_pulse_duration_minus,
+            #                            fountain_pulse_duration_plus, fountain_aom_chirp_rate,
+            #                            fountain_delta_f)
 
             # PGC sequence:
             wait(pgc_duration, "Cooling_Sequence")
@@ -691,7 +693,7 @@ def opx_control(obj, qm):
 
             align("Cooling_Sequence", "AOM_Early", "AOM_Late")
             with if_(QRAM_Exp_ON):
-                wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
+                wait(PrePulse_duration - shutter_open_time + 4, "Cooling_Sequence")
             with else_():
                 wait(PrePulse_duration, "Cooling_Sequence")
             align(*all_elements, "AOM_2-2/3'", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S",
@@ -707,7 +709,7 @@ def opx_control(obj, qm):
                 # Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
                 #                 pulse_1_duration_minus, pulse_1_duration_plus)
                 # Measure(Pulse_1_duration)  # This triggers camera (Control 7)
-                OD_Measure(OD_pulse_duration,OD_sleep)
+                OD_Measure(OD_pulse_duration, between_OD_pulses_duration)
                 align(*all_elements, "AOM_Spectrum")
 
             with if_((Pulse_1_duration > 0) & QRAM_Exp_ON):
@@ -969,7 +971,7 @@ class OPX:
         self.OD_delay = self.Exp_Values['OD_delay']  # [msec]
         self.M_window = self.Exp_Values['M_window']  # [nsec]
         self.OD_duration_pulse1 = self.Exp_Values['OD_duration_pulse1']  # [msec]
-        self.OD_sleep =  self.Exp_Values['Pulse_1_duration']-2*self.OD_duration_pulse1 # [msec]
+        self.OD_sleep = self.Exp_Values['Pulse_1_duration'] - 2 * self.OD_duration_pulse1 # [msec]
         # self.OD_duration_pulse2 = self.Exp_Values['OD_duration_pulse2']  # [msec]
         self.M_time = int(self.Exp_Values['M_time'] * 1e6)  # [nsec]
         self.Shutter_open_time = self.Exp_Values['Shutter_open_time']  # [msec]
@@ -1229,8 +1231,8 @@ class OPX:
         self.update_io_parameter(5, Bool)
 
     def Change_OD_freq(self, freq):
-        # self.update_io_parameter(5, int(Config.IF_AOM_Spectrum - 8e6 + freq))
-        self.update_io_parameter(5, int(74.65e6))
+        self.update_io_parameter(5, int(Config.IF_AOM_Spectrum + freq))
+        # self.update_io_parameter(5, int(74.65e6))
 
 
     def Max_Probe_counts_switch(self, Bool):
@@ -2514,12 +2516,6 @@ class OPX:
         self.S_bins_detuned_acc = np.sum(np.array(self.tt_S_binning_detuned_batch),
                                      0)  # tt_S_binning_resonance accumulated (sum over the batch)
 
-
-
-
-
-
-
         FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
         Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
         lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
@@ -3031,7 +3027,7 @@ class OPX:
 if __name__ == "__main__":
     # try:
     experiment = OPX(Config.config)
-    # experiment.Start_Spectrum_Exp_with_tt()
+    experiment.Start_Spectrum_Exp_with_tt(preComment="Calibration for AOM Spectrum", Exp_flag=False)
 
     # experiment.Start_Spectrum_Exp_with_tt(total_counts_threshold=0.3, Exp_flag=False)
 
