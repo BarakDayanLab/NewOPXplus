@@ -2,6 +2,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 import numpy as np
+import scipy.stats as stat
+
 
 def find_indx_for_nearest(array, value):
     array = np.asarray(array)
@@ -33,16 +35,28 @@ def transmission_SPRINT(f, y, g1, g2, gamma, k_ex, k_i, h, f_offset, y0):
         C = (g1 ** 2 + g2 ** 2) / (2 * (k + 1j * dc) * (gamma + 1j * da))
         g1g1 = np.power(np.abs(g1), 2) / (np.power(np.abs(g1), 2) + np.power(np.abs(g2), 2))
         g1g2 = g1 * g2 / (np.power(np.abs(g1), 2) + np.power(np.abs(g2), 2))
+        
     t_0 = 1 + 2 * 1j * k_ex * (f - f_offset - 1j * (k_i + k_ex)) / \
           (np.power((f - f_offset - 1j * (k_i + k_ex)), 2) - np.power(h, 2))
     r_0 = 2 * k_ex * h / (np.power((1j * (f - f_offset) + (k_i + k_ex)), 2) + np.power(h, 2))
+    
     z = y0 + np.power(np.abs((2 * (k + 1j * dc) * k_ex / (np.power((k + 1j * dc), 2) + np.power(h, 2))) * g1g1 *
                              (2 * C / (1 + np.power(h, 2) / np.power((k + 1j * dc), 2) + 2 * C)) + t_0), 2) + \
         np.power(np.abs(r_0 * (2 * k_ex / (k + 1j * dc)) * g1g2 *
                         (2 * C / (1 + np.power(h, 2) / np.power((k + 1j * dc), 2) + 2 * C))), 2) - y
     return z
 
-
+def transmission_SPRINT_spread(f, y, g1, g2, gamma, k_ex, k_i, h, f_offset, y0,sig_g,min_detected_g):
+    
+    gg = np.linspace(max(min_detected_g,g1-4*sig_g), g1+4*sig_g, 100)
+    dist_g = stat.norm(g1,sig_g)
+    weights = dist_g.pdf(gg)
+    weights = weights/np.sum(weights)
+    z = np.zeros(np.shape(f))
+    for i in range(len(gg)):
+        z = z + weights[i] * transmission_SPRINT(f, y, gg[i], g2, gamma, k_ex, k_i, h, f_offset, y0) 
+    return z
+    
 def reflection_SPRINT(f, y, g1, g2, gamma, k_ex, k_i, h, f_offset, y0):
     da = f - f_offset
     dc = f - f_offset
@@ -63,6 +77,17 @@ def reflection_SPRINT(f, y, g1, g2, gamma, k_ex, k_i, h, f_offset, y0):
         y
     return z
 
+def reflection_SPRINT_spread(f, y, g1, g2, gamma, k_ex, k_i, h, f_offset, y0,sig_g,min_detected_g):
+    
+    gg = np.linspace(max(0,g1-4*sig_g), g1+4*sig_g, 100)
+    dist_g = stat.norm(g1,sig_g)
+    weights = dist_g.pdf(gg)
+    weights = weights/np.sum(weights)
+    z = np.zeros(np.shape(f))
+    for i in range(len(gg)):
+        z = z + weights[i] * reflection_SPRINT(f, y, gg[i], g2, gamma, k_ex, k_i, h, f_offset, y0)  
+    return z
+
 
 # Variables and Values to plot:
 max_Detuning = int(150e6)  # in Hz
@@ -73,6 +98,8 @@ h_0 = 11  # in MHz
 f_offset = 0  # in Hz
 y0 = 0
 g1_0 = 25  # in MHz
+sig_g_0 = 0.1  # in MHz
+min_detected_g = 7 # in MHz
 g2_0 = 0  # in MHz
 gamma = 6.065 / 2
 f = np.arange(-max_Detuning, max_Detuning + delta_f, delta_f)
@@ -80,10 +107,10 @@ f = np.arange(-max_Detuning, max_Detuning + delta_f, delta_f)
 x = f / 1e6
 y_T0 = transmission_func(f, 0, k_ex_0 * 1e6, k_i_0 * 1e6, h_0 * 1e6, f_offset, y0)
 y_R0 = reflection_func(f, 0, k_ex_0 * 1e6, k_i_0 * 1e6, h_0 * 1e6, f_offset, y0)
-y_T0_SPRINT = transmission_SPRINT(f, 0, g1_0 * 1e6, g2_0 * 1e6, gamma * 1e6, k_ex_0 * 1e6, k_i_0 * 1e6, h_0 * 1e6,
-                                  f_offset, y0)
-y_R0_SPRINT = reflection_SPRINT(f, 0, g1_0 * 1e6, g2_0 * 1e6, gamma * 1e6, k_ex_0 * 1e6, k_i_0 * 1e6, h_0 * 1e6,
-                                  f_offset, y0)
+y_T0_SPRINT = transmission_SPRINT_spread(f, 0, g1_0 * 1e6, g2_0 * 1e6, gamma * 1e6, k_ex_0 * 1e6, k_i_0 * 1e6, h_0 * 1e6,
+                                  f_offset, y0,sig_g_0*1e6,min_detected_g*1e6)
+y_R0_SPRINT = reflection_SPRINT_spread(f, 0, g1_0 * 1e6, g2_0 * 1e6, gamma * 1e6, k_ex_0 * 1e6, k_i_0 * 1e6, h_0 * 1e6,
+                                  f_offset, y0,sig_g_0*1e6,min_detected_g*1e6)
 HM = y_T0[max_Detuning // delta_f] + (1 - y_T0[max_Detuning // delta_f]) / 2
 FWHM = abs(2 * x[find_indx_for_nearest(y_T0, HM)])
 f0_indx = find_indx_for_nearest(f, f_offset)
@@ -107,9 +134,13 @@ fig = plt.figure(figsize=(10, 8.5))
 
 # Create main axis
 ax1 = fig.add_subplot(111)
-fig.subplots_adjust(bottom=0.1, top=0.75)
+fig.subplots_adjust(bottom=0.1, top=0.70)
 
 # Create axes for sliders
+ax_sig_g = fig.add_axes([0.3, 0.75, 0.4, 0.05])
+ax_sig_g.spines['top'].set_visible(True)
+ax_sig_g.spines['right'].set_visible(True)
+
 ax_g1 = fig.add_axes([0.3, 0.80, 0.4, 0.05])
 ax_g1.spines['top'].set_visible(True)
 ax_g1.spines['right'].set_visible(True)
@@ -127,12 +158,14 @@ ax_Ki.spines['top'].set_visible(True)
 ax_Ki.spines['right'].set_visible(True)
 
 # Create sliders
-s_g1 = Slider(ax=ax_g1, label='$g1 $', valmin=0, valmax=100.0, valinit=g1_0, valfmt=' %1.1f [MHz]',
+s_sig_g = Slider(ax=ax_sig_g, label='$\sigma_g$', valmin=0.1, valmax=40.0, valinit=sig_g_0, valfmt=' %1.1f [MHz]',
               facecolor='#cc7000')
-s_Kex = Slider(ax=ax_Kex, label='$K_{ex} $', valmin=0, valmax=100.0, valinit=k_ex_0, valfmt=' %1.1f [MHz]',
+s_g1 = Slider(ax=ax_g1, label='$g$', valmin=0, valmax=100.0, valinit=g1_0, valfmt=' %1.1f [MHz]',
+              facecolor='#cc7000')
+s_Kex = Slider(ax=ax_Kex, label='$\kappa_{ex} $', valmin=0, valmax=100.0, valinit=k_ex_0, valfmt=' %1.1f [MHz]',
                facecolor='#cc7000')
 s_h = Slider(ax=ax_h, label='h ', valmin=0, valmax=20.0, valinit=h_0, valfmt=' %1.1f [MHz]', facecolor='#cc7000')
-s_Ki = Slider(ax=ax_Ki, label='$K_{i} $', valmin=0, valmax=20.0, valinit=k_i_0, valfmt=' %1.1f [MHz]',
+s_Ki = Slider(ax=ax_Ki, label='$\kappa_{i} $', valmin=0, valmax=20.0, valinit=k_i_0, valfmt=' %1.1f [MHz]',
               facecolor='#cc7000')
 
 T, = ax1.plot(x, y_T0, label='Transmission of bare cavity', linewidth=2.5)
@@ -176,16 +209,17 @@ for legend_line, plot_line in zip(legend1.get_lines(), list_of_plots):
 
 # Update values
 def update(val):
+    sig_g = s_sig_g.val
     g1 = s_g1.val
     Kex = s_Kex.val
     h = s_h.val
     Ki = s_Ki.val
     y_T = transmission_func(f, 0, Kex * 1e6, Ki * 1e6, h * 1e6, f_offset, y0)
     y_R = reflection_func(f, 0, Kex * 1e6, Ki * 1e6, h * 1e6, f_offset, y0)
-    y_T_SPRINT = transmission_SPRINT(f, 0, g1 * 1e6, g2_0 * 1e6, gamma * 1e6, Kex * 1e6, Ki * 1e6, h * 1e6,
-                                     f_offset, y0)
-    y_R_SPRINT = reflection_SPRINT(f, 0, g1 * 1e6, g2_0 * 1e6, gamma * 1e6, Kex * 1e6, Ki * 1e6, h * 1e6,
-                                   f_offset, y0)
+    y_T_SPRINT = transmission_SPRINT_spread(f, 0, g1 * 1e6, g2_0 * 1e6, gamma * 1e6, Kex * 1e6, Ki * 1e6, h * 1e6,
+                                     f_offset, y0,sig_g*1e6,min_detected_g*1e6)
+    y_R_SPRINT = reflection_SPRINT_spread(f, 0, g1 * 1e6, g2_0 * 1e6, gamma * 1e6, Kex * 1e6, Ki * 1e6, h * 1e6,
+                                   f_offset, y0,sig_g*1e6,min_detected_g*1e6)
     HM = y_T[max_Detuning // delta_f] + (1 - y_T[max_Detuning // delta_f]) / 2
     FWHM = abs(2 * x[find_indx_for_nearest(y_T, HM)])
     T_f0 = y_T[f0_indx]
@@ -225,6 +259,7 @@ def onpick(event):
     legend_line.set_alpha(1.0 if vis else 0.2)
     fig.canvas.draw()
 
+s_sig_g.on_changed(update)
 s_g1.on_changed(update)
 s_Kex.on_changed(update)
 s_h.on_changed(update)

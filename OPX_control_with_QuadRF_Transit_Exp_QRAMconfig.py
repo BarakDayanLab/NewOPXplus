@@ -85,7 +85,7 @@ def assign_variables_to_element(element, *variables):
 all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]
 
 
-def MOT(mot_repetitions, OD_freq):
+def MOT(mot_repetitions):
     """
     The MOT function is used to play the MOT. To that end, we send RF signal to AOM_0, AOM_+, AOM_- for the duration of the MOT.
 
@@ -96,19 +96,19 @@ def MOT(mot_repetitions, OD_freq):
     FLR = declare(fixed)
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
           "AOM_2-2/3'", "AOM_2-3'_for_interference", "FLR_detection", "Measurement")  # , "Dig_detectors") # , "PULSER_N", "PULSER_S")
-    # update_frequency("AOM_Spectrum", OD_freq)
+    # update_frequency("AOM_Spectrum", 80000000)
     ## MOT build-up ##
     n = declare(int)
     m = declare(int)
     play("Detection" * amp(FLR * 0), "FLR_detection",
-         duration=4)  # we dont know why this works, but Yoav from QM made us write this line to solve an alignment problem we had in the next 2 for loops
+         duration=4)  # we don't know why this works, but Yoav from QM made us write this line to solve an alignment problem we had in the next 2 for loops
     with for_(n, 1, n <= mot_repetitions, n + 1):
         play("MOT_with_EOM" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0")
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
         # with if_(n == mot_repetitions):
         #     play("Const_open", "AOM_Spectrum", duration=50000)
-        play("Const_open", "AOM_Spectrum")
+        # play("Const_open", "AOM_Spectrum")
         # play("Const_open", "PULSER_N")
         # play("OD_FS" * amp(0.1), "AOM_2-2/3'")
         play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
@@ -537,17 +537,7 @@ def Spectrum_Exp(m_off_time, m_time, m_window, shutter_open_time,
         save(tt_vec8[m], tt_st_8)
         save(n, rep_st)
 
-def OD_Measure(OD_pulse_duration, between_OD_pulses_duration):
-    '''
-    Run OD experiment - short pulse of OD is transmitted, thenn wait, and then another pulse of OD is transmitted for calibration.
-    :param OD_pulse_duration: The duration of the OD pulses in [msec].
-    :param between_OD_pulses_duration: The spacing duration between pulses in [msec].
-    '''
-    play("Const_open", "AOM_Spectrum", duration=OD_pulse_duration)
-    wait(between_OD_pulses_duration, "AOM_Spectrum")
-    play("Const_open", "AOM_Spectrum", duration=OD_pulse_duration)
 
-## main function ##
 def opx_control(obj, qm):
     with program() as opx_control_prog:
         ## declaring program variables: ##
@@ -610,9 +600,6 @@ def opx_control(obj, qm):
         M_off_time = declare(int, value=int(obj.M_off_time / 4))
         shutter_open_time = declare(int, value=int(obj.Shutter_open_time * 1e6 / 4))
         OD_freq = declare(int, value=int(Config.IF_AOM_Spectrum))
-        OD_pulse_duration = declare(int, value=int(obj.OD_duration_pulse1 * 1e6 / 4)) #[nsec]
-        between_OD_pulses_duration = declare(int, value=int(obj.OD_sleep * 1e6 / 4)) #[nsec]
-
 
         ## Spectrum experiment:
         frequency_sweep_rep = declare(int, value=obj.frequency_sweep_rep)
@@ -655,7 +642,7 @@ def opx_control(obj, qm):
 
             # MOT sequence:
 
-            FLR = MOT(MOT_Repetitions, OD_freq)
+            FLR = MOT(MOT_Repetitions)
             play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
 
             # Delay before fountain:
@@ -663,11 +650,11 @@ def opx_control(obj, qm):
             align(*all_elements)
 
             # Fountain sequence:
-            # wait(fountain_duration, "Cooling_Sequence")
-            # Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
-            #                            fountain_pulse_duration_0, fountain_pulse_duration_minus,
-            #                            fountain_pulse_duration_plus, fountain_aom_chirp_rate,
-            #                            fountain_delta_f)
+            wait(fountain_duration, "Cooling_Sequence")
+            Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
+                                       fountain_pulse_duration_0, fountain_pulse_duration_minus,
+                                       fountain_pulse_duration_plus, fountain_aom_chirp_rate,
+                                       fountain_delta_f)
 
             # PGC sequence:
             wait(pgc_duration, "Cooling_Sequence")
@@ -693,7 +680,7 @@ def opx_control(obj, qm):
 
             align("Cooling_Sequence", "AOM_Early", "AOM_Late")
             with if_(QRAM_Exp_ON):
-                wait(PrePulse_duration - shutter_open_time + 4, "Cooling_Sequence")
+                wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
             with else_():
                 wait(PrePulse_duration, "Cooling_Sequence")
             align(*all_elements, "AOM_2-2/3'", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S",
@@ -705,12 +692,11 @@ def opx_control(obj, qm):
                 ################################################
             ## For taking an image:
             with if_((Pulse_1_duration > 0) & ~QRAM_Exp_ON):
-                align(*all_elements, "AOM_Spectrum")
-                # Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
-                #                 pulse_1_duration_minus, pulse_1_duration_plus)
-                # Measure(Pulse_1_duration)  # This triggers camera (Control 7)
-                OD_Measure(OD_pulse_duration, between_OD_pulses_duration)
-                align(*all_elements, "AOM_Spectrum")
+                align(*all_elements)
+                Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
+                                pulse_1_duration_minus, pulse_1_duration_plus)
+                Measure(Pulse_1_duration)  # This triggers camera (Control 7)
+                align(*all_elements)
 
             with if_((Pulse_1_duration > 0) & QRAM_Exp_ON):
                 align("Dig_detectors", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "AOM_Spectrum")
@@ -971,8 +957,8 @@ class OPX:
         self.OD_delay = self.Exp_Values['OD_delay']  # [msec]
         self.M_window = self.Exp_Values['M_window']  # [nsec]
         self.OD_duration_pulse1 = self.Exp_Values['OD_duration_pulse1']  # [msec]
-        self.OD_sleep = self.Exp_Values['Pulse_1_duration'] - 2 * self.OD_duration_pulse1 # [msec]
-        # self.OD_duration_pulse2 = self.Exp_Values['OD_duration_pulse2']  # [msec]
+        self.OD_sleep = self.Exp_Values['OD_sleep']  # [msec]
+        self.OD_duration_pulse2 = self.Exp_Values['OD_duration_pulse2']  # [msec]
         self.M_time = int(self.Exp_Values['M_time'] * 1e6)  # [nsec]
         self.Shutter_open_time = self.Exp_Values['Shutter_open_time']  # [msec]
         self.M_off_time = int(self.Exp_Values['M_off_time'] * 1e6)  # [nsec]
@@ -1023,7 +1009,7 @@ class OPX:
         # self.same_frequency_rep = 100
         # self.spectrum_bandwidth = int(30e6)
         # self.spectrum_bandwidth = int(39e6)
-        self.spectrum_bandwidth = int(50e6) # experiment 13/11/23
+        self.spectrum_bandwidth = int(48e6) # experiment 13/11/23
         self.frequency_start = int(80e6 - self.spectrum_bandwidth/2)
         # self.num_of_different_frequncies = self.Exp_Values['Pulse_1_duration'] * 1e6 / \
         #                                   (2 * Config.frequency_sweep_duration) / \
@@ -1611,10 +1597,10 @@ class OPX:
 #                                      )
 #                                     // self.same_frequency_rep] += value
 
-        self.power_per_freq_weight_0 = self.power_per_freq_weight[0]
-        self.Cavity_spectrum_normalized = (self.Cavity_spectrum / self.power_per_freq_weight_0)
+
+        self.Cavity_spectrum_normalized = (self.Cavity_spectrum / self.power_per_freq_weight)
         self.Cavity_spectrum_normalized = self.Cavity_spectrum_normalized / max(self.Cavity_spectrum_normalized)
-        self.Cavity_atom_spectrum_normalized = (self.Cavity_atom_spectrum / self.power_per_freq_weight_0)
+        self.Cavity_atom_spectrum_normalized = (self.Cavity_atom_spectrum / self.power_per_freq_weight)
         self.Cavity_atom_spectrum_normalized = self.Cavity_atom_spectrum_normalized / max(self.Cavity_atom_spectrum_normalized)
 
         self.tt_S_transit_events[[i for i in [vec for elem in self.all_transits for vec in elem]]] += 1
@@ -1842,7 +1828,8 @@ class OPX:
                      bbox=dict(boxstyle=f"circle,pad={det_circle[3]}", edgecolor=det_color, linewidth=2, facecolor=det_color, alpha=0.5))
         ax[2].legend(loc='upper right')
 
-        # ax[3].plot(self.freq_bins, self.Cavity_atom_spectrum, label='Cavity-atom Spectrum', color='k')
+        # ax[3].plot(self.freq_bins/1e6, self.Cavity_atom_spectrum, label='Cavity-atom Spectrum', color='k')
+        # ax[3].plot(self.freq_bins/1e6, self.Cavity_spectrum, label='Cavity Spectrum', color='b')
         ax[3].plot(self.freq_bins/1e6, self.Cavity_atom_spectrum_normalized, label='Cavity-atom Spectrum', color='k')
         ax[3].plot(self.freq_bins/1e6, self.Cavity_spectrum_normalized, label='Cavity Spectrum', color='b')
         ax[3].set(xlabel='Frequency [MHz]', ylabel='Transmission Normalized')
@@ -1920,9 +1907,9 @@ class OPX:
 
     def AOM_power_per_freq_calibration(self, dirname):
         if dirname is None:
-            return np.full((1, self.spectrum_bin_number), 1)
+            return np.full((1, self.spectrum_bin_number), 1)[0]
         if not os.path.exists(dirname):
-            return np.full((1, self.spectrum_bin_number), 1)
+            return np.full((1, self.spectrum_bin_number), 1)[0]
         self.calibration_spectrum = np.load(dirname)
         return self.calibration_spectrum['arr_0']/max(self.calibration_spectrum['arr_0'])
 
@@ -2476,7 +2463,8 @@ class OPX:
 
         # calibration_dirname = 'U:\\Lab_2023\\Experiment_results\\QRAM\\20231109\\160748_Photon_TimeTags\\Cavity_spectrum.npz'
         # calibration_dirname = r'U:\Lab_2023\Experiment_results\QRAM\20231114\104323_Photon_TimeTags\Cavity_spectrum.npz'  # Widening spectrum
-        calibration_dirname = None  # Set to None when you are running calibration process
+        calibration_dirname = r'U:\Lab_2023\Experiment_results\QRAM\20231116\133237_Photon_TimeTags\Cavity_spectrum.npz'  # Widening spectrum
+        # calibration_dirname = None  # Set to None when you are running calibration process
         self.power_per_freq_weight = self.AOM_power_per_freq_calibration(calibration_dirname)
 
         # fold reflections and transmission
@@ -2515,6 +2503,12 @@ class OPX:
                                      0)  # tt_S_binning_resonance accumulated (sum over the batch)
         self.S_bins_detuned_acc = np.sum(np.array(self.tt_S_binning_detuned_batch),
                                      0)  # tt_S_binning_resonance accumulated (sum over the batch)
+
+
+
+
+
+
 
         FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
         Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
@@ -2643,7 +2637,7 @@ class OPX:
             self.tt_S_binning_resonance = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if
                                            not x % 2]  # even
 
-            self.sum_for_threshold = (np.sum(self.tt_S_binning_resonance) * 1000) / self.M_time
+            self.sum_for_threshold = (np.sum(self.tt_S_binning_resonance) * 1000) / (self.M_time / 2)
             print(f'num of photons in [us] {self.sum_for_threshold}')
 
             if exp_flag:
@@ -2865,9 +2859,9 @@ class OPX:
                                                      lock_err_threshold, exp_flag=Exp_flag,
                                                      with_atoms=with_atoms)
 
-    def Start_Spectrum_Exp_with_tt(self, N=1000, Transit_profile_bin_size=100, preComment=None,
-                                  total_counts_threshold=0.20, transit_counts_threshold=3, FLR_threshold=0.10,
-                                  lock_err_threshold=0.002, Exp_flag=True, with_atoms=True, Calibration_dirname=None):
+    def Start_Spectrum_Exp_with_tt(self, N=200, Transit_profile_bin_size=100, preComment=None,
+                                  total_counts_threshold=0.15, transit_counts_threshold=3, FLR_threshold=0.07,
+                                  lock_err_threshold=0.002, Exp_flag=True, with_atoms=False, Calibration_dirname=None):
         self.Spectrum_Exp_switch(True)
         self.MOT_switch(with_atoms)
         self.update_parameters()
@@ -3027,7 +3021,7 @@ class OPX:
 if __name__ == "__main__":
     # try:
     experiment = OPX(Config.config)
-    experiment.Start_Spectrum_Exp_with_tt(preComment="Calibration for AOM Spectrum", Exp_flag=False)
+    experiment.Start_Spectrum_Exp_with_tt(preComment="Spectrum experiment; bandwidth 48 MHz, 1.5MHz jumps")
 
     # experiment.Start_Spectrum_Exp_with_tt(total_counts_threshold=0.3, Exp_flag=False)
 

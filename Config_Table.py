@@ -349,7 +349,7 @@ Operation_Modes = {
                                   },
                     'Transits_Exp':  {'Triggering_Phase': 'Free_Fall',
                                       'MOT_rep': int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config_QRAM.MOT_pulse_len)),
-                                      'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
+                                      'Fountain_final_Delta_freq': 0.5e6,  # 0.38e6 - until 30.10.22
                                       'PrePulse_Repump_amp': 1,  # relative
                                       'PrePulse_CH2_freq': 133.325e6, # Hz
                                       'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],
@@ -359,7 +359,7 @@ Operation_Modes = {
                                       'Buffer_Cycles': 0,
                                       'Imaging_Phase': 'Pulse_1',
                                       # 'PrePulse_duration': 4,  # [msec]
-                                      'PrePulse_duration': 19,  # [msec]
+                                      'PrePulse_duration': 15,  # [msec]
                                       # 'PrePulse_duration': 12,  # [msec]
                                       'Shutter_open_time': 3.5,  # [msec]
                                       'Pulse_1_duration': int(max(Config_QRAM.readout_pulse_sprint_len_N,
@@ -396,7 +396,7 @@ Operation_Modes = {
                                         'M_off_time': 5,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
                                         },
                     'PrePGC_Fountain': {'Triggering_Phase': 'Pulse_1',
-                                        'Fountain_final_Delta_freq': 0.45e6,
+                                        'Fountain_final_Delta_freq': 0.5e6,
                                         'PrePulse_CH2_freq': 133.325e6,  # Hz #Ziv Added for Cooling optimization
                                         'Pulse_1_CH1_Freq_f': Initial_Values['Flash_freq'],
                                         'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'],
