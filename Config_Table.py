@@ -325,7 +325,7 @@ Operation_Modes = {
                                   'MOT_rep': int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config_QRAM.MOT_pulse_len)),
                                   'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
                                   'PrePulse_Repump_amp': 0.000001,  # relative
-                                  'PrePulse_CH2_freq': 133.325e6, # Hz
+                                  'PrePulse_CH2_freq': 133.325e6,  # Hz
                                   'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],
                                   'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'] + 30e6,
                                   'Pulse_1_Repump_amp': 0.000001,

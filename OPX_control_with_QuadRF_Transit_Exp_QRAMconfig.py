@@ -1585,13 +1585,13 @@ class OPX:
                     self.all_transits.append(current_transit)
                     all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
                     # tt_S_transit_events[tuple(current_transit)] += 1
-
+                    self.tt_per_frequency = np.zeros(self.spectrum_bin_number)
                     #building cavity atom spectrum
                     for i in current_transit[:-1]:
                         # building cavit-atom spectrum with the counts of the detuned time bins between the start and
                         # finish of the transit:
-                        self.Cavity_atom_spectrum[i % (self.num_of_different_frequncies * self.same_frequency_rep)
-                                                  // self.same_frequency_rep] += self.tt_S_binning_detuned[i]
+                        self.tt_per_frequency[i % (self.num_of_different_frequncies * self.same_frequency_rep)
+                                              // self.same_frequency_rep] += self.tt_S_binning_detuned[i]
                         # self.Cavity_atom_spectrum[(i * Config.frequency_sweep_duration * 2) %
                         #                           (self.M_window // self.frequency_sweep_rep
                         #                            - 320 * (self.num_of_different_frequncies - 1) - 124
@@ -1600,6 +1600,8 @@ class OPX:
                         # self.Cavity_atom_spectrum[((((i + 1) * Config.frequency_sweep_duration * 2) %
                         #                             self.M_window) // (Config.frequency_sweep_duration * 2)) %
                         #                             self.spectrum_bin_number] += self.tt_S_binning_detuned[i + 1]
+                    self.Cavity_atom_spectrum += self.tt_per_frequency
+                    self.Transits_per_freuency += (self.tt_per_frequency != 0).astype(int)
                     current_transit = [index]
                 else:
                     # Finding if there any index that was saved to current transit and is close enough to the new index
@@ -2589,6 +2591,7 @@ class OPX:
 
 
         self.Cavity_atom_spectrum = np.zeros(self.spectrum_bin_number)
+        self.Transits_per_freuency = np.zeros(self.spectrum_bin_number)
         self.Cavity_atom_spectrum_normalized = np.zeros(self.spectrum_bin_number)
         self.Cavity_spectrum = np.zeros(self.spectrum_bin_number)
         self.Cavity_spectrum_normalized = np.zeros(self.spectrum_bin_number)

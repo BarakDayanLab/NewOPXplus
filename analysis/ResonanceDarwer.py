@@ -172,7 +172,7 @@ T, = ax1.plot(x, y_T0, label='Transmission of bare cavity', linewidth=2.5)
 T_sprint, = ax1.plot(x, y_T0_SPRINT, label='Transmission with atoms', linewidth=2.5, color='tab:green')
 ax1.set_ylabel('T \ R', fontsize=28)
 ax1.set_xlabel('$\Delta [MHz]$', fontsize=28)
-ax1.set_title('FWHM = %1.1f[MHz]' % FWHM)
+ax1.set_title('FWHM bare cavity = %1.1f[MHz]' % FWHM)
 ann_T = ax1.annotate('%2.1f%%' % (100 * T_f0), (x[f0_indx], y_T0[f0_indx]),
                      xytext=(0, 10),  # vertical offset.
                      textcoords='offset points', ha="center", size=15)
