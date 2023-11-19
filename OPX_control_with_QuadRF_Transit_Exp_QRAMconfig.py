@@ -1624,8 +1624,10 @@ class OPX:
 
 
         self.Cavity_spectrum_normalized = (self.Cavity_spectrum / self.power_per_freq_weight)
+        # self.Cavity_spectrum_normalized = (self.Cavity_spectrum / (self.power_per_freq_weight * self.Transits_per_freuency))
         self.Cavity_spectrum_normalized = self.Cavity_spectrum_normalized / max(self.Cavity_spectrum_normalized)
         self.Cavity_atom_spectrum_normalized = (self.Cavity_atom_spectrum / self.power_per_freq_weight)
+        # self.Cavity_atom_spectrum_normalized = (self.Cavity_atom_spectrum / (self.power_per_freq_weight * self.Transits_per_freuency))
         self.Cavity_atom_spectrum_normalized = self.Cavity_atom_spectrum_normalized / max(self.Cavity_atom_spectrum_normalized)
 
         self.tt_S_transit_events[[i for i in [vec for elem in self.all_transits for vec in elem]]] += 1
