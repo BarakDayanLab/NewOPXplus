@@ -38,10 +38,9 @@ class MvCameraController:
         try:
             self.camera = MvCamera.MvCamera(deviceSerial=deviceSerial)
             printGreen("connected to camera")
-        except acquire.EDeviceManager:
-            printError("Could not connect to camera. Camera was probably already connected.")
-            printError("acquire.EDeviceManager")
-            return None
+        except Exception as err:
+            printError(f'Could not connect to camera, probably connected/acquired by application. ({err})')
+            raise Exception('Unable to connect to camera - probably already connected.')
 
     def captureImage(self):
         img, _ = self.camera.CaptureImage()

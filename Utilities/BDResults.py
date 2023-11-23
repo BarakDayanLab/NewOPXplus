@@ -17,6 +17,9 @@ TODO: Wishlist
 class BDResults:
 
     def __init__(self, json_map_path=None, version=None):
+
+        self.strict = True
+
         # Load results map from json file
         try:
             the_path = '.' if json_map_path is None else json_map_path

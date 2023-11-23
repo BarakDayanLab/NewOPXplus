@@ -1,23 +1,19 @@
 import numpy as np
 from scipy import signal
 import math
-import json
 
 
 def gaussian(x, mu, sigma):
     return 1 / sigma / np.sqrt(2 * np.pi) * np.exp(-1.0 / 2.0 * ((x - mu) / sigma) ** 2)
 
-
 def gaussian2(x, mu, sigma):
     return 0.2 * np.exp(-1.0 / 2.0 * ((x - mu) / sigma) ** 2)
-
 
 def gauss_adaptive(amplitude, length):
     t = np.linspace(-length / 2, length / 2, length)
     sigma = length / 6  # defining the width of the pulse to match the length desired
     gauss_wave = amplitude * np.exp(-(t ** 2) / (2 * sigma ** 2))
     return [float(x) for x in gauss_wave]
-
 
 def calc_cmat(correction_vars):
     """

@@ -84,13 +84,14 @@ class BaseExperiment:
             OPX_Code_Module = importlib.import_module("OPX_Code")
             opx_control = OPX_Code_Module.opx_control
         except Exception as err:
-            self.warn(f'Unable to import OPX_Code file ({err}). Loading local opx code')
+            self.warn(f'Unable to import OPX_Code file ({err}). Loading local opx code from BaseExperiment')
             # try:
             #     OPX_Code = importlib.import_module("Experiments.BaseExperiment.OPX_Code", "OPX_Code")
             # except Exception as err:
             #     self.warn(f'Unable to import OPX Code file from BaseExperiment ({err}).')
 
-        #self.opx_definitions = opx_definitions
+        # Initialize OPX with the relevant config and opx code
+        # To Check on OPX status from Browser: http://132.77.54.230/ui/inventory/devices
         self.opx_definitions = {
             'connection': {'host': '132.77.54.230', 'port': '80'},  # Connection details
             'config': Config.config,  # OPX Configuration
@@ -103,7 +104,7 @@ class BaseExperiment:
         self.ignore_data = False
 
         # Open server-socket
-        # TODO: complete implementation of this
+        # TODO: complete implementation of this - listen on socket for outer process/machines to communicate with us
         #self._open_socket()
 
         # Attempt to initialize Camera functionality
@@ -249,8 +250,7 @@ class BaseExperiment:
         self.fountain_final_amp_0 = self.Exp_Values['Fountain_final_amp_0']
         self.fountain_final_amp_minus = self.Exp_Values['Fountain_final_amp_minus']
         self.fountain_final_amp_plus = self.Exp_Values['Fountain_final_amp_plus']
-        self.fountain_aom_chirp_rate = int(self.Exp_Values['Fountain_final_Delta_freq'] * 1e3 / (
-                    self.Exp_Values['Fountain_prep_duration'] * 1e6))  # mHz/nsec
+        self.fountain_aom_chirp_rate = int(self.Exp_Values['Fountain_final_Delta_freq'] * 1e3 / (self.Exp_Values['Fountain_prep_duration'] * 1e6))  # mHz/nsec
 
         # ----------------------------------------
         # OD and Depump measurement parameters:
@@ -437,13 +437,13 @@ class BaseExperiment:
         Attempt to connect to camera. Return if connected.
         :return: True - if connected, False - failed to connect
         """
+        self.camera = None
         try:
             from UtilityResources import MvCameraController
             self.camera = MvCameraController.MvCameraController()
-            return True
         except Exception as e:
             self.warn(f'Could not connect to camera ({e})')
-            return False
+        return self.camera is not None
 
     def disconnect_camera(self):
         self.camera = None

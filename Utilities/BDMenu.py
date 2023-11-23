@@ -91,6 +91,9 @@ class BDMenu:
         return result
 
     def _convert_input(self, value_str, value_type):
+        # If value_str is encapsulated by brackets, we remove them
+        if value_str.startswith('[') and value_str.endswith(']'):
+            value_str = value_str[1:-1]
         if 'array_of' in value_type:
             # Remove redundant spaces and split by commas
             value_str = value_str.replace(" ", "").split(',')

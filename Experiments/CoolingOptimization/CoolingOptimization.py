@@ -115,21 +115,31 @@ class CoolingSequenceOptimizer(BaseExperiment):
                 self.warn('Cannot connect to camera - maybe app is open?')
                 return
 
+            # TODO: TEMP - REMOVE
+            path = r'C:\temp\dror_debug'
+
             path, extraFilesPath = self.createPathForTemperatureMeasurement(path, saveConfig=True)
+
             # ---- Take photos  -----
-            for ppd in PrePulseDurations:
-                # ---- update prepulse duration ----
-                self.updateValue("PrePulse_duration", float(ppd), update_parameters=True)
-                # ---- capture and average pictures ------
-                imgName = 'PrePulse_duration={:04.1f}.bmp'.format(ppd)
-                self.camera.saveAverageImage(os.path.join(path, imgName), NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+            try:
+                for ppd in PrePulseDurations:
+                    # ---- update prepulse duration ----
+                    self.updateValue("PrePulse_duration", float(ppd), update_parameters=True)
+                    # ---- capture and average pictures ------
+                    image_name = 'PrePulse_duration={:04.1f}.bmp'.format(ppd)
+                    image_full_path = os.path.join(path, image_name)
+                    self.camera.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+            except Exception as err:
+                self.warn(f'Failed to get images - {err}')
 
             # ---- Take background picture ----
-            self.updateValue("PrePulse_duration", float(50), update_parameters=True)  # Presumbaly, after 20ms there's no visible cloud.
-            self.camera.saveAverageImage(os.path.join(extraFilesPath, 'background.bmp'), NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+            self.updateValue("PrePulse_duration", float(50), update_parameters=True)  # Presumably, after 20ms there's no visible cloud.
+
+            background_image_path = os.path.join(extraFilesPath, 'background.bmp')
+            self.camera.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
 
         # --- Gaussian Fit to results (to each photo) ----
-        gaussianFitResult = self.gaussianFitAllPicturesInPath(path, backgroundPath=os.path.join(extraFilesPath, 'background.bmp'), saveFitsPath=extraFilesPath, imgBounds=self.imgBounds)
+        gaussianFitResult = self.gaussianFitAllPicturesInPath(path, backgroundPath=background_image_path, saveFitsPath=extraFilesPath, imgBounds=self.imgBounds)
 
         # ---- Take Gaussian fit results and get temperature (x,y) and launch speed -----------
         v_launch, alpha, v_launch_popt, v_launch_cov = self.fitVy_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult, extraFilesPath=extraFilesPath, plotResults=True)
@@ -146,7 +156,12 @@ class CoolingSequenceOptimizer(BaseExperiment):
         # -------- Fit for x and y temperatures ----
         T_x, T_y = self.fitTemperaturesFromGaussianFitResults(gaussianFitResult, alpha, extraFilesPath, plotResults=True)
 
-        d = {'V_y Launch': v_launch, 'T_x': T_x, 'T_y': T_y, 'alpha': alpha}
+        d = {
+            'V_y Launch': v_launch,
+            'T_x': T_x,
+            'T_y': T_y,
+            'alpha': alpha
+        }
         print(d)
         try:
             with open(os.path.join(extraFilesPath, 'results.json'), 'w') as file:
@@ -160,15 +175,18 @@ class CoolingSequenceOptimizer(BaseExperiment):
         plt.close('all')
         return d
 
-    '''optimizePGC is used to run over different parameters.
-        Parameters are defined within function.
-    '''
-    def optimizePGC(self, PrePulseDurations = np.arange(1,7)):
+    def optimizePGC(self, PrePulseDurations=np.arange(1,7)):
+        """
+        This is used to run with different parameters. They are defined within the function
+
+        :param PrePulseDurations:
+        :return: <TBD>
+        """
         path, extraFilesPath = self.createPathForTemperatureMeasurement()
 
         # ---- Take background picture ----
         self.updateValue("PrePulse_duration", float(50),
-                         update_parameters=True)  # Presumbaly, after 20ms there's no visible cloud.
+                         update_parameters=True)  # Presumably, after 20ms there's no visible cloud.
         self.camera.saveAverageImage(os.path.join(extraFilesPath, 'background.bmp'), NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
 
         # ---- Define parameters space ------
