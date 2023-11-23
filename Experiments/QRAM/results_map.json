@@ -1,0 +1,291 @@
+{
+	"version": "0.1",
+	"strict": false,
+	"root": "C:\\temp\\debug_of_bdresults\\{current_date}\\{current_time}_Photon_TimeTags",
+	"files": [
+
+		{
+			"META FILES": "-----------------------------------"
+		},
+
+		{
+            "description": "The experiment threshold information",
+			"data": "exp_comment",
+			"file_name": "experiment_comments",
+  			"folder": "meta_data",
+			"type": "txt",
+			"append": true
+		},
+		{
+            "description": "For every experiment: Date/Time, valid/ignore, with/out atoms, cycles, comment",
+			"data": "daily_experiment_comments",
+			"file_name": "daily_experiment_comments",
+			"header": "Date,Time,IgnoreValid,Atoms,Cycles,Comment",
+			"folder": "..\\",
+			"append": true,
+			"type": "csv"
+		},
+		{
+            "description": "The figures plotted (UI)",
+			"file_name": "Experiment_plot",
+			"folder": "meta_data",
+			"type": "plt"
+		},
+		{
+            "description": "The figures plotted (UI) - saved in a central place",
+			"file_name": "{current_time}_Experiment_Figure",
+			"folder": "{current_date}\\Experiment_figures",
+			"type": "plt",
+			"skip": true
+		},
+
+		{
+			"INPUT FILES": "-----------------------------------"
+		},
+
+		{
+			"data": "early_sequence",
+			"name": "early sequence",
+			"file_name": "Early_sequence_vector",
+			"folder": "input\\sequences",
+			"type": "npz"
+		},
+		{
+			"data": "late_sequence",
+			"name": "late sequence",
+			"file_name": "Late_sequence_vector",
+			"folder": "input\\sequences",
+			"type": "npz"
+		},
+		{
+			"data": "north_sequence",
+			"name": "north sequence",
+			"file_name": "North_sequence_vector",
+			"folder": "input\\sequences",
+			"type": "npz"
+		},
+		{
+			"data": "south_sequence",
+			"name": "south sequence",
+			"file_name": "South_sequence_vector",
+			"folder": "input\\sequences",
+			"type": "npz"
+		},
+		{
+			"data": "fs_sequence",
+			"name": "fs sequence",
+			"file_name": "FS_sequence_vector",
+			"folder": "input\\sequences",
+			"type": "npz"
+		},
+
+
+		{
+			"OUTPUT FILES - DETECTORS": "-----------------------------------",
+		},
+
+  		{
+			"data": "tt_measure_batch_1",
+			"name": "detector 1 timetags",
+			"file_name": "Det1_timetags",
+			"folder": "output\\AllDetectors",
+			"type": "npz"
+		},
+  		{
+			"data": "tt_measure_batch_2",
+			"name": "detector 2 timetags",
+			"file_name": "Det2_timetags",
+			"folder": "output\\AllDetectors",
+			"type": "npz"
+		},
+  		{
+			"data": "tt_measure_batch_3",
+			"name": "detector 3 timetags",
+			"file_name": "Det3_timetags",
+			"folder": "output\\AllDetectors",
+			"type": "npz"
+		},
+  		{
+			"data": "tt_measure_batch_4",
+			"name": "detector 4 timetags",
+			"file_name": "Det4_timetags",
+			"folder": "output\\AllDetectors",
+			"type": "npz"
+		},
+  		{
+			"data": "tt_measure_batch_5",
+			"name": "detector 5 timetags",
+			"file_name": "Det5_timetags",
+			"folder": "output\\AllDetectors",
+			"type": "npz"
+		},
+  		{
+			"data": "tt_measure_batch_6",
+			"name": "detector 6 timetags",
+			"file_name": "Det6_timetags",
+			"folder": "output\\AllDetectors",
+			"type": "npz"
+		},
+  		{
+			"data": "tt_measure_batch_7",
+			"name": "detector 7 timetags",
+			"file_name": "Det7_timetags",
+			"folder": "output\\AllDetectors",
+			"type": "npz"
+		},
+  		{
+			"data": "tt_measure_batch_8",
+			"name": "detector 8 timetags",
+			"file_name": "Det8_timetags",
+			"folder": "output\\AllDetectors",
+			"type": "npz"
+		},
+
+		{
+			"OUTPUT FILES - TIMETAGS": "-----------------------------------",
+		},
+
+  		{
+			"data": "tt_N_measure_batch",
+			"name": "north timetags",
+			"file_name": "North_timetags",
+			"folder": "output\\North(8)",
+			"type": "npz"
+		},
+  		{
+			"data": "tt_S_measure_batch",
+			"name": "south timetags",
+			"file_name": "South_timetags",
+			"folder": "output\\South(5)",
+			"type": "npz"
+		},
+  		{
+			"data": "tt_FS_measure_batch",
+			"name": "fast switch",
+			"file_name": "FS_timetags",
+			"folder": "output\\FastSwitch(6,7)",
+			"type": "npz"
+		},
+   		{
+			"data": "tt_BP_measure_batch",
+			"name": "bright timetags",
+			"file_name": "Bright_timetags",
+			"folder": "output\\Bright(1,2)",
+			"type": "npz"
+		},
+		{
+			"data": "tt_DP_measure_batch",
+			"name": "dark timetags",
+			"file_name": "Dark_timetags",
+			"folder": "output\\Dark(3,4)",
+			"type": "npz"
+		},
+
+		{
+			"OUTPUT FILES - FOLDED TIMETAGS": "-----------------------------------",
+		},
+
+  		{
+			"data": "folded_tt_N_batch",
+			"name": "folded north timetags",
+			"file_name": "North_timetags_folded_to_seq",
+			"folder": "output\\North(8)",
+			"type": "npz"
+		},
+  		{
+			"data": "folded_tt_S_batch",
+			"name": "folded south timetags",
+			"file_name": "South_timetags_folded_to_seq",
+			"folder": "output\\South(5)",
+			"type": "npz"
+		},
+  		{
+			"data": "folded_tt_FS_batch",
+			"name": "folded fast switch",
+			"file_name": "FS_timetags_folded_to_seq",
+			"folder": "output\\FastSwitch(6,7)",
+			"type": "npz"
+		},
+   		{
+			"data": "folded_tt_BP_batch",
+			"name": "folded bright timetags",
+			"file_name": "Bright_timetags_folded_to_seq",
+			"folder": "output\\Bright(1,2)",
+			"type": "npz"
+		},
+		{
+			"data": "folded_tt_DP_batch",
+			"name": "folded dark timetags",
+			"file_name": "Dark_timetags_folded_to_seq",
+			"folder": "output\\Dark(3,4)",
+			"type": "npz"
+		},
+
+		{
+			"OUTPUT FILES - MACH-ZENDER": "-----------------------------------",
+		},
+
+		{
+			"data": "MZ_BP_counts_balancing_batch",
+			"name": "MZ BP counts balancing batch",
+			"file_name": "MZ_BrightPort_counts_balancing_batch",
+			"folder": "Output\\BalancingRes",
+			"type": "npz"
+		},
+		{
+			"data": "MZ_BP_counts_balancing_check_batch",
+			"name": "MZ BP counts balancing check batch",
+			"file_name": "MZ_BrightPort_counts_balancing_check_batch",
+			"folder": "Output\\BalancingRes",
+			"type": "npz"
+		},
+		{
+			"data": "MZ_DP_counts_balancing_batch",
+			"name": "MZ DP counts balancing batch",
+			"file_name": "MZ_DarkPort_counts_balancing_batch",
+			"folder": "Output\\BalancingRes",
+			"type": "npz"
+		},
+		{
+			"data": "MZ_DP_counts_balancing_check_batch",
+			"name": "MZ DP counts balancing check_batch",
+			"file_name": "MZ_DarkPort_counts_balancing_check_batch",
+			"folder": "Output\\BalancingRes",
+			"type": "npz"
+		},
+		{
+			"data": "Phase_Correction_vec_batch",
+			"name": "Phase Correction vec batch",
+			"file_name": "MZ_balancing_Phase_Correction_vec_batch",
+			"folder": "Output\\BalancingRes",
+			"type": "npz"
+		},
+		{
+			"data": "Phase_Correction_min_vec_batch",
+			"name": "Phase Correction min vec batch",
+			"file_name": "MZ_balancing_Phase_Correction_min_vec_batch",
+			"folder": "Output\\BalancingRes",
+			"type": "npz"
+		},
+
+		{
+			"OUTPUT FILES - FLOURESENCE/LOCK-ERROR": "-----------------------------------",
+		},
+
+		{
+			"data": "FLR_measurement",
+			"name": "Flouresence",
+			"file_name": "Flouresence",
+			"folder": "Output",
+			"type": "npz"
+		},
+		{
+			"data": "lock_error",
+			"name": "Cavity Lock Error",
+			"file_name": "Cavity_Lock_Error",
+			"folder": "Output",
+			"type": "npz"
+		}
+
+	]
+}

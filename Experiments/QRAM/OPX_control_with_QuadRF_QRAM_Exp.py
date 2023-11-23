@@ -1724,186 +1724,82 @@ class QRAM_Experiment(BaseExperiment):
         else:
             aftComment = 'ignore'
 
-        # if aftComment == 'Timeout': aftComment = None
 
-        #### Handle file-names and directories #####
-        ## Saving: np.savez(filedir, data = x) #note: @filedir is string of full directory; data is the queyword used to read @x from the file:
-        ## Loading: file = np.load(f, allow_pickle = True)
-        ##          x = file['data']
+        #------------------------------------------------------------------------
+        #    OLD SAVE Stuff
+        #------------------------------------------------------------------------
 
-        #### ------ Save results ------
-        #  -------   Create dir
-        #root_dirname = f'U:\\Lab_2023\\Experiment_results\\QRAM\\{datest}\\'  # TODO: remove
-        root_dirname = f'{experiment_folder_path}\\{datest}\\'
-        dirname = root_dirname + f'{timest}_Photon_TimeTags\\'  # Specific experiment dir
-        dirname_Det = dirname + 'AllDetectors\\'
-        dirname_N = dirname + 'North(8)\\'
-        dirname_S = dirname + 'South(5)\\'
-        dirname_D = dirname + 'Dark(3,4)\\'
-        dirname_B = dirname + 'Bright(1,2)\\'
-        dirname_FS = dirname + 'FastSwitch(6,7)\\'
-        dirname_balancing = dirname + 'BalancingRes\\'
-        dirname_expfigures = root_dirname + 'Experiment_figures\\'
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
-        if not os.path.exists(dirname_Det):
-            os.makedirs(dirname_Det)
-        if not os.path.exists(dirname_N):
-            os.makedirs(dirname_N)
-        if not os.path.exists(dirname_S):
-            os.makedirs(dirname_S)
-        if not os.path.exists(dirname_D):
-            os.makedirs(dirname_D)
-        if not os.path.exists(dirname_B):
-            os.makedirs(dirname_B)
-        if not os.path.exists(dirname_FS):
-            os.makedirs(dirname_FS)
-        if not os.path.exists(dirname_balancing):
-            os.makedirs(dirname_balancing)
-        if not os.path.exists(dirname_expfigures):
-            os.makedirs(dirname_expfigures)
-
-        # ----  msmnt files names  -----
-        # Counter_str = (self.Counter)
-        filename_Det_tt = []
-        for i in Num_Of_dets:
-            filename_Det_tt.append(f'Det'+str(i)+f'_timetags.npz')
-        filename_S_tt = f'South_timetags.npz'
-        filename_N_tt = f'North_timetags.npz'
-        filename_DP_tt = f'Dark_timetags.npz'
-        filename_BP_tt = f'Bright_timetags.npz'
-        filename_FS_tt = f'FS_timetags.npz'
-        filename_N_folded = f'North_timetags_folded_to_seq.npz'
-        filename_S_folded = f'South_timetags_folded_to_seq.npz'
-        filename_DP_folded = f'Dark_timetags_folded_to_seq.npz'
-        filename_BP_folded = f'Bright_timetags_folded_to_seq.npz'
-        filename_FS_folded = f'FS_timetags_folded_to_seq.npz'
-        filename_FLR = f'Flouresence.npz'
-        filename_timestamp = f'Drops_time_stamps.npz'
-        filename_lockerr = f'Cavity_Lock_Error.npz'
-        filname_sequence_S = f'South_sequence_vector.npz'
-        filname_sequence_N = f'North_sequence_vector.npz'
-        filname_sequence_Early = f'Early_sequence_vector.npz'
-        filname_sequence_Late = f'Late_sequence_vector.npz'
-        filname_sequence_FS = f'FS_sequence_vector.npz'
-        filename_reflection_averaged = f'reflection_from_detection_pulses_per_seq_averaged.npz'
-        filename_transits_events = f'seq_transit_events_batched.npz'
-        filename_transits_batched = f'all_transits_seq_indx_batch.npz'
-        filename_MZ_BP_balancing_batched = f'MZ_BrightPort_counts_balancing_batch.npz'
-        filename_MZ_BP_balancing_check_batched = f'MZ_BrightPort_counts_balancing_check_batch.npz'
-        filename_MZ_DP_balancing_batched = f'MZ_DarkPort_counts_balancing_batch.npz'
-        filename_MZ_DP_balancing_check_batched = f'MZ_DarkPort_counts_balancing_check_batch.npz'
-        filename_MZ_balancing_Phase_Correction_vec_batch = f'MZ_balancing_Phase_Correction_vec_batch.npz'
-        filename_MZ_balancing_Phase_Correction_min_vec_batch = f'MZ_balancing_Phase_Correction_min_vec_batch.npz'
-        # filename_SPRINT_reflections_batched = f'all_SPRINT_pulses_reflections_during_transits.npz'
-        # filename_SPRINT_transmissions_batched = f'all_SPRINT_pulses_transmissions_during_transits.npz'
-        filename_experimentPlot = f'Experiment_plot.png'
-        filename_experimentfigure = f'{timest}_Experiment_Figure.png'
-
-        if len(FLR_measurement) > 0:
-            np.savez(dirname + filename_FLR, FLR_measurement)
-        if len(Exp_timestr_batch) > 0:
-            np.savez(dirname + filename_timestamp, Exp_timestr_batch)
-            np.savez(dirname + filename_lockerr, lock_err_batch)
-            np.savez(dirname + filname_sequence_S, Config.QRAM_Exp_Gaussian_samples_S)
-            np.savez(dirname + filname_sequence_N, Config.QRAM_Exp_Gaussian_samples_N)
-            np.savez(dirname + filname_sequence_Early, Config.QRAM_Exp_Square_samples_Early)
-            np.savez(dirname + filname_sequence_Late, Config.QRAM_Exp_Square_samples_Late)
-            np.savez(dirname + filname_sequence_FS, (1-np.array(Config.QRAM_Exp_Square_samples_FS)).tolist())
-            plt.savefig(dirname + filename_experimentPlot, bbox_inches='tight')
-            plt.savefig(dirname_expfigures + filename_experimentfigure, bbox_inches='tight')
-        for i in range(len(Num_Of_dets)):
-            if len(self.tt_measure_batch[i]) > 0:
-                np.savez(dirname_Det + filename_Det_tt[i], self.tt_measure_batch[i])
-        if len(self.folded_tt_N_batch) > 0:
-            np.savez(dirname + filename_N_folded, self.folded_tt_N_batch)
-        if len(self.folded_tt_S_batch) > 0:
-            np.savez(dirname + filename_S_folded, self.folded_tt_S_batch)
-        if len(self.folded_tt_DP_batch) > 0:
-            np.savez(dirname + filename_DP_folded, self.folded_tt_DP_batch)
-        if len(self.folded_tt_BP_batch) > 0:
-            np.savez(dirname + filename_BP_folded, self.folded_tt_BP_batch)
-        if len(self.folded_tt_FS_batch) > 0:
-            np.savez(dirname + filename_FS_folded, self.folded_tt_FS_batch)
-        if len(self.tt_S_measure_batch) > 0:
-            np.savez(dirname_S + filename_S_tt, self.tt_S_measure_batch)
-        if len(self.tt_N_measure_batch) > 0:
-            np.savez(dirname_N + filename_N_tt, self.tt_N_measure_batch)
-        if len(self.tt_DP_measure_batch) > 0:
-            np.savez(dirname_D + filename_DP_tt, self.tt_DP_measure_batch)
-        if len(self.tt_BP_measure_batch) > 0:
-            np.savez(dirname_B + filename_BP_tt, self.tt_BP_measure_batch)
-        if len(self.tt_FS_measure_batch) > 0:
-            np.savez(dirname_FS + filename_FS_tt, self.tt_FS_measure_batch)
-        if len(self.num_of_det_reflections_per_seq_accumulated) > 0:
-            np.savez(dirname + filename_reflection_averaged, self.num_of_det_reflections_per_seq_accumulated/self.Counter)
-        if len(self.seq_transit_events_batched) > 0:
-            np.savez(dirname + filename_transits_events, self.seq_transit_events_batched)
-        if len(self.all_transits_seq_indx_batch) > 0:
-            np.savez(dirname + filename_transits_batched, self.all_transits_seq_indx_batch)
-            # np.savez(dirname + filename_SPRINT_reflections_batched, self.reflection_SPRINT_data_per_transit_batch)
-            # np.savez(dirname + filename_SPRINT_transmissions_batched, self.transmission_SPRINT_data_per_transit_batch)
-        if len(self.MZ_BP_counts_balancing_check_batch) > 0:
-            np.savez(dirname_balancing + filename_MZ_BP_balancing_batched, self.MZ_BP_counts_balancing_batch)
-            np.savez(dirname_balancing + filename_MZ_BP_balancing_check_batched, self.MZ_BP_counts_balancing_check_batch)
-            np.savez(dirname_balancing + filename_MZ_DP_balancing_batched, self.MZ_DP_counts_balancing_batch)
-            np.savez(dirname_balancing + filename_MZ_DP_balancing_check_batched, self.MZ_DP_counts_balancing_check_batch)
-            np.savez(dirname_balancing + filename_MZ_balancing_Phase_Correction_vec_batch, self.Phase_Correction_vec_batch)
-            np.savez(dirname_balancing + filename_MZ_balancing_Phase_Correction_min_vec_batch, self.Phase_Correction_min_vec_batch)
-
-        # if len(all_transits_batch) > 0:
-        #     np.savez(dirname_S + filename_S_transits, all_transits_batch)
-
-        ### Edit comments file ####
-        cmntDir = os.path.join(root_dirname, 'daily_experiment_comments.csv')
-        cmnt_header = 'Date,Time,IgnoreValid,Atoms,Cycles,Comment'
-        if not os.path.exists(cmntDir):
-            # Write header line
-            try:
-                with open(cmntDir, "a") as commentsFile:
-                    commentsFile.write(cmnt_header + '\n')
-            except:
-                self.logger.error('Could not save comments, error writing to comments-file.')
-
-        if pre_comment is not None: cmnt = pre_comment + '; '
-        if aftComment is not None: cmnt = pre_comment + aftComment
-        if pre_comment is None and aftComment is None: cmnt = 'No comment.'
-        if 'ignore' in cmnt:
-            experiment_success = 'ignore'
-        else:
-            experiment_success = 'valid'
-        full_line = f'{datest},{timest},{experiment_success},{with_atoms},{self.Counter},{cmnt}'
-        try:
-            with open(cmntDir, "a") as commentsFile:
-                commentsFile.write(full_line + '\n')
-        except Exception as err:
-            self.logger.error('Could not save comments, error writing to comments-file. {err}')
-
-        experiment_cmnt = 'transit condition: ' + str(transit_condition) + '; ' +\
-                          'reflection threshold: ' + str(reflection_threshold) + '@' +\
-                          str(int(reflection_threshold_time/1e6)) + 'ms'
-
-        comments = {'comments': experiment_cmnt}
-        try:
-            with open(f'{dirname}experiment_comments.txt', 'w') as file:
-                json.dump(comments, file, indent=4)
-        except Exception as err:
-            self.logger.error(f'Could not save experiments comment: {err}')
-            pass
-
+        # TODO: re-implement the below to work with BDResults
+        # Save the config table holding all conigurations of this experiment
+        #timest = time.strftime("%H%M%S")
+        dirname = self.bd_results.get_root() + f'{timest}_Photon_TimeTags\\'
         self.save_config_table(default_path=dirname)
-        try:
-            with open(f'{dirname}max_probe_counts.txt', 'w') as file: json.dump(max_probe_counts, file, indent=4)
-        except Exception as e:
-            self.logger.error(f'Could not open probe counts file: {err}')
 
+        # TODO: re-implement in QuadRF class - to get the data - and BDResults will save...
+        # Save Quad RF controllers commands
         for qrdCtrl in self.QuadRFControllers:
             qrdCtrl.saveLinesAsCSV(f'{dirname}QuadRF_table.csv')
+
+
+        #------------------------------------------------------------------------
+        #    NEW SAVE Stuff
+        #------------------------------------------------------------------------
+
+        results = {
+            "early_sequence": self.early_sequence,
+            "late_sequence": self.late_sequence,
+            "north_sequence": self.north_sequence,
+            "south_sequence": self.south_sequence,
+            "fs_sequence": self.fs_sequence,
+
+            "tt_measure_batch_1": self.tt_measure_batch[0],
+            "tt_measure_batch_2": self.tt_measure_batch[1],
+            "tt_measure_batch_3": self.tt_measure_batch[2],
+            "tt_measure_batch_4": self.tt_measure_batch[3],
+            "tt_measure_batch_5": self.tt_measure_batch[4],
+            "tt_measure_batch_6": self.tt_measure_batch[5],
+            "tt_measure_batch_7": self.tt_measure_batch[6],
+            "tt_measure_batch_8": self.tt_measure_batch[7],
+
+            "tt_N_measure_batch": self.tt_N_measure_batch,
+            "tt_S_measure_batch": self.tt_S_measure_batch,
+            "tt_FS_measure_batch": self.tt_FS_measure_batch,
+            "tt_BP_measure_batch": self.tt_BP_measure_batch,
+            "tt_DP_measure_batch": self.tt_DP_measure_batch,
+
+            "MZ_BP_counts_balancing_batch": self.MZ_BP_counts_balancing_batch,
+            "MZ_BP_counts_balancing_check_batch": self.MZ_BP_counts_balancing_check_batch,
+            "MZ_DP_counts_balancing_batch": self.MZ_DP_counts_balancing_batch,
+            "MZ_DP_counts_balancing_check_batch": self.MZ_DP_counts_balancing_check_batch,
+            "Phase_Correction_vec_batch": self.Phase_Correction_vec_batch,
+            "Phase_Correction_min_vec_batch": self.Phase_Correction_min_vec_batch,
+
+            "FLR_measurement": FLR_measurement,
+            "lock_error": lock_err_batch,
+
+            "exp_comment": f'transit condition: {transit_condition}; reflection threshold: {reflection_threshold} @ {int(reflection_threshold_time/1e6)} ms',
+            "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, with_atoms, self.Counter),
+
+            "max_probe_counts": "TBD"
+
+        }
+        self.bd_results.save_results(results)
 
         self.updateValue("QRAM_Exp_switch", False)
         self.update_parameters()
 
-        ## ------------------ end of saving section -------
+
+
+    def generate_experiment_summary_line(self, pre_comment, aftComment, with_atoms, counter):
+        time_str = time.strftime("%H%M%S")
+        date_str = time.strftime("%Y%m%d")
+        cmnt = None
+        if pre_comment is not None: cmnt = pre_comment + '; '
+        if aftComment is not None: cmnt = pre_comment + aftComment
+        if pre_comment is None and aftComment is None: cmnt = 'No comment.'
+        experiment_success = 'ignore' if 'ignore' in cmnt else 'valid'
+        full_line = f'{date_str},{time_str},{experiment_success},{with_atoms},{counter},{cmnt}'
+        return full_line
 
     ## MW spectroscopy variable update functions: ##
 

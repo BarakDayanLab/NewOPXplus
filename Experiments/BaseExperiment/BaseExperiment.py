@@ -11,6 +11,8 @@ from pkgutil import iter_modules
 
 from Utilities.Utils import Utils
 from Utilities.BDLogger import BDLogger
+from Utilities.BDResults import BDResults
+
 from Experiments.BaseExperiment import Config_Table
 from Experiments.BaseExperiment import Config_Experiment as Config  # Attempt to load the default config (may be overriden later)
 from Experiments.BaseExperiment import OPX_Code  # Attempt to load the OPX Code (may be overriden later)
@@ -64,6 +66,9 @@ class BaseExperiment:
         self.dbg_plot = None
 
         self.Exp_Values = Initial_Values  # Initialize experiment values to be as in Config_Table.py
+
+        # Initialize the BDResults helper - for saving experiment results
+        self.bd_results = BDResults(json_map_path=self.paths_map['cwd'], version="0.1")
 
         # Dynamically import the config file
         try:

@@ -6,13 +6,22 @@ from scipy.io import savemat
 import collections.abc
 import matplotlib.pyplot as plt
 
+"""
+TODO: Wishlist
+--------------
+1) Handle CSV - write file by elements in data
+2) Add "allow_empty" flag (to ignore empty vectors, empty strings, etc.
+3) Add Example JSON here...
+"""
 
 class BDResults:
 
-    def __init__(self, version=None, plot=None):
+    def __init__(self, json_map_path=None, version=None):
         # Load results map from json file
         try:
-            f = open(r'results_map.json')
+            the_path = '.' if json_map_path is None else json_map_path
+            the_file = os.path.join(the_path, 'results_map.json')
+            f = open(the_file)
             self.results_map = json.load(f)
             f.close()
         except Exception as err:
@@ -34,6 +43,10 @@ class BDResults:
             elif self.results_map['version'] != version:
                 self._handle_error(f"results map version mismatch! (is {self.results_map['version']} but should be {version})", True)
         pass
+
+    def get_root(self):
+        resolved_path = self._resolve_parameterized(self.results_map['root'])
+        return resolved_path
 
     def save_results(self, data_pool):
 
@@ -244,7 +257,7 @@ class BDResults:
         }
 
         # Initiate and test
-        bd_results = BDResults("0.1")
+        bd_results = BDResults(version="0.1")
         bd_results.save_results(data)
 
         pass
