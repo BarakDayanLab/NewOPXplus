@@ -2532,7 +2532,7 @@ class OPX:
     #
     #     ## ------------------ end of saving section -------
 
-    def Save_SNSPDs_Spectrum_Measurement_with_tt(self, N, transit_profile_bin_size, preComment,
+    def Save_SNSPDs_Spectrum_Measurement_with_tt(self, N, transit_profile_bin_size, preComment, transit_cond,
                                                  total_counts_threshold, transit_counts_threshold, FLR_threshold,
                                                  lock_err_threshold, exp_flag, with_atoms, calibration_dirname):
         """
@@ -2705,7 +2705,7 @@ class OPX:
 
         # self.find_transit_events_spectrum(N, transit_time_threshold=time_threshold,
         #                                   transit_counts_threshold=transit_counts_threshold)
-        self.find_transits_events_spectrum_exp(self.tt_S_binning_resonance, N)
+        self.find_transits_events_spectrum_exp(self.tt_S_binning_resonance, N, transit_cond)
 
         self.Counter = 1  # Total number of successful cycles
         self.repitions = 1  # Total number of cycles
@@ -2860,13 +2860,13 @@ class OPX:
                 self.tt_S_binning_batch = self.tt_S_binning_batch[-(N - 1):] + [self.tt_S_binning]
                 self.tt_S_binning_resonance_batch = self.tt_S_binning_resonance_batch[-(N - 1):] + [self.tt_S_binning_resonance]
                 self.tt_S_binning_detuned_batch = self.tt_S_binning_detuned_batch[-(N - 1):] + [self.tt_S_binning_detuned]
-                self.S_bins_res_acc = np.sum(np.array(self.tt_S_binning_resonance_batch),0) # tt_S_binning_resonance accumulated (sum over the batch)
+                self.S_bins_res_acc = np.sum(np.array(self.tt_S_binning_resonance_batch), 0) # tt_S_binning_resonance accumulated (sum over the batch)
                 self.S_bins_detuned_acc = np.sum(np.array(self.tt_S_binning_detuned_batch),
                                                  0)  # tt_S_binning_resonance accumulated (sum over the batch)
 
                 # self.find_transit_events_spectrum(N, transit_time_threshold=time_threshold,
                 #                                   transit_counts_threshold=transit_counts_threshold)
-                self.find_transits_events_spectrum_exp(self.tt_S_binning_resonance, N)
+                self.find_transits_events_spectrum_exp(self.tt_S_binning_resonance, N, transit_cond)
 
                 FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
@@ -3009,14 +3009,21 @@ class OPX:
         except:
             print('Could not save comments, error writing to comments-file.')
 
-        experiment_cmnt = ' transit condition: \n minimum time between reflection = ' + str(time_threshold) + \
-                          '\n with at least ' + str(transit_counts_threshold) + ' reflections ' + \
-                          '\n reflection threshold: ' + str(total_counts_threshold) + ' [MCounts / sec]'
+        # experiment_cmnt = f' transit condition: \n minimum time between reflection = ' + str(time_threshold) + \
+        #                   f'\n with at least ' + str(transit_counts_threshold) + ' reflections ' + \
+        #                   f'\n reflection threshold: ' + str(total_counts_threshold) + ' [MCounts / sec]'
 
-        comments = {'comments': experiment_cmnt}
+        experiment_cmnt = f'Transit condition: ' + str(transit_cond) + \
+                          f'\nWhich means - for ' + str(len(transit_cond)) + \
+                          ' consecutive on-resonance pulses at least 2 of the conditions must apply.' + \
+                          '\nEach element represents the minimum number of photon required per pulse to be regarded as transit.'
+
+
+        # comments = {'comments': experiment_cmnt}
         try:
             with open(f'{dirname}experiment_comments.txt', 'w') as file:
-                json.dump(comments, file, indent=4)
+                # json.dump(comments, file, indent=4)
+                file.write(experiment_cmnt)
         except Exception:
             pass
 
@@ -3040,13 +3047,13 @@ class OPX:
                                                      lock_err_threshold, exp_flag=Exp_flag,
                                                      with_atoms=with_atoms)
 
-    def Start_Spectrum_Exp_with_tt(self, N=1000, Transit_profile_bin_size=100, preComment=None,
+    def Start_Spectrum_Exp_with_tt(self, N=1000, Transit_profile_bin_size=100, preComment=None, transit_cond=[2, 1, 2],
                                   total_counts_threshold=0.1, transit_counts_threshold=3, FLR_threshold=0.08,
                                   lock_err_threshold=0.002, Exp_flag=True, with_atoms=True, Calibration_dirname=None):
         self.Spectrum_Exp_switch(True)
         self.MOT_switch(with_atoms)
         self.update_parameters()
-        self.Save_SNSPDs_Spectrum_Measurement_with_tt(N, Transit_profile_bin_size, preComment,
+        self.Save_SNSPDs_Spectrum_Measurement_with_tt(N, Transit_profile_bin_size, preComment, transit_cond,
                                                      total_counts_threshold, transit_counts_threshold, FLR_threshold,
                                                      lock_err_threshold, exp_flag=Exp_flag,
                                                      with_atoms=with_atoms, calibration_dirname=Calibration_dirname)
@@ -3202,10 +3209,11 @@ class OPX:
 if __name__ == "__main__":
     # try:
     experiment = OPX(Config.config)
-    experiment.Start_Spectrum_Exp_with_tt(preComment="Spectrum experiment; bandwidth 48 MHz, 1.5MHz jumps")
+    # experiment.Start_Spectrum_Exp_with_tt(preComment="Spectrum experiment; bandwidth 48 MHz, 1.5MHz jumps")
     # experiment.Start_Spectrum_Exp_with_tt(N=200, preComment="Spectrum experiment; On resonance max counts",
     #                                       total_counts_threshold=10, with_atoms=False)
-    # experiment.Start_Transit_Exp_with_tt(Exp_flag=False)
+    experiment.Start_Spectrum_Exp_with_tt(Exp_flag=False)
+
 
 
     # experiment.Start_Spectrum_Exp_with_tt(total_counts_threshold=0.3, Exp_flag=False)
