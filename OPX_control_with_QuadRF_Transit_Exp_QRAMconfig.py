@@ -698,18 +698,18 @@ def opx_control(obj, qm):
 
             with if_((Pulse_1_duration > 0) & QRAM_Exp_ON):
                 align("Dig_detectors", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "AOM_Spectrum")
-                Transit_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
-                            ON_counts_st1, ON_counts_st2, ON_counts_st3,
-                            ON_counts_st4, ON_counts_st5, ON_counts_st6,
-                            ON_counts_st7, ON_counts_st8,
-                            tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st)
-                # Spectrum_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
-                #              frequency_sweep_rep, same_frequency_rep, num_of_different_frequncies, frequency_diff,
-                #              frequency_start,
-                #              ON_counts_st1, ON_counts_st2, ON_counts_st3,
-                #              ON_counts_st4, ON_counts_st5, ON_counts_st6,
-                #              ON_counts_st7, ON_counts_st8,
-                #              tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st)
+                # Transit_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
+                #             ON_counts_st1, ON_counts_st2, ON_counts_st3,
+                #             ON_counts_st4, ON_counts_st5, ON_counts_st6,
+                #             ON_counts_st7, ON_counts_st8,
+                #             tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st)
+                Spectrum_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
+                             frequency_sweep_rep, same_frequency_rep, num_of_different_frequncies, frequency_diff,
+                             frequency_start,
+                             ON_counts_st1, ON_counts_st2, ON_counts_st3,
+                             ON_counts_st4, ON_counts_st5, ON_counts_st6,
+                             ON_counts_st7, ON_counts_st8,
+                             tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st)
                 align("Dig_detectors", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "AOM_Spectrum")
 
             save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
@@ -1361,9 +1361,10 @@ class OPX:
         self.tt_S_measure = sorted(sum(self.tt_measure[4:5], []))  # unify detectors 6-8 and windows within detectors
         self.tt_FS_measure = sorted(sum(self.tt_measure[5:7], []))  # unify detectors 6-8 and windows within detectors
         self.tt_N_directional_measure = sorted(self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure)
+        # self.tt_S_directional_measure = sorted(self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure)
         self.tt_S_directional_measure = sorted(self.tt_S_measure + self.tt_FS_measure)
+        # self.tt_N_directional_measure = sorted(self.tt_S_measure + self.tt_FS_measure)
         # No need to fix as we're now not switching frequencies. This fix is relevant only for Spectrum experiment
-        self.fix_gaps_spectrum_exp_tts()
         self.fix_gaps_spectrum_exp_tts()
 
     def fix_gaps_spectrum_exp_tts(self):
@@ -1579,7 +1580,7 @@ class OPX:
             if not current_transit and value:  # if the array is empty
                 current_transit.append(index)
             elif value:
-                if ((index - current_transit[0]) * Config.frequency_sweep_duration*2) < transit_time_threshold:
+                if ((index - current_transit[0]) * Config.frequency_sweep_duration * 2) < transit_time_threshold:
                     current_transit.append(index)
                 elif sum([self.tt_S_binning_resonance[i] for i in current_transit]) > transit_counts_threshold:
                     self.all_transits.append(current_transit)
@@ -1592,14 +1593,6 @@ class OPX:
                         # finish of the transit:
                         self.tt_per_frequency[i % (self.num_of_different_frequncies * self.same_frequency_rep)
                                               // self.same_frequency_rep] += self.tt_S_binning_detuned[i]
-                        # self.Cavity_atom_spectrum[(i * Config.frequency_sweep_duration * 2) %
-                        #                           (self.M_window // self.frequency_sweep_rep
-                        #                            - 320 * (self.num_of_different_frequncies - 1) - 124
-                        #                            )
-                        #                           // self.same_frequency_rep] += self.tt_S_binning_detuned[i]
-                        # self.Cavity_atom_spectrum[((((i + 1) * Config.frequency_sweep_duration * 2) %
-                        #                             self.M_window) // (Config.frequency_sweep_duration * 2)) %
-                        #                             self.spectrum_bin_number] += self.tt_S_binning_detuned[i + 1]
                     self.Cavity_atom_spectrum += self.tt_per_frequency
                     self.Transits_per_freuency += (self.tt_per_frequency != 0).astype(int)
                     current_transit = [index]
@@ -1616,12 +1609,6 @@ class OPX:
             if index not in [vec for elem in self.all_transits for vec in elem]:
                 self.Cavity_spectrum[index % (self.num_of_different_frequncies * self.same_frequency_rep)
                                           // self.same_frequency_rep] += value
-#                self.Cavity_spectrum[(index * Config.frequency_sweep_duration * 2) %
-#                                     (self.M_window // self.frequency_sweep_rep
-#                                      - 320 * (self.num_of_different_frequncies - 1) - 124
-#                                      )
-#                                     // self.same_frequency_rep] += value
-
 
         self.Cavity_spectrum_normalized = (self.Cavity_spectrum / self.power_per_freq_weight)
         # self.Cavity_spectrum_normalized = (self.Cavity_spectrum / (self.power_per_freq_weight * self.Transits_per_freuency))
@@ -1638,6 +1625,73 @@ class OPX:
             # transit_histogram = np.zeros((max([vec for elem in all_transits_aligned_first for vec in elem])
             #                               + self.histogram_bin_size) // self.Transit_profile_bin_size)
             # t_transit = np.linspace(0, len(transit_histogram) * self.Transit_profile_bin_size, len(transit_histogram))
+
+    def find_transits_events_spectrum_exp(self, tt_resonance_binning, N, cond=[2,1,2], minimum_number_of_seq_detected=2):
+        '''
+        Find transits of atoms by searching events that satisfy the number of reflected photons per sequence required at
+        each cond place with minimum number of conditions needed to be satisfied, defined by the minimum_number_of_seq_detected.
+        For example:
+        given cond=[2,1,2] and minimum_number_of_seq_detected=2, if in 3 consecutive sequences we get either 2-1-0 or
+        0-2-1 or 2-0-2, the condition is satisfied and it is defined as a transit.
+        :param cond: The condition that need to be met for number of reflections per detection pulses in sequence.
+        :param minimum_number_of_seq_detected: The number of terms needed to be satisfied per cond vector.
+        :return:
+        '''
+
+        current_transit = []
+        self.all_transits_seq_indx = []  # Array of the sequence indexes of all recognized transits per cycle. The length of it will be the number of all transits at the current cycle.
+        tt_resonance_binning = np.array(tt_resonance_binning)
+
+        for i in range(len(tt_resonance_binning[:]) - len(cond) + 1):
+            cond_check = (tt_resonance_binning[i:(i + len(cond))] >= cond).astype(int)
+            if sum(cond_check) >= minimum_number_of_seq_detected:
+                current_transit = np.unique(
+                    current_transit + [*range(i + np.where(cond_check != 0)[0][0], (i + len(cond)))]).tolist()
+            elif len(current_transit) > 1:
+                current_transit = current_transit[:np.where(tt_resonance_binning[current_transit] >= min(cond))[0][-1] + 1]
+                if self.all_transits_seq_indx:
+                    if bool(set(current_transit) & set(self.all_transits_seq_indx[-1])):
+                        current_transit = self.all_transits_seq_indx[-1] + current_transit[1:]
+                        self.all_transits_seq_indx = self.all_transits_seq_indx[:-1]
+                self.all_transits_seq_indx.append(current_transit)
+                current_transit = []
+        if len(current_transit) > 1:
+            current_transit = current_transit[
+                              :np.where(tt_resonance_binning[current_transit] >= min(cond))[0][-1] + 1]
+            if self.all_transits_seq_indx:
+                if bool(set(current_transit) & set(self.all_transits_seq_indx[-1])):
+                    current_transit = self.all_transits_seq_indx[-1] + current_transit[1:]
+                    self.all_transits_seq_indx = self.all_transits_seq_indx[:-1]
+            self.all_transits_seq_indx.append(current_transit)
+
+        # building cavity atom spectrum
+        for current_transit in self.all_transits_seq_indx:
+            self.tt_per_frequency = np.zeros(self.spectrum_bin_number)
+            for i in current_transit[:-1]:
+                # building cavit-atom spectrum with the counts of the detuned time bins between the start and
+                # finish of the transit:
+                self.tt_per_frequency[i % (self.num_of_different_frequncies * self.same_frequency_rep)
+                                      // self.same_frequency_rep] += self.tt_S_binning_detuned[i]
+            self.Cavity_atom_spectrum += self.tt_per_frequency
+            self.Transits_per_freuency += (self.tt_per_frequency != 0).astype(int)
+
+        # building cavity spectrum
+        for index, value in enumerate(self.tt_S_binning_detuned):
+            if index not in [vec for elem in self.all_transits_seq_indx for vec in elem]:
+                self.Cavity_spectrum[index % (self.num_of_different_frequncies * self.same_frequency_rep)
+                                     // self.same_frequency_rep] += value
+
+        self.Cavity_spectrum_normalized = (self.Cavity_spectrum / self.power_per_freq_weight)
+        self.Cavity_spectrum_normalized = self.Cavity_spectrum_normalized / max(self.Cavity_spectrum_normalized)
+        self.Cavity_atom_spectrum_normalized = (self.Cavity_atom_spectrum / self.power_per_freq_weight)
+        # self.Cavity_atom_spectrum_normalized = (self.Cavity_atom_spectrum / (self.power_per_freq_weight * self.Transits_per_freuency))
+        self.Cavity_atom_spectrum_normalized = self.Cavity_atom_spectrum_normalized / max(self.Cavity_atom_spectrum_normalized)
+
+        self.tt_S_transit_events[[i for i in [vec for elem in self.all_transits_seq_indx for vec in elem]]] += 1
+        self.tt_S_transit_events_accumulated = self.tt_S_transit_events_accumulated + self.tt_S_transit_events
+
+        if self.all_transits_seq_indx:
+            self.all_transits_indx_batch = self.all_transits_indx_batch[-(N - 1):] + [self.all_transits_seq_indx]
 
 
     def get_pulses_location_in_seq(self, delay, seq=Config.QRAM_Exp_Gaussian_samples_S,
@@ -1982,11 +2036,18 @@ class OPX:
         # ax[4].set(xlabel='Time [msec]', ylabel='Counts [#Number]')
         # ax[4].legend(loc='upper right')
 
-        if len(self.all_transits_batch) > 0:
+        # if len(self.all_transits_batch) > 0:
+        #     # if self.all_transits:
+        #     textstr_transit_counts = r'$N_{Transits} = %s $' % (len(self.all_transits),) + r'$[Counts]$'
+        #     textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (
+        #                                     len([vec for elem in self.all_transits_batch for vec in elem]),) \
+        #                                     + r'$[Counts]$' + '\n' + textstr_transit_counts
+
+        if len(self.all_transits_indx_batch) > 0:
             # if self.all_transits:
-            textstr_transit_counts = r'$N_{Transits} = %s $' % (len(self.all_transits),) + r'$[Counts]$'
+            textstr_transit_counts = r'$N_{Transits} = %s $' % (len(self.all_transits_seq_indx),) + r'$[Counts]$'
             textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (
-                                            len([vec for elem in self.all_transits_batch for vec in elem]),) \
+                                            len([vec for elem in self.all_transits_indx_batch for vec in elem]),) \
                                             + r'$[Counts]$' + '\n' + textstr_transit_counts
 
             # ax[5].plot(self.t_transit, self.transit_histogram, label='Transit profile', color='b')
@@ -2037,6 +2098,7 @@ class OPX:
         self.tt_DP_measure_batch = []
         self.tt_FS_measure_batch = []
         self.all_transits_batch = []
+        self.all_transits_indx_batch = []
         self.transit_histogram_batch = []
         self.all_transits_aligned_first_batch = []
         self.transit_histogram_batch = []
@@ -2503,7 +2565,7 @@ class OPX:
                                      self.spectrum_bin_number)
         self.Transit_profile_bin_size = transit_profile_bin_size
 
-        time_threshold = int(self.histogram_bin_size * 2)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
+        time_threshold = int(self.histogram_bin_size * 1.6)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
 
         ## Listen for keyboard
         self.listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
@@ -2562,6 +2624,8 @@ class OPX:
             self.tt_S_binning_resonance = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if
                                            not x % 2]  # even
 
+
+
             print(self.lock_err, self.lock_err > lock_err_threshold, self.sum_for_threshold)
             if exp_flag:
                 try:
@@ -2583,7 +2647,7 @@ class OPX:
 
         # initilaization
         self.tt_N_binning = np.zeros(self.histogram_bin_number * 2)
-        self.tt_N_transit_events_accumulated = np.zeros(self.histogram_bin_number)
+        self.tt_N_transit_events = np.zeros(self.histogram_bin_number)
         self.tt_S_transit_events = np.zeros(self.histogram_bin_number)
         self.tt_S_transit_events_accumulated = np.zeros(self.histogram_bin_number)
         self.all_transits_accumulated = np.zeros(self.histogram_bin_number)
@@ -2639,8 +2703,9 @@ class OPX:
         Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
         lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
 
-        self.find_transit_events_spectrum(N, transit_time_threshold=time_threshold,
-                                 transit_counts_threshold=transit_counts_threshold)
+        # self.find_transit_events_spectrum(N, transit_time_threshold=time_threshold,
+        #                                   transit_counts_threshold=transit_counts_threshold)
+        self.find_transits_events_spectrum_exp(self.tt_S_binning_resonance, N)
 
         self.Counter = 1  # Total number of successful cycles
         self.repitions = 1  # Total number of cycles
@@ -2712,7 +2777,6 @@ class OPX:
                     self.tt_S_binning[(x - 1) // Config.frequency_sweep_duration] += 1
                 S_det_isnt_full = sum(np.array(self.tt_S_binning[int(0.95*len(self.tt_S_binning)):])) != 0
 
-                self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_no_gaps]
                 print(count)
                 count += 1
                 time.sleep(0.01)
@@ -2792,6 +2856,7 @@ class OPX:
                 self.tt_N_binning_batch = self.tt_N_binning_batch[-(N - 1):] + [self.tt_N_binning]
                 self.tt_N_binning_resonance_batch = self.tt_N_binning_resonance_batch[-(N - 1):] + [self.tt_N_binning_resonance]
                 self.tt_N_binning_detuned_batch = self.tt_N_binning_detuned_batch[-(N - 1):] + [self.tt_N_binning_detuned]
+                self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_no_gaps]
                 self.tt_S_binning_batch = self.tt_S_binning_batch[-(N - 1):] + [self.tt_S_binning]
                 self.tt_S_binning_resonance_batch = self.tt_S_binning_resonance_batch[-(N - 1):] + [self.tt_S_binning_resonance]
                 self.tt_S_binning_detuned_batch = self.tt_S_binning_detuned_batch[-(N - 1):] + [self.tt_S_binning_detuned]
@@ -2799,8 +2864,9 @@ class OPX:
                 self.S_bins_detuned_acc = np.sum(np.array(self.tt_S_binning_detuned_batch),
                                                  0)  # tt_S_binning_resonance accumulated (sum over the batch)
 
-                self.find_transit_events_spectrum(N, transit_time_threshold=time_threshold,
-                                 transit_counts_threshold=transit_counts_threshold)
+                # self.find_transit_events_spectrum(N, transit_time_threshold=time_threshold,
+                #                                   transit_counts_threshold=transit_counts_threshold)
+                self.find_transits_events_spectrum_exp(self.tt_S_binning_resonance, N)
 
                 FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
@@ -2830,7 +2896,7 @@ class OPX:
 
         #### ------ Save results ------
         #  -------   Create dir
-        root_dirname = f'U:\\Lab_2023\\Experiment_results\\QRAM\\{datest}\\'
+        root_dirname = f'U:\\Lab_2023\\Experiment_results\\Spectrum\\{datest}\\'
         dirname = root_dirname + f'{timest}_Photon_TimeTags\\'  # Specific experiment dir
         dirname_Det = dirname + 'AllDetectors\\'
         dirname_N = dirname + 'North(8)\\'
@@ -2907,8 +2973,8 @@ class OPX:
             np.savez(dirname_B + filename_BP_tt, self.tt_BP_measure_batch)
         if len(self.tt_FS_measure_batch) > 0:
             np.savez(dirname_FS + filename_FS_tt, self.tt_FS_measure_batch)
-        if len(self.all_transits_batch) > 0:
-            np.savez(dirname + filename_transits_events, self.all_transits_batch)
+        if len(self.all_transits_indx_batch) > 0:
+            np.savez(dirname + filename_transits_events, self.all_transits_indx_batch)
         if len(self.Cavity_spectrum) > 0:
             np.savez(dirname + filename_Cavity_spectrum, self.Cavity_spectrum)
             np.savez(dirname + filename_freq_vector, self.freq_bins)
@@ -2943,9 +3009,9 @@ class OPX:
         except:
             print('Could not save comments, error writing to comments-file.')
 
-        experiment_cmnt = 'transit condition: minimum time between reflection = ' + str(time_threshold) + \
-                          'with at least ' + str(transit_counts_threshold) + ' reflections ; ' + \
-                          'reflection threshold: ' + str(total_counts_threshold) + 'MCounts / sec'
+        experiment_cmnt = ' transit condition: \n minimum time between reflection = ' + str(time_threshold) + \
+                          '\n with at least ' + str(transit_counts_threshold) + ' reflections ' + \
+                          '\n reflection threshold: ' + str(total_counts_threshold) + ' [MCounts / sec]'
 
         comments = {'comments': experiment_cmnt}
         try:
@@ -2974,9 +3040,9 @@ class OPX:
                                                      lock_err_threshold, exp_flag=Exp_flag,
                                                      with_atoms=with_atoms)
 
-    def Start_Spectrum_Exp_with_tt(self, N=200, Transit_profile_bin_size=100, preComment=None,
-                                  total_counts_threshold=0.15, transit_counts_threshold=3, FLR_threshold=0.07,
-                                  lock_err_threshold=0.002, Exp_flag=True, with_atoms=False, Calibration_dirname=None):
+    def Start_Spectrum_Exp_with_tt(self, N=1000, Transit_profile_bin_size=100, preComment=None,
+                                  total_counts_threshold=0.1, transit_counts_threshold=3, FLR_threshold=0.08,
+                                  lock_err_threshold=0.002, Exp_flag=True, with_atoms=True, Calibration_dirname=None):
         self.Spectrum_Exp_switch(True)
         self.MOT_switch(with_atoms)
         self.update_parameters()
@@ -3136,8 +3202,10 @@ class OPX:
 if __name__ == "__main__":
     # try:
     experiment = OPX(Config.config)
-    # experiment.Start_Spectrum_Exp_with_tt(preComment="Spectrum experiment; bandwidth 48 MHz, 1.5MHz jumps")
-    experiment.Start_Transit_Exp_with_tt(Exp_flag=False)
+    experiment.Start_Spectrum_Exp_with_tt(preComment="Spectrum experiment; bandwidth 48 MHz, 1.5MHz jumps")
+    # experiment.Start_Spectrum_Exp_with_tt(N=200, preComment="Spectrum experiment; On resonance max counts",
+    #                                       total_counts_threshold=10, with_atoms=False)
+    # experiment.Start_Transit_Exp_with_tt(Exp_flag=False)
 
 
     # experiment.Start_Spectrum_Exp_with_tt(total_counts_threshold=0.3, Exp_flag=False)
