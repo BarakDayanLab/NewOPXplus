@@ -4,23 +4,35 @@
     {
       "order": 1,
       "display": "Measure Temperature",
-      "func": "measureTemperature"
+      "action": "measureTemperature",
+      "args": [
+        {
+          "name": "PrePulseDurations",
+          "type": "array_of_float",
+          "default": [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.5]
+        }
+      ]
     },
     {
       "order": 2,
       "display": "Optimize PGC",
-      "func": "optimizePGC"
+      "action": "optimizePGC"
     },
     {
       "order": 3,
       "display": "Connect/Disconnect from camera",
-      "func": "connect_disconnect_camera"
+      "action": "connect_disconnect_camera"
     },
     {
       "order": 4,
-      "display": "Change PrePulse duration",
-      "func": "input_value",
-      "variable": "xyz"
+      "display": "Update PrePulse Duration",
+      "action": "update_value_in_opx",
+      "args": [
+        {
+          "name": "PrePulseDuration",
+          "type": "float"
+        }
+      ]
     },
     {
       "spacer": true
@@ -28,7 +40,7 @@
     {
       "order": 9,
       "display": "Exit",
-      "func": "exit"
+      "action": "exit"
     }
   ]
 }

@@ -1,6 +1,6 @@
 from enum import Enum
 import numpy as np
-import Experiments.BaseExperiment.Config_with_SNSPDs_and_QuadRF as Config
+import Experiments.BaseExperiment.Config_Experiment as Config
 import Experiments.SPRINT.Config_with_SNSPDs_and_QuadRF_Sprint as Config_Sprint  # opx configuration for sprint experiments
 import Experiments.QRAM.Config_with_SNSPDs_and_QuadRF_QRAM as Config_QRAM  # opx configuration for sprint experiments
 from UtilityResources.AOMCalibration import calibrate, calibration_data

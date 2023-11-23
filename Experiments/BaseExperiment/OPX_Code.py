@@ -1,4 +1,4 @@
-import Config_with_SNSPDs_and_QuadRF as Config
+import Config_Experiment as Config
 from Experiments.BaseExperiment.Config_Table import Phases_Names, Values_Factor
 from qm.qua import *
 

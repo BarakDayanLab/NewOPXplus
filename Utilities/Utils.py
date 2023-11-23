@@ -1,7 +1,11 @@
+import os
 import math
 import json
 import numpy as np
 import itertools
+from pkgutil import iter_modules
+import pathlib
+import collections.abc
 
 
 class Utils:
@@ -120,6 +124,15 @@ class Utils:
         for json_obj in array_of_jsons[1:]:
             result_json = Utils.merge_jsons(result_json, json_obj)
         return result_json
+
+    @staticmethod
+    def _is_array(obj):
+        """
+        Checks if a given object is an array or np.array (not a scalar, float or string...)
+        :param obj: Object to check
+        :return: True/False
+        """
+        return not isinstance(obj, str) and isinstance(obj, (collections.abc.Sequence, np.ndarray))
 
     @staticmethod
     def verify_keys_for_case_sensitivity(array_of_dictionaries):
@@ -268,3 +281,17 @@ class Utils:
             filters=[{"name": "S", "filter": s_filter}, {"name": "N", "filter": n_filter}])
 
         pass
+
+    """
+    Returns the names of the modules at a given package
+    """
+    @staticmethod
+    def get_modules_in_package(package_dir=None):
+        if package_dir is None:
+            package_dir = pathlib.Path(os.getcwd()).resolve()
+
+        modules = []
+        for (xxx, module_name, zzz) in iter_modules([package_dir]):
+            modules.append(module_name)
+
+        return modules

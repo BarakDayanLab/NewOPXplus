@@ -1,7 +1,4 @@
-#from OPX_control_with_QuadRF_TransitPLUS_Exp import OPX
-import Config_with_SNSPDs_and_QuadRF as Config
 from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
-import OPX_Code
 
 import numpy as np
 from PIL import Image
@@ -22,13 +19,14 @@ _m = 1.443e-25  #[Kg] of Rb87
 
 class CoolingSequenceOptimizer(BaseExperiment):
 
-    def __init__(self, opx_definitions, camera=None):
+    def __init__(self, camera=None):
+        # Initialize the BaseExperiment - this will start OPX going with all the relevant code
+        super().__init__()
 
-        super().__init__(opx_definitions=opx_definitions)
         # self.SPRINT_Exp_switch(False) # To enable trigger to camera in OPX_control_with_QuadRF_Sprint_Exp
         self.camera = camera
-        self.NAvg = 1
-        self.NThrow = 3
+        self.NAvg = 1  # Number of photos captured to create an average image
+        self.NThrow = 3  # Number of throws we're "skipping" until capturing an image
         self.imgBounds = (580, 200, 1600, 1450)  # bounds to crop out of the taken pictures
         self.mm_to_pxl = 8.5/(830-56)  # measured using ruler in focus 13/11/2022
         self.sigma_bounds = (15, 100)  # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
@@ -412,51 +410,20 @@ class CoolingSequenceOptimizer(BaseExperiment):
         if show:
             plt.show()
 
+    def update_value_in_opx(self, prepulse_duration):
+        """
+        This method is invoked directly from the Menu (and not referenced here in the code)
+        :param prepulse_duration: The duration before we take the image
+        """
+        self.updateValue("PrePulse_duration", float(prepulse_duration), update_parameters=True)
+
 #r = optimizePGC(c)
 if __name__ == "__main__":
 
-    opx_definitions = {
-        'connection': {'host': '132.77.54.230', 'port': '80'},  # Connection details
-        'config': Config.config,  # OPX Configuration
-        'streams': Config.streams,  # OPX streams we're using
-        'control': OPX_Code.opx_control  # OPX Control code
-    }
-    run_parameters = {
-        'dror': True,
-        'transit_condition': [2, 1, 2],
-        'pre_comment': '"N-N-N-N-N-N-N-N experiment"',
-        'lock_err_threshold': 0.005,
-        'filter_delay': [0, 0, 0],
-        'reflection_threshold': 2550,
-        'reflection_threshold_time': 9e6,
-        'FLR_threshold': 0.08,
-        'MZ_infidelity_threshold': 1.12,
-        'photons_per_det_pulse_threshold': 12,
-        'Exp_flag': False,
-        'with_atoms': True,
-        'experiment_folder_path': r'U:\Lab_2023\Experiment_results\QRAM'
-    }
-    sequence_definitions = {
-        'total_cycles': 2,
-        'delay_between_cycles': None,  # seconds
-        'sequence': [
-            {
-                'parameters': {
-                    'N': 500,
-                    'with_atoms': True
-                }
-            },
-            {
-                'parameters': {
-                    'N': 50,
-                    'with_atoms': False
-                }
-            }
-        ]
-    }
+    # Initiate the experiment
+    experiment = CoolingSequenceOptimizer()
 
-    experiment = CoolingSequenceOptimizer(opx_definitions)
-
+    # Display menu to get action
     selection = BDMenu(experiment, r'./menu.json', None).display()
 
     # TODO: insert this into the cycles/runs schema

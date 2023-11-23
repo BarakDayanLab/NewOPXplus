@@ -37,35 +37,37 @@ from Utilities.Utils import Utils
 
 
 class QuadRFController:
-    def __init__(self, MOGdevice = None, devPort = '169.254.231.196', debugging = False, opticalPowerCalibration = None):
+    def __init__(self, MOGdevice=None, devPort='169.254.231.196', debugging=False, opticalPowerCalibration=None):
 
         # Initialize Logger
         self.logger = BDLogger()
 
         # connect to the device
         try:
-            self.dev = MOGDevice(devPort) if MOGdevice is None else MOGdevice
+            self.device = MOGDevice(devPort) if MOGdevice is None else MOGdevice
         except Exception as e:
             self.logger.warn(f'Could not connect to QuadRF device-port {devPort}. Error: {e}. Try different port. Usual values are \'COM3\' or some ip address.')
             return
         # print some information
         self.debugging = debugging
         if self.debugging:
-            self.logger.debug('Connected to QuadRF. \n Device info:', self.dev.ask('info'))
+            device_info = self.device.ask('info')
+            self.logger.debug(f'Connected to QuadRF. Device info: {device_info}')
         self.lineCount = 0
         self.lines = [{'Amplitudes': [], 'Durations':[],'Frequencies':[]},{'Amplitudes': [], 'Durations':[],'Frequencies':[]},{'Amplitudes': [], 'Durations':[],'Frequencies':[]},{'Amplitudes': [], 'Durations':[],'Frequencies':[]}]  # 4 channels, each holds: duration, frequency, amplitude
-        self.constantOpticalPowerCalibration = opticalPowerCalibration # Format: c = {'ch_1':{'calibration_func':calibration_func, 'calibrate_RF_Power':'30dbm','calibrate_Optical_Power':0.5}}
+        self.constantOpticalPowerCalibration = opticalPowerCalibration  # Format: c = {'ch_1':{'calibration_func':calibration_func, 'calibrate_RF_Power':'30dbm','calibrate_Optical_Power':0.5}}
 
         # Previous line means: for channel 1, use calibration function to calibrate 30dbm to be 0.5 power [normalized] (for ANY frequency)
         # Note: calibration_func should be a python function taking two vars: freq & optical power, returning the desired RF power
-        if self.constantOpticalPowerCalibration is not None: print('\033[92m' + 'Note: calibration RF to optical power is ON'+ '\033[0m') # print green
+        if self.constantOpticalPowerCalibration is not None:
+            self.logger.info('Note: calibration RF to optical power is ON')
 
     def __del__(self):
         self.disconnectQuadRF()
 
     def disconnectQuadRF(self):
         try:
-            self.dev.close()
+            self.device.close()
         except Exception as e:
             self.logger.error(f'Unable to disconnect from QuadRF. {e}. It was probably already disconnected.')
 
@@ -86,7 +88,7 @@ class QuadRFController:
                 self.lines[ch - 1]['Amplitudes'].append(terms['Amplitude'])
             if self.debugging:
                 self.logger.debug(line)
-        self.dev.cmd(line)
+        self.device.cmd(line)
 
     def getNumericValueFromString(self, s):
         res = ''.join([n for n in str(s) if (n in['-','.'] or n.isdigit())]) if '0x0' not in s else '0x0' # '0x0' IS numeric, it means absolute zero
@@ -146,7 +148,7 @@ class QuadRFController:
         if calibratedRF == 0 or np.isnan(calibratedRF):
             self.logger.warn('For f = {f}, RFAmp = {a}, calibrated RF power is 0 (perhaps input outside calibration function limits?)'.format(f=freq, a=RFAmp))
             calibratedRF = calibrate_RF_Power
-            self.logger.warn('Setting output RF to maximum ({m}))'.format(m = calibrate_RF_Power))
+            self.logger.warn('Setting output RF to maximum ({m}))'.format(m=calibrate_RF_Power))
         if calibrated_to_rf_ratio: calibratedRF = RFAmp + Utils.amplitudeMultiplierToDBm(calibratedRF)  # in this case, calibration function actually gives ratio...
         return calibratedRF
 
@@ -175,8 +177,8 @@ class QuadRFController:
                         try:
                             chns[c - 1] = True
                         except:
-                            print('Line %d is corrupted' % (i + 1))
-                            print('Table was not loaded.')
+                            self.logger.warn('Line %d is corrupted' % (i + 1))
+                            self.logger.warn('Table was not loaded.')
                             return
 
             # Load general commands
@@ -304,10 +306,10 @@ class QuadRFController:
 
         if 1 in channels and self.topticaLockWhenUpdating: self.setTopticaLock(True)
 
-    def turnChannelsOff(self, channels=(1, 2, 3, 4), holdLocking = True):
+    def turnChannelsOff(self, channels=(1, 2, 3, 4), holdLocking=True):
         if 1 in channels and holdLocking: self.setTopticaLock(False)
-        self.prepareChannelsForTable(prepareChannels=channels,reArm = False)  # Deletes all existing tables on QuadRF. Also sets limits [hard coded!] on each channel
-        self.logger.debug('Turnning all channels off (far detuning them)')
+        self.prepareChannelsForTable(prepareChannels=channels,reArm=False)  # Deletes all existing tables on QuadRF. Also sets limits [hard coded!] on each channel
+        self.logger.debug('Turning all channels off (far detuning them)')
         zeroAmp = '0x0'
         if 1 in channels: self.continuousTableForChannel(1, '113MHz', self.Amp_Ch1)
         if 2 in channels: self.continuousTableForChannel(2, '150MHz', self.Amp_Ch2)

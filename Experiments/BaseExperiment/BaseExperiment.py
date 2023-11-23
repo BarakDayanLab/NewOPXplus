@@ -5,10 +5,15 @@ import json
 import socket
 import pathlib
 import matplotlib.pyplot as plt
+import os
+import importlib
+from pkgutil import iter_modules
 
 from Utilities.Utils import Utils
 from Utilities.BDLogger import BDLogger
 from Experiments.BaseExperiment import Config_Table
+from Experiments.BaseExperiment import Config_Experiment as Config  # Attempt to load the default config (may be overriden later)
+from Experiments.BaseExperiment import OPX_Code  # Attempt to load the OPX Code (may be overriden later)
 from Experiments.BaseExperiment.Config_Table import Initial_Values, Values_Factor
 from Experiments.BaseExperiment.QuadRFMOTController import QuadRFMOTController
 
@@ -21,8 +26,30 @@ from pynput import keyboard
 
 
 class BaseExperiment:
+    """
+    This class is the base experiment for all other experiments we have:
 
-    def __init__(self, opx_definitions):
+    It contains the following utility functionalities:
+        - Logger
+        - Keyboard handlers
+        - Camera usage
+        - Sequence/Automation running activity with different parameters (pre_run, run, post_run, run_sequence)
+        - Plot/Debugging <TBD>
+        - Results/Paths Services <TBD>
+
+    On the experiment side, it does the following:
+        - Initializes OPX
+        - Handles streams
+        - Runs the following: MOT, PGC, Fountain, FreeFall
+        - Handles Lock Error coming from Cavity Lock application
+
+    OPX Functionality:
+        - Initializing
+        - Updating Parameters
+        - Updating IO Parameters
+    """
+
+    def __init__(self):
 
         # Setup console logger. We do this first, so rest of code can use logging functions.
         self.logger = BDLogger()
@@ -31,14 +58,40 @@ class BaseExperiment:
         self.lock_error_file = None
 
         # Set paths map
-        self.set_paths_map()
+        self._set_paths_map()
 
         # Debugging plot
         self.dbg_plot = None
 
         self.Exp_Values = Initial_Values  # Initialize experiment values to be as in Config_Table.py
 
-        self.opx_definitions = opx_definitions
+        # Dynamically import the config file
+        try:
+            Config = importlib.import_module("Config_Experiment")
+        except Exception as err:
+            self.warn(f'Unable to import Config file ({err})')
+
+        # Get the opx-control method from the OPX-Code file in the BaseExperiment
+        opx_control = OPX_Code.opx_control
+
+        # Attempt to dynamically import the OPX-Code file and get opx-control function from the current experiment
+        try:
+            OPX_Code_Module = importlib.import_module("OPX_Code")
+            opx_control = OPX_Code_Module.opx_control
+        except Exception as err:
+            self.warn(f'Unable to import OPX_Code file ({err}). Loading local opx code')
+            # try:
+            #     OPX_Code = importlib.import_module("Experiments.BaseExperiment.OPX_Code", "OPX_Code")
+            # except Exception as err:
+            #     self.warn(f'Unable to import OPX Code file from BaseExperiment ({err}).')
+
+        #self.opx_definitions = opx_definitions
+        self.opx_definitions = {
+            'connection': {'host': '132.77.54.230', 'port': '80'},  # Connection details
+            'config': Config.config,  # OPX Configuration
+            'streams': Config.streams,  # OPX streams we're using
+            'control': opx_control  # OPX Control code
+        }
 
         # Set mainloop flags
         self.halt_experiment = False
@@ -51,13 +104,8 @@ class BaseExperiment:
         # Attempt to initialize Camera functionality
         self.connect_camera()
 
-        # TODO: What is this?
-        # Setup of MW spectroscopy
-        self.mws_logger = logging.getLogger("MWSpectroscopy")
-        self.mws_logger.setLevel(INFO)
-        handler = StreamHandler(sys.stdout)
-        handler.setFormatter(Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
-        self.mws_logger.addHandler(handler)
+        # TODO: What is this? Do we need this in BaseExperiment
+        self.init_spectroscopy()
 
         # Setup keyboard listener
         self.listener = keyboard.Listener(on_press=self._on_press, on_release=self._on_release)
@@ -65,6 +113,9 @@ class BaseExperiment:
         self.keyPress = None
 
         # TODO: Listen to events - messages / keyboard
+
+        # Set all the variables and logic required & initiate the OPX
+        self.initialize_experiment()
 
         pass
 
@@ -76,6 +127,170 @@ class BaseExperiment:
             self.qm.close()
         if hasattr(self, 'qmm'):
             self.qmm.close()
+        pass
+
+    def init_spectroscopy(self):
+        # Setup of MW spectroscopy
+        self.mws_logger = logging.getLogger("MWSpectroscopy")
+        self.mws_logger.setLevel(INFO)
+        handler = StreamHandler(sys.stdout)
+        handler.setFormatter(Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        self.mws_logger.addHandler(handler)
+
+    # Initialize the Base-Experiment: QuadRF/MOT/PGC/FreeFall
+    def initialize_experiment(self):
+        ##########################
+        # EXPERIMENT PARAMETERS: #
+        ##########################
+
+        # ----------------------------------------
+        # QuadRF
+        # ----------------------------------------
+
+        self.Exp_Values = Initial_Values  # Initialize experiment values to be as in Config_Table.py
+        self.QuadRFControllers = []
+
+        # Note: So as not to connect again and again to QuadRF each time we update table, we now save the MOGDevic (actual QuadRF device) connected,
+        # we hold this connection until update is finished, then we close the connection.
+        # we do still hold the QuadRFController objects, for access to the table (read only!) when the experiment is running.
+        qrfContr = QuadRFMOTController(initialValues=self.Exp_Values,
+                                       updateChannels=(1, 4),
+                                       topticaLockWhenUpdating=False,
+                                       debugging=True, continuous=False)
+        self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
+        self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.device,
+                                                          initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
+                                                          updateChannels=[3],
+                                                          debugging=False,
+                                                          continuous=False))  # updates values on QuadRF (uploads table)
+        #self.QuadRFControllers.append(QuadRFFrequencyScannerController(MOGdevice = qrfContr.dev, channel=2, debugging=False))  # updates values on QuadRF (uploads table)
+
+        self.Update_QuadRF_channels = set({})  # Only update these channels on QuadRF when UpdateParameters method is called [note: this is a python set]
+        qrfContr.disconnectQuadRF()
+
+
+        # ----------------------------------------
+        # Free fall variables
+        # ----------------------------------------
+
+        self.FreeFall_duration = int(self.Exp_Values['FreeFall_duration'] * 1e6 / 4)
+        self.Coils_timing = int(self.Exp_Values['Coil_timing'] * 1e6 / 4)
+        if (self.Exp_Values['FreeFall_duration'] - self.Exp_Values['Coil_timing']) > 60:
+            raise ValueError("FreeFall_duration - Coils_timing can't be larger than 60 ms")
+
+        # PGC variables:
+        self.pgc_duration = int(self.Exp_Values['PGC_duration'] * 1e6 / 4)
+        self.pgc_prep_duration = int(self.Exp_Values['PGC_prep_duration'] * 1e6 / 4)
+        if self.Exp_Values['PGC_initial_amp_0'] == self.Exp_Values['PGC_final_amp_0']:
+            self.pgc_pulse_duration_0 = self.pgc_prep_duration
+            self.pgc_pulse_duration_minus = self.pgc_prep_duration
+            self.pgc_pulse_duration_plus = self.pgc_prep_duration
+        else:
+            self.pgc_pulse_duration_0 = int((self.Exp_Values['PGC_initial_amp_0'] * self.Exp_Values[
+                'PGC_prep_duration'] / (self.Exp_Values['PGC_initial_amp_0'] - self.Exp_Values[
+                'PGC_final_amp_0'])) * 1e6 / 4)  # The relative duration to reach the desired amplitude
+            self.pgc_pulse_duration_minus = int((self.Exp_Values['PGC_initial_amp_minus'] * self.Exp_Values[
+                'PGC_prep_duration'] / (self.Exp_Values['PGC_initial_amp_minus'] - self.Exp_Values[
+                'PGC_final_amp_minus'])) * 1e6 / 4)  # The relative duration to reach the desired amplitude
+            self.pgc_pulse_duration_plus = int((self.Exp_Values['PGC_initial_amp_plus'] * self.Exp_Values[
+                'PGC_prep_duration'] / (self.Exp_Values['PGC_initial_amp_plus'] - self.Exp_Values[
+                'PGC_final_amp_plus'])) * 1e6 / 4)  # The relative duration to reach the desired amplitude
+            if self.pgc_pulse_duration_0 > int(60 * 1e6 / 4):  # longer then 60ms
+                self.error('The values for PGC_initial_amp_0 and PGC_final_amp_0 are too close or PGC_prep_duration is too long, might cause an ERROR!!!')
+            if self.pgc_pulse_duration_minus > int(60 * 1e6 / 4):  # longer then 60ms
+                self.error('The values for PGC_initial_amp_minus and PGC_final_amp_minus are too close or PGC_prep_duration is too long, might cause an ERROR!!!')
+            if self.pgc_pulse_duration_plus > int(60 * 1e6 / 4):  # longer then 60ms
+                self.error('The values for PGC_initial_amp_plus and PGC_final_amp_plus are too close or PGC_prep_duration is too long, might cause an ERROR!!!')
+        self.pgc_initial_amp_0 = self.Exp_Values['PGC_initial_amp_0']
+        self.pgc_initial_amp_minus = self.Exp_Values['PGC_initial_amp_minus']
+        self.pgc_initial_amp_plus = self.Exp_Values['PGC_initial_amp_plus']
+        self.pgc_final_amp_0 = self.Exp_Values['PGC_final_amp_0']
+        self.pgc_final_amp_minus = self.Exp_Values['PGC_final_amp_minus']
+        self.pgc_final_amp_plus = self.Exp_Values['PGC_final_amp_plus']
+        # self.pgc_aom_chirp_rate = int(self.Exp_Values['PGC_final_Delta_freq'] * 1e3 / (self.Exp_Values['PGC_prep_duration'] * 1e6))  # [mHz/nsec], If needed pgc preparation duration must be constant!!!
+
+        # ----------------------------------------
+        # Fountain variables:
+        # ----------------------------------------
+
+        self.fountain_duration = int(self.Exp_Values['Fountain_duration'] * 1e6 / 4)
+        self.fountain_prep_duration = int(self.Exp_Values['Fountain_prep_duration'] * 1e6 / 4)
+        if self.Exp_Values['Fountain_initial_amp_0'] == self.Exp_Values['Fountain_final_amp_0']:
+            self.fountain_pulse_duration_0 = self.fountain_prep_duration
+            self.fountain_pulse_duration_minus = self.fountain_prep_duration
+            self.fountain_pulse_duration_plus = self.fountain_prep_duration
+        else:
+            self.fountain_pulse_duration_0 = int(
+                self.Exp_Values['Fountain_initial_amp_0'] * self.Exp_Values['Fountain_prep_duration'] * 1e6 / 4 / (
+                        self.Exp_Values['Fountain_initial_amp_0'] - self.Exp_Values[
+                    'Fountain_final_amp_0']))  # The relative duration to reach the desired amplitude
+            self.fountain_pulse_duration_minus = int(
+                self.Exp_Values['Fountain_initial_amp_minus'] * self.Exp_Values['Fountain_prep_duration'] * 1e6 / 4 / (
+                        self.Exp_Values['Fountain_initial_amp_minus'] - self.Exp_Values[
+                    'Fountain_final_amp_minus']))  # The relative duration to reach the desired amplitude
+            self.fountain_pulse_duration_plus = int(
+                self.Exp_Values['Fountain_initial_amp_plus'] * self.Exp_Values['Fountain_prep_duration'] * 1e6 / 4 / (
+                        self.Exp_Values['Fountain_initial_amp_plus'] - self.Exp_Values[
+                    'Fountain_final_amp_plus']))  # The relative duration to reach the desired amplitude
+            if self.fountain_pulse_duration_0 > int(60 * 1e6 / 4):  # longer then 60ms
+                self.error('The values for Fountain_initial_amp_0 and Fountain_final_amp_0 are too close or Fountain_prep_duration is too long, might cause an ERROR!!!')
+            if self.fountain_pulse_duration_minus > int(60 * 1e6 / 4):  # longer then 60ms
+                self.error('The values for Fountain_initial_amp_minus and Fountain_final_amp_minus are too close or Fountain_prep_duration is too long, might cause an ERROR!!!')
+            if self.fountain_pulse_duration_plus > int(60 * 1e6 / 4):  # longer then 60ms
+                self.error('The values for Fountain_initial_amp_plus and Fountain_final_amp_plus are too close or Fountain_prep_duration is too long, might cause an ERROR!!!')
+        self.fountain_initial_amp_0 = self.Exp_Values['Fountain_initial_amp_0']
+        self.fountain_initial_amp_minus = self.Exp_Values['Fountain_initial_amp_minus']
+        self.fountain_initial_amp_plus = self.Exp_Values['Fountain_initial_amp_plus']
+        self.fountain_final_amp_0 = self.Exp_Values['Fountain_final_amp_0']
+        self.fountain_final_amp_minus = self.Exp_Values['Fountain_final_amp_minus']
+        self.fountain_final_amp_plus = self.Exp_Values['Fountain_final_amp_plus']
+        self.fountain_aom_chirp_rate = int(self.Exp_Values['Fountain_final_Delta_freq'] * 1e3 / (
+                    self.Exp_Values['Fountain_prep_duration'] * 1e6))  # mHz/nsec
+
+        # ----------------------------------------
+        # OD and Depump measurement parameters:
+        # ----------------------------------------
+
+        self.Depump_pulse_duration = self.Exp_Values['Depump_pulse_duration']  # [msec]
+        self.Depump_pulses_spacing = self.Exp_Values['Depump_pulses_spacing']  # [msec]
+        self.Depump_Start = self.Exp_Values['Depump_Start']  # [msec]
+        ## OD Free space:
+        self.OD_FS_pulse_duration = self.Exp_Values['OD_FS_pulse_duration']  # [msec]
+        self.OD_FS_pulses_spacing = self.Exp_Values['OD_FS_pulses_spacing']  # [msec]
+        self.OD_FS_Start = self.Exp_Values['OD_FS_Start']  # [msec]
+        self.OD_FS_sleep = self.Exp_Values['OD_FS_sleep']
+        ## OD In-fiber/Transits:
+        self.Transit_switch = False
+        self.OD_delay = self.Exp_Values['OD_delay']  # [msec]
+        self.M_window = self.Exp_Values['M_window']  # [nsec]
+        self.OD_duration_pulse1 = self.Exp_Values['OD_duration_pulse1']  # [msec]
+        self.OD_sleep = self.Exp_Values['OD_sleep']  # [msec]
+        self.OD_duration_pulse2 = self.Exp_Values['OD_duration_pulse2']  # [msec]
+        self.M_time = int(self.Exp_Values['M_time'] * 1e6)  # [nsec]
+        self.Shutter_open_time = self.Exp_Values['Shutter_open_time']  # [msec]
+        self.M_off_time = int(self.Exp_Values['M_off_time'] * 1e6)  # [nsec]
+        # self.rep = int(self.M_time / (self.M_window + 28 + 170))
+        self.rep = int(self.M_time / self.M_window)
+        self.vec_size = Config.vec_size
+
+        # ----------------------------------------
+        # MW spectroscopy parameters:
+        # ----------------------------------------
+
+        self.MW_start_frequency = int(100e6)  # [Hz]
+        self.Pulse_Length_MW = 400  # [usec]
+        self.Pulse_Length_OD = 20  # [usec]
+
+        # Main Experiment:
+        self.TOP2_pulse_len = int(Config.Probe_pulse_len / 4)  # [nsec]
+        self.Calibration_time = 10  # [msec]
+
+        # ----------------------------------------
+        # Initialize the OPX
+        # ----------------------------------------
+
+        self.initialize_OPX()
+
         pass
 
     # Initialize the OPX
@@ -97,8 +312,10 @@ class BaseExperiment:
         self.io1_list = []
         self.io2_list = []
 
-    def set_paths_map(self):
+    def _set_paths_map(self):
         self.paths_map = {
+            "name": __name__,
+            "file": __file__,
             "cwd": os.getcwd(),
             "root": str(pathlib.Path(__file__).parent.resolve())
         }
@@ -265,38 +482,6 @@ class BaseExperiment:
                 time.sleep(sequence_definitions['delay_between_cycles'])
 
         self.info(f'Completed {num_cycles} cycles!')
-
-    #----------------------------------------
-    # OPX Stuff
-    #----------------------------------------
-
-    # TODO: Q:
-    # TODO: Need to check what this does. It seems to do nothing as it multiplies by ZERO.
-    # TODO: Dor says it's a hack by Quantum Machine that is suppose to tie variables to elements
-    # TODO: Need to check it.
-    #
-    # TODO: Move this to a different file: opx_utils.... ?
-    @staticmethod
-    def assign_variables_to_element(element, *variables):
-        """
-        Forces the given variables to be used by the given element thread. Useful as a workaround for when the compiler
-        wrongly assigns variables which can cause gaps.
-        To be used at the beginning of a program, will add a 16ns wait to the given element. Use an `align()` if needed.
-
-        Example::
-
-            >>> with program() as program_name:
-            >>>     a = declare(int)
-            >>>     b = declare(fixed)
-            >>>     assign_variables_to_element('resonator', a, b)
-            >>>     align()
-            >>>     ...
-
-        """
-        _exp = variables[0]
-        for variable in variables[1:]:
-            _exp += variable
-        wait(4 + 0 * _exp, element)
 
     """
         There are two vectors we get from the OPX/OPD: Counts and Time-Tags
