@@ -22,6 +22,7 @@ import itertools
 import operator
 from pynput import keyboard
 from playsound import playsound
+from scipy.io import savemat
 import logging
 from logging import StreamHandler, Formatter, INFO, WARN, ERROR
 import pymsgbox
@@ -407,7 +408,7 @@ def Transit_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
 
 def Spectrum_Exp(m_off_time, m_time, m_window, shutter_open_time,
-                 frequency_sweep_rep, same_frequency_rep, num_of_different_frequncies, frequency_diff, frequency_start,
+                 frequency_sweep_rep, same_frequency_rep, num_of_different_frequencies, frequency_diff, frequency_start,
                  ON_counts_st1, ON_counts_st2, ON_counts_st3,
                  ON_counts_st4, ON_counts_st5, ON_counts_st6,
                  ON_counts_st7, ON_counts_st8,
@@ -478,7 +479,7 @@ def Spectrum_Exp(m_off_time, m_time, m_window, shutter_open_time,
     # play("Spectrum_pulse", "PULSER_ANCILLA", duration=(m_time + m_off_time))
 
     with for_(sweep_num, 0, sweep_num < frequency_sweep_rep, sweep_num + 1):
-        with for_(freq, frequency_start, freq < (frequency_start + num_of_different_frequncies * frequency_diff), freq + frequency_diff):
+        with for_(freq, frequency_start, freq < (frequency_start + num_of_different_frequencies * frequency_diff), freq + frequency_diff):
             update_frequency("AOM_Spectrum", freq)
             with for_(freq_rep_num, 0, freq_rep_num < same_frequency_rep, freq_rep_num + 1):
                 play("Spectrum_pulse", "PULSER_ANCILLA")
@@ -488,8 +489,8 @@ def Spectrum_Exp(m_off_time, m_time, m_window, shutter_open_time,
                 play("Spectrum_pulse", "AOM_Spectrum")
 
 
-    # wait(345, "Dig_detectors")
-    wait(330, "Dig_detectors")
+    wait(339, "Dig_detectors")
+    # wait(330, "Dig_detectors")
     # with for_(n, 0, n < m_time * 4, n + m_window):
     measure("readout_QRAM", "Dig_detectors", None,
             time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
@@ -602,7 +603,7 @@ def opx_control(obj, qm):
         ## Spectrum experiment:
         frequency_sweep_rep = declare(int, value=obj.frequency_sweep_rep)
         same_frequency_rep = declare(int, value=obj.same_frequency_rep)
-        num_of_different_frequncies = declare(int, value=int(obj.num_of_different_frequncies))
+        num_of_different_frequencies = declare(int, value=int(obj.num_of_different_frequencies))
         frequency_start = declare(int, value=obj.frequency_start)
         frequency_diff = declare(int, value=obj.frequency_diff)
 
@@ -704,7 +705,7 @@ def opx_control(obj, qm):
                 #             ON_counts_st7, ON_counts_st8,
                 #             tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st)
                 Spectrum_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
-                             frequency_sweep_rep, same_frequency_rep, num_of_different_frequncies, frequency_diff,
+                             frequency_sweep_rep, same_frequency_rep, num_of_different_frequencies, frequency_diff,
                              frequency_start,
                              ON_counts_st1, ON_counts_st2, ON_counts_st3,
                              ON_counts_st4, ON_counts_st5, ON_counts_st6,
@@ -1007,18 +1008,18 @@ class OPX:
         # self.same_frequency_rep = 100
         # self.spectrum_bandwidth = int(30e6)
         # self.spectrum_bandwidth = int(39e6)
-        self.spectrum_bandwidth = int(48e6) # experiment 13/11/23
+        self.spectrum_bandwidth = int(48e6) # experiment spe13/11/23
         self.frequency_start = int(80e6 - self.spectrum_bandwidth/2)
-        # self.num_of_different_frequncies = self.Exp_Values['Pulse_1_duration'] * 1e6 / \
+        # self.num_of_different_frequencies = self.Exp_Values['Pulse_1_duration'] * 1e6 / \
         #                                   (2 * Config.frequency_sweep_duration) / \
         #                                   (self.frequency_sweep_rep * self.same_frequency_rep)
-        # self.frequency_diff = int(self.spectrum_bandwidth / self.num_of_different_frequncies)
+        # self.frequency_diff = int(self.spectrum_bandwidth / self.num_of_different_frequencies)
         self.frequency_diff = int(1.5e6) # difference between frequencies
-        self.num_of_different_frequncies = int(self.spectrum_bandwidth // self.frequency_diff) + 1
+        self.num_of_different_frequencies = int(self.spectrum_bandwidth // self.frequency_diff) + 1
         self.same_frequency_rep = int(self.Exp_Values['Pulse_1_duration'] * 1e6 /
                                       (2 * Config.frequency_sweep_duration) /
-                                      (self.num_of_different_frequncies * self.frequency_sweep_rep)) # total time[10ms]/((1us sequence - 2 pulses time)*(num of sweeps)*(num of different freqs) )
-
+                                      (self.num_of_different_frequencies * self.frequency_sweep_rep)) # total time[10ms]/((1us sequence - 2 pulses time)*(num of sweeps)*(num of different freqs) )
+        
         # run daily experiment
         self.Stop_run_daily_experiment = False
 
@@ -1369,17 +1370,30 @@ class OPX:
 
     def fix_gaps_spectrum_exp_tts(self):
         '''
-        fixes delays of 300 ns every 100 us in spectrum experiment
+        fixes delays of 320 ns every 100 us in spectrum experiment
         :return:
 
         '''
-        self.tt_S_no_gaps = [x-(x//((Config.frequency_sweep_duration * 2 * self.same_frequency_rep) + 320))*320 for x in self.tt_S_directional_measure]
-        self.real_M_window = ((2 * Config.frequency_sweep_duration) * (self.num_of_different_frequncies
+        self.real_M_window = ((2 * Config.frequency_sweep_duration) * (self.num_of_different_frequencies
                                                                        * self.same_frequency_rep
                                                                        * self.frequency_sweep_rep))
-        self.tt_S_no_gaps = [x-(x//(int(self.real_M_window // self.frequency_sweep_rep) + 124))*124 for x in self.tt_S_no_gaps]
-        self.tt_S_no_gaps = [int(x) for x in self.tt_S_no_gaps if x < self.real_M_window]
+        self.total_real_time_of_freq_sweep = int(self.real_M_window // self.frequency_sweep_rep) + \
+                                             self.num_of_different_frequencies * 320 + 124
+        self.total_real_time_of_same_freq_rep = (Config.frequency_sweep_duration * 2 * self.same_frequency_rep) + 320
+        self.tt_S_no_gaps = [x-(x//self.total_real_time_of_freq_sweep)*124 for x in self.tt_S_directional_measure]
+        self.tt_S_no_gaps = [x-(x//self.total_real_time_of_same_freq_rep)*320 for x in self.tt_S_no_gaps]
 
+        # self.tt_S_no_gaps = [x-(x//((Config.frequency_sweep_duration * 2 * self.same_frequency_rep) + 320))*320 for x in self.tt_S_directional_measure]
+        # self.tt_S_no_gaps = [x-(x//(int(self.real_M_window // self.frequency_sweep_rep) + 124))*124 for x in self.tt_S_no_gaps]
+        # self.tt_S_no_gaps = [int(x) for x in self.tt_S_no_gaps if x < self.real_M_window]
+
+        # self.tt_S_no_gaps = []
+        # for rep in range(self.frequency_sweep_rep):
+        #     self.start_tt = rep * self.total_real_time_of_freq_sweep
+        #     self.end_tt = (rep + 1) * self.total_real_time_of_freq_sweep
+        #     self.tt_S_no_gaps.append([x-(x//((Config.frequency_sweep_duration * 2 * self.same_frequency_rep) + 320))*320
+        #                               for x in self.tt_S_directional_measure[]])
+                   
     def latched_detectors(self):
         latched_detectors = []
         for indx, det_tt_vec in enumerate(self.tt_measure[4:7]):  # for different detectors
@@ -1547,7 +1561,6 @@ class OPX:
         plt.plot(sum(np.reshape(self.tt_histogram_S, [int(len(self.tt_histogram_S) / 9), 9])), label='tt_hist_S')
         plt.legend()
 
-
     def find_transit_events_transitexp(self, N, transit_time_threshold,transit_counts_threshold):
         # Find transits and build histogram:
         current_transit = []
@@ -1591,7 +1604,7 @@ class OPX:
                     for i in current_transit[:-1]:
                         # building cavit-atom spectrum with the counts of the detuned time bins between the start and
                         # finish of the transit:
-                        self.tt_per_frequency[i % (self.num_of_different_frequncies * self.same_frequency_rep)
+                        self.tt_per_frequency[i % (self.num_of_different_frequencies * self.same_frequency_rep)
                                               // self.same_frequency_rep] += self.tt_S_binning_detuned[i]
                     self.Cavity_atom_spectrum += self.tt_per_frequency
                     self.Transits_per_freuency += (self.tt_per_frequency != 0).astype(int)
@@ -1607,7 +1620,7 @@ class OPX:
         #building cavity spectrum
         for index, value in enumerate(self.tt_S_binning_detuned):
             if index not in [vec for elem in self.all_transits for vec in elem]:
-                self.Cavity_spectrum[index % (self.num_of_different_frequncies * self.same_frequency_rep)
+                self.Cavity_spectrum[index % (self.num_of_different_frequencies * self.same_frequency_rep)
                                           // self.same_frequency_rep] += value
 
         self.Cavity_spectrum_normalized = (self.Cavity_spectrum / self.power_per_freq_weight)
@@ -1670,7 +1683,7 @@ class OPX:
             for i in current_transit[:-1]:
                 # building cavit-atom spectrum with the counts of the detuned time bins between the start and
                 # finish of the transit:
-                self.tt_per_frequency[i % (self.num_of_different_frequncies * self.same_frequency_rep)
+                self.tt_per_frequency[i % (self.num_of_different_frequencies * self.same_frequency_rep)
                                       // self.same_frequency_rep] += self.tt_S_binning_detuned[i]
             self.Cavity_atom_spectrum += self.tt_per_frequency
             self.Transits_per_freuency += (self.tt_per_frequency != 0).astype(int)
@@ -1678,7 +1691,7 @@ class OPX:
         # building cavity spectrum
         for index, value in enumerate(self.tt_S_binning_detuned):
             if index not in [vec for elem in self.all_transits_seq_indx for vec in elem]:
-                self.Cavity_spectrum[index % (self.num_of_different_frequncies * self.same_frequency_rep)
+                self.Cavity_spectrum[index % (self.num_of_different_frequencies * self.same_frequency_rep)
                                      // self.same_frequency_rep] += value
 
         self.Cavity_spectrum_normalized = (self.Cavity_spectrum / self.power_per_freq_weight)
@@ -1692,7 +1705,6 @@ class OPX:
 
         if self.all_transits_seq_indx:
             self.all_transits_indx_batch = self.all_transits_indx_batch[-(N - 1):] + [self.all_transits_seq_indx]
-
 
     def get_pulses_location_in_seq(self, delay, seq=Config.QRAM_Exp_Gaussian_samples_S,
                                    smearing=int(Config.num_between_zeros / 2)):
@@ -2557,9 +2569,10 @@ class OPX:
         # set constant parameters for the function
         Num_Of_dets = [1, 2, 3, 4, 5, 6, 7, 8]
         self.histogram_bin_size = Config.frequency_sweep_duration * 2
+        self.sequence_duration = Config.frequency_sweep_duration * 2
         self.histogram_bin_number = self.M_time // self.histogram_bin_size # num of bins in cycle of frequency sweep
         self.time_bins = np.linspace(0, self.M_time, self.histogram_bin_number*2)
-        self.spectrum_bin_number = self.num_of_different_frequncies
+        self.spectrum_bin_number = self.num_of_different_frequencies
         self.freq_bins = np.linspace((self.frequency_start - Config.IF_AOM_Spectrum) * 2,
                                      (self.frequency_start + self.spectrum_bandwidth - Config.IF_AOM_Spectrum) * 2,
                                      self.spectrum_bin_number)
@@ -2676,7 +2689,7 @@ class OPX:
         for x in self.tt_S_no_gaps:
             if x < 2e6:
                 self.folded_tt_S_acc[(x - 1) % self.histogram_bin_size] += 1
-            if 2e6 < x < 4e6:
+            if 6e6 < x < 8e6:
                 self.folded_tt_S_acc_2[(x - 1) % self.histogram_bin_size] += 1
             if 8e6 < x < 10e6:
                 self.folded_tt_S_acc_3[(x - 1) % self.histogram_bin_size] += 1
@@ -2702,6 +2715,7 @@ class OPX:
         FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
         Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
         lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
+        self.save_tt_to_batch(Num_Of_dets, N)
 
         # self.find_transit_events_spectrum(N, transit_time_threshold=time_threshold,
         #                                   transit_counts_threshold=transit_counts_threshold)
@@ -2809,9 +2823,11 @@ class OPX:
             for x in self.tt_S_no_gaps:
                 # if x < (2e6 + 6400):
                 self.folded_tt_S_acc[(x-1) % self.histogram_bin_size] += 1
-                if (2e6 + 6400 + 120) < x < (4e6 + 6400*2 + 120):
+                # if (2e6 + 6400 + 120) < x < (4e6 + 6400*2 + 120):
+                if 6e6 < x < 8e6:
                     self.folded_tt_S_acc_2[(x - 1) % self.histogram_bin_size] += 1
-                if (8e6 + 6400*4 + 120*4) < x < (10e6):
+                # if (8e6 + 6400*4 + 120*4) < x < (10e6):
+                if 8e6 < x < 10e6:
                     self.folded_tt_S_acc_3[(x - 1) % self.histogram_bin_size] += 1
 
             # split the binning vector to odd and even - on and off resonance pulses
@@ -2871,7 +2887,7 @@ class OPX:
                 FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
                 lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
-                # self.save_tt_to_batch(Num_Of_dets, N)
+                self.save_tt_to_batch(Num_Of_dets, N)
 
         ############################################## END WHILE LOOP #################################################
 
@@ -2924,6 +2940,8 @@ class OPX:
 
         # ----  msmnt files names  -----
         # Counter_str = (self.Counter)
+        data_to_save = ["frequency_sweep_rep", "spectrum_bandwidth", "frequency_start", "frequency_diff", 
+                        "num_of_different_frequencies", "same_frequency_rep", "freq_bins", "sequence_duration"]
         filename_Det_tt = []
         for i in Num_Of_dets:
             filename_Det_tt.append(f'Det' + str(i) + f'_timetags.npz')
@@ -2947,6 +2965,7 @@ class OPX:
         filename_freq_vector = f'frequency_vector.npz'
         filename_experimentPlot = f'Experiment_plot.png'
         filename_experimentfigure = f'{timest}_Experiment_Figure.png'
+        filaname_spectrum_parameters = f'Spectrum_parameters.mat'
 
         if len(FLR_measurement) > 0:
             np.savez(dirname + filename_FLR, FLR_measurement)
@@ -2960,6 +2979,7 @@ class OPX:
             np.savez(dirname + filname_sequence_FS, (1 - np.array(Config.QRAM_Exp_Square_samples_FS)).tolist())
             plt.savefig(dirname + filename_experimentPlot, bbox_inches='tight')
             plt.savefig(dirname_expfigures + filename_experimentfigure, bbox_inches='tight')
+            self.save_matlab_file(data_to_save, "spectrum_parameters", dirname + filaname_spectrum_parameters)
         for i in range(len(Num_Of_dets)):
             if len(self.tt_measure_batch[i]) > 0:
                 np.savez(dirname_Det + filename_Det_tt[i], self.tt_measure_batch[i])
@@ -3130,6 +3150,21 @@ class OPX:
 
         # pick the highest-count/earliest item
         return max(groups, key=_auxfun)[0]
+    
+    def save_matlab_file(self, data_to_save, name, path):
+        # Ensure there is the ".mat" extension
+        if not path.endswith('.mat'):
+            path = path + '.mat'
+        # Build dictionary with values
+        dict = {
+                name: {}
+                }
+        for key in data_to_save:
+            dict[name][key] = self.__dict__[key]
+        # Save the dictionary to file
+        savemat(path, mdict=dict)
+        pass
+        
 
     def run_daily_experiment(self, day_experiment, Histogram_bin_size, Transit_profile_bin_size, preComment,
                              total_counts_threshold, transit_counts_threshold, FLR_threshold, lock_err_threshold,
