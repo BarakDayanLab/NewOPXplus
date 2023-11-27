@@ -628,6 +628,7 @@ class BaseExperiment:
     # TODO: also - why aren't we disconnecting from QuadRF ?
     # TODO: why are we sending first pair of parameters and then the rest?
     def update_parameters(self):
+        # If needed, update the QuadRF controller
         if len(self.Update_QuadRF_channels) != 0:
             quadController = QuadRFMOTController(initialValues=self.Exp_Values,
                                                  updateChannels=self.Update_QuadRF_channels, armChannels=True,
@@ -674,8 +675,7 @@ class BaseExperiment:
         helm_coils_state = 'Working on it'  # self.getHelmholtzCoilsState()
         experiment_values_to_save = self.Exp_Values
         if 'opticalPowerCalibrationFunction' in experiment_values_to_save:
-            experiment_values_to_save[
-                'opticalPowerCalibrationFunction'] = 'Experiment values contained power calibration function. It is, however, impossible to save a function as JSON. Thus, this line is added as a warning'
+            experiment_values_to_save['opticalPowerCalibrationFunction'] = 'Experiment values contained power calibration function. It is, however, impossible to save a function as JSON. Thus, this line is added as a warning'
         save_data = {
             'Time Stamp': time_stamp,
             'Exp_Values': self.Exp_Values,

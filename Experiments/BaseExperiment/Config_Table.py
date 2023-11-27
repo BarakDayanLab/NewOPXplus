@@ -7,27 +7,33 @@ from UtilityResources.AOMCalibration import calibrate, calibration_data
 from Utilities.Utils import Utils
 
 
+Operation_Modes_Enumeration = [
+    'Magnetic_fountain',
+    'Imaging',
+    'PrePGC_Fountain',
+    'OD_FS',
+    'Depump',
+    'Teansit_Exp',
+    'Spectrum_Exp',
+    'CRUS_Exp',
+    'SPRINT_2-3_Exp',
+    'SPRINT_Exp',
+    'QRAM_Exp',
+    'Transits_Exp',
+    'Continuous',
+    'Double_PGC_with_Microwave',
+    'Double_PGC_with_OD'
+]
+
+
 #-------------------------------------------
 # Initial Values
 #-------------------------------------------
+
 Initial_Values = {
-    # 'Operation_Mode': 'Magnetic_fountain',
-    # 'Operation_Mode': 'Imaging',
     'Operation_Mode': 'PrePGC_Fountain',
-    # 'Operation_Mode': 'OD_FS',
-    # 'Operation_Mode': 'Depump',
-    # 'Operation_Mode': 'Transit_Exp',
-    # 'Operation_Mode': 'Spectrum_Exp',
-    # 'Operation_Mode': 'CRUS_Exp',
-    # 'Operation_Mode': 'SPRINT_2-3_Exp',
-    # 'Operation_Mode': 'SPRINT_Exp',
-    # 'Operation_Mode': 'QRAM_Exp',
-    # 'Operation_Mode': 'Transits_Exp',
-    # 'Operation_ModB-e': 'Continuous',
     'Imaging_Phase': 'Pulse_1',
     'Triggering_Phase': -1,  # Don't change this. Triggering phase should be defined within each operation mode (see below)
-    # 'Operation_Mode': 'Double_PGC_with_Microwave',
-    # 'Operation_Mode': 'Double_PGC_with_OD',
     'OD_Free_Space': False,
 
     # Operation frequencies:
@@ -574,7 +580,7 @@ Operation_Modes = {
     # },
 }
 
-# TODO: Remove all the below
+# TODO: Remove all the below - the one liner using merge_multiple_jsons
 # What it does:
 # 1. Starts with taking Initial Values
 # 2. Adds Default Values on top of it

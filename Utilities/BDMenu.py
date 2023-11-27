@@ -32,7 +32,7 @@ class BDMenu:
         except Exception as err:
             print(err)
 
-    def func_not_found(): # just in case we dont have the function
+    def func_not_found(self):  # just in case the menu code cannot invoke a function in the caller object
         print ('No Function Found!')
 
     def display(self):
@@ -76,7 +76,15 @@ class BDMenu:
         args = {}
         if "args" in call_map[selection]:
             for arg in call_map[selection]["args"]:
-                value_str = input(arg['name'])
+                prompt = arg['name']
+                # Is there a default value suggested?
+                if arg['default']:
+                    default_values_str = self._values_to_str(arg['default'])
+                    prompt = f'{prompt} ({default_values_str}) >>'
+                value_str = input(prompt)
+                # Should we be using default values? (if user just pressed <enter> w/o entering a value
+                if len(value_str) == 0:
+                    value_str = default_values_str
                 value = self._convert_input(value_str, arg['type'])
                 args[arg['name']] = value
 
@@ -89,6 +97,9 @@ class BDMenu:
             result = func(**args)
 
         return result
+
+    def _values_to_str(self, values):
+        return str(values)
 
     def _convert_input(self, value_str, value_type):
         # If value_str is encapsulated by brackets, we remove them
@@ -117,3 +128,37 @@ class BDMenu:
         print(message)
         sys.exit("User exited")
         pass
+
+    def unit_test_callback(self, float_values):
+        pass
+
+    def unit_tests(self):
+        menu_json = {
+            "menu_items": [
+                {
+                    "order": 1,
+                    "display": "Measure Temperature",
+                    "action": "unit_test_callback",
+                    "args": [
+                        {
+                            "name": "float_values",
+                            "type": "array_of_float",
+                            "default": "[0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.5]"
+                        },
+                    ]
+                },
+                {
+                    "order": 9,
+                    "display": "Exit",
+                    "action": "exit"
+                }
+            ]
+        }
+        self.float_values = [2.0, 4.0]
+        menu = BDMenu(caller=self, menu_file=None, menu_json=menu_json)
+        menu.display()
+        pass
+
+if __name__ == "__main__":
+
+    BDMenu(caller=None, menu_file=None, menu_json=None).unit_tests()
