@@ -1585,6 +1585,7 @@ config = {
     # }
 }
 
+# TODO: looks like we have TOO many streams... But the code of QRAM calls them: search the code for: "Bright_Port_Counts"
 streams = {
     "Detector_1_Counts": {
         "number": 1,

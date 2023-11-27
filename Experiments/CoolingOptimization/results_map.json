@@ -1,7 +1,8 @@
 {
 	"version": "0.1",
 	"strict": false,
-	"root": "C:\\temp\\dror_debug\\cooling_optimization\\{current_date}\\{current_time}",
+	"experiment_root": "C:\\temp\\refactor_debug\\COOLING",
+	"root": "C:\\temp\\refactor_debug\\COOLING\\{current_date}\\{current_time}_Photon_TimeTags",
 	"files": [
 
 		{

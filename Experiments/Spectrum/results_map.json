@@ -1,8 +1,8 @@
 {
 	"version": "0.1",
 	"strict": false,
-	"experiment_root": "C:\\temp\\refactor_debug\\QRAM",
-	"root": "C:\\temp\\refactor_debug\\QRAM\\{current_date}\\{current_time}_Photon_TimeTags",
+	"experiment_root": "C:\\temp\\refactor_debug\\SPECTRUM",
+	"root": "C:\\temp\\refactor_debug\\SPECTRUM\\{current_date}\\{current_time}_Photon_TimeTags",
 	"files": [
 
 		{
@@ -143,129 +143,14 @@
 		},
 
 		{
-			"OUTPUT FILES - TIMETAGS": "-----------------------------------",
+			"OUTPUT FILES - TRANSIT EVENTS BATCHED": "-----------------------------------",
 		},
 
   		{
-			"data": "tt_N_measure_batch",
-			"name": "north timetags",
-			"file_name": "North_timetags",
-			"folder": "output\\North(8)",
-			"type": "npz"
-		},
-  		{
-			"data": "tt_S_measure_batch",
-			"name": "south timetags",
-			"file_name": "South_timetags",
-			"folder": "output\\South(5)",
-			"type": "npz"
-		},
-  		{
-			"data": "tt_FS_measure_batch",
-			"name": "fast switch",
-			"file_name": "FS_timetags",
-			"folder": "output\\FastSwitch(6,7)",
-			"type": "npz"
-		},
-   		{
-			"data": "tt_BP_measure_batch",
-			"name": "bright timetags",
-			"file_name": "Bright_timetags",
-			"folder": "output\\Bright(1,2)",
-			"type": "npz"
-		},
-		{
-			"data": "tt_DP_measure_batch",
-			"name": "dark timetags",
-			"file_name": "Dark_timetags",
-			"folder": "output\\Dark(3,4)",
-			"type": "npz"
-		},
-
-		{
-			"OUTPUT FILES - FOLDED TIMETAGS": "-----------------------------------",
-		},
-
-  		{
-			"data": "folded_tt_N_batch",
-			"name": "folded north timetags",
-			"file_name": "North_timetags_folded_to_seq",
-			"folder": "output\\folded",
-			"type": "npz"
-		},
-  		{
-			"data": "folded_tt_S_batch",
-			"name": "folded south timetags",
-			"file_name": "South_timetags_folded_to_seq",
-			"folder": "output\\folded",
-			"type": "npz"
-		},
-  		{
-			"data": "folded_tt_FS_batch",
-			"name": "folded fast switch",
-			"file_name": "FS_timetags_folded_to_seq",
-			"folder": "output\\folded",
-			"type": "npz"
-		},
-   		{
-			"data": "folded_tt_BP_batch",
-			"name": "folded bright timetags",
-			"file_name": "Bright_timetags_folded_to_seq",
-			"folder": "output\\folded",
-			"type": "npz"
-		},
-		{
-			"data": "folded_tt_DP_batch",
-			"name": "folded dark timetags",
-			"file_name": "Dark_timetags_folded_to_seq",
-			"folder": "output\\folded",
-			"type": "npz"
-		},
-
-		{
-			"OUTPUT FILES - MACH-ZENDER": "-----------------------------------",
-		},
-
-		{
-			"data": "MZ_BP_counts_balancing_batch",
-			"name": "MZ BP counts balancing batch",
-			"file_name": "MZ_BrightPort_counts_balancing_batch",
-			"folder": "Output\\BalancingRes",
-			"type": "npz"
-		},
-		{
-			"data": "MZ_BP_counts_balancing_check_batch",
-			"name": "MZ BP counts balancing check batch",
-			"file_name": "MZ_BrightPort_counts_balancing_check_batch",
-			"folder": "Output\\BalancingRes",
-			"type": "npz"
-		},
-		{
-			"data": "MZ_DP_counts_balancing_batch",
-			"name": "MZ DP counts balancing batch",
-			"file_name": "MZ_DarkPort_counts_balancing_batch",
-			"folder": "Output\\BalancingRes",
-			"type": "npz"
-		},
-		{
-			"data": "MZ_DP_counts_balancing_check_batch",
-			"name": "MZ DP counts balancing check_batch",
-			"file_name": "MZ_DarkPort_counts_balancing_check_batch",
-			"folder": "Output\\BalancingRes",
-			"type": "npz"
-		},
-		{
-			"data": "Phase_Correction_vec_batch",
-			"name": "Phase Correction vec batch",
-			"file_name": "MZ_balancing_Phase_Correction_vec_batch",
-			"folder": "Output\\BalancingRes",
-			"type": "npz"
-		},
-		{
-			"data": "Phase_Correction_min_vec_batch",
-			"name": "Phase Correction min vec batch",
-			"file_name": "MZ_balancing_Phase_Correction_min_vec_batch",
-			"folder": "Output\\BalancingRes",
+			"data": "all_transits_batch",
+			"name": "all transits batch",
+			"file_name": "seq_transit_events_batched",
+			"folder": "output",
 			"type": "npz"
 		},
 

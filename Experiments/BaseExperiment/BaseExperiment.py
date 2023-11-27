@@ -16,7 +16,8 @@ from Utilities.BDResults import BDResults
 from Experiments.BaseExperiment import Config_Table
 from Experiments.BaseExperiment import Config_Experiment as Config  # Attempt to load the default config (may be overriden later)
 from Experiments.BaseExperiment import OPX_Code  # Attempt to load the OPX Code (may be overriden later)
-from Experiments.BaseExperiment.Config_Table import Initial_Values, Values_Factor
+from Experiments.BaseExperiment.Config_Table import Initial_Values
+from Experiments.BaseExperiment.Values_Transformer import Values_Transformer
 from Experiments.BaseExperiment.QuadRFMOTController import QuadRFMOTController
 
 import logging
@@ -66,6 +67,8 @@ class BaseExperiment:
         self.dbg_plot = None
 
         self.Exp_Values = Initial_Values  # Initialize experiment values to be as in Config_Table.py
+
+        self.transformer = Values_Transformer()
 
         # Initialize the BDResults helper - for saving experiment results
         self.bd_results = BDResults(json_map_path=self.paths_map['cwd'], version="0.1")
@@ -543,6 +546,8 @@ class BaseExperiment:
     # Usage:
     #   - self.updateValue("Operation_Mode", "QRAM_Exp")
     #   - self.updateValue("QRAM_Exp_switch", False)
+    #
+    #  (*) If updating OPX values, we go through Values Factor map - to provide weights
     #------------------------------------------------------------------------
     def updateValue(self, key, value, update_parameters=False):
         if key in self.Exp_Values:
@@ -594,28 +599,62 @@ class BaseExperiment:
                 self.logger.warn(f'{key} is not in Key_to_Channel. What channel does this key belong to? [change in Config_Table.py]')
                 # TODO: raise an exception here
 
-        # See whether OPX should also be updated
+        #------------------------------------------------
+        # NEW CODE
+        #------------------------------------------------
         if key in Config_Table.IOParametersMapping:
             io1 = Config_Table.IOParametersMapping[key]
-            io2 = value
-            if key in Values_Factor:
-                valueType = Values_Factor[key][0]  # Can be one of: int, float, bool
-                if len(Values_Factor[key]) == 1:
+            if self.transformer.knows(key):
+                mode = self.transformer.mode(key) 
+                if mode == 'FACTOR_AND_CAST':
+                    io2 = self.transformer.transform(key, value)
                     self.update_io_parameter(io1, io2)
-                elif len(Values_Factor[key]) == 2:
-                    valueFactor = Values_Factor[key][1]
-                    # Perform factoring and cast to relevant type (int, float)
-                    io2 = valueType(value * valueFactor)
-                    self.update_io_parameter(io1, io2)
-                elif len(Values_Factor[key]) == 3:  # If a function is attached to value change in Config_Table
-                    valueFunction = Values_Factor[key][2]  # Get function we want to use to convert
-                    valueFunction(self, value)  # Call the predefined function.
-                    # Note: the function should call self.update_io_parameter(io1, io2),otherwise nothing happens
-                    # io2 = valueType((valueFunction(self, value)))
+                else:
+                    msg = f'\n\nTransformer currently does not handle mode {mode}. Call Dror.\n\n'
+                    self.logger.error(msg)
+                    raise Exception(msg)
             else:
-                self.logger.error('%s not in Values_Factor!' % key)
-            # TODO: why is the below commented out?
-            # self.update_io_parameter(io1, io2)
+                msg = f'"{key}" is not in Values_Factor map!'
+                self.logger.error(msg)
+                raise Exception(msg)
+
+        #------------------------------------------------------
+        # See whether OPX should also be updated
+        #------------------------------------------------------
+        # The way this code works, given [key,value]:
+        # - If key is not in IO Parameters Mapping, nothing happens
+        # - If Values Factor has the entry, we will get our "instructions" - we have 3 modes:
+        #   1) "Set Value" - If one value in array - this is the value to set
+        #   2) "Factor and Cast" - If two values in array - we will (a) perform factoring (b) perform casting
+        #   3) "Transform" - If three values in array - we will just call func to do custom transformation
+        #------------------------------------------------------
+        if False:
+            
+            if key in Config_Table.IOParametersMapping:
+                io1 = Config_Table.IOParametersMapping[key]
+                io2 = value
+                if key in Values_Factor:
+                    valueType = Values_Factor[key][0]  # Can be one of: int, float, bool
+                    # Mode 1 - "Set Value"
+                    if len(Values_Factor[key]) == 1:
+                        self.update_io_parameter(io1, io2)
+                    # Mode 2 - "Factor and Cast"
+                    elif len(Values_Factor[key]) == 2:
+                        valueFactor = Values_Factor[key][1]
+                        # Perform factoring and cast to relevant type (int, float)
+                        io2 = valueType(value * valueFactor)
+                        self.update_io_parameter(io1, io2)
+                    # Mode 3 - "Transform"
+                    elif len(Values_Factor[key]) == 3:  # If a function is attached to value change in Config_Table
+                        valueFunction = Values_Factor[key][2]  # Get function we want to use to convert
+                        valueFunction(self, value)  # Call the predefined function.
+                        # Note: the function should call self.update_io_parameter(io1, io2),otherwise nothing happens
+                        # io2 = valueType((valueFunction(self, value)))
+                else:
+                    self.logger.error('%s not in Values_Factor!' % key)
+                    
+                # TODO: why is the below commented out?
+                # self.update_io_parameter(io1, io2)
 
         if update_parameters:
             self.update_parameters()

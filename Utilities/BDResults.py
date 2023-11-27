@@ -51,6 +51,10 @@ class BDResults:
         resolved_path = self._resolve_parameterized(self.results_map['root'])
         return resolved_path
 
+    def get_experiment_root(self):
+        resolved_path = self._resolve_parameterized(self.results_map['experiment_root'])
+        return resolved_path
+
     def save_results(self, data_pool):
 
         # Resolve the root folder - with current time/date
