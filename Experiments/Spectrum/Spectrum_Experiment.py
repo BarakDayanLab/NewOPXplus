@@ -1,35 +1,14 @@
-# I think we dont need these...
-#
-# import Config_with_SNSPDs_and_QuadRF_QRAM as Config
-# from Config_Table import Initial_Values, Phases_Names  # , Values_Factor
-# from quadRFMOTController import QuadRFMOTController
-# from quadRFFrequencyScannerController import QuadRFFrequencyScannerController
-
+from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
 from Experiments.Spectrum import Config_Experiment as Config
 from Experiments.BaseExperiment.QuadRFMOTController import QuadRFMOTController
 
 import matplotlib.pyplot as plt
 import numpy as np
 import time
-import json
-import sys
-import os
 import math
-from playsound import playsound
-import Config_Table
+import pymsgbox
 from UtilityResources.HMP4040Control import HMP4040Visa
 
-# I think we dont need these...
-#
-# import itertools
-# import operator
-# from pynput import keyboard
-
-# import logging
-# from logging import StreamHandler, Formatter, INFO, WARN, ERROR
-# import pymsgbox
-
-# TODO: check where we are calling the "OPX" class
 
 class Spectrum_Experiment(BaseExperiment):
     def __init__(self, config=Config.config):
@@ -976,8 +955,8 @@ class Spectrum_Experiment(BaseExperiment):
 
         WARMUP_CYCLES = 3
         cycle = 0
-        self.sum_for_threshold = reflection_threshold
-        while exp_flag and (cycle < WARMUP_CYCLES or self.sum_for_threshold > reflection_threshold):
+        self.sum_for_threshold = transit_counts_threshold
+        while exp_flag and (cycle < WARMUP_CYCLES or self.sum_for_threshold > transit_counts_threshold):
 
             if not self.should_continue():
                 self.logger.blue('ESC pressed. Stopping measurement.')
@@ -1268,24 +1247,14 @@ class Spectrum_Experiment(BaseExperiment):
         ## Loading: file = np.load(f, allow_pickle = True)
         ##          x = file['data']
 
-
-        # ------------------------------------------------------------------------
-        #    OLD SAVE Stuff
-        # ------------------------------------------------------------------------
-
-        # TODO: re-implement the below to work with BDResults
-        # Save the config table holding all conigurations of this experiment
-        # timest = time.strftime("%H%M%S")
-        dirname = self.bd_results.get_root() + f'{timest}_Photon_TimeTags\\'
-        self.save_config_table(default_path=dirname)
-        
         # TODO: re-implement in QuadRF class - to get the data - and BDResults will save...
         # Save Quad RF controllers commands
+        dirname = self.bd_results.get_root()
         for qrdCtrl in self.QuadRFControllers:
-            qrdCtrl.saveLinesAsCSV(f'{dirname}QuadRF_table.csv')
+            qrdCtrl.saveLinesAsCSV(f'{dirname}\\QuadRF_table.csv')
 
         # ------------------------------------------------------------------------
-        #    NEW SAVE Stuff
+        #    Save (a) Input sequences (b) Output results (c) Meta Data
         # ------------------------------------------------------------------------
 
         results = {
@@ -1315,11 +1284,11 @@ class Spectrum_Experiment(BaseExperiment):
 
             "exp_comment": f'transit condition: minimum time between reflection = {time_threshold} with at least {transit_counts_threshold} reflections ; reflection threshold: {total_counts_threshold} MCounts / sec',
 
-            "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, with_atoms,
-                                                                               self.Counter),
+            "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, with_atoms, self.Counter),
 
-            "max_probe_counts": "TBD"
+            "max_probe_counts": "TBD",
 
+            "experiment_config_values": self.Exp_Values
         }
         self.bd_results.save_results(results)
 
@@ -1361,7 +1330,7 @@ class Spectrum_Experiment(BaseExperiment):
 
         # Set switches
         self.Spectrum_Exp_switch(True)
-        self.MOT_switch(with_atoms)
+        self.MOT_switch(rp['with_atoms'])
 
         # TODO: Q: This is the first time we call this, it then calls save_config_table, but there's still no experiment, so it cannot save the config anywhere...
         # TODO: this needs fixing

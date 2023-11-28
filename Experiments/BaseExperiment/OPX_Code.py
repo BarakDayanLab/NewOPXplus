@@ -1,5 +1,5 @@
 import Config_Experiment as Config
-from Experiments.BaseExperiment.Config_Table import Phases_Names, Values_Factor
+from Experiments.BaseExperiment.Config_Table import Phases_Names
 from qm.qua import *
 
 all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]

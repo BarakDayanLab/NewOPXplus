@@ -517,7 +517,8 @@ class BaseExperiment:
 
     def get_handles_from_OPX_server(self):
         '''
-        Given the streams config, connect them to the OPX handles
+        Given the streams config, get the handles from OPX
+        Usually called from the Python code before we want to get the data values in the stream
         '''
         if self.streams is None:
             return
@@ -704,11 +705,16 @@ class BaseExperiment:
         self.io1_list = []
         self.io2_list = []
 
+        # TODO: why do we need this? If we call updateValue (which calls update_parameters)
+        # TODO: we update the config table file, BUT - at the end, when we save results, we override it anyway
         # Save Config_Table to a file with timestamp:
-        self.save_config_table()
+        # self.save_config_table()
 
         # quadController.plotTables()
 
+    # TODO: this function is currently not in use. It was used to save exp values in 2 cases:
+    # TODO: (1) At the end of an experiment (2) Whenever we updateValue.
+    # TODO: Now, (1) is done automatically. (2) is less important so it was leftout
     def save_config_table(self, default_path='.\\Config Table Archive\\'):
         time_stamp = time.strftime("%d-%m-%Y %H_%M_%S", time.localtime())
         helm_coils_state = 'Working on it'  # self.getHelmholtzCoilsState()

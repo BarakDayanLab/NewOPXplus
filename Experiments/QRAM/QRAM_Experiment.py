@@ -1808,20 +1808,11 @@ class QRAM_Experiment(BaseExperiment):
         else:
             aftComment = 'ignore'
 
-        # ------------------------------------------------------------------------
-        #    OLD SAVE Stuff
-        # ------------------------------------------------------------------------
-
-        # TODO: re-implement the below to work with BDResults
-        # Save the config table holding all conigurations of this experiment
-        # timest = time.strftime("%H%M%S")
-        dirname = self.bd_results.get_root() + f'{timest}_Photon_TimeTags\\'
-        self.save_config_table(default_path=dirname)
-
         # TODO: re-implement in QuadRF class - to get the data - and BDResults will save...
         # Save Quad RF controllers commands
+        dirname = self.bd_results.get_root()
         for qrdCtrl in self.QuadRFControllers:
-            qrdCtrl.saveLinesAsCSV(f'{dirname}QuadRF_table.csv')
+            qrdCtrl.saveLinesAsCSV(f'{dirname}\\QuadRF_table.csv')
 
         # ------------------------------------------------------------------------
         #    NEW SAVE Stuff
