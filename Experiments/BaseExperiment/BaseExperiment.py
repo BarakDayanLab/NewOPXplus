@@ -312,7 +312,7 @@ class BaseExperiment:
             self.job = self.opx_definitions['control'](self, self.qm)
         except Exception as err:
             self.logger.warn(f'Unable to connect to OPX. {err}')
-            pass
+            raise Exception(f'Unable to connect to OPX. {err}')
         except KeyboardInterrupt:
             self.job.halt()
             self.qmm.reset_data_processing()

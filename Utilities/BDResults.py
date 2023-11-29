@@ -28,7 +28,7 @@ class BDResults:
             self.results_map = json.load(f)
             f.close()
         except Exception as err:
-            self._handle_error('Unable to open results_map.json. Ensure it exists in folder.', True)
+            self._handle_error(f'Unable to open results_map.json. Reason: {err}', True)
 
         self.strict = self.results_map['strict'] if 'strict' in self.results_map else None
 

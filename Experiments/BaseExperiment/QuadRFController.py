@@ -233,15 +233,26 @@ class QuadRFController:
         else:
             duration = durationNV        #if duration > 1e3: duration = duration / 1e2
         freqNV = self.getNumericValueFromString(str(terms[3]))
-        freq = float(freqNV) / 1e6 if str(terms[-1]).replace(freqNV,'').strip().lower() == 'hz' else float(freqNV)                   # either hz or mhz
+        freq = float(freqNV) / 1e6 if str(terms[-1]).replace(freqNV,'').strip().lower() == 'hz' else float(freqNV)  # either hz or mhz
         ampNV = self.getNumericValueFromString(str(terms[4].replace('dbm', '')))
         amp = float(ampNV) if ampNV != '0x0' else '0x0'                                                         # always dbm
         ch = int(terms[2])
         return {'Duration': duration, 'Frequency': freq, 'Amplitude': amp, 'Channel': ch}
 
+    def get_channel_signals_as_string(self, channel_number):
+        """
+        Returns all channels signals in a CSV line format (Amplitude, Durations, Frequencies)
+        """
+        channel_signals = self.lines[channel_number]
+        csv_line = ''
+        for channel in channel_signals:
+            if channel != {'Amplitudes': [], 'Durations': [], 'Frequencies': []}:
+                csv_line = f"{channel['Amplitude']},{channel['Durations']},{channel['Frequencies']}\n"
+        return csv_line
+
     def saveLinesAsCSV(self, path):
         for i, channel in enumerate(self.lines):
-            if channel != {'Amplitudes': [], 'Durations':[], 'Frequencies':[]}:  # That is, if channel isn't empty
+            if channel != {'Amplitudes': [], 'Durations': [], 'Frequencies': []}:  # That is, if channel isn't empty
                 file_name = Path(path).stem
                 save_path = path.replace(file_name, f'{file_name}_ch{i + 1}')  # add channel to save path
                 try:
