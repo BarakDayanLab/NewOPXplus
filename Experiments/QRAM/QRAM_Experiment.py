@@ -21,40 +21,11 @@ from Utilities.Utils import Utils
 
 class QRAM_Experiment(BaseExperiment):
     def __init__(self):
-
-        # Call parent class - BaseExperiment
-        # Initiates OPX, Quad, Logger, Camera, etc.
+        # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
         super().__init__()
+        pass
 
-        ##########################
-        # EXPERIMENT PARAMETERS: #
-        ##########################
-
-        # -----------------------------------------------------------
-        # Handle QuadRF
-        # -----------------------------------------------------------
-
-        self.QuadRFControllers = []
-        # Note: So as not to connect again and again to QuadRF each time we update table, we now save the MOGDevic (actual QuadRF device) connected,
-        # we hold this connection until update is finished, then we close the connection.
-        # we do still hold the QuadRFController objects, for access to the table (read only!) when the experiment is running.
-
-        # QuadRF works with all of its 4 channels - 1, 2, 3, 4 - and they are set below:
-        # Set "debugging" to True to see print out of QuadRF table
-        qrfContr = QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 2, 4),
-                                       topticaLockWhenUpdating=False,
-                                       debugging=False, continuous=False)
-        self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
-        self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev,
-                                                          initialValues={'Operation_Mode': 'Continuous',
-                                                                         'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
-                                                          updateChannels=[3], debugging=False,
-                                                          continuous=False))  # updates values on QuadRF (uploads table)
-        # self.QuadRFControllers.append(QuadRFFrequencyScannerController(MOGdevice = qrfContr.dev, channel=2, debugging=False))  # updates values on QuadRF (uploads table)
-
-        self.Update_QuadRF_channels = set(
-            {})  # Only update these channels on QuadRF when UpdateParameters method is called [note: this is a python set]
-        qrfContr.disconnectQuadRF()
+    def initialize_experiment_variables(self):
 
         # -----------------------------------------------------------
         # Handle Free-Fall Variables
@@ -205,12 +176,6 @@ class QRAM_Experiment(BaseExperiment):
         # Main Experiment:
         self.TOP2_pulse_len = int(Config.Probe_pulse_len / 4)  # [nsec]
         self.Calibration_time = 10  # [msec]
-
-        # run daily experiment
-        # self.Stop_run_daily_experiment = False
-
-        # Initialize OPX
-        self.initialize_OPX()
         pass
 
     # This is overriding the method in base class
@@ -1540,11 +1505,12 @@ class QRAM_Experiment(BaseExperiment):
         ############################################ START WHILE LOOP #################################################
 
         while True:
+            # TODO: need to handle this part - why is it here?
             if self.keyPress == 'ESC':
                 self.logger.blue('ESC pressed. Stopping measurement.')
                 self.updateValue("QRAM_Exp_switch", False)
                 self.MOT_switch(True)
-                self.Stop_run_daily_experiment = True
+                #self.Stop_run_daily_experiment = True
                 self.update_parameters()
                 # Other actions can be added here
                 break
@@ -1919,9 +1885,6 @@ class QRAM_Experiment(BaseExperiment):
         # TODO: Can we move here to Enums?
         self.QRAM_Exp_switch(True)
         self.MOT_switch(rp['with_atoms'])
-
-        # TODO: Q: This is the first time we call this, it then calls save_config_table, but there's still no experiment, so it cannot save the config anywhere...
-        # TODO: this needs fixing
         self.update_parameters()
 
         # TODO: Q: Config.QRAM_Exp_Gaussian_samples_S is constructed in a function, using the parameter "sprint_pulse_len" - so why not use it here?

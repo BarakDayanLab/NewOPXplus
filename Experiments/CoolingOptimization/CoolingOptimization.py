@@ -19,19 +19,19 @@ _m = 1.443e-25  #[Kg] of Rb87
 
 class CoolingSequenceOptimizer(BaseExperiment):
 
-    def __init__(self, camera=None):
-        # Initialize the BaseExperiment - this will start OPX going with all the relevant code
+    def __init__(self):
+        # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
         super().__init__()
+        pass
 
+    def initialize_experiment_variables(self):
         # self.SPRINT_Exp_switch(False) # To enable trigger to camera in OPX_control_with_QuadRF_Sprint_Exp
-        self.camera = camera
+        self.camera = None
         self.NAvg = 1  # Number of photos captured to create an average image
         self.NThrow = 3  # Number of throws we're "skipping" until capturing an image
         self.imgBounds = (580, 200, 1600, 1450)  # bounds to crop out of the taken pictures
         self.mm_to_pxl = 8.5/(830-56)  # measured using ruler in focus 13/11/2022
         self.sigma_bounds = (15, 100)  # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
-
-        pass
 
     def connect_disconnect_camera(self):
         if self.camera:

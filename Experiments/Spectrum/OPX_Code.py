@@ -328,7 +328,7 @@ def Transit_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
 
 def Spectrum_Exp(m_off_time, m_time, m_window, shutter_open_time,
-                 frequency_sweep_rep, same_frequency_rep, num_of_different_frequncies, frequency_diff, frequency_start,
+                 frequency_sweep_rep, same_frequency_rep, num_of_different_frequencies, frequency_diff, frequency_start,
                  ON_counts_st1, ON_counts_st2, ON_counts_st3,
                  ON_counts_st4, ON_counts_st5, ON_counts_st6,
                  ON_counts_st7, ON_counts_st8,
@@ -399,7 +399,7 @@ def Spectrum_Exp(m_off_time, m_time, m_window, shutter_open_time,
     # play("Spectrum_pulse", "PULSER_ANCILLA", duration=(m_time + m_off_time))
 
     with for_(sweep_num, 0, sweep_num < frequency_sweep_rep, sweep_num + 1):
-        with for_(freq, frequency_start, freq < (frequency_start + num_of_different_frequncies * frequency_diff), freq + frequency_diff):
+        with for_(freq, frequency_start, freq < (frequency_start + num_of_different_frequencies * frequency_diff), freq + frequency_diff):
             update_frequency("AOM_Spectrum", freq)
             with for_(freq_rep_num, 0, freq_rep_num < same_frequency_rep, freq_rep_num + 1):
                 play("Spectrum_pulse", "PULSER_ANCILLA")
@@ -522,7 +522,7 @@ def opx_control(obj, qm):
         ## Spectrum experiment:
         frequency_sweep_rep = declare(int, value=obj.frequency_sweep_rep)
         same_frequency_rep = declare(int, value=obj.same_frequency_rep)
-        num_of_different_frequncies = declare(int, value=int(obj.num_of_different_frequncies))
+        num_of_different_frequencies = declare(int, value=int(obj.num_of_different_frequencies))
         frequency_start = declare(int, value=obj.frequency_start)
         frequency_diff = declare(int, value=obj.frequency_diff)
 
@@ -624,7 +624,7 @@ def opx_control(obj, qm):
                 #             ON_counts_st7, ON_counts_st8,
                 #             tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st)
                 Spectrum_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
-                             frequency_sweep_rep, same_frequency_rep, num_of_different_frequncies, frequency_diff,
+                             frequency_sweep_rep, same_frequency_rep, num_of_different_frequencies, frequency_diff,
                              frequency_start,
                              ON_counts_st1, ON_counts_st2, ON_counts_st3,
                              ON_counts_st4, ON_counts_st5, ON_counts_st6,

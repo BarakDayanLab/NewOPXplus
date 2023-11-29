@@ -12,38 +12,12 @@ from UtilityResources.HMP4040Control import HMP4040Visa
 
 class SpectrumExperiment(BaseExperiment):
     def __init__(self, config=Config.config):
-
-        # Call parent class - BaseExperiment
-        # Initiates OPX, Quad, Logger, Camera, etc.
+        # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
         super().__init__()
+        pass
 
-        ##########################
-        # EXPERIMENT PARAMETERS: #
-        ##########################
-
-        # -----------------------------------------------------------
-        # Handle QuadRF
-        # -----------------------------------------------------------
-
-        self.QuadRFControllers = []
-        # Note: So as not to connect again and again to QuadRF each time we update table, we now save the MOGDevic (actual QuadRF device) connected,
-        # we hold this connection until update is finished, the we close the connection.
-        # we do still hold the QuadRFController objects, for access to the table (read only!) when the experiment is running.
-        qrfContr = QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 2, 4),
-                                       topticaLockWhenUpdating=False,
-                                       debugging=False, continuous=False)
-        self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
-        self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev,
-                                                          initialValues={'Operation_Mode': 'Continuous',
-                                                                         'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
-                                                          updateChannels=[3], debugging=False,
-                                                          continuous=False))  # updates values on QuadRF (uploads table)
-        # self.QuadRFControllers.append(QuadRFFrequencyScannerController(MOGdevice = qrfContr.dev, channel=2, debugging=False))  # updates values on QuadRF (uploads table)
-
-        self.Update_QuadRF_channels = set(
-            {})  # Only update these channels on QuadRF when UpdateParameters method is called [note: this is a python set]
-        qrfContr.disconnectQuadRF()
-        # ---------- Finish handle QuadRF ------------
+    # Override base-class method with the variables/values this experiment wants to use
+    def initialize_experiment_variables(self):
 
         # -----------------------------------------------------------
         # Handle Free-Fall Variables
@@ -89,8 +63,7 @@ class SpectrumExperiment(BaseExperiment):
         self.pgc_final_amp_0 = self.Exp_Values['PGC_final_amp_0']
         self.pgc_final_amp_minus = self.Exp_Values['PGC_final_amp_minus']
         self.pgc_final_amp_plus = self.Exp_Values['PGC_final_amp_plus']
-        # self.pgc_aom_chirp_rate = int(self.Exp_Values['PGC_final_Delta_freq'] * 1e3 / (self.Exp_Values[
-        #                                                                                    'PGC_prep_duration'] * 1e6))  # [mHz/nsec], If needed pgc preparation duration must be constant!!!
+        # self.pgc_aom_chirp_rate = int(self.Exp_Values['PGC_final_Delta_freq'] * 1e3 / (self.Exp_Values['PGC_prep_duration'] * 1e6))  # [mHz/nsec], If needed pgc preparation duration must be constant!!!
 
         # -----------------------------------------------------------
         # Handle Fountain Variables
@@ -130,8 +103,7 @@ class SpectrumExperiment(BaseExperiment):
         self.fountain_final_amp_0 = self.Exp_Values['Fountain_final_amp_0']
         self.fountain_final_amp_minus = self.Exp_Values['Fountain_final_amp_minus']
         self.fountain_final_amp_plus = self.Exp_Values['Fountain_final_amp_plus']
-        self.fountain_aom_chirp_rate = int(self.Exp_Values['Fountain_final_Delta_freq'] * 1e3 / (
-                self.Exp_Values['Fountain_prep_duration'] * 1e6))  # mHz/nsec
+        self.fountain_aom_chirp_rate = int(self.Exp_Values['Fountain_final_Delta_freq'] * 1e3 / (self.Exp_Values['Fountain_prep_duration'] * 1e6))  # mHz/nsec
 
         # OD and Depump measurement parameters:
         self.Depump_pulse_duration = self.Exp_Values['Depump_pulse_duration']  # [msec]
@@ -186,12 +158,18 @@ class SpectrumExperiment(BaseExperiment):
         self.total_phase_rep_MZ_scan = 2 * self.phase_rep_MZ_fast_scan + self.phase_rep_MZ_slow_scan
         self.rep_MZ_check = int(self.Balancing_check_window * 1e6 / len(Config.QRAM_MZ_balance_pulse_North))
 
+        # -----------------------------------------------------------
         # MW spectroscopy parameters:
+        # -----------------------------------------------------------
+
         self.MW_start_frequency = int(100e6)  # [Hz]
         self.Pulse_Length_MW = 400  # [usec]
         self.Pulse_Length_OD = 20  # [usec]
 
+        # -----------------------------------------------------------
         # Main Experiment:
+        # -----------------------------------------------------------
+
         self.TOP2_pulse_len = int(Config.Probe_pulse_len / 4)  # [nsec]
         self.Calibration_time = 10  # [msec]
 
@@ -200,16 +178,11 @@ class SpectrumExperiment(BaseExperiment):
         self.same_frequency_rep = 100
         self.frequency_start = int(65e6)
         self.spectrum_bandwidth = int(60e6)
-        self.num_of_different_frequncies = self.Exp_Values['Pulse_1_duration'] * 1e6 / \
-                                           (2 * Config.frequency_sweep_duration) / \
-                                           (self.frequency_sweep_rep * self.same_frequency_rep)
-        self.frequency_diff = int(self.spectrum_bandwidth / self.num_of_different_frequncies)
+        self.num_of_different_frequencies = self.Exp_Values['Pulse_1_duration'] * 1e6 / \
+                                            (2 * Config.frequency_sweep_duration) / \
+                                            (self.frequency_sweep_rep * self.same_frequency_rep)
+        self.frequency_diff = int(self.spectrum_bandwidth / self.num_of_different_frequencies)
 
-        # run daily experiment
-        # self.Stop_run_daily_experiment = False
-
-        # Initialize OPX
-        self.initialize_OPX()
         pass
 
     # This is overriding the method in base class
@@ -1083,11 +1056,12 @@ class SpectrumExperiment(BaseExperiment):
         ############################################ START WHILE LOOP #################################################
 
         while True:
+            # TODO: need to handle this part - why is it here?
             if self.keyPress == 'ESC':
                 self.logger.blue('ESC pressed. Stopping measurement.')
                 self.updateValue("QRAM_Exp_switch", False)
                 self.MOT_switch(True)
-                self.Stop_run_daily_experiment = True
+                #self.Stop_run_daily_experiment = True
                 self.update_parameters()
                 # Other actions can be added here
                 break
@@ -1331,9 +1305,6 @@ class SpectrumExperiment(BaseExperiment):
         # Set switches
         self.Spectrum_Exp_switch(True)
         self.MOT_switch(rp['with_atoms'])
-
-        # TODO: Q: This is the first time we call this, it then calls save_config_table, but there's still no experiment, so it cannot save the config anywhere...
-        # TODO: this needs fixing
         self.update_parameters()
 
         # TODO: Q: Config.QRAM_Exp_Gaussian_samples_S is constructed in a function, using the parameter "sprint_pulse_len" - so why not use it here?

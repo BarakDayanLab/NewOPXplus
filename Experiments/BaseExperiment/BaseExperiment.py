@@ -54,6 +54,9 @@ class BaseExperiment:
 
     def __init__(self):
 
+        self._opx_skip = True
+        self._quadrf_skip = True
+
         # Setup console logger. We do this first, so rest of code can use logging functions.
         self.logger = BDLogger()
 
@@ -123,7 +126,7 @@ class BaseExperiment:
 
         # TODO: Listen to events - messages / keyboard
 
-        # Set all the variables and logic required & initiate the OPX
+        # (a) Initialize QuadRF (b) Set experiment related variables (c) Initialize OPX
         self.initialize_experiment()
 
         pass
@@ -147,16 +150,26 @@ class BaseExperiment:
         self.mws_logger.addHandler(handler)
 
     # Initialize the Base-Experiment: QuadRF/MOT/PGC/FreeFall
+    # (a) Initialize QuadRF (b) Set experiment related variables (c) Initialize OPX
     def initialize_experiment(self):
-        ##########################
-        # EXPERIMENT PARAMETERS: #
-        ##########################
-
-        # ----------------------------------------
-        # QuadRF
-        # ----------------------------------------
 
         self.Exp_Values = Initial_Values  # Initialize experiment values to be as in Config_Table.py
+
+        # Initialize QuadRF
+        self.initiliaze_QuadRF()
+
+        # Initialize Experiment Variables
+        self.initialize_experiment_variables()
+
+        # Initialize the OPX
+        self.initialize_OPX()
+
+        pass
+
+    # Initialize the QuadRF
+    def initiliaze_QuadRF(self):
+        if self._quadrf_skip: return
+
         self.QuadRFControllers = []
 
         # Note: So as not to connect again and again to QuadRF each time we update table, we now save the MOGDevic (actual QuadRF device) connected,
@@ -165,18 +178,53 @@ class BaseExperiment:
         qrfContr = QuadRFMOTController(initialValues=self.Exp_Values,
                                        updateChannels=(1, 4),
                                        topticaLockWhenUpdating=False,
-                                       debugging=True, continuous=False)
+                                       debugging=True,
+                                       continuous=False)
         self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
-        self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.device,
-                                                          initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
-                                                          updateChannels=[3],
-                                                          debugging=False,
-                                                          continuous=False))  # updates values on QuadRF (uploads table)
-        #self.QuadRFControllers.append(QuadRFFrequencyScannerController(MOGdevice = qrfContr.dev, channel=2, debugging=False))  # updates values on QuadRF (uploads table)
+
+        # TODO: why aren't the values below part of the experiment values or configuration values?
+        qrfContr2 = QuadRFMOTController(MOGdevice=qrfContr.device,
+                                        initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
+                                        updateChannels=[3],
+                                        debugging=False,
+                                        continuous=False)  # updates values on QuadRF (uploads table)
+        self.QuadRFControllers.append(qrfContr2)  # updates values on QuadRF (uploads table)
+
+        # TODO: do we need this?
+        # qrfContr3 = QuadRFFrequencyScannerController(MOGdevice=qrfContr.device,
+        #                                              channel=2,
+        #                                              debugging=False)  # updates values on QuadRF (uploads table)
+        #self.QuadRFControllers.append(qrfContr3)  # updates values on QuadRF (uploads table)
 
         self.Update_QuadRF_channels = set({})  # Only update these channels on QuadRF when UpdateParameters method is called [note: this is a python set]
+
+        # Disconnect from the QuadRF
         qrfContr.disconnectQuadRF()
 
+        pass
+
+    # Initialize the OPX
+    def initialize_OPX(self):
+        if self._opx_skip: return
+
+        try:
+            self.qmm = QuantumMachinesManager(host=self.opx_definitions['connection']['host'], port=self.opx_definitions['connection']['port'])
+            self.qmm.clear_all_job_results()
+            self.qmm.reset_data_processing()
+            self.qmm.close_all_quantum_machines()
+            self.qm = self.qmm.open_qm(self.opx_definitions['config'])
+            self.job = self.opx_definitions['control'](self, self.qm)
+        except Exception as err:
+            self.logger.warn(f'Unable to connect to OPX. {err}')
+            raise Exception(f'Unable to connect to OPX. {err}')
+        except KeyboardInterrupt:
+            self.job.halt()
+            self.qmm.reset_data_processing()
+
+        self.io1_list = []
+        self.io2_list = []
+
+    def initialize_experiment_variables(self):
 
         # ----------------------------------------
         # Free fall variables
@@ -187,7 +235,10 @@ class BaseExperiment:
         if (self.Exp_Values['FreeFall_duration'] - self.Exp_Values['Coil_timing']) > 60:
             raise ValueError("FreeFall_duration - Coils_timing can't be larger than 60 ms")
 
+        # ----------------------------------------
         # PGC variables:
+        # ----------------------------------------
+
         self.pgc_duration = int(self.Exp_Values['PGC_duration'] * 1e6 / 4)
         self.pgc_prep_duration = int(self.Exp_Values['PGC_prep_duration'] * 1e6 / 4)
         if self.Exp_Values['PGC_initial_amp_0'] == self.Exp_Values['PGC_final_amp_0']:
@@ -293,32 +344,7 @@ class BaseExperiment:
         self.TOP2_pulse_len = int(Config.Probe_pulse_len / 4)  # [nsec]
         self.Calibration_time = 10  # [msec]
 
-        # ----------------------------------------
-        # Initialize the OPX
-        # ----------------------------------------
-
-        self.initialize_OPX()
-
         pass
-
-    # Initialize the OPX
-    def initialize_OPX(self):
-        try:
-            self.qmm = QuantumMachinesManager(host=self.opx_definitions['connection']['host'], port=self.opx_definitions['connection']['port'])
-            self.qmm.clear_all_job_results()
-            self.qmm.reset_data_processing()
-            self.qmm.close_all_quantum_machines()
-            self.qm = self.qmm.open_qm(self.opx_definitions['config'])
-            self.job = self.opx_definitions['control'](self, self.qm)
-        except Exception as err:
-            self.logger.warn(f'Unable to connect to OPX. {err}')
-            raise Exception(f'Unable to connect to OPX. {err}')
-        except KeyboardInterrupt:
-            self.job.halt()
-            self.qmm.reset_data_processing()
-
-        self.io1_list = []
-        self.io2_list = []
 
     def _set_paths_map(self):
         self.paths_map = {
@@ -485,6 +511,9 @@ class BaseExperiment:
                 self.run(merged_params)
                 self.post_run(merged_params)
 
+            if not self.should_continue():
+                break
+
             if sequence_definitions['delay_between_cycles']:
                 self.info(f'Sleeping')
                 time.sleep(sequence_definitions['delay_between_cycles'])
@@ -630,7 +659,6 @@ class BaseExperiment:
         #   3) "Transform" - If three values in array - we will just call func to do custom transformation
         #------------------------------------------------------
         if False:
-            
             if key in Config_Table.IOParametersMapping:
                 io1 = Config_Table.IOParametersMapping[key]
                 io2 = value
