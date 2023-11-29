@@ -1,4 +1,10 @@
+from Experiments.QRAM import Config_Experiment as Config
+from Experiments.BaseExperiment.Config_Table import Phases_Names
+from qm.qua import *
+from Utilities.OPX_Utils import OPX_Utils
 
+# TODO: Move this elsewhere...
+all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]
 
 def MOT(mot_repetitions):
     """
@@ -244,7 +250,7 @@ def Transit_Exp(m_off_time, m_time, m_window, shutter_open_time,
     tt_vec7 = declare(int, size=vec_size)
     tt_vec8 = declare(int, size=vec_size)
 
-    assign_variables_to_element("Dig_detectors", counts1)
+    OPX_Utils.assign_variables_to_element("Dig_detectors", counts1)
 
     n = declare(int, value=0)
     t = declare(int)
@@ -256,7 +262,7 @@ def Transit_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
     update_frequency("PULSER_ANCILLA", Config.IF_AOM_Spectrum)
 
-    # assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
+    # OPX_Utils.assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
     align("AOM_2-2/3'", "AOM_Late", "PULSER_N", "PULSER_S", "Dig_detectors", "PULSER_ANCILLA", "AOM_Spectrum")
 
     play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
@@ -367,7 +373,7 @@ def Spectrum_Exp(m_off_time, m_time, m_window, shutter_open_time,
     tt_vec7 = declare(int, size=vec_size)
     tt_vec8 = declare(int, size=vec_size)
 
-    assign_variables_to_element("Dig_detectors", counts1)
+    OPX_Utils.assign_variables_to_element("Dig_detectors", counts1)
 
     n = declare(int, value=0)
     sweep_num = declare(int)
@@ -377,7 +383,7 @@ def Spectrum_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
     update_frequency("PULSER_ANCILLA", Config.IF_AOM_Spectrum)
 
-    # assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
+    # OPX_Utils.assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
     align("AOM_Late", "PULSER_N", "PULSER_S", "Dig_detectors", "PULSER_ANCILLA", "AOM_Spectrum")
 
     play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)

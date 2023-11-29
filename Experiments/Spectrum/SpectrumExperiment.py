@@ -10,7 +10,7 @@ import pymsgbox
 from UtilityResources.HMP4040Control import HMP4040Visa
 
 
-class Spectrum_Experiment(BaseExperiment):
+class SpectrumExperiment(BaseExperiment):
     def __init__(self, config=Config.config):
 
         # Call parent class - BaseExperiment
@@ -1415,7 +1415,7 @@ if __name__ == "__main__":
         ]
     }
 
-    experiment = Spectrum_Experiment()
+    experiment = SpectrumExperiment()
 
     # TODO: REMOVE, for debug only
     sequence_definitions = None
