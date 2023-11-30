@@ -42,7 +42,7 @@ class QuadRFController:
         # Initialize Logger
         self.logger = BDLogger()
 
-        # connect to the device
+        # connect to the device (or use an existing one - passed as argument in 'MOGdevice'
         try:
             self.device = MOGDevice(devPort) if MOGdevice is None else MOGdevice
         except Exception as e:
@@ -54,7 +54,7 @@ class QuadRFController:
             device_info = self.device.ask('info')
             self.logger.debug(f'Connected to QuadRF. Device info: {device_info}')
         self.lineCount = 0
-        self.lines = [{'Amplitudes': [], 'Durations':[],'Frequencies':[]},{'Amplitudes': [], 'Durations':[],'Frequencies':[]},{'Amplitudes': [], 'Durations':[],'Frequencies':[]},{'Amplitudes': [], 'Durations':[],'Frequencies':[]}]  # 4 channels, each holds: duration, frequency, amplitude
+        self.lines = [{'Amplitudes': [], 'Durations':[], 'Frequencies':[]}, {'Amplitudes': [], 'Durations':[], 'Frequencies':[]}, {'Amplitudes': [], 'Durations':[], 'Frequencies':[]}, {'Amplitudes': [], 'Durations':[], 'Frequencies':[]}]  # 4 channels, each holds: duration, frequency, amplitude
         self.constantOpticalPowerCalibration = opticalPowerCalibration  # Format: c = {'ch_1':{'calibration_func':calibration_func, 'calibrate_RF_Power':'30dbm','calibrate_Optical_Power':0.5}}
 
         # Previous line means: for channel 1, use calibration function to calibrate 30dbm to be 0.5 power [normalized] (for ANY frequency)

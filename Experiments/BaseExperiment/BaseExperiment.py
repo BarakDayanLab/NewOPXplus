@@ -54,8 +54,8 @@ class BaseExperiment:
 
     def __init__(self):
 
-        self._opx_skip = True
-        self._quadrf_skip = True
+        self._opx_skip = False
+        self._quadrf_skip = False
 
         # Setup console logger. We do this first, so rest of code can use logging functions.
         self.logger = BDLogger()
@@ -207,7 +207,12 @@ class BaseExperiment:
     def initialize_OPX(self):
         if self._opx_skip: return
 
+        # NOTE: if OPX is failing to start, maybe it requires a restart.
+        # - Go to the OPX admin console in the browser
+        # - Select the "Gear" icon, go to the "Operations" tab, click "Restart"
+        # - Click the "Hardware" icon - wait for the status to turn from "Warning" to "Healthy"
         try:
+            self.job = None
             self.qmm = QuantumMachinesManager(host=self.opx_definitions['connection']['host'], port=self.opx_definitions['connection']['port'])
             self.qmm.clear_all_job_results()
             self.qmm.reset_data_processing()
@@ -217,8 +222,16 @@ class BaseExperiment:
         except Exception as err:
             self.logger.warn(f'Unable to connect to OPX. {err}')
             raise Exception(f'Unable to connect to OPX. {err}')
-        except KeyboardInterrupt:
-            self.job.halt()
+        except KeyboardInterrupt as err:
+            close_it = False
+            if close_it:
+                self.qm.close()
+                self.qmm.close()
+                return
+
+            self.logger.warn(f'Got user interrupt. Maybe stopped Pycharm or Python process? {err}')
+            if self.job is not None:
+                self.job.halt()
             self.qmm.reset_data_processing()
 
         self.io1_list = []
@@ -545,28 +558,34 @@ class BaseExperiment:
     """
 
     def get_handles_from_OPX_server(self):
-        '''
-        Given the streams config, get the handles from OPX
+        """
+        Given the streams' config, get the handles from OPX
         Usually called from the Python code before we want to get the data values in the stream
-        '''
-        if self.streams is None:
+        """
+        if 'streams' not in self.opx_definitions or self.opx_definitions['streams'] == {}:
             return
+
         self.streams = self.opx_definitions['streams']
         for key, value in self.streams.items():
             value['handler'] = self.job.result_handles.get(key)
 
-    def get_values_from_streams(self):
-        '''
+    def get_results_from_streams(self):
+        """
         Given the streams config and handles, wait and fetch the values from OPX
-        '''
+        """
         if self.streams is None:
             return
+
         # TODO: Should we first "wait_for_values" on all and only then "fetch_all"?
         for stream in self.streams.values():
-            stream['handler'].wait_for_values(1)
+            if stream['handler'] is not None:
+                stream['handler'].wait_for_values(1)
 
         for stream in self.streams.values():
-            stream['results'] = stream['handler'].fetch_all()
+            if stream['handler'] is not None:
+                stream['results'] = stream['handler'].fetch_all()
+            else:
+                stream['results'] = None
 
         pass
 

@@ -13,22 +13,22 @@ class QuadRFChannel:
 
 
 class QuadRFPhase:
-    def __init__(self, duration = '0x0', initial_values = (('0x0','0x0'),('0x0','0x0'),('0x0','0x0'),('0x0','0x0'))):
+    def __init__(self, duration = '0x0', initial_values=(('0x0', '0x0'), ('0x0', '0x0'),('0x0', '0x0'), ('0x0', '0x0'))):
         if type(duration) is not str:
             duration = '{:.2f}ms'.format(duration) # 2 decimal points, as string
         self.duration = duration
 
-        self.ch_1 = QuadRFChannel(initial_values[0][0], initial_values[0][1])    # Toptica 1
-        self.ch_2 = QuadRFChannel(initial_values[1][0], initial_values[1][1])    # AOM -/0
-        self.ch_3 = QuadRFChannel(initial_values[2][0], initial_values[2][1])    # AOM +
-        self.ch_4 = QuadRFChannel(initial_values[3][0], initial_values[3][1])    # Repump (/Depump)
+        self.ch_1 = QuadRFChannel(initial_values[0][0], initial_values[0][1])  # Toptica 1
+        self.ch_2 = QuadRFChannel(initial_values[1][0], initial_values[1][1])  # AOM -/0
+        self.ch_3 = QuadRFChannel(initial_values[2][0], initial_values[2][1])  # AOM +
+        self.ch_4 = QuadRFChannel(initial_values[3][0], initial_values[3][1])  # Repump (/Depump)
 
     def __getitem__(self, item): # This enables calling attributs as such: self['attr']  = self.attr
         return getattr(self, item)
 
 
 class QuadRFMOTController(QuadRFController):
-    def __init__(self,MOGdevice = None, devPort = '169.254.231.196', initialValues = None, updateChannels = (1,2,3,4), armChannels = True, opticalPowerCalibration = None, topticaLockWhenUpdating = False ,debugging = False, continuous = False):
+    def __init__(self, MOGdevice=None, devPort='169.254.231.196', initialValues=None, updateChannels=(1,2,3,4), armChannels=True, opticalPowerCalibration=None, topticaLockWhenUpdating=False, debugging=False, continuous=False):
         if opticalPowerCalibration is None and 'opticalPowerCalibrationFunction' in initialValues:
             opticalPowerCalibration = initialValues['opticalPowerCalibrationFunction']
         super(QuadRFMOTController, self).__init__(MOGdevice, devPort, opticalPowerCalibration=opticalPowerCalibration, debugging=debugging)

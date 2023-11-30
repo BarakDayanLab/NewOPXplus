@@ -1739,12 +1739,6 @@ streams = {
         "name": "Detector_8_Timetags",
         "delay": 20
     },
-    "North_Probe": {
-        "name": "North_Probe",
-    },
-    "South_Probe": {
-        "name": "South_Probe",
-    },
     "FLR_measure": {
         "name": "FLR_measure",
     }

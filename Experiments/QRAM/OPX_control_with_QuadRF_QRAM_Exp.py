@@ -394,7 +394,7 @@ class QRAM_Experiment(BaseExperiment):
         """
 
         # Extract stream values from OPX handles
-        self.get_values_from_streams()
+        self.get_results_from_streams()
 
         # TODO: Q: why are we changing the sign?
         self.streams['FLR_measure']['results'] *= -1
@@ -1501,7 +1501,7 @@ class QRAM_Experiment(BaseExperiment):
                 timest = time.strftime("%H%M%S")
                 datest = time.strftime("%Y%m%d")
 
-                self.get_values_from_streams()
+                self.get_results_from_streams()
 
                 self.ingest_time_tags(Num_Of_dets)
 

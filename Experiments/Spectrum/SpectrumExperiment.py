@@ -295,6 +295,7 @@ class SpectrumExperiment(BaseExperiment):
     def MeasureOD_SNSPDs_duration(self, duration):
         self.update_io_parameter(45, int(duration / self.M_window * 1e6 / 4))
 
+    # TODO: Not in use for this experiment
     def Get_Max_Probe_counts(self, repetitions):
 
         self.Max_Probe_counts_switch(True)
@@ -353,14 +354,69 @@ class SpectrumExperiment(BaseExperiment):
         FLR_handle = self.job.result_handles.get("FLR_measure")
         return Counts_handle, tt_handle, FLR_handle
 
-    def get_tt_from_handles(self, Num_Of_dets, Counts_handle, tt_handle, FLR_handle):
+    def ingest_time_tags(self, Num_Of_dets):
+        """
+        Takes all the raw results we got from the streams and does some processing on them - preparing "measures"
+        """
+
+        # Append all detector counts and detector timetags into a single array (of arrays)
+        counts_res = []
+        tt_res = []
+        for i in range(1, len(Num_Of_dets)+1):
+            counts_res.append(self.streams[f'Detector_{i}_Counts']['results'])
+            tt_res.append(self.streams[f'Detector_{i}_Timetags']['results'])
+
+        # TODO: Q: why are we changing the sign? Why is this a single scalar - coming from a stream?
+        self.FLR_res = -self.streams['FLR_measure']['results']
+
+        #### By this point we should have counts_res, tt_res & FLR_res populated
+        #### this is equivalent to self.streams['FLR_measure']['results']
+
+        # Ensure we clear timetags vectors from data from last iteration
+        self.tt_measure = []
+        self.tt_BP_measure = []
+        self.tt_DP_measure = []
+        self.tt_N_measure = []
+        self.tt_S_measure = []
+        self.tt_FS_measure = []
+
+        # remove zero-padding from tt-res and append into tt_measure
+        for i in range(len(Num_Of_dets)):  # for different detectors
+            # TODO: check this:
+            # a = self.streams[f'Detector_{2}_Timetags']['results'])
+            # b = tt_res[2]
+            # Isn't a==b? If 'yes', why did we need the tt_res and count_res ?
+
+            self.tt_measure.append(tt_res[i][1:(tt_res[i][0])].tolist())
+            self.tt_measure[i] = [elm + Config.detector_delays[i] for elm in self.tt_measure[i]
+                                  if ((elm % self.M_window != 0) & (elm != 9999984) &
+                                      ((elm + Config.detector_delays[i]) <= self.M_window))]  # Due to an unresolved bug in the OPD there are "ghost" readings of timetags equal to the maximum time of measuring window.
+            self.tt_measure[i].sort()
+
+        # ------------------------------------------
+        # Unify detectors and windows within detectors and create vector of tt's for each direction (bright port, dark port, north, south and from FS) and sort them
+        # ------------------------------------------
+
+        self.tt_BP_measure = sorted(sum(self.tt_measure[:2], []))  # unify detectors 1-3 and windows within detectors
+        self.tt_DP_measure = sorted(sum(self.tt_measure[2:4], []))  # unify detectors 1-3 and windows within detectors
+        self.tt_N_measure = sorted(sum(self.tt_measure[7:], []))  # unify detectors 1-3 and windows within detectors
+        self.tt_S_measure = sorted(sum(self.tt_measure[4:5], []))  # unify detectors 6-8 and windows within detectors
+        self.tt_FS_measure = sorted(sum(self.tt_measure[5:7], []))  # unify detectors 6-8 and windows within detectors
+
+        self.tt_N_directional_measure = sorted(self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure)
+        self.tt_S_directional_measure = sorted(self.tt_S_measure + self.tt_FS_measure)
+
+        self.fix_gaps_spectrum_exp_tts()
+
+    # TODO: we can remove this, after we ensure that our generic "replacement" is working properly
+    def get_tt_from_handles_DEPRECATED(self, Num_Of_dets, Counts_handle, tt_handle, FLR_handle):
         self.counts_res = []
         self.tt_res = []
 
         # handles wait for values
         for i in range(len(Num_Of_dets)):
-            tt_handle[i].wait_for_values(1)
-            Counts_handle[i].wait_for_values(1)
+            tt_handle[i].wait_for_values(1)  # Time tags (e.g. Detector_<N>_Timetags)
+            Counts_handle[i].wait_for_values(1)  # Counts (e.g. Detector_<N>_Counts)
         FLR_handle.wait_for_values(1)
 
         # add the tt and counts to python vars
@@ -394,19 +450,29 @@ class SpectrumExperiment(BaseExperiment):
         self.tt_N_measure = sorted(sum(self.tt_measure[7:], []))  # unify detectors 1-3 and windows within detectors
         self.tt_S_measure = sorted(sum(self.tt_measure[4:5], []))  # unify detectors 6-8 and windows within detectors
         self.tt_FS_measure = sorted(sum(self.tt_measure[5:7], []))  # unify detectors 6-8 and windows within detectors
+
         self.tt_N_directional_measure = sorted(self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure)
         self.tt_S_directional_measure = sorted(self.tt_S_measure + self.tt_FS_measure)
+
         self.fix_gaps_spectrum_exp_tts()
+
+    def fix_gaps_spectrum_exp_tts_NEW(self):
+        self.tt_S_no_gaps = self.tt_S_directional_measure.copy()
+        for i, x in enumerate(self.tt_S_no_gaps):
+            y = x-(x//(1e5 + 320))*320
+            z = y-(y//(2e6 + 124))*124
+            self.tt_S_no_gaps[i] = int(z)
+        pass
 
     def fix_gaps_spectrum_exp_tts(self):
         '''
-        fixes delays of 300 ns every 100 us in spectrum experiment
+        fixes delays of 320 ns every 124 us in spectrum experiment
         :return:
-
         '''
         self.tt_S_no_gaps = [x-(x//(1e5 + 320))*320 for x in self.tt_S_directional_measure]
         self.tt_S_no_gaps = [x-(x//(2e6 + 124))*124 for x in self.tt_S_no_gaps]
         self.tt_S_no_gaps = [int(x) for x in self.tt_S_no_gaps]
+
     def latched_detectors(self):
         latched_detectors = []
         for indx, det_tt_vec in enumerate(self.tt_measure):  # for different detectors
@@ -917,11 +983,12 @@ class SpectrumExperiment(BaseExperiment):
 
         self.logger.blue('Press ESC to stop measurement.')
 
+        # initialize parameters - set zeros vectors and empty lists
+        # TODO: Q: why is this called "sprint" ?
+        # TODO: Do we need Num_Of_dets ?
         self.init_params_for_save_sprint(Num_Of_dets)
 
-        ####     get tt and counts from OPX to python   #####
-        Counts_handle, tt_handle, FLR_handle = self.get_handles_from_OPX_Server(Num_Of_dets)
-
+        # Associate the streams filled in OPX (FPGA) code with result handles
         self.get_handles_from_OPX_server()
 
         ############################# WHILE 1 - START #############################
@@ -929,7 +996,10 @@ class SpectrumExperiment(BaseExperiment):
         WARMUP_CYCLES = 3
         cycle = 0
         self.sum_for_threshold = transit_counts_threshold
-        while exp_flag and (cycle < WARMUP_CYCLES or self.sum_for_threshold > transit_counts_threshold):
+        # TODO: Q: when will I first "escape" this look do to transit-counts threshold ?
+        # We will iterate at least 3 warmup cycles. If experiment in ON, we will iterate as long as within threshold:
+        while (cycle < WARMUP_CYCLES) or (exp_flag and self.sum_for_threshold >= transit_counts_threshold):
+            self.logger.debug(f'Running cycle {cycle}')
 
             if not self.should_continue():
                 self.logger.blue('ESC pressed. Stopping measurement.')
@@ -943,13 +1013,15 @@ class SpectrumExperiment(BaseExperiment):
             # -------------------------------------------
 
             # Filter/Manipulate the values we got
+            self.get_results_from_streams()
             self.ingest_time_tags(Num_Of_dets)
 
-            # Check locking error, break if we are above threshold
+            # Check locking error - break if we are above threshold (if it is None - it means we can't find the error file, so ignore it)
             self.lock_err = (lock_err_threshold / 2) if exp_flag else self._read_locking_error()
-            self.logger.debug(f'{self.lock_err}, {self.lock_err > lock_err_threshold}, {self.sum_for_threshold}')
-            if self.lock_err > lock_err_threshold:
-                break
+            if self.lock_err is not None:
+                self.logger.debug(f'{self.lock_err}, {self.lock_err > lock_err_threshold}, {self.sum_for_threshold}')
+                if self.lock_err > lock_err_threshold:
+                    break
 
             cycle += 1
 
@@ -964,7 +1036,7 @@ class SpectrumExperiment(BaseExperiment):
         Exp_timestr_batch = []
         lock_err_batch = []
 
-        # initilaization
+        # Initilaization
         self.tt_N_binning = np.zeros(self.histogram_bin_number * 2)
         self.tt_S_binning = np.zeros(self.histogram_bin_number * 2)
         self.tt_N_transit_events = np.zeros(self.histogram_bin_number*2)
@@ -974,17 +1046,17 @@ class SpectrumExperiment(BaseExperiment):
         self.folded_tt_S_acc = np.zeros(self.histogram_bin_size, dtype=int)
         self.folded_tt_S_acc_2 = np.zeros(self.histogram_bin_size, dtype=int)
         self.folded_tt_S_acc_3 = np.zeros(self.histogram_bin_size, dtype=int)
-
-
         self.Cavity_atom_spectrum = np.zeros(self.spectrum_bin_number)
         self.Cavity_spectrum = np.zeros(self.spectrum_bin_number)
 
         # fold reflections and transmission
         for x in self.tt_N_directional_measure:
-            self.tt_N_binning[(x - 1) // Config.frequency_sweep_duration] += 1 #TODO: x-1?? in spectrum its x
+            self.tt_N_binning[(x - 1) // Config.frequency_sweep_duration] += 1  # TODO: x-1?? in spectrum its x
         self.tt_N_binning_avg = self.tt_N_binning
         for x in self.tt_S_no_gaps:
             self.tt_S_binning[(x - 1) // Config.frequency_sweep_duration] += 1
+
+        # TODO: why aren't we using "elif" in the cases below?
         for x in self.tt_S_no_gaps:
             if x < 2e6:
                 self.folded_tt_S_acc[(x - 1) % self.histogram_bin_size] += 1
@@ -1006,22 +1078,18 @@ class SpectrumExperiment(BaseExperiment):
             self.tt_S_transit_events[
                 [i for i, x in enumerate(self.tt_S_binning_batch[0]) if x > transit_counts_threshold]] -= 1
 
-        # put into batches
+        # --------------------------------------------------------------
+        # Put into batches
+        # --------------------------------------------------------------
+
         self.tt_N_measure_batch = self.tt_N_measure_batch[-(N - 1):] + [self.tt_N_directional_measure]
         self.tt_N_binning_batch = self.tt_N_binning_batch[-(N - 1):] + [self.tt_N_binning]
         self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_no_gaps]
         self.tt_S_binning_batch = self.tt_S_binning_batch[-(N - 1):] + [self.tt_S_binning]
         self.tt_S_binning_resonance_batch = self.tt_S_binning_resonance_batch[-(N - 1):] + [self.tt_S_binning_resonance]
         self.tt_S_binning_detuned_batch = self.tt_S_binning_detuned_batch[-(N - 1):] + [self.tt_S_binning_detuned]
-        self.S_bins_res_acc = np.sum(np.array(self.tt_S_binning_resonance_batch),
-                                     0)  # tt_S_binning_resonance accumulated (sum over the batch)
-        self.S_bins_detuned_acc = np.sum(np.array(self.tt_S_binning_detuned_batch),
-                                     0)  # tt_S_binning_resonance accumulated (sum over the batch)
-
-
-
-
-
+        self.S_bins_res_acc = np.sum(np.array(self.tt_S_binning_resonance_batch), 0)  # tt_S_binning_resonance accumulated (sum over the batch)
+        self.S_bins_detuned_acc = np.sum(np.array(self.tt_S_binning_detuned_batch), 0)  # tt_S_binning_resonance accumulated (sum over the batch)
 
 
         FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
@@ -1032,16 +1100,18 @@ class SpectrumExperiment(BaseExperiment):
         self.tt_S_transit_events[[i for i, x in enumerate(self.tt_S_binning) if x > transit_counts_threshold]] += 1
         self.tt_S_transit_events_accumulated = self.tt_S_transit_events
 
-        self.find_transit_events(N, transit_time_threshold=time_threshold,
-                                 transit_counts_threshold=transit_counts_threshold)
+        self.find_transit_events(N, transit_time_threshold=time_threshold, transit_counts_threshold=transit_counts_threshold)
 
         self.Counter = 1  # Total number of successful cycles
         self.repitions = 1  # Total number of cycles
         self.acquisition_flag = True
         self.threshold_flag = True
         self.pause_flag = False
-        #
-        # create figures template
+
+        # --------------------------------------------------------------
+        # Create figures template
+        # --------------------------------------------------------------
+
         fig = plt.figure()
         ax1 = plt.subplot2grid((6, 2), (0, 0), colspan=1, rowspan=2)
         ax2 = plt.subplot2grid((6, 2), (0, 1), colspan=1, rowspan=2)
@@ -1093,8 +1163,7 @@ class SpectrumExperiment(BaseExperiment):
                 timest = time.strftime("%H%M%S")
                 datest = time.strftime("%Y%m%d")
 
-                self.get_values_from_streams()
-
+                self.get_results_from_streams()
                 self.ingest_time_tags(Num_Of_dets)
 
                 # Check if new tt's arrived:
@@ -1310,8 +1379,8 @@ class SpectrumExperiment(BaseExperiment):
         # TODO: Q: Config.QRAM_Exp_Gaussian_samples_S is constructed in a function, using the parameter "sprint_pulse_len" - so why not use it here?
         # TODO: Q: (a) we don't want to use duplicate variables holding the same value, (b) it mentions "samples_S" - but it's the same for "N" as well...
         self.Save_SNSPDs_Spectrum_Measurement_with_tt(N=rp['N'],
-                                                      transit_profile_bin_size=rp['Transit_profile_bin_size'],
-                                                      pre_comment=rp['preComment'],
+                                                      transit_profile_bin_size=rp['transit_profile_bin_size'],
+                                                      pre_comment=rp['pre_comment'],
                                                       total_counts_threshold=rp['total_counts_threshold'],
                                                       transit_counts_threshold=rp['transit_counts_threshold'],
                                                       FLR_threshold=rp['FLR_threshold'],
@@ -1356,14 +1425,16 @@ class SpectrumExperiment(BaseExperiment):
 if __name__ == "__main__":
 
     run_parameters = {
+        'N': 500,
         'histogram_bin_size': 1000,
-        'transit_profile_bin_size': 10,
-        'pre_comment': 'Transit experiment with 2uW of 731.30nm light coupled',
+        'transit_profile_bin_size': 10,  # TODO: Q: should this be 10 or 100?
+        'pre_comment': 'Transit experiment with 2uW of 731.30nm light coupled',  # TODO: Q: what should be the comment here?
         'total_counts_threshold': 1,
         'transit_counts_threshold': 5,
-        'FLR_threshold': 0.08,
+        'FLR_threshold': 0.08,  # TODO: Q: 0.08 or 0.11 ?
         'lock_err_threshold': 0.004,
         'Exp_flag': False,
+        'with_atoms': True,
         # TODO: we need to read the below from the results folder, not put it here HARD CODED
         'experiment_folder_path': r'U:\Lab_2023\Experiment_results\Spectrum'
     }
