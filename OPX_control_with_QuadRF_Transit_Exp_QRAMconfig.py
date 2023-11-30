@@ -3068,7 +3068,7 @@ class OPX:
                                                      with_atoms=with_atoms)
 
     def Start_Spectrum_Exp_with_tt(self, N=1000, Transit_profile_bin_size=100, preComment=None, transit_cond=[2, 1, 2],
-                                  total_counts_threshold=0.1, transit_counts_threshold=3, FLR_threshold=0.08,
+                                  total_counts_threshold=0.1, transit_counts_threshold=3, FLR_threshold=0.03,
                                   lock_err_threshold=0.002, Exp_flag=True, with_atoms=True, Calibration_dirname=None):
         self.Spectrum_Exp_switch(True)
         self.MOT_switch(with_atoms)
@@ -3247,7 +3247,7 @@ if __name__ == "__main__":
     # experiment.Start_Spectrum_Exp_with_tt(preComment="Spectrum experiment; bandwidth 48 MHz, 1.5MHz jumps")
     # experiment.Start_Spectrum_Exp_with_tt(N=200, preComment="Spectrum experiment; On resonance max counts",
     #                                       total_counts_threshold=10, with_atoms=False)
-    experiment.Start_Spectrum_Exp_with_tt(Exp_flag=False)
+    # experiment.Start_Spectrum_Exp_with_tt(Exp_flag=False)
 
 
 

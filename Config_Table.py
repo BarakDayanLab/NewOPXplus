@@ -23,7 +23,7 @@ calibrationData = None
 Initial_Values = {
     # 'Operation_Mode': 'Magnetic_fountain',
     # 'Operation_Mode': 'Imaging',
-    # 'Operation_Mode': 'PrePGC_Fountain',
+    'Operation_Mode': 'PrePGC_Fountain',
     # 'Operation_Mode': 'OD_FS',
     # 'Operation_Mode': 'Depump',
     # 'Operation_Mode': 'Transit_Exp',
@@ -32,7 +32,7 @@ Initial_Values = {
     # 'Operation_Mode': 'SPRINT_2-3_Exp',
     # 'Operation_Mode': 'SPRINT_Exp',
     # 'Operation_Mode': 'QRAM_Exp',
-    'Operation_Mode': 'Transits_Exp',
+    # 'Operation_Mode': 'Transits_Exp',
     # 'Operation_ModB-e': 'Continuous',
     'Imaging_Phase': 'Pulse_1',
     'Triggering_Phase': -1,  # Don't change this. Triggering phase should be defined within each operation mode (see below)
@@ -349,7 +349,7 @@ Operation_Modes = {
                                   },
                     'Transits_Exp':  {'Triggering_Phase': 'Free_Fall',
                                       'MOT_rep': int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config_QRAM.MOT_pulse_len)),
-                                      'Fountain_final_Delta_freq': 0.5e6,  # 0.38e6 - until 30.10.22
+                                      'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
                                       'PrePulse_Repump_amp': 1,  # relative
                                       'PrePulse_CH2_freq': 133.325e6, # Hz
                                       'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],
@@ -396,12 +396,13 @@ Operation_Modes = {
                                         'M_off_time': 5,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
                                         },
                     'PrePGC_Fountain': {'Triggering_Phase': 'Pulse_1',
-                                        'Fountain_final_Delta_freq': 0.5e6,
+                                        'Fountain_final_Delta_freq': 0.45e6,
                                         'PrePulse_CH2_freq': 133.325e6,  # Hz #Ziv Added for Cooling optimization
                                         'Pulse_1_CH1_Freq_f': Initial_Values['Flash_freq'],
                                         'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'],
                                         # Fountain
                                         'Fountain_duration': 0.5,        # [msec]
+                                        # 'Fountain_duration': 0,        # [msec]
                                         'Fountain_prep_duration': 0.5,  # [msec], Can't be zero!!!
                                         # Imaging
                                         'Imaging_Phase': 'Pulse_1',
