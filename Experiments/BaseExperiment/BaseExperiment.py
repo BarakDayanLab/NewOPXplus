@@ -436,7 +436,8 @@ class BaseExperiment:
         if str(key) == "'q'" or str(key) == "'Q'":
             self.halt_experiment = True
 
-        if key == keyboard.Key.esc and self.alt_modifier == 'SHIFT':
+        if key == keyboard.Key.esc:
+        #if key == keyboard.Key.esc and self.alt_modifier == 'SHIFT':
             self.halt_experiment = True
 
         # TODO: Generalize it to be in the form of "ALT-SPACE" or "CTRL-SPACE" or "SHIFT-ESC"
@@ -658,10 +659,12 @@ class BaseExperiment:
                 if mode == 'FACTOR_AND_CAST':
                     io2 = self.transformer.transform(key, value)
                     self.update_io_parameter(io1, io2)
-                else:
+                elif mode == 'TRANSFORM':
                     msg = f'\n\nTransformer currently does not handle mode {mode}. Call Dror.\n\n'
                     self.logger.error(msg)
                     raise Exception(msg)
+                else:
+                    pass
             else:
                 msg = f'"{key}" is not in Values_Factor map!'
                 self.logger.error(msg)

@@ -32,7 +32,7 @@ class Values_Transformer:
         """
         if key not in Values_Factor:
             self.logger.error(f'Cannot find {key} in Values_Factor map')
-        return MODES[len(Values_Factor[key])]
+        return self.MODES[len(Values_Factor[key])]
 
     def factor_and_cast(self, key, value):
         # TODO
@@ -49,9 +49,9 @@ Values_Factor = {
     # "QRAM_Exp_switch": [bool, None, QRAM_Exp_switch],
     
     # TODO: do we need these? Just for updaing values thru the console? Are we switching modes during experiment?
-    #"Transit_Exp_switch": [bool],
-    #"Spectrum_Exp_switch": [bool],
-    #"QRAM_Exp_switch": [bool],
+    "Transit_Exp_switch": [bool],
+    "Spectrum_Exp_switch": [bool],
+    "QRAM_Exp_switch": [bool],
 
     # TODO: this is the only setting that relies on Config - can we replace it with something?
     'MOT_duration': [int, 1e6 / Config.MOT_pulse_len],

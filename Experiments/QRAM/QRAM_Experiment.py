@@ -225,6 +225,9 @@ class QRAM_Experiment(BaseExperiment):
     def Linear_PGC_switch(self, Bool):
         self.update_io_parameter(2, Bool)
 
+    def Experiment_Switch(self, experiment_on_off):
+        self.update_io_parameter(4, experiment_on_off)
+
     def Transit_Exp_switch(self, Bool):
         # self.Transit_switch = Bool
         # self.update_io_parameter(3, Bool)
@@ -1257,8 +1260,7 @@ class QRAM_Experiment(BaseExperiment):
 
             if not self.should_continue():
                 self.logger.blue('ESC pressed. Stopping measurement.')
-                self.updateValue("Sprint_Exp_switch",
-                                 False)  # TODO: why are we still using the SPRINT_EXP - we need a generic switch name
+                self.updateValue("Experiment_Switch", False)
                 self.MOT_switch(True)
                 self.update_parameters()
                 break
@@ -1506,7 +1508,7 @@ class QRAM_Experiment(BaseExperiment):
             # TODO: need to handle this part - why is it here?
             if self.keyPress == 'ESC':
                 self.logger.blue('ESC pressed. Stopping measurement.')
-                self.updateValue("QRAM_Exp_switch", False)
+                self.updateValue("Experiment_Switch", False)
                 self.MOT_switch(True)
                 #self.Stop_run_daily_experiment = True
                 self.update_parameters()
@@ -1575,7 +1577,7 @@ class QRAM_Experiment(BaseExperiment):
                     break
                 if self.keyPress == 'ESC':
                     self.logger.blue('ESC pressed. Stopping measurement.')
-                    self.updateValue("QRAM_Exp_switch", False)
+                    self.updateValue("Experiment_Switch", False)
                     self.MOT_switch(True)
                     self.update_parameters()
                     # Other actions can be added here
@@ -1822,7 +1824,7 @@ class QRAM_Experiment(BaseExperiment):
         }
         self.bd_results.save_results(results)
 
-        self.updateValue("QRAM_Exp_switch", False)
+        self.updateValue("Experiment_Switch", False)
         self.update_parameters()
 
     def generate_experiment_summary_line(self, pre_comment, aftComment, with_atoms, counter):
@@ -1880,7 +1882,7 @@ class QRAM_Experiment(BaseExperiment):
 
         # Set switches
         # TODO: Can we move here to Enums?
-        self.QRAM_Exp_switch(True)
+        self.Experiment_Switch(True)
         self.MOT_switch(rp['with_atoms'])
         self.update_parameters()
 

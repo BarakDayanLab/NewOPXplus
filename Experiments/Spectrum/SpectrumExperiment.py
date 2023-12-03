@@ -233,6 +233,9 @@ class SpectrumExperiment(BaseExperiment):
     def Linear_PGC_switch(self, Bool):
         self.update_io_parameter(2, Bool)
 
+    def Experiment_Switch(self, experiment_on_off):
+        self.update_io_parameter(4, experiment_on_off)
+
     def Transit_Exp_switch(self, Bool):
         self.Transit_switch = Bool
         self.update_io_parameter(3, Bool)
@@ -661,7 +664,7 @@ class SpectrumExperiment(BaseExperiment):
                         # finish of the transit:
                         self.Cavity_atom_spectrum[((((i + 1) * Config.frequency_sweep_duration * 2) %
                                                experiment.M_window) // (
-                                                          Config.frequency_sweep_duration* 1000)) %
+                                                          Config.frequency_sweep_duration * 1000)) %
                                              self.spectrum_bin_number] += self.tt_S_binning_detuned[i + 1]
                     current_transit = [index]
                 else:
@@ -671,6 +674,9 @@ class SpectrumExperiment(BaseExperiment):
                         current_transit = current_transit[t[0]:] + [index]
                     else:
                         current_transit = [index]
+
+        if self.spectrum_bin_number == 0:
+            return
 
         for index, value in enumerate(self.tt_S_binning_detuned):
             if index not in [vec for elem in self.all_transits for vec in elem]:
@@ -1003,8 +1009,8 @@ class SpectrumExperiment(BaseExperiment):
 
             if not self.should_continue():
                 self.logger.blue('ESC pressed. Stopping measurement.')
-                self.updateValue("Spectrum_Exp_switch", False)
-                self.MOT_switch(True)
+                self.updateValue("Experiment_Switch", False)
+                self.MOT_switch(True)  # Return the atoms (even if we ran experiment w/o atoms)
                 self.update_parameters()
                 break
 
@@ -1024,6 +1030,7 @@ class SpectrumExperiment(BaseExperiment):
                     break
 
             cycle += 1
+            time.sleep(0.01)  # in seconds
 
         ############################# WHILE 1 - END #############################
 
@@ -1079,7 +1086,7 @@ class SpectrumExperiment(BaseExperiment):
                 [i for i, x in enumerate(self.tt_S_binning_batch[0]) if x > transit_counts_threshold]] -= 1
 
         # --------------------------------------------------------------
-        # Put into batches
+        # Put into batches - we're always ensuring we have maximum N elements (FIFO style)
         # --------------------------------------------------------------
 
         self.tt_N_measure_batch = self.tt_N_measure_batch[-(N - 1):] + [self.tt_N_directional_measure]
@@ -1092,7 +1099,7 @@ class SpectrumExperiment(BaseExperiment):
         self.S_bins_detuned_acc = np.sum(np.array(self.tt_S_binning_detuned_batch), 0)  # tt_S_binning_resonance accumulated (sum over the batch)
 
 
-        FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
+        FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]  # No need for the .toList()
         Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
         lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
 
@@ -1127,20 +1134,18 @@ class SpectrumExperiment(BaseExperiment):
 
         while True:
             # TODO: need to handle this part - why is it here?
-            if self.keyPress == 'ESC':
+            if not self.should_continue():
                 self.logger.blue('ESC pressed. Stopping measurement.')
                 self.updateValue("QRAM_Exp_switch", False)
                 self.MOT_switch(True)
-                #self.Stop_run_daily_experiment = True
                 self.update_parameters()
-                # Other actions can be added here
                 break
-            if self.keyPress == 'SPACE' and not self.pause_flag:
+            if self.keyPress == 'ALT_SPACE' and not self.pause_flag:
                 self.logger.blue('SPACE pressed. Pausing measurement.')
                 self.pause_flag = True
                 self.keyPress = None
                 # Other actions can be added here
-            if self.keyPress == 'SPACE' and self.pause_flag:
+            if self.keyPress == 'ALT_SPACE' and self.pause_flag:
                 self.logger.blue('SPACE pressed. Continuing measurement.')
                 self.pause_flag = False
                 self.keyPress = None
@@ -1335,7 +1340,7 @@ class SpectrumExperiment(BaseExperiment):
         }
         self.bd_results.save_results(results)
 
-        self.updateValue("Spectrum_Exp_switch", False)
+        self.updateValue("Experiment_Switch", False)
         self.update_parameters()
 
     def generate_experiment_summary_line(self, pre_comment, aftComment, with_atoms, counter):
@@ -1372,7 +1377,7 @@ class SpectrumExperiment(BaseExperiment):
         rp = run_parameters  # Set so we can use in short - "rp", instead of "run_parameters"...
 
         # Set switches
-        self.Spectrum_Exp_switch(True)
+        self.updateValue("Experiment_Switch", True)
         self.MOT_switch(rp['with_atoms'])
         self.update_parameters()
 

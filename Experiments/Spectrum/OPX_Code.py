@@ -467,7 +467,7 @@ def opx_control(obj, qm):
 
         # Boolean variables:
         AntiHelmholtz_ON = declare(bool, value=True)
-        QRAM_Exp_ON = declare(bool, value=True)
+        Experiment_ON = declare(bool, value=True)
 
         # MOT variables
         MOT_Repetitions = declare(int, value=obj.Exp_Values['MOT_rep'])
@@ -580,7 +580,7 @@ def opx_control(obj, qm):
             align(*all_elements)
 
             # FreeFall sequence:
-            with if_(QRAM_Exp_ON):
+            with if_(Experiment_ON):
                 assign(x, (
                             30678780 - 3106 + 656000 * 2 + 4) // 4)  # TODO -  added 38688900 to fix new delay due to wait(1000) in saving sprint data with vector size 10000, should be fixed as well
             with else_():
@@ -597,7 +597,7 @@ def opx_control(obj, qm):
                 ################################################
 
             align("Cooling_Sequence", "AOM_Early", "AOM_Late")
-            with if_(QRAM_Exp_ON):
+            with if_(Experiment_ON):
                 wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
             with else_():
                 wait(PrePulse_duration, "Cooling_Sequence")
@@ -609,14 +609,14 @@ def opx_control(obj, qm):
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
             ## For taking an image:
-            with if_((Pulse_1_duration > 0) & ~QRAM_Exp_ON):
+            with if_((Pulse_1_duration > 0) & ~Experiment_ON):
                 align(*all_elements)
                 Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
                                 pulse_1_duration_minus, pulse_1_duration_plus)
                 Measure(Pulse_1_duration)  # This triggers camera (Control 7)
                 align(*all_elements)
 
-            with if_((Pulse_1_duration > 0) & QRAM_Exp_ON):
+            with if_((Pulse_1_duration > 0) & Experiment_ON):
                 align("Dig_detectors", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "AOM_Spectrum")
                 # Transit_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
                 #             ON_counts_st1, ON_counts_st2, ON_counts_st3,
@@ -638,6 +638,9 @@ def opx_control(obj, qm):
 
             assign(N_Snaps, 1)
             assign(Buffer_Cycles, 0)
+
+            # IO1 - contains the Key, IO2 - contains the Value
+            # Assign the work-mode (IO1) into i
             assign(i, IO1)
 
             ## PARAMETERS UPDATE ##
@@ -649,8 +652,8 @@ def opx_control(obj, qm):
                     update_frequency("MOT_AOM_0", Config.IF_AOM_MOT)
                 with if_(i == 2):
                     update_frequency("MOT_AOM_0", Config.IF_AOM_MOT_OFF)
-                with if_(i == 4):
-                    assign(QRAM_Exp_ON, IO2)
+                with if_(i == 4):  # We are setting here the experiment ON/OFF
+                    assign(Experiment_ON, IO2)
                 # ## AntiHelmholtz control ##
                 # with if_(i == 10):
                 #     assign(antihelmholtz_delay, IO2)

@@ -639,6 +639,9 @@ IOParametersMapping = {
   "SPRINT_Exp_switch": 4,
   "CRUS_Exp_switch": 4,
   "QRAM_Exp_switch": 4,
+
+  "Experiment_Switch": 4,
+
   "AntiHelmholtz_Delay_switch": 5,
   "Max_Probe_counts_switch": 6,
   "AntiHelmholtz_delay": 10,
