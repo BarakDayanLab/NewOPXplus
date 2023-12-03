@@ -19,7 +19,7 @@ from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
 from Utilities.Utils import Utils
 
 
-class QRAM_Experiment(BaseExperiment):
+class QRAMExperiment(BaseExperiment):
     def __init__(self):
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
         super().__init__()
@@ -1944,7 +1944,7 @@ if __name__ == "__main__":
         ]
     }
 
-    experiment = QRAM_Experiment()
+    experiment = QRAMExperiment()
 
     # TODO: REMOVE, for debug only
     sequence_definitions = None
