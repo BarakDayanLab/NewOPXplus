@@ -715,10 +715,12 @@ class BaseExperiment:
         self.io1_list.append(io1)
         self.io2_list.append(io2)
 
-    # TODO: need to better understand some of the vodoo going on in this func...
-    # TODO: also - why aren't we disconnecting from QuadRF ?
     # TODO: why are we sending first pair of parameters and then the rest?
     def update_parameters(self):
+        """
+        Update the OPX - "push" all [key,value] pairs that are awaiting on the io1_list and io2_list
+        We do so by setting one pair, then waiting for the OPX to pause its work, signaling us we can send the next pair
+        """
         # If needed, update the QuadRF controller
         if len(self.Update_QuadRF_channels) != 0:
             quadController = QuadRFMOTController(initialValues=self.Exp_Values,
@@ -756,8 +758,8 @@ class BaseExperiment:
         self.io1_list = []
         self.io2_list = []
 
-        # TODO: why do we need this? If we call updateValue (which calls update_parameters)
-        # TODO: we update the config table file, BUT - at the end, when we save results, we override it anyway
+        # TODO: This call was here to save the experiment values on EVERY update. It puts all files, timestampes, in an archive folder
+        # TODO: We dont seem to be using it, so it's commented out
         # Save Config_Table to a file with timestamp:
         # self.save_config_table()
 

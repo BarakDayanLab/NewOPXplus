@@ -639,13 +639,19 @@ def opx_control(obj, qm):
             assign(N_Snaps, 1)
             assign(Buffer_Cycles, 0)
 
-            # IO1 - contains the Key, IO2 - contains the Value
-            # Assign the work-mode (IO1) into i
+            #-------------------------------------------------------------------------------
+            # Parameters updating:
+            # - IO1: contains the Key
+            # - IO2: contains the Value
+            # This is done by a "dual-dance" between the OPX and the Python code
+            # This code updates one value, pauses, signaling the Python to send another, then updates here, etc.
+            #-------------------------------------------------------------------------------
+            # TODO: move this code into a separate function - its generic and does not need to be in all experiments
             assign(i, IO1)
-
-            ## PARAMETERS UPDATE ##
             with if_(i > 0):
                 pause()
+
+            # We will break the loop only when receiving a value of 0 - this marks the end of parameters to be updated
             with while_(i > 0):
                 ## Boolean variables control: ##
                 with if_(i == 1):
@@ -701,7 +707,10 @@ def opx_control(obj, qm):
                 # with if_(i == 59):  # Live control of the delay due to shutter opening time.
                 #     assign(shutter_open_time, IO2)
 
+                # Signal the Python code to send the next [key/value] pair
                 pause()
+
+                # We got a new [key/value] pair - we are setting the "key" - IO1 into i to continue the loop
                 assign(i, IO1)
 
         # TODO: can we replace this with a single loop?
