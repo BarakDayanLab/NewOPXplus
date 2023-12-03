@@ -401,12 +401,12 @@ Operation_Modes = {
                                         'Pulse_1_CH1_Freq_f': Initial_Values['Flash_freq'],
                                         'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'],
                                         # Fountain
-                                        'Fountain_duration': 0.5,        # [msec]
-                                        # 'Fountain_duration': 0,        # [msec]
+                                        # 'Fountain_duration': 0.5,        # [msec]
+                                        'Fountain_duration': 0,        # [msec]
                                         'Fountain_prep_duration': 0.5,  # [msec], Can't be zero!!!
                                         # Imaging
                                         'Imaging_Phase': 'Pulse_1',
-                                        'PrePulse_duration': 1,  # [msec]
+                                        'PrePulse_duration': 5,  # [msec]
                                         'Pulse_1_duration': 0.2,       # [msec]
                                         },
                     'Fountain': {

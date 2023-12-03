@@ -473,6 +473,9 @@ def opx_control(obj, qm):
         # General measurements variables:
         Trigger_delay = declare(int, value=int(obj.Exp_Values['Trigger_delay'] * 1e6 / 4))
         PrePulse_duration = declare(int, value=int(obj.Exp_Values['PrePulse_duration'] * 1e6 / 4))
+        PushBeam_duration = declare(int, value=100000)
+        OD_freq = declare(int, value=int(Config.IF_AOM_OD))
+        PushBeam_Amp = declare(fixed, value=1)
 
         # Pulse_1_parameters:
         Pulse_1_duration = declare(int, value=int(obj.Exp_Values['Pulse_1_duration'] * 1e6 / 4))
@@ -550,11 +553,11 @@ def opx_control(obj, qm):
             align(*all_elements)
 
             # Fountain sequence:
-            wait(fountain_duration, "Cooling_Sequence")
-            Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
-                                       fountain_pulse_duration_0, fountain_pulse_duration_minus,
-                                       fountain_pulse_duration_plus, fountain_aom_chirp_rate,
-                                       fountain_delta_f)
+            # wait(fountain_duration, "Cooling_Sequence")
+            # Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
+            #                            fountain_pulse_duration_0, fountain_pulse_duration_minus,
+            #                            fountain_pulse_duration_plus, fountain_aom_chirp_rate,
+            #                            fountain_delta_f)
 
             # PGC sequence:
             wait(pgc_duration, "Cooling_Sequence")
@@ -576,12 +579,15 @@ def opx_control(obj, qm):
                 ## Trigger QuadRF Sequence #####################
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
-
+            align(*all_elements, "AOM_2-2/3'")
             with if_(Transits_Exp_ON):
                 wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
+                # for push beam
             with else_():
                 wait(PrePulse_duration, "Cooling_Sequence")
-            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "Dig_detectors") # , "Dig_detectors"
+                # for push beam
+                play("OD_FS" * amp(PushBeam_Amp), "AOM_2-2/3'", duration=PushBeam_duration)
+            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "Dig_detectors")
 
             with if_(Trigger_Phase == 4):  # when trigger on pulse 1
                 ## Trigger QuadRF Sequence #####################
@@ -677,6 +683,14 @@ def opx_control(obj, qm):
                     assign(N_Snaps, IO2)
                 with if_(i == 46):
                     assign(Buffer_Cycles, IO2)
+                with if_(i == 47):
+                    assign(PushBeam_duration, IO2)
+                with if_(i == 48):
+                    assign(PushBeam_Amp, IO2)
+                with if_(i == 49):
+                    assign(OD_freq, IO2)
+                    update_frequency("AOM_2-2/3'", OD_freq)
+
 
                 ## OD and N_atoms measuring variable control ##
                 with if_(i == 51):  # Live control of the Free Space OD measurement start time
@@ -1112,6 +1126,15 @@ class OPX:
 
     def MeasureOD_SNSPDs_duration(self, duration):
         self.update_io_parameter(45, int(duration / self.M_window * 1e6 / 4))
+
+    #push beam params
+    def update_PushBeam_duration(self, duration):
+        self.update_io_parameter(47, int(duration * 1e3 / 4)) # In [us]
+    def update_PushBeam_amp(self, Amp):
+        self.update_io_parameter(48, int(Amp)) # In [us]
+    def update_PushBeam_frequency(self, freq):
+        self.update_io_parameter(49, int(Config.IF_AOM_OD + freq))  # In [us]
+
 
     def Get_Max_Probe_counts(self, repetitions):
 
