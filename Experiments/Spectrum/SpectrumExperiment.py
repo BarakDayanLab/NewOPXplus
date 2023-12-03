@@ -115,7 +115,6 @@ class SpectrumExperiment(BaseExperiment):
         self.OD_FS_Start = self.Exp_Values['OD_FS_Start']  # [msec]
         self.OD_FS_sleep = self.Exp_Values['OD_FS_sleep']
         ## OD In-fiber/Transits:
-        self.Transit_switch = False
         self.prepulse_duration = self.Exp_Values['PrePulse_duration']
         self.OD_delay = self.Exp_Values['OD_delay']  # [msec]
         self.M_window = self.Exp_Values['M_window']  # [nsec]
@@ -1109,8 +1108,8 @@ class SpectrumExperiment(BaseExperiment):
 
         self.find_transit_events(N, transit_time_threshold=time_threshold, transit_counts_threshold=transit_counts_threshold)
 
-        self.Counter = 1  # Total number of successful cycles
-        self.repitions = 1  # Total number of cycles
+        counter = 1  # Total number of successful cycles
+        repetitions = 1  # Total number of cycles
         self.acquisition_flag = True
         self.threshold_flag = True
         self.pause_flag = False
@@ -1150,15 +1149,15 @@ class SpectrumExperiment(BaseExperiment):
                 self.pause_flag = False
                 self.keyPress = None
                 # Other actions can be added here
-            self.lockingEfficiency = self.Counter / self.repitions
-            self.logger.info(timest, self.Counter, 'Eff: %.2f' % self.lockingEfficiency,
+            self.lockingEfficiency = counter / repetitions
+            self.logger.info(timest, counter, 'Eff: %.2f' % self.lockingEfficiency,
                   'Flr: %.2f' % (1000 * np.average(self.FLR_res.tolist())))
-            self.repitions += 1
+            repetitions += 1
             ######################################## PLOT!!! ###########################################################
             ax = [ax1, ax2, ax3, ax4, ax5, ax6]
             self.plot_sprint_figures(fig, ax, Num_Of_dets)
             ############################################################################################################
-            if self.Counter == N:
+            if counter == N:
                 self.logger.info(f'finished {N} Runs, {"with" if with_atoms else "without"} atoms')
                 # Other actions can be added here
                 break
@@ -1233,20 +1232,20 @@ class SpectrumExperiment(BaseExperiment):
 
             if (self.threshold_flag or not exp_flag) and self.acquisition_flag and not self.pause_flag:
 
-                if self.Counter < N:
-                    self.Counter += 1
+                if counter < N:
+                    counter += 1
 
                 self.tt_N_binning = np.zeros(self.histogram_bin_number*2)
                 self.tt_S_binning = np.zeros(self.histogram_bin_number*2)
                 self.tt_S_transit_events = np.zeros(self.histogram_bin_number*2)
 
-                self.tt_S_binning_avg = self.tt_S_binning_avg * (1 - 1 / self.Counter)
+                self.tt_S_binning_avg = self.tt_S_binning_avg * (1 - 1 / counter)
 
                 for x in self.tt_N_directional_measure:
                     self.tt_N_binning[(x - 1) // self.histogram_bin_size] += 1
                 for x in self.tt_S_no_gaps:
                     self.tt_S_binning[(x - 1) // self.histogram_bin_size] += 1
-                    self.tt_S_binning_avg[(x - 1) // self.histogram_bin_size] += 1 / self.Counter
+                    self.tt_S_binning_avg[(x - 1) // self.histogram_bin_size] += 1 / counter
 
                 self.tt_N_measure_batch = self.tt_N_measure_batch[-(N - 1):] + [self.tt_N_directional_measure]
                 self.tt_N_binning_batch = self.tt_N_binning_batch[-(N - 1):] + [self.tt_N_binning]
@@ -1281,7 +1280,7 @@ class SpectrumExperiment(BaseExperiment):
 
         ## Adding comment to measurement [prompt whether stopped or finished regularly]
         if exp_flag:
-            if self.Counter < N:
+            if counter < N:
                 aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
             else:
                 aftComment = ''
@@ -1332,7 +1331,7 @@ class SpectrumExperiment(BaseExperiment):
 
             "exp_comment": f'transit condition: minimum time between reflection = {time_threshold} with at least {transit_counts_threshold} reflections ; reflection threshold: {total_counts_threshold} MCounts / sec',
 
-            "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, with_atoms, self.Counter),
+            "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, with_atoms, counter),
 
             "max_probe_counts": "TBD",
 

@@ -60,9 +60,6 @@ class BaseExperiment:
         # Setup console logger. We do this first, so rest of code can use logging functions.
         self.logger = BDLogger()
 
-        # This should be set later by run parameters. If not, no error file can be read
-        self.lock_error_file = None
-
         # Set paths map
         self._set_paths_map()
 
@@ -75,6 +72,10 @@ class BaseExperiment:
 
         # Initialize the BDResults helper - for saving experiment results
         self.bd_results = BDResults(json_map_path=self.paths_map['cwd'], version="0.1")
+
+        # Set the location of the locking error file - this is a generic file that serves as communication between
+        # the the locking application that runs on a different computer. The file contains the current PID error value.
+        self.lock_error_file = os.path.join(self.bd_results.get_experiment_root(), 'Locking_PID_Error', 'locking_err.npy')
 
         # Dynamically import the config file
         try:
