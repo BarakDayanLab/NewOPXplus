@@ -125,6 +125,7 @@ Initial_Values = {
     'PrePulse_duration': 1,        # [msec]
     'Shutter_open_time': 0,  # [msec]
     'PrePulse_Repump_amp': 1,  # relative
+    'PrePulse_CH1_freq': -1,  # [Hz]
 
     'Pulse_1_amp_i': 1,              # relative amplitude 0 to 1 (change in db is calculated by script)
     'Pulse_1_amp_f': 1,              # relative amplitude 0 to 1 (change in db is calculated by script)
@@ -164,6 +165,8 @@ Operation_Modes = {
                     'Default_Values': {
                                         'MOT_rep': int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config.MOT_pulse_len)),
                                         'Triggering_Phase': 'Pulse_1',
+                                        'PrePulse_CH1_freq': Initial_Values['PGC_final_freq'],  # [Hz]
+                                        'PrePulse_CH2_freq': 133.325e6,  # Hz
                                         'Pulse_1_CH1_Freq_i': Initial_Values['MOT_freq'],
                                         # 'Pulse_1_CH1_Freq_i': Initial_Values['Flash_freq'],
                                         'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],
@@ -173,7 +176,6 @@ Operation_Modes = {
                                         'Pulse_2_CH1_Freq': Initial_Values['MOT_freq'],
                                         'Pulse_2_CH_2_3_Freq': Initial_Values['MOT_AOM_freq'],
                                         'Pulse_2_CH4_Freq': Initial_Values['AOM_Repump_freq'],
-                                        'PrePulse_CH2_freq': 133.325e6,  # Hz
 
                                         # Fountain
                                         'Fountain_initial_Delta_freq': 0,         # By default, should be taken from previous phase
@@ -635,6 +637,7 @@ IOParametersMapping = {  # These are chans. in OPX, and should all be int(s). Th
   "Fountain_final_Delta_freq": 39,
   "Trigger_delay": 41,
   "PrePulse_duration": 42,
+  "PrePulse_CH1_freq": 49,
   "Pulse_1_duration": 43,
   "Pulse_1_decay_duration": 44,
   "N_Snaps": 45,
@@ -692,6 +695,7 @@ Key_to_Channel = {
     'AOM_Off_Detuning': [4],      # [Hz]; Frequency for essentially turnning light coming from AONs off
     'Snapshot_Intervals': [1,4],   # [msec]
     'PrePulse_duration': [1,4],            # [msec]
+    'PrePulse_CH1_freq': [1],            # [Hz]
     'Trigger_delay': [1,4],          # [msec]
     'Pulse_1_duration': [1,4],       # [msec]
     'InterPulses_duration': [1, 4], # [msec]; Time between pulse 1 & 2.
