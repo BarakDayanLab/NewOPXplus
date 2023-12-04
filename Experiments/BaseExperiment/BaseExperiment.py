@@ -16,7 +16,7 @@ from Utilities.BDResults import BDResults
 from Experiments.BaseExperiment import Config_Table
 from Experiments.BaseExperiment import Config_Experiment as Config  # Attempt to load the default config (may be overriden later)
 from Experiments.BaseExperiment import OPX_Code  # Attempt to load the OPX Code (may be overriden later)
-from Experiments.BaseExperiment.Config_Table import Initial_Values
+from Experiments.BaseExperiment.Config_Table import Default_Values
 from Experiments.BaseExperiment.Values_Transformer import Values_Transformer
 from Experiments.BaseExperiment.QuadRFMOTController import QuadRFMOTController
 
@@ -66,8 +66,6 @@ class BaseExperiment:
         # Debugging plot
         self.dbg_plot = None
 
-        self.Exp_Values = Initial_Values  # Initialize experiment values to be as in Config_Table.py
-
         self.transformer = Values_Transformer()
 
         # Initialize the BDResults helper - for saving experiment results
@@ -77,9 +75,14 @@ class BaseExperiment:
         # the the locking application that runs on a different computer. The file contains the current PID error value.
         self.lock_error_file = os.path.join(self.bd_results.get_experiment_root(), 'Locking_PID_Error', 'locking_err.npy')
 
-        # Dynamically import the config file
+        # Load default values as the experiment values
+        self.Exp_Values = Default_Values  # Initialize experiment values to be as in the BaseExperiment Config_Table.py
+
+        # Dynamically import the config-experiment and config-table and merge the values
         try:
             Config = importlib.import_module("Config_Experiment")
+            ConfigTable = importlib.import_module("Config_Table")
+            self.Exp_Values = Utils.merge_multiple_jsons([self.Exp_Values, ConfigTable.Experiment_Values])
         except Exception as err:
             self.warn(f'Unable to import Config file ({err})')
 
@@ -153,8 +156,6 @@ class BaseExperiment:
     # Initialize the Base-Experiment: QuadRF/MOT/PGC/FreeFall
     # (a) Initialize QuadRF (b) Set experiment related variables (c) Initialize OPX
     def initialize_experiment(self):
-
-        self.Exp_Values = Initial_Values  # Initialize experiment values to be as in Config_Table.py
 
         # Initialize QuadRF
         self.initiliaze_QuadRF()
@@ -375,24 +376,30 @@ class BaseExperiment:
 
     # Returns the error of the locking mechanism of the resonator to Rb line
     def _read_locking_error(self):
-        if self.lock_error_file == None:
+        if self.lock_error_file is None:
             self.logger.warn('Lock error file not defined. Not reading error signal.')
             return None
 
-        max_time = 100 * 60  # The delay is 10 milli-seconds, so this is one minute
+        max_time = 10  # We will wait 0.1 sec for the file
         lock_err = None
         ticks = 0
-        while lock_err == None:
+        while lock_err is None:
             try:
                 data = np.load(self.lock_error_file, allow_pickle=True)
                 lock_err = np.abs(data)
                 break
+            except FileNotFoundError as err:
+                pass  # We need to wait, the file may appear... (being written by another computer on a shared file-system)
             except Exception as err:
                 self.logger.error(f'Error in loading lock-error file. {err}')
+                break
             time.sleep(0.01)  # in seconds
             ticks = ticks + 1
             if ticks > max_time:
                 break
+        if lock_err is None:
+            self.logger.error(f'Unable to find/load lock-error file.')
+
         return lock_err
 
     #--------------------------
@@ -431,7 +438,7 @@ class BaseExperiment:
         return False
 
     def _on_release(self, key):
-        self.halt_experiment = False
+        #self.halt_experiment = False  # TODO: if this works - throw this line
         self.ignore_data = False
 
         if str(key) == "'q'" or str(key) == "'Q'":
@@ -440,6 +447,7 @@ class BaseExperiment:
         if key == keyboard.Key.esc:
         #if key == keyboard.Key.esc and self.alt_modifier == 'SHIFT':
             self.halt_experiment = True
+            self.keyPress = 'ESC'
 
         # TODO: Generalize it to be in the form of "ALT-SPACE" or "CTRL-SPACE" or "SHIFT-ESC"
         if key == keyboard.Key.space and self.alt_modifier == 'ALT':
@@ -656,8 +664,10 @@ class BaseExperiment:
         if key in Config_Table.IOParametersMapping:
             io1 = Config_Table.IOParametersMapping[key]
             if self.transformer.knows(key):
-                mode = self.transformer.mode(key) 
-                if mode == 'FACTOR_AND_CAST':
+                mode = self.transformer.mode(key)
+                if mode == 'SET_VALUE':
+                    self.update_io_parameter(io1, value)
+                elif mode == 'FACTOR_AND_CAST':
                     io2 = self.transformer.transform(key, value)
                     self.update_io_parameter(io1, io2)
                 elif mode == 'TRANSFORM':

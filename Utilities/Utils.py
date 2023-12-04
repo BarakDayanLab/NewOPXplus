@@ -116,6 +116,10 @@ class Utils:
 
     @staticmethod
     def merge_multiple_jsons(array_of_jsons):
+        """
+        Given an array of jsons, we merge them one onto the other, going from left to right
+        This means that the first json in the array is the "weakest" and the last is the "strongest"
+        """
         if len(array_of_jsons)==1:
             return array_of_jsons[0]
 

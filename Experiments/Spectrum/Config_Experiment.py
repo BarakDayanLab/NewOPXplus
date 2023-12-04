@@ -4,6 +4,9 @@ import json
 import math
 from Utilities.Utils import Utils
 
+Spectrum_Exp_Gaussian_samples = [0] * 10 + (signal.gaussian(220, std=30) * 0.4).tolist() + [0] * 10
+readout_pulse_spectrum_len = int(len(Spectrum_Exp_Gaussian_samples) * 1000 * 21 * 4)
+
 # TODO 1 - can we move elsewhere?
 # TODO 2 - rename it from QRAM to Spectrum, or generic name (also rename parameters)
 def QRAM_Exp_Gaussian_samples(sprint_pulse_len=110, det_pulse_len=30, det_pulses_amp=[0.4]*6, sprint_pulses_amp=[0.4]*4,
@@ -504,9 +507,7 @@ LO_pulse_samples = ([0.4] * 20) + [0] * 100
 # - Waveforms: sample (amplitude) must not exceed 0.5 v (OPX will not alert, but perform modulu)
 #------------------------------------------------------
 config = {
-
     'version': 1,
-
     'controllers': {
         controller: {
             'type': 'opx1',

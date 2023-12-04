@@ -45,16 +45,14 @@ class CoolingSequenceOptimizer(BaseExperiment):
             extraFilesPath = os.path.join(path, 'extra_files')
         else:
             # --- create path and save config -----
-            timeStamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-            path = f'U:\\Lab_2021-2022\\Experiment_results\\Temperature\\{timeStamp}'
+            path = self.bd_results.get_root()
             extraFilesPath = os.path.join(path, 'extra_files')
             if not os.path.exists(path):
                 os.makedirs(path)
             if not os.path.exists(extraFilesPath):
                 os.makedirs(extraFilesPath)
-            if saveConfig:
-                self.saveConfigTable(path=extraFilesPath)
-
+            # if saveConfig:
+            #     self.save_config_table(path=extraFilesPath)
         return (path, extraFilesPath)
 
     def fitVy_0FromGaussianFitResults(self, gaussianFitResult, extraFilesPath,fit_for_alpha=False, plotResults = True):
@@ -115,9 +113,8 @@ class CoolingSequenceOptimizer(BaseExperiment):
                 self.warn('Cannot connect to camera - maybe app is open?')
                 return
 
-            # TODO: TEMP - REMOVE
-            path = r'C:\temp\dror_debug'
-
+            # TODO: May want to refactor the "createPathFor..." and use BDResults instead - to create the folders for the files
+            # self.bd_results.create_root_folder()
             path, extraFilesPath = self.createPathForTemperatureMeasurement(path, saveConfig=True)
 
             # ---- Take photos  -----

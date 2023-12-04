@@ -1,9 +1,9 @@
 {
 	"version": "0.1",
 	"strict": false,
-	"experiments_root": "C:\\temp\\refactor_debug",
-	"experiment_root": "C:\\temp\\refactor_debug\\SPECTRUM",
-	"root": "C:\\temp\\refactor_debug\\SPECTRUM\\{current_date}\\{current_time}_Photon_TimeTags",
+	"experiments_root": "C:\\temp\\refactor_debug\\Experiment_results",
+	"experiment_root": "C:\\temp\\refactor_debug\\Experiment_results\\Spectrum",
+	"root": "C:\\temp\\refactor_debug\\Experiment_results\\Spectrum\\{current_date}\\{current_time}_Photon_TimeTags",
 	"files": [
 
 		{
@@ -163,9 +163,16 @@
 		},
 
 		{
-			"OUTPUT FILES - FLOURESENCE/LOCK-ERROR": "-----------------------------------"
+			"OUTPUT FILES - FLOURESENCE/LOCK-ERROR/Drops": "-----------------------------------"
 		},
 
+		{
+			"data": "exp_timestr",
+			"name": "Drops Time",
+			"file_name": "Drops_time_stamps",
+			"folder": "Output",
+			"type": "npz"
+		},
 		{
 			"data": "FLR_measurement",
 			"name": "Flouresence",

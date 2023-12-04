@@ -1,11 +1,7 @@
+from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
 from Experiments.QRAM import Config_Experiment as Config
 
-# TODO: fix this to import only what's needed - not to re-import again all the world...
-# TODO: fix this also in other files (other experiments)
-from Experiments.BaseExperiment.Config_Table import Phases_Names, Values_Factor
-
-from Experiments.BaseExperiment.QuadRFMOTController import QuadRFMOTController
-
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -13,9 +9,7 @@ import json
 import os
 import math
 from playsound import playsound
-from Experiments.BaseExperiment import Config_Table
 from UtilityResources.HMP4040Control import HMP4040Visa
-from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
 from Utilities.Utils import Utils
 
 
@@ -270,28 +264,6 @@ class QRAMExperiment(BaseExperiment):
         # self.update_io_parameter(21, int(prep_time * 1e6 / 4))
         self._update_io_parameter("PGC_prep_duration", prep_time)
 
-    def _update_io_parameter(self, key, value):
-        """
-        Generic function to update any parameter. It will weigh in a factor, and update the FPGA
-
-        :param key: The string representation of the parameter (e.g. "PGC_prep_duration")
-        :param value: The value we want to update
-        :return: the weighted value
-        """
-        # Get the register number we use
-        io1 = Config_Table.IOParametersMapping[key]
-        io2 = None
-        # Get the type and factor
-        valueType = Values_Factor[key][0]
-        if len(Values_Factor[key]) == 2:
-            valueFactor = Values_Factor[key][1]
-            # Cast to the relevant type (int, float)
-            io2 = valueType(value * valueFactor)
-        else:
-            io2 = value
-        # Update the OPX
-        self.update_io_parameter(io1, io2)
-        return io2
 
     ## Fountain variable update functions: ##
 
@@ -1482,7 +1454,7 @@ class QRAMExperiment(BaseExperiment):
 
         self.save_tt_to_batch(Num_Of_dets, N)
         self.Counter = 1  # Total number of successful cycles
-        self.repitions = 1  # Total number of cycles
+        self.repetitions = 1  # Total number of cycles
         self.acquisition_flag = True
         self.threshold_flag = True
         self.pause_flag = False
@@ -1499,8 +1471,7 @@ class QRAMExperiment(BaseExperiment):
         ax6 = plt.subplot2grid((3, 4), (2, 2), colspan=2, rowspan=1)
         ax7 = ax3.twinx()
 
-        figManager = plt.get_current_fig_manager()
-        figManager.window.showMaximized()
+        #self.maximize_figure()  # TODO: uncomment
 
         ############################################ START WHILE LOOP #################################################
 
@@ -1510,9 +1481,7 @@ class QRAMExperiment(BaseExperiment):
                 self.logger.blue('ESC pressed. Stopping measurement.')
                 self.updateValue("Experiment_Switch", False)
                 self.MOT_switch(True)
-                #self.Stop_run_daily_experiment = True
                 self.update_parameters()
-                # Other actions can be added here
                 break
             if self.keyPress == 'SPACE' and not self.pause_flag:
                 self.logger.blue('SPACE pressed. Pausing measurement.')
@@ -1524,10 +1493,13 @@ class QRAMExperiment(BaseExperiment):
                 self.pause_flag = False
                 self.keyPress = None
                 # Other actions can be added here
-            self.lockingEfficiency = self.Counter / self.repitions
-            self.logger.info(timest, self.Counter, 'Eff: %.2f' % self.lockingEfficiency,
-                             'Flr: %.2f' % (1000 * np.average(self.FLR_res.tolist())))
-            self.repitions += 1
+            self.lockingEfficiency = self.Counter / self.repetition
+            eff_formatted = '%.2f' % self.lockingEfficiency
+            flr_formatted = '%.2f' % (1000 * np.average(self.FLR_res.tolist()))
+            time_formatted = time.strftime("%Y/%m/%d, %H:%M:%S")
+            self.logger.info(f'{time_formatted}: cycle {counter}, Eff: {eff_formatted}, Flr: {flr_formatted}')
+
+            self.repetition += 1
             ######################################## PLOT!!! ###########################################################
             ax = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
             self.plot_sprint_figures(fig, ax, Num_Of_dets)
@@ -1580,7 +1552,6 @@ class QRAMExperiment(BaseExperiment):
                     self.updateValue("Experiment_Switch", False)
                     self.MOT_switch(True)
                     self.update_parameters()
-                    # Other actions can be added here
                     break
             # assaf - if x=self.M_window the index is out of range so i added 1
             self.lock_err = self._read_locking_error()
@@ -1784,11 +1755,11 @@ class QRAMExperiment(BaseExperiment):
         # ------------------------------------------------------------------------
 
         results = {
-            "early_sequence": self.early_sequence,
-            "late_sequence": self.late_sequence,
-            "north_sequence": self.north_sequence,
-            "south_sequence": self.south_sequence,
-            "fs_sequence": self.fs_sequence,
+            "early_sequence": Config.QRAM_Exp_Gaussian_samples_Early,
+            "late_sequence": Config.QRAM_Exp_Gaussian_samples_Late,
+            "north_sequence": Config.QRAM_Exp_Gaussian_samples_N,
+            "south_sequence": Config.QRAM_Exp_Gaussian_samples_S,
+            "fs_sequence": Config.QRAM_Exp_Square_samples_FS,
 
             "tt_measure_batch_1": self.tt_measure_batch[0],
             "tt_measure_batch_2": self.tt_measure_batch[1],
@@ -1814,26 +1785,45 @@ class QRAMExperiment(BaseExperiment):
 
             "FLR_measurement": FLR_measurement,
             "lock_error": lock_err_batch,
+            "exp_timestr": Exp_timestr_batch,  # TODO: rename to drop timestamps? What is this one?
 
             "exp_comment": f'transit condition: {transit_condition}; reflection threshold: {reflection_threshold} @ {int(reflection_threshold_time / 1e6)} ms',
-            "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, with_atoms,
-                                                                               self.Counter),
+            "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, with_atoms, self.Counter),
 
-            "max_probe_counts": "TBD"
+            #"max_probe_counts": "TBD",
 
+            "experiment_config_values": self.Exp_Values
         }
         self.bd_results.save_results(results)
 
         self.updateValue("Experiment_Switch", False)
         self.update_parameters()
 
+    def maximize_figure(self):
+        """
+        Attempt to maximize figure based on the matplotlib backend engine. It is different per backed...
+        This is taken from StackOverflow - https://stackoverflow.com/questions/12439588/how-to-maximize-a-plt-show-window
+        """
+        figure_manager = plt.get_current_fig_manager()
+        backend_name = matplotlib.get_backend()
+        if backend_name == 'QT4Agg':
+            figure_manager.window.showMaximized()
+        elif backend_name == 'TkAgg':
+            figure_manager.window.state('zoomed')
+        elif backend_name == 'wxAgg':
+            figure_manager.frame.Maximize(True)
+        else:
+            self.logger.warn(f'Unknown matplotlib backend ({backend_name}). Cannot maximize figure')
     def generate_experiment_summary_line(self, pre_comment, aftComment, with_atoms, counter):
         time_str = time.strftime("%H%M%S")
         date_str = time.strftime("%Y%m%d")
         cmnt = None
-        if pre_comment is not None: cmnt = pre_comment + '; '
-        if aftComment is not None: cmnt = pre_comment + aftComment
-        if pre_comment is None and aftComment is None: cmnt = 'No comment.'
+        if pre_comment is not None:
+            cmnt = pre_comment + '; '
+        if aftComment is not None:
+            cmnt = pre_comment + ' After comment: ' + aftComment
+        if pre_comment is None and aftComment is None:
+            cmnt = 'No comment.'
         experiment_success = 'ignore' if 'ignore' in cmnt else 'valid'
         full_line = f'{date_str},{time_str},{experiment_success},{with_atoms},{counter},{cmnt}'
         return full_line

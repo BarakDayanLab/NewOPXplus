@@ -156,9 +156,7 @@ LO_pulse_samples = ([0.4] * 20) + [0] * 100
 # pulse_time = confargs['pulse_time']
 
 config = {
-
     'version': 1,
-
     'controllers': {
         controller: {
             'type': 'opx1',

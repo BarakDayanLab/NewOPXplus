@@ -30,8 +30,14 @@ Operation_Modes_Enumeration = [
 # Initial Values
 #-------------------------------------------
 
+# TODO 1: Merge between the Initial_Values and the Operation_Mode('default_values')
 Initial_Values = {
-    'Operation_Mode': 'PrePGC_Fountain',
+    # TODO - eventually remove this! Now QuadRFMOTController uses Operation_Mode to check if it's "Continuous"
+    #'Operation_Mode': 'PrePGC_Fountain',
+    'Operation_Mode': 'dont care!',
+
+    'Experiment_Name': 'Default',
+
     'Imaging_Phase': 'Pulse_1',
     'Triggering_Phase': -1,  # Don't change this. Triggering phase should be defined within each operation mode (see below)
     'OD_Free_Space': False,
@@ -119,7 +125,7 @@ Initial_Values = {
     'M_off_time': 0,  # [msec]
 
     # Measuring pulses parameters:
-    'PrePulse_duration': 1,        # [msec]
+    'PrePulse_duration': 1,  # [msec]
     'Shutter_open_time': 0,  # [msec]
     'PrePulse_Repump_amp': 1,  # relative
 
@@ -177,10 +183,12 @@ class Phases(Enum):
 #-------------------------------------------
 # Operation Modes
 #
-# Operation_Modes defines the differences between different opeartion modes, compared to Initial_Values.
+# Operation_Modes defines the differences between different operations, compared to Initial_Values.
 # e.g., 'Video' is exactly the same as @Initial_Values, except for N_Snaps, Null_Cycles etc.
 #-------------------------------------------
-Operation_Modes = {
+
+# TODO: eventually this goes away! As all parameters where put separately in relevan experiment.
+Operation_Modes__DEPRECATED = {
     'Default_Values': {
         'MOT_rep': int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config.MOT_pulse_len)),
         # TODO: use Phases.PULSE_1 instead
@@ -600,7 +608,9 @@ Operation_Modes = {
 # Initial_Values = updateOperationMode()                      # Then, update the values pertaining to the specific operation mode
 
 # Merge all configurations - (a) initial_values; (b) default_values; (c) the operation mode values
-Initial_Values = Utils.merge_multiple_jsons([Initial_Values, Operation_Modes['Default_Values'], Operation_Modes[Initial_Values['Operation_Mode']]])
+#Initial_Values = Utils.merge_multiple_jsons([Initial_Values, Operation_Modes['Default_Values'], Operation_Modes[Initial_Values['Operation_Mode']]])
+# TODO: Eventually, we simply need to merge them (manually) to one json, and get rid of Operation_Modes__DEPRECATED['Default_Values']
+Default_Values = Utils.merge_multiple_jsons([Initial_Values, Operation_Modes__DEPRECATED['Default_Values']])
 
 #-------------------------------------------------------------------------------------------------------------------
 # Frequency Scan Values

@@ -50,7 +50,7 @@ class QuadRFMOTController(QuadRFController):
             self.continuousTablesForChannels(updateChannels)
             return
         elif self.initialValues['Operation_Mode'] == 'Off':
-            self.turnChannelsOff(holdLocking= True)
+            self.turnChannelsOff(holdLocking=True)
             return
         else:
             self.uploadMOTTables(values=self.initialValues, updateChannels=updateChannels, armChannels = armChannels)
@@ -58,8 +58,9 @@ class QuadRFMOTController(QuadRFController):
     def __getitem__(self, item):  # This enables calling attributes as such: self['attr']  = self.attr
         return getattr(self, item)
 
-    def initQuadRFValues(self, values = None):
-        if values is None: values = self.initialValues
+    def initQuadRFValues(self, values=None):
+        if values is None:
+            values = self.initialValues
 
         try:
             self.triggerOnPhaseIndex = Phases_Names.index(values['Triggering_Phase'])

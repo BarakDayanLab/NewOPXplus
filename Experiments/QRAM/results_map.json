@@ -1,9 +1,9 @@
 {
 	"version": "0.1",
 	"strict": false,
-	"experiments_root": "C:\\temp\\refactor_debug",
-	"experiment_root": "C:\\temp\\refactor_debug\\QRAM",
-	"root": "C:\\temp\\refactor_debug\\QRAM\\{current_date}\\{current_time}_Photon_TimeTags",
+	"experiments_root": "C:\\temp\\refactor_debug\\Experiment_results",
+	"experiment_root": "C:\\temp\\refactor_debug\\Experiment_results\\QRAM",
+	"root": "C:\\temp\\refactor_debug\\Experiment_results\\QRAM\\{current_date}\\{current_time}_Photon_TimeTags",
 	"files": [
 
 		{
@@ -90,7 +90,7 @@
 
 
 		{
-			"OUTPUT FILES - DETECTORS": "-----------------------------------",
+			"OUTPUT FILES - DETECTORS": "-----------------------------------"
 		},
 
   		{
@@ -151,7 +151,7 @@
 		},
 
 		{
-			"OUTPUT FILES - TIMETAGS": "-----------------------------------",
+			"OUTPUT FILES - TIMETAGS": "-----------------------------------"
 		},
 
   		{
@@ -191,7 +191,7 @@
 		},
 
 		{
-			"OUTPUT FILES - FOLDED TIMETAGS": "-----------------------------------",
+			"OUTPUT FILES - FOLDED TIMETAGS": "-----------------------------------"
 		},
 
   		{
@@ -231,7 +231,7 @@
 		},
 
 		{
-			"OUTPUT FILES - MACH-ZENDER": "-----------------------------------",
+			"OUTPUT FILES - MACH-ZENDER": "-----------------------------------"
 		},
 
 		{
@@ -278,7 +278,7 @@
 		},
 
 		{
-			"OUTPUT FILES - FLOURESENCE/LOCK-ERROR": "-----------------------------------",
+			"OUTPUT FILES - FLOURESENCE/LOCK-ERROR": "-----------------------------------"
 		},
 
 		{

@@ -166,6 +166,7 @@ LO_pulse_samples = ([0.4] * 20) + [0] * 100
 config = {
 
     'version': 1,
+    'where': 'BaseExperiment',
 
     'controllers': {
         controller: {

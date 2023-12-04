@@ -1,7 +1,7 @@
 from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
 from Experiments.Spectrum import Config_Experiment as Config
-from Experiments.BaseExperiment.QuadRFMOTController import QuadRFMOTController
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -1126,16 +1126,16 @@ class SpectrumExperiment(BaseExperiment):
         ax5 = plt.subplot2grid((6, 2), (4, 0), colspan=1, rowspan=2)
         ax6 = plt.subplot2grid((6, 2), (4, 1), colspan=1, rowspan=2)
 
-        figManager = plt.get_current_fig_manager()
-        figManager.window.showMaximized()
+        #self.maximize_figure()  # TODO: uncomment
 
         ############################################ START WHILE LOOP #################################################
 
         while True:
             # TODO: need to handle this part - why is it here?
-            if not self.should_continue():
+            #if not self.should_continue():
+            if self.keyPress == 'ESC':
                 self.logger.blue('ESC pressed. Stopping measurement.')
-                self.updateValue("QRAM_Exp_switch", False)
+                self.updateValue("Experiment_Switch", False)
                 self.MOT_switch(True)
                 self.update_parameters()
                 break
@@ -1150,12 +1150,17 @@ class SpectrumExperiment(BaseExperiment):
                 self.keyPress = None
                 # Other actions can be added here
             self.lockingEfficiency = counter / repetitions
-            self.logger.info(timest, counter, 'Eff: %.2f' % self.lockingEfficiency,
-                  'Flr: %.2f' % (1000 * np.average(self.FLR_res.tolist())))
+
+            eff_formatted = '%.2f' % self.lockingEfficiency
+            flr_formatted = '%.2f' % (1000 * np.average(self.FLR_res.tolist()))
+            time_formatted = time.strftime("%Y/%m/%d, %H:%M:%S")
+            self.logger.info(f'{time_formatted}: cycle {counter}, Eff: {eff_formatted}, Flr: {flr_formatted}')
+
             repetitions += 1
             ######################################## PLOT!!! ###########################################################
             ax = [ax1, ax2, ax3, ax4, ax5, ax6]
             self.plot_sprint_figures(fig, ax, Num_Of_dets)
+
             ############################################################################################################
             if counter == N:
                 self.logger.info(f'finished {N} Runs, {"with" if with_atoms else "without"} atoms')
@@ -1163,9 +1168,7 @@ class SpectrumExperiment(BaseExperiment):
                 break
             count = 1
             while True:
-                # record time:
                 timest = time.strftime("%H%M%S")
-                datest = time.strftime("%Y%m%d")
 
                 self.get_results_from_streams()
                 self.ingest_time_tags(Num_Of_dets)
@@ -1174,20 +1177,19 @@ class SpectrumExperiment(BaseExperiment):
                 lenS = min(len(self.tt_S_directional_measure), len(self.tt_S_measure_batch[-1]))
 
                 # Check if the number of same values in the new and last vector are less than 1/2 of the total number of values.
-                is_new_tts_S = sum(np.array(self.tt_S_directional_measure[:lenS]) == np.array(
-                    self.tt_S_measure_batch[-1][:lenS])) < lenS / 2
+                is_new_tts_S = sum(np.array(self.tt_S_directional_measure[:lenS]) == np.array(self.tt_S_measure_batch[-1][:lenS])) < lenS / 2
 
-                self.logger.debug(count)
                 count += 1
                 time.sleep(0.01)
                 if is_new_tts_S:
                     break
+
+                #if not self.should_continue():
                 if self.keyPress == 'ESC':
                     self.logger.blue('ESC pressed. Stopping measurement.')
-                    self.updateValue("QRAM_Exp_switch", False)
+                    self.updateValue("Experiment_Switch", False)
                     self.MOT_switch(True)
                     self.update_parameters()
-                    # Other actions can be added here
                     break
             # assaf - if x=self.M_window the index is out of range so i added 1
             self.lock_err = self._read_locking_error()
@@ -1305,11 +1307,11 @@ class SpectrumExperiment(BaseExperiment):
         # ------------------------------------------------------------------------
 
         results = {
-            "early_sequence": self.early_sequence,
-            "late_sequence": self.late_sequence,
-            "north_sequence": self.north_sequence,
-            "south_sequence": self.south_sequence,
-            "fs_sequence": self.fs_sequence,
+            "early_sequence": Config.QRAM_Exp_Square_samples_Early,  # TODO: Why are these called "QRAM" - need to rename them
+            "late_sequence": Config.QRAM_Exp_Square_samples_Late,  # TODO: Why are these called "QRAM" - need to rename them
+            "north_sequence": Config.QRAM_Exp_Gaussian_samples_N,
+            "south_sequence": Config.QRAM_Exp_Gaussian_samples_S,
+            "fs_sequence": Config.QRAM_Exp_Square_samples_FS,
 
             "tt_measure_batch_1": self.tt_measure_batch[0],
             "tt_measure_batch_2": self.tt_measure_batch[1],
@@ -1328,27 +1330,46 @@ class SpectrumExperiment(BaseExperiment):
 
             "FLR_measurement": FLR_measurement,
             "lock_error": lock_err_batch,
+            "exp_timestr": Exp_timestr_batch,  # TODO: rename to drop timestamps? What is this one?
 
             "exp_comment": f'transit condition: minimum time between reflection = {time_threshold} with at least {transit_counts_threshold} reflections ; reflection threshold: {total_counts_threshold} MCounts / sec',
-
             "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, with_atoms, counter),
 
-            "max_probe_counts": "TBD",
+            #"max_probe_counts": "TBD",  # TODO: ...
 
             "experiment_config_values": self.Exp_Values
         }
         self.bd_results.save_results(results)
 
-        self.updateValue("Experiment_Switch", False)
+        self.updateValue("Experiment_Switch", False)  # TODO: why not change the flag to "True"?
         self.update_parameters()
+
+    def maximize_figure(self):
+        """
+        Attempt to maximize figure based on the matplotlib backend engine. It is different per backed...
+        This is taken from StackOverflow - https://stackoverflow.com/questions/12439588/how-to-maximize-a-plt-show-window
+        """
+        figure_manager = plt.get_current_fig_manager()
+        backend_name = matplotlib.get_backend()
+        if backend_name == 'QT4Agg':
+            figure_manager.window.showMaximized()
+        elif backend_name == 'TkAgg':
+            figure_manager.window.state('zoomed')
+        elif backend_name == 'wxAgg':
+            figure_manager.frame.Maximize(True)
+        else:
+            self.logger.warn(f'Unknown matplotlib backend ({backend_name}). Cannot maximize figure')
 
     def generate_experiment_summary_line(self, pre_comment, aftComment, with_atoms, counter):
         time_str = time.strftime("%H%M%S")
         date_str = time.strftime("%Y%m%d")
         cmnt = None
-        if pre_comment is not None: cmnt = pre_comment + '; '
-        if aftComment is not None: cmnt = pre_comment + aftComment
-        if pre_comment is None and aftComment is None: cmnt = 'No comment.'
+        if pre_comment is not None:
+            cmnt = pre_comment + '; '
+        if aftComment is not None:
+            cmnt = pre_comment + ' After comment: ' + aftComment
+        if pre_comment is None and aftComment is None:
+            cmnt = 'No comment.'
         experiment_success = 'ignore' if 'ignore' in cmnt else 'valid'
         full_line = f'{date_str},{time_str},{experiment_success},{with_atoms},{counter},{cmnt}'
         return full_line

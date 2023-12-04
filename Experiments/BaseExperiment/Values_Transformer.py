@@ -32,7 +32,7 @@ class Values_Transformer:
         """
         if key not in Values_Factor:
             self.logger.error(f'Cannot find {key} in Values_Factor map')
-        return self.MODES[len(Values_Factor[key])]
+        return self.MODES[len(Values_Factor[key])-1]
 
     def factor_and_cast(self, key, value):
         # TODO
@@ -47,8 +47,10 @@ Values_Factor = {
     # "Transit_Exp_switch": [bool, None, Transit_Exp_switch],
     # "Spectrum_Exp_switch": [bool, None, Spectrum_Exp_switch],
     # "QRAM_Exp_switch": [bool, None, QRAM_Exp_switch],
-    
-    # TODO: do we need these? Just for updaing values thru the console? Are we switching modes during experiment?
+
+    "Experiment_Switch": [bool],
+
+    # TODO: do we need these? Just for updating values thru the console? Are we switching modes during experiment?
     "Transit_Exp_switch": [bool],
     "Spectrum_Exp_switch": [bool],
     "QRAM_Exp_switch": [bool],
