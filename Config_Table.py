@@ -165,7 +165,7 @@ Operation_Modes = {
                     'Default_Values': {
                                         'MOT_rep': int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config.MOT_pulse_len)),
                                         'Triggering_Phase': 'Pulse_1',
-                                        'PrePulse_CH1_freq': Initial_Values['PGC_final_freq'],  # [Hz]
+                                        'PrePulse_CH1_freq': Initial_Values['MOT_AOM_freq']-20e6,  # [Hz]
                                         'PrePulse_CH2_freq': 133.325e6,  # Hz
                                         'Pulse_1_CH1_Freq_i': Initial_Values['MOT_freq'],
                                         # 'Pulse_1_CH1_Freq_i': Initial_Values['Flash_freq'],

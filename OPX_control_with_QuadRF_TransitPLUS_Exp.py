@@ -473,7 +473,7 @@ def opx_control(obj, qm):
         # General measurements variables:
         Trigger_delay = declare(int, value=int(obj.Exp_Values['Trigger_delay'] * 1e6 / 4))
         PrePulse_duration = declare(int, value=int(obj.Exp_Values['PrePulse_duration'] * 1e6 / 4))
-        PushBeam_duration = declare(int, value=100000)
+        PushBeam_duration = declare(int, value=int(20000/4))
         OD_freq = declare(int, value=int(Config.IF_AOM_OD))
         PushBeam_Amp = declare(fixed, value=1)
 
@@ -566,9 +566,9 @@ def opx_control(obj, qm):
 
             # FreeFall sequence:
             with if_(Transits_Exp_ON):
-                assign(x, 766000 // 4)
+                assign(x, (766000 + 107000) // 4)
             with else_():
-                assign(x, 0)
+                assign(x, (0 + 107000) // 4)
             FreeFall(FreeFall_duration - x, coils_timing)
 
             ##########################
@@ -586,7 +586,7 @@ def opx_control(obj, qm):
             with else_():
                 wait(PrePulse_duration, "Cooling_Sequence")
                 # for push beam
-                play("OD_FS" * amp(PushBeam_Amp), "AOM_2-2/3'", duration=PushBeam_duration)
+            play("OD_FS" * amp(PushBeam_Amp), "AOM_2-2/3'", duration=PushBeam_duration)
             align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "Dig_detectors")
 
             with if_(Trigger_Phase == 4):  # when trigger on pulse 1
@@ -1131,7 +1131,7 @@ class OPX:
     def update_PushBeam_duration(self, duration):
         self.update_io_parameter(47, int(duration * 1e3 / 4)) # In [us]
     def update_PushBeam_amp(self, Amp):
-        self.update_io_parameter(48, int(Amp)) #
+        self.update_io_parameter(48, float(Amp)) #
     def update_PushBeam_frequency(self, freq):
         self.update_io_parameter(49, int(Config.IF_AOM_OD + freq))  # In [us]
 
@@ -2140,6 +2140,7 @@ class OPX:
         "PGC_duration": [int, 1e6 / 4],  # [msec]
         "PGC_prep_duration": [int, None, update_PGC_prep_time],
 
+
         ## Fountain parameters ##
         "Pre_PGC_Fountain_duration": [int, 1e6 / 4],
         "Fountain_duration": [int, 1e6 / 4],
@@ -2160,6 +2161,8 @@ class OPX:
         'Pulse_1_decay_duration': [int, 1e6 / 4],  # [msec]
         'InterPulses_duration': [int, 1e6 / 4],
         'Pulse_2_duration': [int, 1e6 / 4],  # [msec]
+        # 'PrePulse_CH1_freq':[int,1],
+
         # OD parameters:
         'OD_FS_Start': [int, 1e6 / 4],  # [msec]
         'OD_FS_pulse_duration': [int, 1e6 / 4],  # [msec]
@@ -2177,6 +2180,7 @@ class OPX:
         'OD_sleep': [int, 1e6 / 4],  # [msec]
         'OD_duration_pulse2': [int, 1e6 / 4],  # [msec]
         'M_time': [int, 1e6 / 4]  # [msec]'
+
     }
 
 

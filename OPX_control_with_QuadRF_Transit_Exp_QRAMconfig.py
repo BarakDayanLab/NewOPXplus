@@ -581,6 +581,12 @@ def opx_control(obj, qm):
 
         # General measurements variables:
         PrePulse_duration = declare(int, value=int(obj.Exp_Values['PrePulse_duration'] * 1e6 / 4))
+
+        # push beam params
+        PushBeam_duration = declare(int, value=int(20000/4))
+        OD_freq = declare(int, value=int(Config.IF_AOM_OD))
+        PushBeam_Amp = declare(fixed, value=1)
+
         # Pulse_1_parameters:
         Pulse_1_duration = declare(int, value=int(obj.Exp_Values['Pulse_1_duration'] * 1e6 / 4))
         Pulse_1_decay_time = declare(int, value=int(obj.Exp_Values['Pulse_1_decay_duration'] * 1e6 / 4))
@@ -682,6 +688,9 @@ def opx_control(obj, qm):
                 wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
             with else_():
                 wait(PrePulse_duration, "Cooling_Sequence")
+            # push beam
+            play("OD_FS" * amp(PushBeam_Amp), "AOM_2-2/3'", duration=PushBeam_duration)
+
             align(*all_elements, "AOM_2-2/3'", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S",
                   "Dig_detectors", "AOM_Spectrum")
 
@@ -782,6 +791,13 @@ def opx_control(obj, qm):
                 #     assign(Depump_pulses_spacing, IO2)
                 # with if_(i == 59):  # Live control of the delay due to shutter opening time.
                 #     assign(shutter_open_time, IO2)
+
+                with if_(i == 47):
+                    assign(PushBeam_duration, IO2)
+                with if_(i == 48):
+                    assign(PushBeam_Amp, IO2)
+                with if_(i == 49):
+                    assign(OD_freq, IO2)
 
                 pause()
                 assign(i, IO1)
@@ -1250,6 +1266,16 @@ class OPX:
         self.fountain_aom_chirp_rate = int(df * 1e3 / (self.fountain_prep_duration * 4))  # mHz/nsec
         print(self.fountain_aom_chirp_rate)
         self.update_io_parameter(39, self.fountain_aom_chirp_rate)
+
+        # push beam params
+        def update_PushBeam_duration(self, duration):
+            self.update_io_parameter(47, int(duration * 1e3 / 4))  # In [us]
+
+        def update_PushBeam_amp(self, Amp):
+            self.update_io_parameter(48, float(Amp))  #
+
+        def update_PushBeam_frequency(self, freq):
+            self.update_io_parameter(49, int(Config.IF_AOM_OD + freq))  # In [us]
 
     ## Measuring variable update functions: ##
 

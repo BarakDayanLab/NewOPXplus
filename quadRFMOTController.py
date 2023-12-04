@@ -125,7 +125,7 @@ class QuadRFMOTController(QuadRFController):
         # self.Free_Fall = QuadRFPhase(duration=values['PrePulse_duration'], initial_values=((values['Pulse_1_CH1_Freq_f'], self.Amp_Ch1), (AOMOffFreq, self.Amp_Ch2),
         #                                                                                    (AOMOffFreq, self.Amp_Ch3), (values['AOM_Repump_freq'], self.Amp_Ch4)))
         self.Free_Fall = QuadRFPhase(duration=values['PrePulse_duration'],
-                                     initial_values=((values['PrePulse_CH1_freq'], self.Amp_Ch1 + PGC_final_amp_delta),
+                                     initial_values=((values['PrePulse_CH1_freq'], self.Amp_Ch1),# + PGC_final_amp_delta),
                                                      (values['PrePulse_CH2_freq'], self.Amp_Ch2),
                                                      (AOMOffFreq, self.Amp_Ch3),
                                                      (values['Pulse_1_CH4_Freq'], self.Amp_Ch4 + PrePulse_delta_amp_Repump)))
