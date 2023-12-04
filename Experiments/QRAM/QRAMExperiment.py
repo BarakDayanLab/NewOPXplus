@@ -347,7 +347,7 @@ class QRAMExperiment(BaseExperiment):
         """
 
         # TODO: Q: why are we changing the sign?
-        self.streams['FLR_measure']['results'] *= -1
+        self.FLR_res = -self.streams['FLR_measure']['results']
 
         # Clear time-tags vectors from last data
         self.tt_measure = []
@@ -864,7 +864,7 @@ class QRAMExperiment(BaseExperiment):
         self.Phase_Correction_min_vec_batch = self.Phase_Correction_min_vec_batch[-(N - 1):] + [
             self.Phase_Correction_min_vec]
 
-    def plot_sprint_figures(self, fig, ax, Num_Of_dets):
+    def plot_sprint_figures(self, fig, ax, Num_Of_dets, counter):
 
         ax[0].clear()
         ax[1].clear()
@@ -897,7 +897,7 @@ class QRAMExperiment(BaseExperiment):
         # avg_DP_after = np.average(self.MZ_DP_counts_res['value_1'][self.rep_MZ_check:])
 
         pause_str = ' , PAUSED!' if self.pause_flag else ''
-        textstr_thresholds = '# %d - ' % self.Counter + 'Reflections: %d, ' % self.sum_for_threshold + \
+        textstr_thresholds = '# %d - ' % counter + 'Reflections: %d, ' % self.sum_for_threshold + \
                              'Efficiency: %.2f, ' % self.lockingEfficiency + \
                              'Flr: %.2f, ' % (1000 * np.average(self.FLR_res.tolist())) + \
                              'Lock Error: %.3f' % self.lock_err + pause_str
@@ -907,14 +907,14 @@ class QRAMExperiment(BaseExperiment):
                                     + 'Total reflections per cycle "S" = %d \n' % (
                                     sum(self.num_of_det_reflections_per_seq_S),) \
                                     + 'Average reflections per cycle = %.2f \n' % (
-                                    sum(self.num_of_det_reflections_per_seq_accumulated / self.Counter),) \
+                                    sum(self.num_of_det_reflections_per_seq_accumulated / counter),) \
                                     + 'Average transmissions per cycle = %.2f \n' % (
-                                    sum(self.num_of_det_transmissions_per_seq_accumulated / self.Counter),) \
+                                    sum(self.num_of_det_transmissions_per_seq_accumulated / counter),) \
                                     + 'Average reflections precentage = %.2f' % (
                                     sum(self.num_of_det_reflections_per_seq_accumulated) /
                                     (sum(self.num_of_det_reflections_per_seq_accumulated) +
                                      sum(self.num_of_det_transmissions_per_seq_accumulated)),)
-        # textstr_avg_reflections = r'Average reflections per cycle = %.2f' % (sum(self.num_of_det_reflections_per_seq_accumulated/self.Counter),)
+        # textstr_avg_reflections = r'Average reflections per cycle = %.2f' % (sum(self.num_of_det_reflections_per_seq_accumulated/counter),)
         # textstr_total_SPRINT_reflections = 'Total reflections from SPRINT pulses during transits = %d' % (self.total_number_of_reflections_from_SPRINT_pulses_in_transits,)
         textstr_BP_DP = 'Average Bright counts = %.2f \n' % (avg_BP,) + \
                         'Average Dark counts = %.2f \n' % (avg_DP,) + \
@@ -1027,15 +1027,15 @@ class QRAMExperiment(BaseExperiment):
         # self.logger.debug(np.average(self.Phase_Correction_min_diff))
         # self.logger.debug(np.std(self.Phase_Correction_min_diff))
 
-        max_reflect_avg = max(self.num_of_det_reflections_per_seq_accumulated / self.Counter)
+        max_reflect_avg = max(self.num_of_det_reflections_per_seq_accumulated / counter)
         max_reflect = max(self.num_of_det_reflections_per_seq)
-        ax[3].plot(self.num_of_det_reflections_per_seq_accumulated / self.Counter,
+        ax[3].plot(self.num_of_det_reflections_per_seq_accumulated / counter,
                    label='Num of reflections per sequence')
         ax[3].plot(self.num_of_det_reflections_per_seq * 0.5 * max_reflect_avg / max_reflect * 0.3,
                    label='Num of reflections per sequence (Live)')
         ax[3].set_title('Num of reflections per sequence', fontweight="bold")
         ax[3].legend(loc='upper right')
-        # ax[3].text(0.1, 0.9*max(self.num_of_det_transmissions_per_seq_accumulated/self.Counter), textstr_avg_reflections, fontsize=14,
+        # ax[3].text(0.1, 0.9*max(self.num_of_det_transmissions_per_seq_accumulated/counter), textstr_avg_reflections, fontsize=14,
         ax[3].text(0.1, 0.9 * max_reflect_avg, textstr_total_reflections, fontsize=14,
                    verticalalignment='top', bbox=props)
 
@@ -1453,8 +1453,10 @@ class QRAMExperiment(BaseExperiment):
         ###################
 
         self.save_tt_to_batch(Num_Of_dets, N)
-        self.Counter = 1  # Total number of successful cycles
-        self.repetitions = 1  # Total number of cycles
+
+        counter = 1  # Total number of successful cycles
+        repetitions = 1  # Total number of cycles
+
         self.acquisition_flag = True
         self.threshold_flag = True
         self.pause_flag = False
@@ -1493,18 +1495,18 @@ class QRAMExperiment(BaseExperiment):
                 self.pause_flag = False
                 self.keyPress = None
                 # Other actions can be added here
-            self.lockingEfficiency = self.Counter / self.repetition
+            self.lockingEfficiency = counter / repetitions
             eff_formatted = '%.2f' % self.lockingEfficiency
             flr_formatted = '%.2f' % (1000 * np.average(self.FLR_res.tolist()))
             time_formatted = time.strftime("%Y/%m/%d, %H:%M:%S")
             self.logger.info(f'{time_formatted}: cycle {counter}, Eff: {eff_formatted}, Flr: {flr_formatted}')
 
-            self.repetition += 1
+            repetitions += 1
             ######################################## PLOT!!! ###########################################################
             ax = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
-            self.plot_sprint_figures(fig, ax, Num_Of_dets)
+            self.plot_sprint_figures(fig, ax, Num_Of_dets, counter)
             ############################################################################################################
-            if self.Counter == N:
+            if counter == N:
                 self.logger.blue(f'finished {N} Runs, {"with" if with_atoms else "without"} atoms')
                 # Other actions can be added here
                 break
@@ -1662,22 +1664,19 @@ class QRAMExperiment(BaseExperiment):
                 ###########################################
 
                 # Batch folded tt "N" and "S"
-                self.folded_tt_S_batch = (self.folded_tt_S_batch * (self.Counter - 1) + self.folded_tt_S) / self.Counter
-                self.folded_tt_N_batch = (self.folded_tt_N_batch * (self.Counter - 1) + self.folded_tt_N) / self.Counter
-                self.folded_tt_BP_batch = (self.folded_tt_BP_batch * (
-                            self.Counter - 1) + self.folded_tt_BP) / self.Counter
-                self.folded_tt_DP_batch = (self.folded_tt_DP_batch * (
-                            self.Counter - 1) + self.folded_tt_DP) / self.Counter
-                self.folded_tt_FS_batch = (self.folded_tt_FS_batch * (
-                            self.Counter - 1) + self.folded_tt_FS) / self.Counter
-                self.folded_tt_S_directional_batch = (self.folded_tt_S_directional_batch * (self.Counter - 1)
-                                                      + self.folded_tt_S_directional) / self.Counter
-                self.folded_tt_N_directional_batch = (self.folded_tt_N_directional_batch * (self.Counter - 1)
-                                                      + self.folded_tt_N_directional) / self.Counter
-                self.folded_tt_BP_timebins_batch = (self.folded_tt_BP_timebins_batch * (self.Counter - 1)
-                                                    + self.folded_tt_BP_timebins) / self.Counter
-                self.folded_tt_DP_timebins_batch = (self.folded_tt_DP_timebins_batch * (self.Counter - 1)
-                                                    + self.folded_tt_DP_timebins) / self.Counter
+                self.folded_tt_S_batch = (self.folded_tt_S_batch * (counter - 1) + self.folded_tt_S) / counter
+                self.folded_tt_N_batch = (self.folded_tt_N_batch * (counter - 1) + self.folded_tt_N) / counter
+                self.folded_tt_BP_batch = (self.folded_tt_BP_batch * (counter - 1) + self.folded_tt_BP) / counter
+                self.folded_tt_DP_batch = (self.folded_tt_DP_batch * (counter - 1) + self.folded_tt_DP) / counter
+                self.folded_tt_FS_batch = (self.folded_tt_FS_batch * (counter - 1) + self.folded_tt_FS) / counter
+                self.folded_tt_S_directional_batch = (self.folded_tt_S_directional_batch * (counter - 1)
+                                                      + self.folded_tt_S_directional) / counter
+                self.folded_tt_N_directional_batch = (self.folded_tt_N_directional_batch * (counter - 1)
+                                                      + self.folded_tt_N_directional) / counter
+                self.folded_tt_BP_timebins_batch = (self.folded_tt_BP_timebins_batch * (counter - 1)
+                                                    + self.folded_tt_BP_timebins) / counter
+                self.folded_tt_DP_timebins_batch = (self.folded_tt_DP_timebins_batch * (counter - 1)
+                                                    + self.folded_tt_DP_timebins) / counter
 
                 # get the average number of photons in detection pulse
                 self.avg_num_of_photons_per_pulse_S = self.get_avg_num_of_photons_in_seq_pulses(
@@ -1727,8 +1726,8 @@ class QRAMExperiment(BaseExperiment):
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
                 lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
                 self.save_tt_to_batch(Num_Of_dets, N)
-                if self.Counter < N:
-                    self.Counter += 1
+                if counter < N:
+                    counter += 1
 
         ############################################## END WHILE LOOP #################################################
 
@@ -1737,7 +1736,7 @@ class QRAMExperiment(BaseExperiment):
 
         ## Adding comment to measurement [prompt whether stopped or finished regularly]
         if exp_flag:
-            if self.Counter < N:
+            if counter < N:
                 aftComment = self.prompt('Add comment to measurement: ')
             else:
                 aftComment = ''
@@ -1788,7 +1787,7 @@ class QRAMExperiment(BaseExperiment):
             "exp_timestr": Exp_timestr_batch,  # TODO: rename to drop timestamps? What is this one?
 
             "exp_comment": f'transit condition: {transit_condition}; reflection threshold: {reflection_threshold} @ {int(reflection_threshold_time / 1e6)} ms',
-            "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, with_atoms, self.Counter),
+            "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, with_atoms, counter),
 
             #"max_probe_counts": "TBD",
 
