@@ -7,6 +7,8 @@ import pathlib
 import matplotlib.pyplot as plt
 import os
 import importlib
+from enum import Enum
+from enum import auto
 from pkgutil import iter_modules
 
 from Utilities.Utils import Utils
@@ -26,6 +28,13 @@ from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
 import pymsgbox
 from pynput import keyboard
+
+
+# Termination Reason Enumeration
+class TerminationReason(Enum):
+    USER = auto()
+    ERROR = auto()
+    SUCCESS = auto()
 
 
 class BaseExperiment:
@@ -112,6 +121,7 @@ class BaseExperiment:
         # Set mainloop flags
         self.halt_experiment = False
         self.ignore_data = False
+        self.runs_status = None  # Uses the TerminationReason enum
 
         # Open server-socket
         # TODO: complete implementation of this - listen on socket for outer process/machines to communicate with us
@@ -373,6 +383,26 @@ class BaseExperiment:
     # Determines whether mainloop should continue (e.g. ESC was pressed)
     def should_continue(self):
         return not self.halt_experiment
+
+    def handle_user_events(self):
+        """
+        Handle cases where user pressed ESC to terminate or ALT_SPACE to pause/continue measurements
+        """
+        if self.keyPress == 'ESC':
+            self.logger.blue('ESC pressed. Stopping measurement.')
+            self.updateValue("Experiment_Switch", False)
+            self.MOT_switch(True)
+            self.update_parameters()
+            self.runs_status = TerminationReason.USER
+        elif self.keyPress == 'ALT_SPACE' and not self.pause_flag:
+            self.logger.blue('SPACE pressed. Pausing measurement.')
+            self.pause_flag = True
+            self.keyPress = None
+        elif self.keyPress == 'ALT_SPACE' and self.pause_flag:
+            self.logger.blue('SPACE pressed. Continuing measurement.')
+            self.pause_flag = False
+            self.keyPress = None
+        pass
 
     # Returns the error of the locking mechanism of the resonator to Rb line
     def _read_locking_error(self):

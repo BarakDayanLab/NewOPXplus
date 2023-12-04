@@ -1,4 +1,5 @@
 from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
+from Experiments.BaseExperiment.BaseExperiment import TerminationReason
 from Experiments.Spectrum import Config_Experiment as Config
 
 import matplotlib
@@ -826,7 +827,7 @@ class SpectrumExperiment(BaseExperiment):
         self.tt_DP_measure_batch = self.tt_DP_measure_batch[-(N - 1):] + [self.tt_DP_measure]
         self.tt_FS_measure_batch = self.tt_FS_measure_batch[-(N - 1):] + [self.tt_FS_measure]
 
-    def plot_sprint_figures(self, fig, ax, Num_Of_dets):
+    def plot_figures(self, fig, ax, Num_Of_dets):
 
         ax[0].clear()
         ax[1].clear()
@@ -952,6 +953,52 @@ class SpectrumExperiment(BaseExperiment):
         self.FLR_measurement = []
         self.Exp_timestr_batch = []
 
+    def await_for_values(self, Num_Of_dets):
+        """
+        Awaits for values to come from OPX streams. Returns the timestamp of the incoming data.
+        Returns the status of the operation (enumeration). It can be either:
+        - Successful - we got data
+        - User terminated - user terminated the experiment
+        - Too many cycles - no data arrived after a given number of cycles
+        """
+        WAIT_TIME = 0.01  # [sec]
+        TOO_MANY_WAITING_CYCLES = WAIT_TIME*100*5  # 5 seconds
+
+        count = 1
+        while True:
+            timestamp = time.strftime("%H%M%S")  # TODO: Q: why are we taking the timestamp BEFORE the measurement is in?
+
+            # Get data from OPX streams
+            self.get_results_from_streams()
+            self.ingest_time_tags(Num_Of_dets)
+
+            # Check if new timetags arrived:
+            # (if the number of same values in the new and last vector are less than 1/2 of the total number of values)
+            lenS = min(len(self.tt_S_directional_measure), len(self.tt_S_measure_batch[-1]))
+            is_new_tts_S = sum(np.array(self.tt_S_directional_measure[:lenS]) == np.array(self.tt_S_measure_batch[-1][:lenS])) < lenS / 2
+            if is_new_tts_S:
+                break
+
+            # Are we waiting too long?
+            count += 1
+            if count > TOO_MANY_WAITING_CYCLES:
+                self.runs_status = TerminationReason.ERROR
+                break
+
+            # Did the user ask to terminate?
+            # if not self.should_continue():
+            if self.keyPress == 'ESC':
+                self.logger.blue('ESC pressed. Stopping measurement.')
+                self.updateValue("Experiment_Switch", False)
+                self.MOT_switch(True)
+                self.update_parameters()
+                self.runs_status = TerminationReason.USER
+                break
+
+            time.sleep(WAIT_TIME)
+
+        return timestamp
+
     def Save_SNSPDs_Spectrum_Measurement_with_tt(self, N, transit_profile_bin_size, pre_comment,
                                                  total_counts_threshold, transit_counts_threshold, FLR_threshold,
                                                  lock_err_threshold, exp_flag, with_atoms):
@@ -1000,22 +1047,16 @@ class SpectrumExperiment(BaseExperiment):
 
         WARMUP_CYCLES = 3
         cycle = 0
+        self.runs_status == TerminationReason.SUCCESS
         self.sum_for_threshold = transit_counts_threshold
-        # TODO: Q: when will I first "escape" this look do to transit-counts threshold ?
         # We will iterate at least 3 warmup cycles. If experiment in ON, we will iterate as long as within threshold:
         while (cycle < WARMUP_CYCLES) or (exp_flag and self.sum_for_threshold >= transit_counts_threshold):
             self.logger.debug(f'Running cycle {cycle}')
 
-            if not self.should_continue():
-                self.logger.blue('ESC pressed. Stopping measurement.')
-                self.updateValue("Experiment_Switch", False)
-                self.MOT_switch(True)  # Return the atoms (even if we ran experiment w/o atoms)
-                self.update_parameters()
+            # Check if user terminated
+            self.handle_user_events()
+            if self.runs_status == TerminationReason.USER:
                 break
-
-            # -------------------------------------------
-            # Deal with the time-tags and counts
-            # -------------------------------------------
 
             # Filter/Manipulate the values we got
             self.get_results_from_streams()
@@ -1029,15 +1070,10 @@ class SpectrumExperiment(BaseExperiment):
                     break
 
             cycle += 1
-            time.sleep(0.01)  # in seconds
+            time.sleep(0.01)  # in seconds # TODO: move these WAIT TIMES to a constant somewhere
 
         ############################# WHILE 1 - END #############################
 
-        ####    end get tt and counts from OPX to python   #####
-
-        ## record time
-        timest = time.strftime("%Y%m%d-%H%M%S")
-        datest = time.strftime("%Y%m%d")
         FLR_measurement = []
         Exp_timestr_batch = []
         lock_err_batch = []
@@ -1099,7 +1135,7 @@ class SpectrumExperiment(BaseExperiment):
 
 
         FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]  # No need for the .toList()
-        Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
+        Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [time.strftime("%Y%m%d-%H%M%S")]
         lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
 
         self.tt_N_transit_events[[i for i, x in enumerate(self.tt_N_binning) if x > transit_counts_threshold]] += 1
@@ -1128,84 +1164,48 @@ class SpectrumExperiment(BaseExperiment):
 
         #self.maximize_figure()  # TODO: uncomment
 
-        ############################################ START WHILE LOOP #################################################
+        ############################################ START MAIN LOOP #################################################
 
-        while True:
-            # TODO: need to handle this part - why is it here?
-            #if not self.should_continue():
-            if self.keyPress == 'ESC':
-                self.logger.blue('ESC pressed. Stopping measurement.')
-                self.updateValue("Experiment_Switch", False)
-                self.MOT_switch(True)
-                self.update_parameters()
+        self.runs_status = TerminationReason.SUCCESS
+        for counter in range(1, N+1):
+
+            # Handle cases where user terminates or pauses experiment
+            self.handle_user_events()
+            if self.runs_status == TerminationReason.USER:
                 break
-            if self.keyPress == 'ALT_SPACE' and not self.pause_flag:
-                self.logger.blue('SPACE pressed. Pausing measurement.')
-                self.pause_flag = True
-                self.keyPress = None
-                # Other actions can be added here
-            if self.keyPress == 'ALT_SPACE' and self.pause_flag:
-                self.logger.blue('SPACE pressed. Continuing measurement.')
-                self.pause_flag = False
-                self.keyPress = None
-                # Other actions can be added here
-            self.lockingEfficiency = counter / repetitions
 
-            eff_formatted = '%.2f' % self.lockingEfficiency
-            flr_formatted = '%.2f' % (1000 * np.average(self.FLR_res.tolist()))
+            # Informational printing
+            locking_efficiency_str = '%.2f' % (counter / repetitions)
+            fluorescence_str = '%.2f' % (1000 * np.average(self.FLR_res.tolist()))
             time_formatted = time.strftime("%Y/%m/%d, %H:%M:%S")
-            self.logger.info(f'{time_formatted}: cycle {counter}, Eff: {eff_formatted}, Flr: {flr_formatted}')
+            self.logger.info(f'{time_formatted}: cycle {counter}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}')
 
             repetitions += 1
-            ######################################## PLOT!!! ###########################################################
-            ax = [ax1, ax2, ax3, ax4, ax5, ax6]
-            self.plot_sprint_figures(fig, ax, Num_Of_dets)
 
-            ############################################################################################################
-            if counter == N:
-                self.logger.info(f'finished {N} Runs, {"with" if with_atoms else "without"} atoms')
-                # Other actions can be added here
+            # Plot figures
+            self.plot_figures(fig, [ax1, ax2, ax3, ax4, ax5, ax6], Num_Of_dets)
+
+            # Await for values from OPX
+            timestamp = self.await_for_values(Num_Of_dets)
+            if self.runs_status != TerminationReason.SUCCESS:
                 break
-            count = 1
-            while True:
-                timest = time.strftime("%H%M%S")
 
-                self.get_results_from_streams()
-                self.ingest_time_tags(Num_Of_dets)
-
-                # Check if new tt's arrived:
-                lenS = min(len(self.tt_S_directional_measure), len(self.tt_S_measure_batch[-1]))
-
-                # Check if the number of same values in the new and last vector are less than 1/2 of the total number of values.
-                is_new_tts_S = sum(np.array(self.tt_S_directional_measure[:lenS]) == np.array(self.tt_S_measure_batch[-1][:lenS])) < lenS / 2
-
-                count += 1
-                time.sleep(0.01)
-                if is_new_tts_S:
-                    break
-
-                #if not self.should_continue():
-                if self.keyPress == 'ESC':
-                    self.logger.blue('ESC pressed. Stopping measurement.')
-                    self.updateValue("Experiment_Switch", False)
-                    self.MOT_switch(True)
-                    self.update_parameters()
-                    break
-            # assaf - if x=self.M_window the index is out of range so i added 1
             self.lock_err = self._read_locking_error()
 
             self.sum_for_threshold = (len(self.tt_S_directional_measure) * 1000) / self.M_time
 
-            # fold reflections and transmission
+            # Fold reflections and transmission
             self.tt_N_binning = np.zeros(self.histogram_bin_number*2)
             self.tt_S_binning = np.zeros(self.histogram_bin_number*2)
 
             for x in self.tt_N_directional_measure:
                 self.tt_N_binning[(x - 1) // Config.frequency_sweep_duration] += 1  # TODO: x-1?? in spectrum its x
             self.tt_N_binning_avg = self.tt_N_binning
+
             for x in self.tt_S_no_gaps:
                 self.tt_S_binning[(x - 1) // Config.frequency_sweep_duration] += 1
             self.tt_S_binning_avg = self.tt_S_binning
+
             for x in self.tt_S_no_gaps:
                 # if x < (2e6 + 6400):
                 self.folded_tt_S_acc[(x-1) % self.histogram_bin_size] += 1
@@ -1214,13 +1214,11 @@ class SpectrumExperiment(BaseExperiment):
                 if (8e6 + 6400*4 + 120*4) < x < (10e6):
                     self.folded_tt_S_acc_3[(x - 1) % self.histogram_bin_size] += 1
 
-            # split the binning vector to odd and even - on and off resonance pulses
+            # Split the binning vector to odd and even - on and off resonance pulses
             self.tt_N_binning_resonance = [self.tt_N_binning[x] for x in range(len(self.tt_N_binning)) if x % 2]  # odd
-            self.tt_N_binning_detuned = [self.tt_N_binning[x] for x in range(len(self.tt_N_binning)) if
-                                         not x % 2]  # even
+            self.tt_N_binning_detuned = [self.tt_N_binning[x] for x in range(len(self.tt_N_binning)) if not x % 2]  # even
             self.tt_S_binning_resonance = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if x % 2]  # odd
-            self.tt_S_binning_detuned = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if
-                                         not x % 2]  # even
+            self.tt_S_binning_detuned = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if not x % 2]  # even
 
             if exp_flag:
                 if (self.lock_err > lock_err_threshold) or \
@@ -1257,9 +1255,8 @@ class SpectrumExperiment(BaseExperiment):
                 self.tt_S_binning_batch = self.tt_S_binning_batch[-(N - 1):] + [self.tt_S_binning]
                 self.tt_S_binning_resonance_batch = self.tt_S_binning_resonance_batch[-(N - 1):] + [self.tt_S_binning_resonance]
                 self.tt_S_binning_detuned_batch = self.tt_S_binning_detuned_batch[-(N - 1):] + [self.tt_S_binning_detuned]
-                self.S_bins_res_acc = np.sum(np.array(self.tt_S_binning_resonance_batch),0) # tt_S_binning_resonance accumulated (sum over the batch)
-                self.S_bins_detuned_acc = np.sum(np.array(self.tt_S_binning_detuned_batch),
-                                                 0)  # tt_S_binning_resonance accumulated (sum over the batch)
+                self.S_bins_res_acc = np.sum(np.array(self.tt_S_binning_resonance_batch),0)  # tt_S_binning_resonance accumulated (sum over the batch)
+                self.S_bins_detuned_acc = np.sum(np.array(self.tt_S_binning_detuned_batch), 0)  # tt_S_binning_resonance accumulated (sum over the batch)
 
                 self.tt_N_transit_events[
                     [i for i, x in enumerate(self.tt_N_binning) if x > transit_counts_threshold]] += 1
@@ -1267,20 +1264,23 @@ class SpectrumExperiment(BaseExperiment):
                     [i for i, x in enumerate(self.tt_S_binning) if x > transit_counts_threshold]] += 1
                 self.tt_S_transit_events_accumulated = self.tt_S_transit_events_accumulated + self.tt_S_transit_events
 
-                self.find_transit_events(N, transit_time_threshold=time_threshold,
-                                 transit_counts_threshold=transit_counts_threshold)
+                self.find_transit_events(N, transit_time_threshold=time_threshold, transit_counts_threshold=transit_counts_threshold)
 
                 FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
-                Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
+                Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timestamp]
                 lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
                 self.save_tt_to_batch(Num_Of_dets, N)
 
-        ############################################## END WHILE LOOP #################################################
+        ############################################## END MAIN LOOP #################################################
 
-        # For debugging:
-        # Utils.most_common([x for vec in self.tt_S_measure_batch + self.tt_N_measure_batch for x in vec])
+        if self.runs_status == TerminationReason.SUCCESS:
+            self.logger.info(f'Finished {N} Runs, {"with" if with_atoms else "without"} atoms')
+        elif self.runs_status == TerminationReason.USER:
+            self.logger.info(f'User Terminated the measurements after {N} Runs, {"with" if with_atoms else "without"} atoms')
+        elif self.runs_status == TerminationReason.ERROR:
+            self.logger.info(f'Error Terminated the measurements after {N} Runs, {"with" if with_atoms else "without"} atoms')
 
-        ## Adding comment to measurement [prompt whether stopped or finished regularly]
+        # Adding comment to measurement [prompt whether stopped or finished regularly]
         if exp_flag:
             if counter < N:
                 aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
