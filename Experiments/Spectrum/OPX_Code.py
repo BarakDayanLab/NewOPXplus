@@ -1,10 +1,11 @@
 from Experiments.QRAM import Config_Experiment as Config
-from Experiments.BaseExperiment.Config_Table import Phases_Names
+from Experiments.BaseExperiment.Phases import Phases
 from qm.qua import *
 from Utilities.OPX_Utils import OPX_Utils
 
 # TODO: Move this elsewhere...
 all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]
+
 
 def MOT(mot_repetitions):
     """
@@ -461,8 +462,8 @@ def opx_control(obj, qm):
     with program() as opx_control_prog:
         ## declaring program variables: ##
         i = declare(int)
-        Trigger_Phase = declare(int, value=Phases_Names.index(obj.Exp_Values['Triggering_Phase']))
-        Imaging_Phase = declare(int, value=Phases_Names.index(obj.Exp_Values['Imaging_Phase']))
+        Trigger_Phase = declare(int, value=obj.Exp_Values['Triggering_Phase'])
+        Imaging_Phase = declare(int, value=obj.Exp_Values['Imaging_Phase'])
         x = declare(int)
 
         # Boolean variables:
@@ -591,7 +592,7 @@ def opx_control(obj, qm):
             ## Measurement Sequence ##
             ##########################
 
-            with if_(Trigger_Phase == 3):  # when trigger on PrePulse
+            with if_(Trigger_Phase == Phases.FREE_FALL):  # when trigger on PrePulse (index 3)
                 ## Trigger QuadRF Sequence #####################
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
@@ -604,7 +605,7 @@ def opx_control(obj, qm):
             align(*all_elements, "AOM_2-2/3'", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S",
                   "Dig_detectors", "AOM_Spectrum")
 
-            with if_(Trigger_Phase == 4):  # when trigger on pulse 1
+            with if_(Trigger_Phase == Phases.PULSE_1):  # when trigger on pulse 1 (index 4)
                 ## Trigger QuadRF Sequence #####################
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################

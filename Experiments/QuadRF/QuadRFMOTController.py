@@ -1,21 +1,23 @@
 from topticaLockController import TopticaLockController
 from Experiments.BaseExperiment.Config_Table import Initial_Values as config
-from Experiments.BaseExperiment.Config_Table import Phases_Names as Phases_Names
-from Experiments.BaseExperiment.QuadRFController import QuadRFController
+from Experiments.BaseExperiment.Phases import Phases
+from Experiments.BaseExperiment.Phases import Phases_Names
+from Experiments.QuadRF.QuadRFController import QuadRFController
+from Utilities.BDLogger import BDLogger
 from Utilities.Utils import Utils
 
 
 # Helper classes: each phase includes duration, and amplitude & frequency for TOP1 & AOMs
 class QuadRFChannel:
-    def __init__(self, freq = '0x0', amp = '0x0'):
+    def __init__(self, freq='0x0', amp='0x0'):
         self.freq = freq
         self.amp = amp
 
 
 class QuadRFPhase:
-    def __init__(self, duration = '0x0', initial_values=(('0x0', '0x0'), ('0x0', '0x0'),('0x0', '0x0'), ('0x0', '0x0'))):
+    def __init__(self, duration='0x0', initial_values=(('0x0', '0x0'), ('0x0', '0x0'),('0x0', '0x0'), ('0x0', '0x0'))):
         if type(duration) is not str:
-            duration = '{:.2f}ms'.format(duration) # 2 decimal points, as string
+            duration = '{:.2f}ms'.format(duration)  # 2 decimal points, as string
         self.duration = duration
 
         self.ch_1 = QuadRFChannel(initial_values[0][0], initial_values[0][1])  # Toptica 1
@@ -29,6 +31,9 @@ class QuadRFPhase:
 
 class QuadRFMOTController(QuadRFController):
     def __init__(self, MOGdevice=None, devPort='169.254.231.196', initialValues=None, updateChannels=(1,2,3,4), armChannels=True, opticalPowerCalibration=None, topticaLockWhenUpdating=False, debugging=False, continuous=False):
+
+        self.bdlogger = BDLogger()
+
         if opticalPowerCalibration is None and 'opticalPowerCalibrationFunction' in initialValues:
             opticalPowerCalibration = initialValues['opticalPowerCalibrationFunction']
         super(QuadRFMOTController, self).__init__(MOGdevice, devPort, opticalPowerCalibration=opticalPowerCalibration, debugging=debugging)
@@ -53,7 +58,7 @@ class QuadRFMOTController(QuadRFController):
             self.turnChannelsOff(holdLocking=True)
             return
         else:
-            self.uploadMOTTables(values=self.initialValues, updateChannels=updateChannels, armChannels = armChannels)
+            self.uploadMOTTables(values=self.initialValues, updateChannels=updateChannels, armChannels=armChannels)
 
     def __getitem__(self, item):  # This enables calling attributes as such: self['attr']  = self.attr
         return getattr(self, item)
@@ -62,18 +67,14 @@ class QuadRFMOTController(QuadRFController):
         if values is None:
             values = self.initialValues
 
-        try:
-            self.triggerOnPhaseIndex = Phases_Names.index(values['Triggering_Phase'])
-        except:
-            # TODO: User BDLogger and also add 'e' to catch error.
-            print('\033[91m' + f'Warning: %s does not exist in Config_Table. Check yourself! Triggering on MOT as default.' % values['Triggering_Phase'] + '\033[0m')
-            self.triggerOnPhaseIndex = 0
+        self.phases_order = values['Phases_Order']
+        self.trigger_on_phase = values['Triggering_Phase']
 
         AOMOffFreq = values['MOT_AOM_freq'] + values['AOM_Off_Detuning']
 
         # -----------------  MOT ------------------------
-        self.MOT = QuadRFPhase(duration = values['MOT_duration'], initial_values = ((values['MOT_freq'], self.Amp_Ch1), (AOMOffFreq, self.zeroAmp),
-                                                                                        (values['MOT_AOM_freq'], self.Amp_Ch3), (values['AOM_Repump_freq'], self.Amp_Ch4)))
+        self.MOT = QuadRFPhase(duration=values['MOT_duration'],
+                               initial_values=((values['MOT_freq'],self.Amp_Ch1), (AOMOffFreq, self.zeroAmp), (values['MOT_AOM_freq'], self.Amp_Ch3), (values['AOM_Repump_freq'], self.Amp_Ch4)))
         # MOT Delay (turn everything off, except for repump)
         self.Post_MOT_delay = QuadRFPhase(duration=values['Post_MOT_delay'], initial_values=((values['MOT_freq'], self.Amp_Ch1), (AOMOffFreq, self.zeroAmp),
                                                                                              (AOMOffFreq, self.zeroAmp), (values['AOM_Repump_freq'], self.Amp_Ch4)))
@@ -164,30 +165,45 @@ class QuadRFMOTController(QuadRFController):
 
         self.changeLastPhaseDuration()
 
-    # changeLastPhaseDuration: making sure the last phase duration is 0.01ms - this way this phase goes on until another trigger arrives.
     def changeLastPhaseDuration(self):
+        """
+        Making sure the last phase duration is 0.01ms - this way this phase goes on until another trigger arrives.
+        The previous phase is dependant on the experiments phase order
+        """
         d = '0.01ms'
-        lastPhase = Phases_Names[(self.triggerOnPhaseIndex - 1) % len(Phases_Names)] # last phase is the one before the phase on which we trigger
-        if self.debugging: print('\033[94m' + 'Triggering on, ' + Phases_Names[self.triggerOnPhaseIndex] + ', ' + lastPhase +' will continue until trigger.' + '\033[0m') # print blue
+
+        previous_phase_index = (self.phases_order.index(self.trigger_on_phase)-1) % len(self.phases_order)
+        last_phase_index = self.phases_order[previous_phase_index]
+
+        triggeringPhase = Phases_Names[self.trigger_on_phase]
+        lastPhase = Phases_Names[last_phase_index]
+
+        if self.debugging:
+            self.bdlogger.debug(f'Triggering on {triggeringPhase}, {lastPhase} will continue until trigger.')
+
         # e.g., if we trigger on Pulse_1, lase phase is FreeFall
         self[lastPhase].duration = d
 
-    def uploadMOTTables(self, values = None, updateChannels = (1,2,3,4), armChannels = True):
-        if values is None: values = self.initialValues
+    def uploadMOTTables(self, values=None, updateChannels=(1,2,3,4), armChannels=True):
+        if values is None:
+            values = self.initialValues
+
         # --- Handle Toptica lock if necessary -----
-        if 1 in updateChannels and self.topticaLockWhenUpdating: self.setTopticaLock(False)
+        if 1 in updateChannels and self.topticaLockWhenUpdating:
+            self.setTopticaLock(False)
 
         # --- Prepare and load table ------
         self.prepareChannelsForTable(prepareChannels=updateChannels)  # Deletes all existing tables on QuadRF. Also sets limits [hard coded!] on each channel
         self.initQuadRFValues(values)
-        self.prepareMOTTables(updateChannels=updateChannels)       # Load table to QuadRF
+        self.prepareMOTTables(updateChannels=updateChannels)  # Load table to QuadRF
 
         # ---- Arm channels -----
-        if armChannels: self.armChannels(updateChannels)             # arm channels
+        if armChannels:
+            self.armChannels(updateChannels)  # arm channels
         # --- release Toptica lock ----
         if 1 in updateChannels and self.topticaLockWhenUpdating and armChannels: self.setTopticaLock(True)
 
-    def prepareChannelsForTable(self, prepareChannels = (1,2,3,4),reArm = True):
+    def prepareChannelsForTable(self, prepareChannels=(1,2,3,4), reArm=True):
         if 1 in prepareChannels: self.prepareChannelForTable(ch=1, reArm=reArm, limit='22dbm')
         if 2 in prepareChannels: self.prepareChannelForTable(ch=2, reArm=reArm, limit='20dbm')
         if 3 in prepareChannels: self.prepareChannelForTable(ch=3, reArm=reArm, limit='32dbm')
@@ -230,16 +246,20 @@ class QuadRFMOTController(QuadRFController):
         self.changeSequenceParamsToStrings()  # First, make all parameters are in the right units (i.e., unless specified otherwise by user, to be Hz & dBm)
         ch = int(ch)
 
-        i = self.triggerOnPhaseIndex
-        while True:
-            if i == Phases_Names.index('MOT'):
+        # Iterate over all phases
+        for phase_index in range(0, len(self.phases_order)-1):
+            # Get the relevant phase according to experiment specific order
+            i = (phase_index + self.trigger_on_phase) % len(self.phases_order)
+            phase = self.phases_order[i]
+            # Send the relevant command
+            if phase == Phases.MOT:
                 # -- MOT--
                 if self.MOT.duration != '0.00ms':
                     # 2 seconds of @f0 in constant @a0
-                    self.sendCmdConstantPhase(ch, self.MOT,phase_name = 'MOT')
+                    self.sendCmdConstantPhase(ch, self.MOT, phase_name='MOT')
                     if self.Post_MOT_delay.duration != '0.00ms':
                         self.sendCmdConstantPhase(ch, self.Post_MOT_delay) # PGC off stage - everything is off, except for repump
-            elif i == Phases_Names.index('PGC'):
+            elif phase == Phases.PGC:
                 # -- PGC --
                 if self.PGC_prep.duration != '0.00ms':
                     # PGC preparation: 3ms of frequency change from f0 to f1, power dropping from a0 to a1
@@ -248,41 +268,39 @@ class QuadRFMOTController(QuadRFController):
                 if self.PGC.duration != '0.00ms':
                     # PGC: Then 9 ms of constant a1 & f1
                     self.sendCmdConstantPhase(ch, self.PGC, phase_name = 'PGC')  # PGC constant stage
-            elif i == Phases_Names.index('Fountain'):
-                # -- Fountain --
+            elif phase == Phases.FOUNTAIN:
+                # Fountain
                 if self.Fountain_prep.duration != '0.00ms':
                     # Fountain preparation: 1ms of frequency change from f1 to f2, power dropping from a0 to a1
                     self.sendCmdDynamicPhase(ch, startPhase=self.Fountain_prep, endPhase=self.Fountain, duration=self.Fountain_prep.duration)  # Fountain changing amp & freq stage; PGC to Fountain
                 if self.Fountain.duration != '0.00ms':
                     # Fountain: 0.2ms of constant f2 & a2
                     self.sendCmdConstantPhase(ch, self.Fountain, phase_name = 'Fountain')  # Fountain constant stage
-            elif i == Phases_Names.index('Free_Fall'):
-                ## -- Free Fall --
+            elif phase == Phases.FREE_FALL:
+                # Free Fall
                 if self.Free_Fall.duration != '0.00ms':
-                    self.sendCmdConstantPhase(ch, self.Free_Fall, phase_name = 'Free_Fall')  # Free-Fall constant stage
-            elif i == Phases_Names.index('Pulse_1'):
-                ## -- Pulse 1  --
+                    self.sendCmdConstantPhase(ch, self.Free_Fall, phase_name='Free_Fall')  # Free-Fall constant stage
+            elif phase == Phases.PULSE_1:
+                # Pulse 1
                 if self.Pulse_1.duration != '0.00ms':
                     if self.Pulse_1_decay.duration != '0.00ms':
                         self.sendCmdDynamicPhase(ch, startPhase=self.Pulse_1_decay, endPhase=self.Pulse_1, duration=self.Pulse_1_decay.duration)  # Decay from Pulse_1_decay amp & freq to Pulse_1 amp & freq
-                    self.sendCmdConstantPhase(ch,self.Pulse_1, phase_name = 'Pulse_1')  # Pulse 1
-            elif i == Phases_Names.index('Inter_Pulses'):
+                    self.sendCmdConstantPhase(ch,self.Pulse_1, phase_name='Pulse_1')  # Pulse 1
+            elif phase == Phases.INTER_PULSES:
                 if self.Inter_Pulses.duration != '0.00ms':
-                    ## -- Inter-Pulses  --
+                    # Inter-Pulses
                     self.sendCmdConstantPhase(ch, self.Inter_Pulses)  # In-between pulses; Note amp&freq should be same as post-pulses (off)
-            elif i == Phases_Names.index('Pulse_2'):
+            elif i == Phases.PULSE_2:
                 if self.Pulse_2.duration != '0.00ms':
-                    ## -- Pulse 2 ---
-                    self.sendCmdConstantPhase(ch, self.Pulse_2, phase_name = 'Pulse_2')  # Pulse 2
-            elif i == Phases_Names.index('Post_Pulse'):
-                ## -- Post pulses --
+                    # Pulse 2
+                    self.sendCmdConstantPhase(ch, self.Pulse_2, phase_name='Pulse_2')  # Pulse 2
+            elif phase == Phases.POST_PULSE:
+                # Post pulses
                 self.sendCmdConstantPhase(ch, self.PostPulses, phase_name='Post_Pulse')  # Post-Pulses pulses; Note amp&freq should be the same as inter-pulses (off)
+            else:
+                self.bdlogger.warn(f'Unknown phase {phase}')
 
-            # Check whether all phases are completed
-            i = (i + 1) % len(Phases_Names)
-            if i == self.triggerOnPhaseIndex:
-                break
-
-    def prepareMOTTables(self, updateChannels = (1,2,3,4)):
+        pass
+    def prepareMOTTables(self, updateChannels=(1,2,3,4)):
         for channel in updateChannels:
             self.appendMOTSequence(channel)

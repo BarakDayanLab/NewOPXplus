@@ -1,5 +1,5 @@
 from Experiments.QRAM import Config_Experiment as Config
-from Experiments.BaseExperiment.Config_Table import Phases_Names
+from Experiments.BaseExperiment.Phases import Phases
 from qm.qua import *
 from Utilities.OPX_Utils import OPX_Utils
 
@@ -859,12 +859,8 @@ def opx_control(obj, qm):
     with program() as opx_control_prog:
         ## declaring program variables: ##
         i = declare(int)
-        Trigger_Phase = declare(int, value=Phases_Names.index(obj.Exp_Values['Triggering_Phase']))
-
-        # TODO: if we wish to use Enums instead of strings/values, we can do it like this:
-        #Trigger_Phase = declare(int, value=obj.Exp_Values['Triggering_Phase'].value)
-
-        Imaging_Phase = declare(int, value=Phases_Names.index(obj.Exp_Values['Imaging_Phase']))
+        Trigger_Phase = declare(int, value=obj.Exp_Values['Triggering_Phase'])
+        Imaging_Phase = declare(int, value=obj.Exp_Values['Imaging_Phase'])
         x = declare(int)
 
         # Boolean variables:
@@ -1013,7 +1009,7 @@ def opx_control(obj, qm):
             # TODO: if we use Enums, it will be like this:
             #with if_(Trigger_Phase == Phases.FREE_FALL.value)
             # TODO: but I see that in Phases_Names, #3 is "Free_Fall" - is it the same like "PrePulse"?
-            with if_(Trigger_Phase == 3):  # when trigger on PrePulse
+            with if_(Trigger_Phase == Phases.FREE_FALL):  # when trigger on PrePulse
                 ## Trigger QuadRF Sequence #####################
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
@@ -1044,7 +1040,7 @@ def opx_control(obj, qm):
                 wait(PrePulse_duration, "Cooling_Sequence")
             align(*all_elements, "AOM_2-2/3'", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors")
 
-            with if_(Trigger_Phase == 4):  # when trigger on pulse 1
+            with if_(Trigger_Phase == Phases.PULSE_1):  # when trigger on pulse 1
                 ## Trigger QuadRF Sequence #####################
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################

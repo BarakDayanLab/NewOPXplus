@@ -1,6 +1,7 @@
 from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
 from Experiments.BaseExperiment.BaseExperiment import TerminationReason
 from Experiments.Spectrum import Config_Experiment as Config
+import signal
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -12,9 +13,19 @@ from UtilityResources.HMP4040Control import HMP4040Visa
 
 
 class SpectrumExperiment(BaseExperiment):
+    def handle_signal(self):
+        print('>>>>>>>>>> handle signal <<<<<<<<<<<<')
+        self.__del__()
+
     def __init__(self, config=Config.config):
+        signal.signal(signal.SIGTERM, self.handle_signal)
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
         super().__init__()
+        pass
+
+    def __del__(self):
+        print('**** SpectrumExperiment Destructor ****')
+        super(type(self), self).__del__()
         pass
 
     # Override base-class method with the variables/values this experiment wants to use
@@ -184,19 +195,6 @@ class SpectrumExperiment(BaseExperiment):
         self.frequency_diff = int(self.spectrum_bandwidth / self.num_of_different_frequencies)
 
         pass
-
-    # This is overriding the method in base class
-    def should_continue(self):
-        cont = super().should_continue()
-        return cont
-
-    # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
-    # -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-    # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
-
-    # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
-    # -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-    # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
 
     def getHelmholtzCoilsState(self):
         self.logger.info('Getting Helmholtz coils state...')
@@ -966,7 +964,7 @@ class SpectrumExperiment(BaseExperiment):
 
         count = 1
         while True:
-            timestamp = time.strftime("%H%M%S")  # TODO: Q: why are we taking the timestamp BEFORE the measurement is in?
+            timestamp = time.strftime("%Y%m%d-%H%M%S")  # TODO: Q: why are we taking the timestamp BEFORE the measurement is in?
 
             # Get data from OPX streams
             self.get_results_from_streams()
@@ -986,7 +984,6 @@ class SpectrumExperiment(BaseExperiment):
                 break
 
             # Did the user ask to terminate?
-            # if not self.should_continue():
             if self.keyPress == 'ESC':
                 self.logger.blue('ESC pressed. Stopping measurement.')
                 self.updateValue("Experiment_Switch", False)
@@ -1276,9 +1273,9 @@ class SpectrumExperiment(BaseExperiment):
         if self.runs_status == TerminationReason.SUCCESS:
             self.logger.info(f'Finished {N} Runs, {"with" if with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.USER:
-            self.logger.info(f'User Terminated the measurements after {N} Runs, {"with" if with_atoms else "without"} atoms')
+            self.logger.info(f'User Terminated the measurements after {counter} Runs, {"with" if with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.ERROR:
-            self.logger.info(f'Error Terminated the measurements after {N} Runs, {"with" if with_atoms else "without"} atoms')
+            self.logger.info(f'Error Terminated the measurements after {counter} Runs, {"with" if with_atoms else "without"} atoms')
 
         # Adding comment to measurement [prompt whether stopped or finished regularly]
         if exp_flag:
@@ -1450,7 +1447,8 @@ class SpectrumExperiment(BaseExperiment):
 if __name__ == "__main__":
 
     run_parameters = {
-        'N': 500,
+        #'N': 500,
+        'N': 10,
         'histogram_bin_size': 1000,
         'transit_profile_bin_size': 10,  # TODO: Q: should this be 10 or 100?
         'pre_comment': 'Transit experiment with 2uW of 731.30nm light coupled',  # TODO: Q: what should be the comment here?
@@ -1491,3 +1489,5 @@ if __name__ == "__main__":
         experiment.run(run_parameters)
     else:
         experiment.run_sequence(sequence_definitions, run_parameters)
+
+    del experiment

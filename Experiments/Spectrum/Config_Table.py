@@ -1,3 +1,4 @@
+from Experiments.BaseExperiment.Phases import Phases
 from Experiments.BaseExperiment.Config_Table import Initial_Values
 import Experiments.Spectrum.Config_Experiment as Config
 
@@ -5,13 +6,13 @@ import Experiments.Spectrum.Config_Experiment as Config
 # These values will be added/override the ones in Initial_Values (e.g. Common Experiment Values)
 Experiment_Values = {
     'Experiment_Name': 'Spectrum',
-
-    'Triggering_Phase': 'Free_Fall',
+    'Phases_Order': [Phases.MOT, Phases.FOUNTAIN, Phases.PGC, Phases.FREE_FALL, Phases.PULSE_1, Phases.INTER_PULSES, Phases.PULSE_2, Phases.POST_PULSE],
+    'Triggering_Phase': Phases.FREE_FALL,
     'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],
     'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'] + 30e6,
     'N_Snaps': 1,
     'Buffer_Cycles': 0,
-    'Imaging_Phase': 'Pulse_1',
+    'Imaging_Phase': Phases.PULSE_1,
     'PrePulse_duration': 20,  # [msec]
     'Shutter_open_time': 3,  # [msec]
     'Pulse_1_Repump_amp': 0.000001,

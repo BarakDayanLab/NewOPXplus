@@ -20,7 +20,8 @@ from Experiments.BaseExperiment import Config_Experiment as Config  # Attempt to
 from Experiments.BaseExperiment import OPX_Code  # Attempt to load the OPX Code (may be overriden later)
 from Experiments.BaseExperiment.Config_Table import Default_Values
 from Experiments.BaseExperiment.Values_Transformer import Values_Transformer
-from Experiments.BaseExperiment.QuadRFMOTController import QuadRFMOTController
+
+from Experiments.QuadRF.QuadRFMOTController import QuadRFMOTController
 
 import logging
 from logging import StreamHandler, Formatter, INFO, WARN, ERROR
@@ -119,7 +120,6 @@ class BaseExperiment:
         }
 
         # Set mainloop flags
-        self.halt_experiment = False
         self.ignore_data = False
         self.runs_status = None  # Uses the TerminationReason enum
 
@@ -146,6 +146,8 @@ class BaseExperiment:
         pass
 
     def __del__(self):
+        print('**** BaseExperiment Destructor ****')
+
         # Close all OPX related instances
         #if hasattr(self,'job'):
         # self.job.halt()
@@ -380,10 +382,6 @@ class BaseExperiment:
         }
         pass
 
-    # Determines whether mainloop should continue (e.g. ESC was pressed)
-    def should_continue(self):
-        return not self.halt_experiment
-
     def handle_user_events(self):
         """
         Handle cases where user pressed ESC to terminate or ALT_SPACE to pause/continue measurements
@@ -468,15 +466,12 @@ class BaseExperiment:
         return False
 
     def _on_release(self, key):
-        #self.halt_experiment = False  # TODO: if this works - throw this line
         self.ignore_data = False
 
         if str(key) == "'q'" or str(key) == "'Q'":
-            self.halt_experiment = True
+            self.keyPress = 'Q'
 
         if key == keyboard.Key.esc:
-        #if key == keyboard.Key.esc and self.alt_modifier == 'SHIFT':
-            self.halt_experiment = True
             self.keyPress = 'ESC'
 
         # TODO: Generalize it to be in the form of "ALT-SPACE" or "CTRL-SPACE" or "SHIFT-ESC"

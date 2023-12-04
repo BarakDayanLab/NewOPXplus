@@ -172,11 +172,6 @@ class QRAMExperiment(BaseExperiment):
         self.Calibration_time = 10  # [msec]
         pass
 
-    # This is overriding the method in base class
-    def should_continue(self):
-        cont = super().should_continue()
-        return cont
-
     # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
     # -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
     # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
@@ -1230,7 +1225,7 @@ class QRAMExperiment(BaseExperiment):
         self.sum_for_threshold = reflection_threshold
         while exp_flag and (cycle < WARMUP_CYCLES or self.sum_for_threshold > reflection_threshold):
 
-            if not self.should_continue():
+            if self.keyPress == 'ESC':
                 self.logger.blue('ESC pressed. Stopping measurement.')
                 self.updateValue("Experiment_Switch", False)
                 self.MOT_switch(True)

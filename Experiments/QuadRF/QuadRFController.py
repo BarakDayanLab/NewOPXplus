@@ -26,7 +26,8 @@
 
 
 ## ------------------------------------------------------------
-from mogdevice import MOGDevice
+from Experiments.QuadRF.mogdevice import MOGDevice
+
 import os.path
 from pathlib import Path
 import csv
