@@ -73,6 +73,11 @@ class BDResults:
 
         # Iterate over all result entities we need to save
         for entity in self.results_map['files']:
+            entity_keys = list(entity.keys())
+            # Is this a comment line?
+            if len(entity_keys) == 1 and entity_keys[0].startswith('#'):
+                continue
+
             if 'skip' in entity and entity['skip']:
                 continue
 
