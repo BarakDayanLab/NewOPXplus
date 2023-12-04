@@ -291,10 +291,10 @@ class QuadRFController:
     def continuousTableForChannel(self, ch, frq, amp):
         self.sendCmd('TABLE,APPEND,%d, %s, %s, 0x0, 0x0' % (ch,frq,amp))
 
-    def continuousTablesForChannels(self, channels=(1,2,3,4), start=True):
+    def continuousTablesForChannels(self, channels=(1, 2, 3, 4), start=True):
         if 1 in channels and self.topticaLockWhenUpdating: self.setTopticaLock(False)
-        self.prepareChannelsForTable(prepareChannels=channels,reArm = False)  # Deletes all existing tables on QuadRF. Also sets limits [hard coded!] on each channel
-        if 'Continuous' != self.initialValues['Operation_Mode']:
+        self.prepareChannelsForTable(prepareChannels=channels, reArm=False)  # Deletes all existing tables on QuadRF. Also sets limits [hard coded!] on each channel
+        if not self.continuous:
             self.logger.debug('Continuous mode. Parameters taken from quadRFMOTController.py (hard coded)')
             # Hard coding continuous parameters here, if this function was called not due to Operation_Mode = Continuous.
             zeroAmp = '0x0'
@@ -303,7 +303,7 @@ class QuadRFController:
             if 3 in channels: self.continuousTableForChannel(3, '110MHz', self.Amp_Ch3)
             if 4 in channels: self.continuousTableForChannel(4, '133.325MHz', self.Amp_Ch4)  # Depump
         else:
-            self.logger.debug('Continuous mode. Parameters taken from Config_Table.py. See Operation_Modes.')
+            self.logger.debug('Continuous mode.')
             # Otherwise, get the data from Config_Table
             if 1 in channels: self.continuousTableForChannel(1, self.initialValues['CH1_freq'], self.initialValues['CH1_amp'])
             if 2 in channels: self.continuousTableForChannel(2, self.initialValues['CH2_freq'], self.initialValues['CH2_amp'])

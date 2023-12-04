@@ -198,10 +198,12 @@ class BaseExperiment:
 
         # TODO: why aren't the values below part of the experiment values or configuration values?
         qrfContr2 = QuadRFMOTController(MOGdevice=qrfContr.device,
-                                        initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
+                                        # TODO: remove this - we don't want 'Operation Mode' in the code anymore :-)
+                                        #initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
+                                        initialValues={'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
                                         updateChannels=[3],
                                         debugging=False,
-                                        continuous=False)  # updates values on QuadRF (uploads table)
+                                        continuous=True)  # updates values on QuadRF (uploads table)
         self.QuadRFControllers.append(qrfContr2)  # updates values on QuadRF (uploads table)
 
         # TODO: do we need this?
@@ -237,19 +239,20 @@ class BaseExperiment:
             self.logger.warn(f'Unable to connect to OPX. {err}')
             raise Exception(f'Unable to connect to OPX. {err}')
         except KeyboardInterrupt as err:
-            close_it = False
-            if close_it:
-                self.qm.close()
-                self.qmm.close()
-                return
-
-            self.logger.warn(f'Got user interrupt. Maybe stopped Pycharm or Python process? {err}')
-            if self.job is not None:
-                self.job.halt()
-            self.qmm.reset_data_processing()
+            self.close_opx()
+            self.logger.warn(f'Got user interrupt. Closing OPX. Maybe stopped Pycharm or Python process? {err}')
 
         self.io1_list = []
         self.io2_list = []
+
+    def close_opx(self):
+        if hasattr(self, 'job'):
+            self.job.halt()
+        if hasattr(self, 'qm'):
+            self.qm.close()
+        if hasattr(self, 'qmm'):
+            self.qmm.close_all_quantum_machines()
+            self.qmm.close()
 
     def initialize_experiment_variables(self):
 

@@ -1490,4 +1490,5 @@ if __name__ == "__main__":
     else:
         experiment.run_sequence(sequence_definitions, run_parameters)
 
-    del experiment
+    experiment.close_opx()
+    pass

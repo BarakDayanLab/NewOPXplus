@@ -50,13 +50,18 @@ class QuadRFMOTController(QuadRFController):
         # self.UnAmplifiedAmp = 5.75  # dbm, unAmplified (that is, amplified by an external amp. Maybe I should have called it the other way around)
         self.topticaController = None
         self.topticaLockWhenUpdating = topticaLockWhenUpdating
+        self.continuous = continuous
 
-        if continuous or self.initialValues['Operation_Mode'] == 'Continuous':  # run continuous mode then quit
+        # TODO: remove this once we finish debugging and setting all experiments
+        if 'Operation_Mode' in self.initialValues and self.initialValues['Operation_Mode'] == 'Off':
+            raise Exception("**** Note - there is code that still uses Operation_Mode['off']. Please check it! *****")
+
+        if continuous:  # run continuous mode then quit
             self.continuousTablesForChannels(updateChannels)
             return
-        elif self.initialValues['Operation_Mode'] == 'Off':
-            self.turnChannelsOff(holdLocking=True)
-            return
+        #elif self.initialValues['Operation_Mode'] == 'Off':
+        #    self.turnChannelsOff(holdLocking=True)
+        #    return
         else:
             self.uploadMOTTables(values=self.initialValues, updateChannels=updateChannels, armChannels=armChannels)
 
