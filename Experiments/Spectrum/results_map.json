@@ -1,7 +1,7 @@
 {
 	"version": "0.1",
 	"strict": false,
-	"experiments_root": "C:\\temp\\refactor_debug\\Experiment_results",
+	"all_experiments_root": "C:\\temp\\refactor_debug\\Experiment_results",
 	"experiment_root": "C:\\temp\\refactor_debug\\Experiment_results\\Spectrum",
 	"root": "C:\\temp\\refactor_debug\\Experiment_results\\Spectrum\\{current_date}\\{current_time}_Photon_TimeTags",
 	"files": [
