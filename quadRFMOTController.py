@@ -117,7 +117,6 @@ class QuadRFMOTController(QuadRFController):
                                                     (AOMOffFreq, self.zeroAmp),
                                                     (values['MOT_AOM_freq'] - values['Fountain_final_Delta_freq'], self.Amp_Ch3 + Fountain_final_delta_amp_plus),
                                                     (values['Repump_PGC_freq'], self.Amp_Ch4)))
-        # PushBeam
         # ----------------- Free-fall -----------------
         PrePulse_delta_amp_Repump = float(self.amplitudeMultiplierToDBm(values['PrePulse_Repump_amp']))
         # Free fall - before pulses

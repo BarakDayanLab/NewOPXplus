@@ -408,7 +408,7 @@ Operation_Modes = {
                                         'Fountain_prep_duration': 0.5,  # [msec], Can't be zero!!!
                                         # Imaging
                                         'Imaging_Phase': 'Pulse_1',
-                                        'PrePulse_duration': 5,  # [msec]
+                                        'PrePulse_duration': 9,  # [msec]
                                         'Pulse_1_duration': 0.2,       # [msec]
                                         },
                     'Fountain': {

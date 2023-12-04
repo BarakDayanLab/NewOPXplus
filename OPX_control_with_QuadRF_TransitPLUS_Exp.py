@@ -1131,7 +1131,7 @@ class OPX:
     def update_PushBeam_duration(self, duration):
         self.update_io_parameter(47, int(duration * 1e3 / 4)) # In [us]
     def update_PushBeam_amp(self, Amp):
-        self.update_io_parameter(48, int(Amp)) # In [us]
+        self.update_io_parameter(48, int(Amp)) #
     def update_PushBeam_frequency(self, freq):
         self.update_io_parameter(49, int(Config.IF_AOM_OD + freq))  # In [us]
 
