@@ -641,7 +641,8 @@ Frequency_Scan_Config_Values = {
 # These are channels in OPX, and should all be integers.
 # The values have no real significance, except for in Parameters update in OPX control
 #-------------------------------------------
-IOParametersMapping = {
+# TODO: Remove this once we see everything works fine with IOP
+IOParametersMapping_ZZZ = {
   "MOT_switch": 1,
   "Linear_PGC_switch": 2,
   "Transit_Exp_switch": 3,
@@ -765,6 +766,6 @@ Key_to_Channel = {
 }
 
 # Run a sanity check on keys in all dictionaries
-Utils.verify_keys_for_case_sensitivity([Initial_Values, IOParametersMapping, Key_to_Channel])
+Utils.verify_keys_for_case_sensitivity([Initial_Values, Key_to_Channel])
 
 

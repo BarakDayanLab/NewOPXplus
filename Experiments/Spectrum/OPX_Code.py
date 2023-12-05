@@ -1,5 +1,6 @@
 from Experiments.QRAM import Config_Experiment as Config
 from Experiments.BaseExperiment.Phases import Phases
+from Experiments.BaseExperiment.IO_Parameters import IOParameters as IOP
 from qm.qua import *
 from Utilities.OPX_Utils import OPX_Utils
 
@@ -460,7 +461,8 @@ def Spectrum_Exp(m_off_time, m_time, m_window, shutter_open_time,
 
 def opx_control(obj, qm):
     with program() as opx_control_prog:
-        ## declaring program variables: ##
+
+        # Declaring program variables
         i = declare(int)
         Trigger_Phase = declare(int, value=obj.Exp_Values['Triggering_Phase'])
         Imaging_Phase = declare(int, value=obj.Exp_Values['Imaging_Phase'])
@@ -655,23 +657,24 @@ def opx_control(obj, qm):
             # We will break the loop only when receiving a value of 0 - this marks the end of parameters to be updated
             with while_(i > 0):
                 ## Boolean variables control: ##
-                with if_(i == 1):
+                # TODO: There are other options to solve MOT_SWITCH on/off W/O 2 parameters
+                with if_(i == IOP.MOT_SWITCH_ON.value):
                     update_frequency("MOT_AOM_0", Config.IF_AOM_MOT)
-                with if_(i == 2):
+                with if_(i == IOP.MOT_SWITCH_OFF.value):
                     update_frequency("MOT_AOM_0", Config.IF_AOM_MOT_OFF)
-                with if_(i == 4):  # We are setting here the experiment ON/OFF
+                with if_(i == IOP.EXPERIMENT_SWITCH.value):  # We are setting here the experiment ON/OFF
                     assign(Experiment_ON, IO2)
                 # ## AntiHelmholtz control ##
-                # with if_(i == 10):
+                # with if_(i == IOP.ANTIHELMHOLTZ_DELAY.value):
                 #     assign(antihelmholtz_delay, IO2)
                 # ## MOT variables control ##
-                # with if_(i == 11):  # Live control over the
+                # with if_(i == IOP.MOT_DURATION.value):  # Live control over the
                 #     assign(MOT_Repetitions, IO2)
-                # with if_(i == 12):  # Live control over the
+                # with if_(i == IOP.POST_MOT_DELAY.value):  # Live control over the
                 #     assign(post_MOT_delay, IO2)
 
                 # ## PGC variables control ##
-                # with if_(i == 20):  # Live control over the PGC duration
+                # with if_(i == IOP.PGC_DURATION.value):  # Live control over the PGC duration
                 #     assign(pgc_duration, IO2)
                 #
                 # ## Fountain variables control: ##
@@ -687,25 +690,25 @@ def opx_control(obj, qm):
                 #     assign(fountain_aom_chirp_rate, IO2)
                 #
                 # ## Measurement variables control: ##
-                with if_(i == 42):
+                with if_(i == IOP.PREPULSE_DURATION.value):
                     assign(PrePulse_duration, IO2)
-                with if_(i == 43):
+                with if_(i == IOP.PREPULSE_DURATION.value):
                     assign(Pulse_1_duration, IO2)
-                # with if_(i == 44):
+                # with if_(i == IOP.PULSE_1_DECAY_DURATION.value):
                 #     assign(Pulse_1_decay_time, IO2)
-                # with if_(i == 45):  # The number of frames(snaps) to take for a video with growing snap time intervals
+                # with if_(i == IOP.N_SNAPS.value):  # The number of frames(snaps) to take for a video with growing snap time intervals
                 #     assign(N_Snaps, IO2)
-                # with if_(i == 46):
+                # with if_(i == IOP.BUFFER_CYCLES.value):
                 #     assign(Buffer_Cycles, IO2)
                 #
                 # ## OD and N_atoms measuring variable control ##
-                # with if_(i == 56):  # Live control of the Depump measurement start time
+                # with if_(i == IOP.DEPUMP_START.value):  # Live control of the Depump measurement start time
                 #     assign(Depump_start, IO2)
-                # with if_(i == 57):  # Live control of the Depump measurement pulses duration
+                # with if_(i == IOP.DEPUMP_PULSE_DURATION.value):  # Live control of the Depump measurement pulses duration
                 #     assign(Depump_pulse_duration, IO2)
-                # with if_(i == 58):  # Live control of the Depump measurement wait duration between the 2 pulses
+                # with if_(i == IOP.DEPUMP_PULSES_SPACING.value):  # Live control of the Depump measurement wait duration between the 2 pulses
                 #     assign(Depump_pulses_spacing, IO2)
-                # with if_(i == 59):  # Live control of the delay due to shutter opening time.
+                # with if_(i == IOP.SHUTTER_OPENING_TIME.value):  # Live control of the delay due to shutter opening time.
                 #     assign(shutter_open_time, IO2)
 
                 # Signal the Python code to send the next [key/value] pair

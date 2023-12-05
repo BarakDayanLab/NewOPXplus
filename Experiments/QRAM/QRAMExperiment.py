@@ -205,85 +205,6 @@ class QRAMExperiment(BaseExperiment):
         # self.update_exp_pgc_final_amplitude(final_amplitude)
         return x
 
-    def MOT_switch(self, with_atoms):
-        if with_atoms:
-            self.update_io_parameter(1, 0)
-        else:
-            self.update_io_parameter(2, 0)
-
-    def Linear_PGC_switch(self, Bool):
-        self.update_io_parameter(2, Bool)
-
-    def Experiment_Switch(self, experiment_on_off):
-        self.update_io_parameter(4, experiment_on_off)
-
-    def Transit_Exp_switch(self, Bool):
-        # self.Transit_switch = Bool
-        # self.update_io_parameter(3, Bool)
-        self._update_io_parameter("Transit_Exp_switch", Bool)
-
-    def CRUS_Exp_switch(self, Bool):
-        self.update_io_parameter(4, Bool)
-
-    def Spectrum_Exp_switch(self, Bool):
-        # self.update_io_parameter(4, Bool)
-        self._update_io_parameter("Spectrum_Exp_switch", Bool)
-
-    def QRAM_Exp_switch(self, Bool):
-        # self.update_io_parameter(4, Bool)
-        self._update_io_parameter("QRAM_Exp_switch", Bool)
-
-    def AntiHelmholtz_Delay_switch(self, Bool):
-        self.update_io_parameter(5, Bool)
-
-    def Max_Probe_counts_switch(self, Bool):
-        self.update_io_parameter(6, Bool)
-
-    # ## Antihelmholtz delay variable update functions: ##
-
-    def update_AntiHelmholtz_delay(self, new_delay):  # In units of [msec]
-        self.update_io_parameter(10, int(new_delay * 1e6 / 4))
-
-    ## update N_snaps: ##
-
-    ## PGC variable update functions: ##
-
-    # TODO: Dorko: "This can be removed - not in use anymore"
-    # def update_N_Snaps(self, N_Snaps):  # In units of [msec]
-    #     if self.Exp_Values['Buffer_Cycles'] < 0:
-    #         self.update_io_parameter(46, 3)  # Update 3 buffer cycles
-    #     self.update_io_parameter(45, N_Snaps)  # Update N_snaps
-
-    def update_PGC_prep_time(self, prep_time):  # In units of [msec]
-        # self.pgc_prep_duration = int(prep_time * 1e6 / 4)
-        # self.update_io_parameter(21, int(prep_time * 1e6 / 4))
-        self._update_io_parameter("PGC_prep_duration", prep_time)
-
-
-    ## Fountain variable update functions: ##
-
-    def update_fountain_prep_time(self, prep_time):  # In units of [msec]
-        # self.fountain_prep_duration = int(prep_time * 1e6 / 4)
-        # self.update_io_parameter(32, int(prep_time * 1e6 / 4))
-        self._update_io_parameter("Fountain_prep_time", prep_time)
-
-    def update_fountain_Delta_freq(self, df):
-        # self.fountain_aom_chirp_rate = int(df * 1e3 / (self.fountain_prep_duration * 4))  # mHz/nsec
-        # self.logger.info(self.fountain_aom_chirp_rate)
-        # self.update_io_parameter(39, self.fountain_aom_chirp_rate)
-        self._update_io_parameter("Fountain_final_Delta_freq", df)
-
-    ## Measuring variable update functions: ##
-
-    def MeasureOD(self, OD_Time):
-        self.update_io_parameter(41, int(OD_Time * 1e6 / 4))
-
-    def MeasureOD_SNSPDs_delay(self, OD_Delay):
-        self.update_io_parameter(44, int(OD_Delay * 1e6 / 4))
-
-    def MeasureOD_SNSPDs_duration(self, duration):
-        self.update_io_parameter(45, int(duration / self.M_window * 1e6 / 4))
-
     def Get_Max_Probe_counts(self, repetitions):
 
         self.Max_Probe_counts_switch(True)
@@ -1821,36 +1742,6 @@ class QRAMExperiment(BaseExperiment):
         experiment_success = 'ignore' if 'ignore' in cmnt else 'valid'
         full_line = f'{date_str},{time_str},{experiment_success},{with_atoms},{counter},{cmnt}'
         return full_line
-
-    ## MW spectroscopy variable update functions: ##
-
-    def MW_spec_frequency(self, freq):
-        self.update_io_parameter(51, int(freq))  # In unit of [Hz]
-
-    def MW_spec_MW_pulse_duration(self, p_length):
-        self.update_io_parameter(52, p_length * int(1e3 / 4))  # In units of [us]
-
-    def MW_spec_OD_pulse_duration(self, p_length):
-        self.update_io_parameter(53, p_length * int(1e3 / 4))  # In units of [us]
-
-    def MW_spec_Repetition_times(self, reps):
-        self.update_io_parameter(54, reps)
-
-    def MW_spec_Delta_freq(self, D_f):
-        self.update_io_parameter(55, int(D_f))  # In units of [Hz]
-
-    def MW_spec_n_MOT_cycles(self, N_snaps):
-        return self.Film_graber(int(N_snaps))
-
-    def MW_spec_detuning(self, det):
-        self.MW_spec_frequency(det + self.MW_start_frequency)
-
-    def MW_spec_scan(self, min_f, max_f, delta_f):
-        N_snaps = int((max_f - min_f) / delta_f)  # Number of MOT cycles required
-        self.MW_spec_n_MOT_cycles(N_snaps)
-        self.MW_spec_Delta_freq(int(delta_f))
-        self.MW_spec_detuning(int(min_f))
-        return N_snaps
 
     def pre_run(self, run_parameters):
         # Change the pre comment based on the with_atoms parameter

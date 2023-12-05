@@ -12,27 +12,34 @@ from Experiments.BaseExperiment import Config_Experiment as Config  # Attempt to
 # E.g. "Prep_duration" is written in ms, we have to factor it into an int value, but in 4ns, for the OPX.
 # Both the updateValue uses factors and also the convenience functions
 
+
 class Values_Transformer:
 
     MODES = ['SET_VALUE', 'FACTOR_AND_CAST', 'TRANSFORM']
     
     def __init__(self):
         self.logger = BDLogger()
+        # Create internal dictionary from Values Factors
+        self._entries_dict = {}
+        for k, v in Values_Factor.items():
+            self._entries_dict[k.upper()] = v
         pass
 
     def knows(self, key):
         """
         Returns True/False - whether this transformer deals with this key
         """
-        return key in Values_Factor
+        key = key.upper()
+        return key in self._entries_dict
 
     def mode(self, key):
         """
         Returns the mode that the transformer has registered for this key
         """
-        if key not in Values_Factor:
+        key = key.upper()
+        if not self.knows(key):
             self.logger.error(f'Cannot find {key} in Values_Factor map')
-        return self.MODES[len(Values_Factor[key])-1]
+        return self.MODES[len(self._entries_dict[key])-1]
 
     def factor_and_cast(self, key, value):
         # TODO

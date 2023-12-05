@@ -20,6 +20,7 @@ from Experiments.BaseExperiment import Config_Experiment as Config  # Attempt to
 from Experiments.BaseExperiment import OPX_Code  # Attempt to load the OPX Code (may be overriden later)
 from Experiments.BaseExperiment.Config_Table import Default_Values
 from Experiments.BaseExperiment.Values_Transformer import Values_Transformer
+from Experiments.BaseExperiment.IO_Parameters import IOParameters as IOP
 
 from Experiments.QuadRF.QuadRFMOTController import QuadRFMOTController
 
@@ -82,7 +83,7 @@ class BaseExperiment:
         self.bd_results = BDResults(json_map_path=self.paths_map['cwd'], version="0.1")
 
         # Set the location of the locking error file - this is a generic file that serves as communication between
-        # the the locking application that runs on a different computer. The file contains the current PID error value.
+        # the locking application that runs on a different computer. The file contains the current PID error value.
         self.lock_error_file = os.path.join(self.bd_results.get_experiment_root(), 'Locking_PID_Error', 'locking_err.npy')
 
         # Load default values as the experiment values
@@ -637,21 +638,13 @@ class BaseExperiment:
     #  (*) If updating OPX values, we go through Values Factor map - to provide weights
     #------------------------------------------------------------------------
     def updateValue(self, key, value, update_parameters=False):
+
         if key in self.Exp_Values:
             self.Exp_Values[key] = value
             #------------------------------------------------
             # Special cases
-            # - 'Operation_Mode' - we're switching the entire operation mode and its config tree
             #------------------------------------------------
-            if key == 'Operation_Mode':
-                if value not in Config_Table.Operation_Modes:
-                    self.logger.warn(f'Warning: {key} is not a known operation mode!')
-                    # TODO: ok, so now what? We just coninue? We need to raise an exception and abort things - or handle by caller!
-                    # TODO: Shouldn't this be a fatal message? (not Warn)
-                # Iterates over all key-values in the specific operation mode and sets them
-                for k in Config_Table.Operation_Modes[value]:
-                    self.updateValue(k, Config_Table.Operation_Modes[value][k])
-            elif key == 'MOT_duration':  # This is a patch. It should work, but still.
+            if key == 'MOT_duration':  # This is a patch. It should work, but still.
                 # TODO: Not sure I understood the above comment.... ?
                 MOT_rep = Config_Table.updateMOT_rep()
                 self.updateValue('MOT_rep', MOT_rep)
@@ -686,11 +679,13 @@ class BaseExperiment:
                 self.logger.warn(f'{key} is not in Key_to_Channel. What channel does this key belong to? [change in Config_Table.py]')
                 # TODO: raise an exception here
 
-        #------------------------------------------------
-        # NEW CODE
-        #------------------------------------------------
-        if key in Config_Table.IOParametersMapping:
-            io1 = Config_Table.IOParametersMapping[key]
+        #-------------------------------------------------------
+        # Now we check if this is a param we need to update OPX
+        #-------------------------------------------------------
+        # if key in Config_Table.IOParametersMapping:
+        #     io1 = Config_Table.IOParametersMapping[key]
+        if IOP.has(key):
+            io1 = IOP.value_from_string(key)
             if self.transformer.knows(key):
                 mode = self.transformer.mode(key)
                 if mode == 'SET_VALUE':
@@ -709,43 +704,6 @@ class BaseExperiment:
                 self.logger.error(msg)
                 raise Exception(msg)
 
-        #------------------------------------------------------
-        # See whether OPX should also be updated
-        #------------------------------------------------------
-        # The way this code works, given [key,value]:
-        # - If key is not in IO Parameters Mapping, nothing happens
-        # - If Values Factor has the entry, we will get our "instructions" - we have 3 modes:
-        #   1) "Set Value" - If one value in array - this is the value to set
-        #   2) "Factor and Cast" - If two values in array - we will (a) perform factoring (b) perform casting
-        #   3) "Transform" - If three values in array - we will just call func to do custom transformation
-        #------------------------------------------------------
-        if False:
-            if key in Config_Table.IOParametersMapping:
-                io1 = Config_Table.IOParametersMapping[key]
-                io2 = value
-                if key in Values_Factor:
-                    valueType = Values_Factor[key][0]  # Can be one of: int, float, bool
-                    # Mode 1 - "Set Value"
-                    if len(Values_Factor[key]) == 1:
-                        self.update_io_parameter(io1, io2)
-                    # Mode 2 - "Factor and Cast"
-                    elif len(Values_Factor[key]) == 2:
-                        valueFactor = Values_Factor[key][1]
-                        # Perform factoring and cast to relevant type (int, float)
-                        io2 = valueType(value * valueFactor)
-                        self.update_io_parameter(io1, io2)
-                    # Mode 3 - "Transform"
-                    elif len(Values_Factor[key]) == 3:  # If a function is attached to value change in Config_Table
-                        valueFunction = Values_Factor[key][2]  # Get function we want to use to convert
-                        valueFunction(self, value)  # Call the predefined function.
-                        # Note: the function should call self.update_io_parameter(io1, io2),otherwise nothing happens
-                        # io2 = valueType((valueFunction(self, value)))
-                else:
-                    self.logger.error('%s not in Values_Factor!' % key)
-                    
-                # TODO: why is the below commented out?
-                # self.update_io_parameter(io1, io2)
-
         if update_parameters:
             self.update_parameters()
 
@@ -753,7 +711,6 @@ class BaseExperiment:
         self.io1_list.append(io1)
         self.io2_list.append(io2)
 
-    # TODO: why are we sending first pair of parameters and then the rest?
     def update_parameters(self):
         """
         Update the OPX - "push" all [key,value] pairs that are awaiting on the io1_list and io2_list
@@ -776,6 +733,14 @@ class BaseExperiment:
         # self.update_io_parameter(6, 3)  # Update filler to do 2 more cycles to let the MOT stabilize
         self.io1_list.append(0)
         self.io2_list.append(0)
+
+        # TODO: why are we sending first pair of parameters and then the rest? Can we fold everything into a single loop?
+        # TODO: the code below is what I suggest :-)
+        # for i in range(0, self.io1_list.__len__()):
+        #     self.qm.set_io_values(self.io1_list[i], self.io2_list[i])
+        #     while not self.job.is_paused():
+        #         pass
+        #     self.job.resume()
 
         # Sending of 1st parameter pair
         self.qm.set_io_values(self.io1_list[0], self.io2_list[0])
@@ -802,6 +767,16 @@ class BaseExperiment:
         # self.save_config_table()
 
         # quadController.plotTables()
+
+    def update_values(self, array_of_parameters, update_parameters=False):
+        """
+        Iterate over array of [key,value] elements and update each
+        """
+        for index, key_value in enumerate(array_of_parameters):
+            update_parameters_now = False if index<len(array_of_parameters) else update_parameters
+            self.updateValue(key_value[0], key_value[1], update_parameters_now)
+        pass
+
 
     # TODO: this function is currently not in use. It was used to save exp values in 2 cases:
     # TODO: (1) At the end of an experiment (2) Whenever we updateValue.
@@ -845,3 +820,96 @@ class BaseExperiment:
                 plt.plot(seq)
             return
         plt.plot(sequence_or_sequences)
+
+# ------------------ Utility/Fast-Access Functions
+
+    def MOT_switch(self, with_atoms):
+        if with_atoms:
+            self.update_io_parameter(IOP.MOT_SWITCH_ON.value, 0)
+        else:
+            self.update_io_parameter(IOP.MOT_SWITCH_OFF, 0)
+
+    def Linear_PGC_switch(self, Bool):
+        self.update_io_parameter(IOP.LINEAR_PGC_SWITCH.value, Bool)
+
+    def Experiment_Switch(self, experiment_on_off):
+        self.update_io_parameter(IOP.EXPERIMENT_SWITCH.value, experiment_on_off)
+
+    def AntiHelmholtz_Delay_switch(self, Bool):
+        self.update_io_parameter(IOP.ANTIHELMHOLTZ_DELAY_SWITCH.value, Bool)
+
+    def Max_Probe_counts_switch(self, Bool):
+        self.update_io_parameter(IOP.MAX_PROBE_COUNTS_SWITCH.value, Bool)
+
+    # ## Antihelmholtz delay variable update functions: ##
+
+    def update_AntiHelmholtz_delay(self, new_delay):  # In units of [msec]
+        self.update_io_parameter(IOP.ANTIHELMHOLTZ_DELAY.value, int(new_delay * 1e6 / 4))
+
+    ## update N_snaps: ##
+
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # TODO: Are the 4 functions below called by user? Not only by code? Because they use self.Exp_values
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    ## PGC variable update functions: ##
+    def update_N_Snaps(self, N_Snaps):  # In units of [msec]
+        if self.Exp_Values['Buffer_Cycles'] < 0:
+            self.update_io_parameter(IOP.BUFFER_CYCLES.value, 3)  # Update 3 buffer cycles
+        self.update_io_parameter(IOP.N_SNAPS.value, N_Snaps)  # Update N_snaps
+
+    def update_PGC_prep_time(self, prep_time):  # In units of [msec]
+        self.pgc_prep_duration = int(prep_time * 1e6 / 4)
+        self.update_io_parameter(IOP.PGC_PREP_DURATION.value, int(prep_time * 1e6 / 4))
+
+    ## Fountain variable update functions: ##
+
+    def update_fountain_prep_time(self, prep_time):  # In units of [msec]
+        self.fountain_prep_duration = int(prep_time * 1e6 / 4)
+        self.update_io_parameter(IOP.FOUNTAIN_PREP_TIME.value, int(prep_time * 1e6 / 4))
+
+    def update_fountain_Delta_freq(self, df):
+        self.fountain_aom_chirp_rate = int(df * 1e3 / (self.fountain_prep_duration * 4))  # mHz/nsec
+        self.logger.info(self.fountain_aom_chirp_rate)
+        self.update_io_parameter(IOP.FOUNTAIN_FINAL_DELTA_FREQ.value, self.fountain_aom_chirp_rate)
+
+    ## Measuring variable update functions: ##
+
+    def MeasureOD(self, OD_Time):
+        self.update_io_parameter(41, int(OD_Time * 1e6 / 4))  # TODO: Q: 41 in IOParameters is TRIGGER_DELAY
+
+    def MeasureOD_SNSPDs_delay(self, OD_Delay):
+        self.update_io_parameter(44, int(OD_Delay * 1e6 / 4))  # TODO: Q: 44 in IOParameters is PULSE_1_DECAY_DURATION
+
+    def MeasureOD_SNSPDs_duration(self, duration):
+        self.update_io_parameter(45, int(duration / self.M_window * 1e6 / 4))  # TODO: Q: 45 in IOParameters is N_SNAPS
+
+    ## MW spectroscopy variable update functions: ##
+
+    def MW_spec_frequency(self, freq):
+        self.update_io_parameter(IOP.MW_SPEC_FREQ.value, int(freq))  # In unit of [Hz]
+
+    def MW_spec_MW_pulse_duration(self, p_length):
+        self.update_io_parameter(IOP.MW_SPEC_MW_PULSE.value, p_length * int(1e3 / 4))  # In units of [us]
+
+    def MW_spec_OD_pulse_duration(self, p_length):
+        self.update_io_parameter(IOP.MW_SPEC_OD_PULSE.value, p_length * int(1e3 / 4))  # In units of [us]
+
+    def MW_spec_Repetition_times(self, reps):
+        self.update_io_parameter(IOP.MW_SPEC_REPETITION_TIMES.value, reps)
+
+    def MW_spec_Delta_freq(self, D_f):
+        self.update_io_parameter(IOP.MW_SPEC_DELTA_FREQ.value, int(D_f))  # In units of [Hz]
+
+    def MW_spec_n_MOT_cycles(self, N_snaps):
+        return self.Film_graber(int(N_snaps))
+
+    def MW_spec_detuning(self, det):
+        self.MW_spec_frequency(det + self.MW_start_frequency)
+
+    def MW_spec_scan(self, min_f, max_f, delta_f):
+        N_snaps = int((max_f - min_f) / delta_f)  # Number of MOT cycles required
+        self.MW_spec_n_MOT_cycles(N_snaps)
+        self.MW_spec_Delta_freq(int(delta_f))
+        self.MW_spec_detuning(int(min_f))
+        return N_snaps
