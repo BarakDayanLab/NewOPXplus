@@ -526,11 +526,14 @@ def opx_control(obj, qm):
             Pulse_const(pgc_duration)
             align(*all_elements)
 
+            # TODO: make the opx_quadrf_misalignment_delay a parameter
             # FreeFall sequence:
             with if_(Transits_Exp_ON):
                 assign(x, 766000 // 4)
+                #assign(x, (766000 - 4000) // 4)
             with else_():
                 assign(x, 0)
+                #assign(x, (0 - 4000) // 4)
             FreeFall(FreeFall_duration - x, coils_timing)
 
             ##########################
