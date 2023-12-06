@@ -691,12 +691,13 @@ class BaseExperiment:
                 if mode == 'SET_VALUE':
                     self.update_io_parameter(io1, value)
                 elif mode == 'FACTOR_AND_CAST':
-                    io2 = self.transformer.transform(key, value)
+                    io2 = self.transformer.factor_and_cast(key, value)
                     self.update_io_parameter(io1, io2)
                 elif mode == 'TRANSFORM':
                     msg = f'\n\nTransformer currently does not handle mode {mode}. Call Dror.\n\n'
                     self.logger.error(msg)
                     raise Exception(msg)
+                    #io2 = self.transformer.transform(key, value)
                 else:
                     pass
             else:

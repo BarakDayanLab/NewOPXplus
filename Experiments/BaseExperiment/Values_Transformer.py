@@ -37,13 +37,26 @@ class Values_Transformer:
         Returns the mode that the transformer has registered for this key
         """
         key = key.upper()
+
+        # Ensure we have this key
         if not self.knows(key):
             self.logger.error(f'Cannot find {key} in Values_Factor map')
         return self.MODES[len(self._entries_dict[key])-1]
 
     def factor_and_cast(self, key, value):
-        # TODO
-        pass
+        """
+        Multiplies value by a given factor and casts the result to the desired type
+        """
+        key = key.upper()
+
+        # Ensure we have this key
+        if not self.knows(key):
+            self.logger.error(f'Cannot find {key} in Values_Factor map')
+
+        value_type = self._entries_dict[key][0]
+        value_factor = self._entries_dict[key][1]
+        factored_value = value_type(value * value_factor)
+        return factored_value
 
     def transform(self, key, value):
         # TODO: get the string - find the function and invoke it

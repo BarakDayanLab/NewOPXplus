@@ -25,6 +25,10 @@ class CoolingSequenceOptimizer(BaseExperiment):
         pass
 
     def initialize_experiment_variables(self):
+
+        # Ensure we initialize the basic OPX experiment variables (required for standard MOT)
+        super().initialize_experiment_variables()
+
         # self.SPRINT_Exp_switch(False) # To enable trigger to camera in OPX_control_with_QuadRF_Sprint_Exp
         self.camera = None
         self.NAvg = 1  # Number of photos captured to create an average image

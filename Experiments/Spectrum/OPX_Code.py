@@ -1,4 +1,4 @@
-from Experiments.QRAM import Config_Experiment as Config
+from Experiments.Spectrum import Config_Experiment as Config
 from Experiments.BaseExperiment.Phases import Phases
 from Experiments.BaseExperiment.IO_Parameters import IOParameters as IOP
 from qm.qua import *
