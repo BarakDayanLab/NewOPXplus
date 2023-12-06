@@ -9,5 +9,11 @@
 		{
 			"# NO FILES": "-----------------------------------"
 		}
-    ]
+	],
+	"folders": [
+		{
+            "description": "Folder for the MOT images and fit data",
+  			"name": "extra_files"
+		}
+	]
 }

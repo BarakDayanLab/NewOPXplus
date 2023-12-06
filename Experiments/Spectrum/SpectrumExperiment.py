@@ -325,7 +325,7 @@ class SpectrumExperiment(BaseExperiment):
             self.tt_measure[i].sort()
 
         # ------------------------------------------
-        # Unify detectors and windows within detectors and create vector of tt's for each direction (bright port, dark port, north, south and from FS) and sort them
+        # Unify detectors and windows within detectors & create vector of tt's for each direction (bright port, dark port, north, south and from FS) and sort them
         # ------------------------------------------
 
         self.tt_BP_measure = sorted(sum(self.tt_measure[:2], []))  # unify detectors 1-3 and windows within detectors

@@ -106,7 +106,95 @@ class CoolingSequenceOptimizer(BaseExperiment):
                                 ylabel=f'Sigma_y [mm]', saveFilePath=extraFilesPath + 'Y_temp_fit.png', show=False)
         return (T_x, T_y)
 
-    def measureTemperature(self, path=None, PrePulseDurations=np.arange(1,9), createVideo=False, fit_for_alpha=False):
+    def perform_fit(self, path, fit_for_alpha=False):
+        """
+        TODO: <TBD>
+        """
+        # Set the folders we need
+        extra_files = os.path.join(path, 'extra_files')
+        background_image_path = os.path.join(extra_files, 'background.bmp')
+
+        # Gaussian Fit to results (for each photo)
+        gaussianFitResult = self.gaussianFitAllPicturesInPath(path, backgroundPath=background_image_path, saveFitsPath=extra_files, imgBounds=self.imgBounds)
+
+        # ---- Take Gaussian fit results and get temperature (x,y) and launch speed -----------
+        v_launch, alpha, v_launch_popt, v_launch_cov = self.fitVy_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult, extraFilesPath=extraFilesPath, plotResults=True)
+        time_vector = np.array([res[0] for res in gaussianFitResult])
+        y_position_vector = np.array([res[-1][2] for res in gaussianFitResult])
+
+        # ------ Use v-launch fit to go from px to mm ------
+        gaussian_amplitude_vector = alpha * np.array([res[-1][0] for res in gaussianFitResult])
+        y_position_vector = alpha * y_position_vector
+        x_position_vector = alpha * np.array([res[-1][1] for res in gaussianFitResult])
+        sigma_x_vector = alpha * np.array([res[-1][3] for res in gaussianFitResult])
+        sigma_y_vector = alpha * np.array([res[-1][4] for res in gaussianFitResult])
+
+        # -------- Fit for x and y temperatures ----
+        T_x, T_y = self.fitTemperaturesFromGaussianFitResults(gaussianFitResult, alpha, extra_files, plotResults=True)
+
+        d = {
+            'V_y Launch': v_launch,
+            'T_x': T_x,
+            'T_y': T_y,
+            'alpha': alpha
+        }
+        print(d)
+        try:
+            with open(os.path.join(extra_files, 'results.json'), 'w') as file:
+                json.dump(d, file, indent=4)
+        except Exception as err:
+            print(f'failed to save results json: {err}')
+
+        plt.close('all')
+        return d
+
+    def measure_temperature(self, pre_pulse_durations=np.arange(1, 9), create_video=False, perform_fit=True):
+        """
+        Runs a loop over array of PrePulse Duration values.
+        For each setting, takes an image and saves in a folder.
+        Background image is also taken for reference at the end when there is no MOT
+        """
+
+        # Connect to camera. Notify if we fail to connect.
+        self.connect_camera()
+        if self.is_camera_disconnected():
+            self.warn('Cannot connect to camera - maybe app is open?')
+            return
+
+        # Create the folders for the images to be saved
+        self.bd_results.create_folders()
+        path = self.bd_results.get_folder_path('root')
+        extra_files = self.bd_results.get_folder_path('extra_files')
+
+        # Iterate over PrePulse Duration parameters and take photos
+        try:
+            for ppd in pre_pulse_durations:
+                # Update prepulse duration
+                self.updateValue("PrePulse_duration", float(ppd), update_parameters=True)
+
+                # Capture and average images
+                image_name = 'PrePulse_duration={:04.1f}.bmp'.format(ppd)
+                image_full_path = os.path.join(path, image_name)
+                self.camera.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+        except Exception as err:
+            self.warn(f'Failed to get images - {err}')
+
+        # Take background picture (after such a long delay, we should have no visible cloud)
+        self.updateValue("PrePulse_duration", float(50), update_parameters=True)
+
+        background_image_path = os.path.join(extra_files, 'background.bmp')
+        self.camera.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+
+        # If required, create video from images
+        if create_video:
+            self.create_video_from_path(path, save_file_path=os.path.join(extra_files, 'video.avi'))
+
+        if perform_fit:
+            self.perform_fit(path)
+
+        pass
+
+    def measureTemperature_DEP(self, path=None, PrePulseDurations=np.arange(1,9), createVideo=False, fit_for_alpha=False):
         extraFilesPath = ''
         if path:
             # if received path, assume there's no need to take new pictures and analyze these photos.
@@ -118,7 +206,9 @@ class CoolingSequenceOptimizer(BaseExperiment):
                 return
 
             # TODO: May want to refactor the "createPathFor..." and use BDResults instead - to create the folders for the files
-            # self.bd_results.create_root_folder()
+            self.bd_results.create_folders()
+            path = self.bd_results.get_folder_path('root')
+            extraFilesPath = self.bd_results.get_folder_path('extra_files')
             path, extraFilesPath = self.createPathForTemperatureMeasurement(path, saveConfig=True)
 
             # ---- Take photos  -----
@@ -171,7 +261,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
             pass
 
         if createVideo:
-            self.createVideoFromPath(path, saveFilePath=os.path.join(extraFilesPath, 'video.avi'))
+            self.create_video_from_path(path, save_file_path=os.path.join(extraFilesPath, 'video.avi'))
 
         plt.close('all')
         return d
@@ -252,20 +342,21 @@ class CoolingSequenceOptimizer(BaseExperiment):
         self.plot3D(xs_for_plot, ys_for_plot, uniqueTemperatures)
         return (xs_for_plot, ys_for_plot, uniqueTemperatures)
 
-    def createVideoFromPath(self, path, saveFilePath=None):
+    # TODO: we may want to move this to Utils - so everyone can enjoy :-)
+    def create_video_from_path(self, path, save_file_path=None):
         # Taken from: https://theailearner.com/2018/10/15/creating-video-from-images-using-opencv-python/
-        if not saveFilePath:
-            saveFilePath = os.path.join(path, 'video.avi')
+        if not save_file_path:
+            save_file_path = os.path.join(path, 'video.avi')
         img_array = []
-        fileNames = glob.glob(os.path.join(path,'*.bmp'))
-        fileNames.sort()
-        for filename in fileNames:
+        file_names = glob.glob(os.path.join(path, '*.bmp'))
+        file_names.sort()
+        for filename in file_names:
             img = cv2.imread(filename)
             height, width, layers = img.shape
             size = (width, height)
             img_array.append(img)
 
-        out = cv2.VideoWriter(filename=saveFilePath, fourcc=cv2.VideoWriter_fourcc(*'DIVX'), fps=3, frameSize=size)
+        out = cv2.VideoWriter(filename=save_file_path, fourcc=cv2.VideoWriter_fourcc(*'DIVX'), fps=3, frameSize=size)
         for i in range(len(img_array)):
             out.write(img_array[i])
         out.release()
@@ -306,14 +397,15 @@ class CoolingSequenceOptimizer(BaseExperiment):
         return (res)
 
 
-    '''fit a gaussian to subtracted images
-    # INPUT:
-    #   Y_PIXEL_LEN - number of vertical pixels
-    #   X_PIXEL_LEN - number of horizontal pixels
-    #   the name of the file for fit with png termination
-    #   CROP_IMG_SIZE - the size of image in each dimension after cropping is 2*CROP_IMG_SIZE
-    '''
     def GaussianFit(self, file_name_for_fit, background_file, saveFitsPath=None, imgBounds=None, X_PIXEL_LEN=1544, Y_PIXEL_LEN=2064, CROP_IMG_SIZE=180 ,PLOT_IMG=False, PLOT_SLICE=False):
+        """
+        Fit a gaussian to subtracted images
+         INPUT:
+           Y_PIXEL_LEN - number of vertical pixels
+           X_PIXEL_LEN - number of horizontal pixels
+           the name of the file for fit with png termination
+           CROP_IMG_SIZE - the size of image in each dimension after cropping is 2*CROP_IMG_SIZE
+        """
         fileName = Path(file_name_for_fit).stem
         backgroundImg = cv2.imread(background_file, 0)
         ImgToFit = cv2.imread(file_name_for_fit, 0)
@@ -436,7 +528,6 @@ class CoolingSequenceOptimizer(BaseExperiment):
         """
         self.updateValue("PrePulse_duration", float(prepulse_duration), update_parameters=True)
 
-#r = optimizePGC(c)
 if __name__ == "__main__":
 
     # Initiate the experiment

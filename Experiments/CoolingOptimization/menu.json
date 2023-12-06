@@ -4,7 +4,7 @@
     {
       "order": 1,
       "display": "Measure Temperature",
-      "action": "measureTemperature",
+      "action": "measure_temperature",
       "args": [
         {
           "name": "PrePulseDurations",
@@ -32,6 +32,18 @@
           "name": "PrePulseDuration",
           "type": "float",
           "default": "[0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.5]"
+        }
+      ]
+    },
+    {
+      "order": 5,
+      "display": "Perform Fit",
+      "action": "perform_fit",
+      "args": [
+        {
+          "name": "path",
+          "type": "string",
+          "default": "Most recent snapshots"
         }
       ]
     },

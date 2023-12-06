@@ -11,8 +11,8 @@ class OPX_Utils:
         raise Exception('No need to initialize OPX_Utils class. It used for statis methods only')
 
     @staticmethod
-    def post_MOT_delay():
-        return 2
+    def parameters_update(param):
+        return
 
     # TODO: Q:
     # TODO: Need to check what this does. It seems to do nothing as it multiplies by ZERO.

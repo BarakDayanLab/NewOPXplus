@@ -47,73 +47,6 @@ class BDResults:
                 self._handle_error(f"results map version mismatch! (is {self.results_map['version']} but should be {version})", True)
         pass
 
-    def get_root(self):
-        resolved_path = self._resolve_parameterized(self.results_map['root'])
-        return resolved_path
-
-    def get_experiment_root(self):
-        resolved_path = self._resolve_parameterized(self.results_map['experiment_root'])
-        return resolved_path
-
-    def get_all_experiments_root(self):
-        resolved_path = self._resolve_parameterized(self.results_map['all_experiments_root'])
-        return resolved_path
-
-    def save_results(self, data_pool):
-
-        # Resolve the root folder - with current time/date
-        resolved_path = self._resolve_parameterized(self.results_map['root'])
-
-        # Resolve the file names and folders in results map
-        for entity in self.results_map['files']:
-            if 'file_name' in entity:
-                entity['file_name'] = self._resolve_parameterized(entity['file_name'])
-            if 'folder' in entity:
-                entity['folder'] = self._resolve_parameterized(entity['folder'])
-
-        # Iterate over all result entities we need to save
-        for entity in self.results_map['files']:
-            entity_keys = list(entity.keys())
-            # Is this a comment line?
-            if len(entity_keys) == 1 and entity_keys[0].startswith('#'):
-                continue
-
-            if 'skip' in entity and entity['skip']:
-                continue
-
-            # Sanity check on type
-            if 'type' not in entity:
-                self._handle_error("Missing 'type' entity in 'file' attribute")
-                continue
-
-            # Is this a data vector we need to save (not a plot)
-            if entity['type'] != 'plt':
-                if 'data' not in entity:
-                    self._handle_error("Missing 'data' entity in 'file' attribute")
-                    continue
-                if entity['data'] not in data_pool:
-                    self._handle_error(f"Cannot find {entity['data']} in the results data")
-                    continue
-
-            # Resolve the root folder - with current time/date
-            path = resolved_path
-            if 'folder' in entity:
-                path = os.path.join(resolved_path, entity['folder'])
-
-            # Create folder if it does not exist
-            if not os.path.exists(path):
-                os.makedirs(path, exist_ok=True)
-
-            # Add the file name
-            file_path = os.path.join(path, entity['file_name'])
-
-            # Save the file
-            try:
-                self._save_file(entity, file_path, data_pool)
-            except Exception as err:
-                self._handle_error(f'Failed to save file {file_path}. {err}')
-        pass
-
     def _create_folder(self, path, allow_existing=True):
         # Create a folder and check if there's already one there
         if not os.path.exists(path):
@@ -235,8 +168,87 @@ class BDResults:
         if self.strict or raise_exception:
             raise Exception(f'Result saving failed. Aborting.')
 
-    def list_files(self, extension=None):
-        # TODO: implement
+    def get_root(self):
+        resolved_path = self._resolve_parameterized(self.results_map['root'])
+        return resolved_path
+
+    def get_experiment_root(self):
+        resolved_path = self._resolve_parameterized(self.results_map['experiment_root'])
+        return resolved_path
+
+    def get_all_experiments_root(self):
+        resolved_path = self._resolve_parameterized(self.results_map['all_experiments_root'])
+        return resolved_path
+
+    def save_results(self, data_pool):
+
+        # Resolve the root folder - with current time/date
+        resolved_path = self._resolve_parameterized(self.results_map['root'])
+
+        # Resolve the file names and folders in results map
+        for entity in self.results_map['files']:
+            if 'file_name' in entity:
+                entity['file_name'] = self._resolve_parameterized(entity['file_name'])
+            if 'folder' in entity:
+                entity['folder'] = self._resolve_parameterized(entity['folder'])
+
+        # Iterate over all result entities we need to save
+        for entity in self.results_map['files']:
+            entity_keys = list(entity.keys())
+            # Is this a comment line?
+            if len(entity_keys) == 1 and entity_keys[0].startswith('#'):
+                continue
+
+            if 'skip' in entity and entity['skip']:
+                continue
+
+            # Sanity check on type
+            if 'type' not in entity:
+                self._handle_error("Missing 'type' entity in 'file' attribute")
+                continue
+
+            # Is this a data vector we need to save (not a plot)
+            if entity['type'] != 'plt':
+                if 'data' not in entity:
+                    self._handle_error("Missing 'data' entity in 'file' attribute")
+                    continue
+                if entity['data'] not in data_pool:
+                    self._handle_error(f"Cannot find {entity['data']} in the results data")
+                    continue
+
+            # Resolve the root folder - with current time/date
+            path = resolved_path
+            if 'folder' in entity:
+                path = os.path.join(resolved_path, entity['folder'])
+
+            # Create folder if it does not exist
+            if not os.path.exists(path):
+                os.makedirs(path, exist_ok=True)
+
+            # Add the file name
+            file_path = os.path.join(path, entity['file_name'])
+
+            # Save the file
+            try:
+                self._save_file(entity, file_path, data_pool)
+            except Exception as err:
+                self._handle_error(f'Failed to save file {file_path}. {err}')
+        pass
+
+    def create_folders(self):
+
+        resolved_path = self._resolve_parameterized(self.results_map['root'])
+
+        # Resolve the file names and folders in results map
+        for entity in self.results_map['folders']:
+            if 'name' in entity:
+                entity['name'] = self._resolve_parameterized(entity['name'])
+
+            # Create folder if it does not exist
+            path = os.path.join(resolved_path, entity['name'])
+            if not os.path.exists(path):
+                os.makedirs(path, exist_ok=True)
+
         pass
 
     @staticmethod
