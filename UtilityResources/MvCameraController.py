@@ -67,6 +67,14 @@ class MvCameraController:
 
         img.convert("L").save(path)
 
+    def captureAverageImage(self, NAvg = 3, NThrow = 0,RGB = False):
+        for i in range(NThrow): self.captureGrayscaleImage()  # Throw images till MOT is stable
+        photos = []
+        for i in range(NAvg):
+            photos.append(np.array(self.captureImageAsArray(RGB=RGB)))
+        avgPhoto = np.average(np.array(photos), axis=0)
+        return avgPhoto
+
     def gaussianFitAllPicturesInPath(self, path, backgroundPath):
         files = [f for f in listdir(path) if isfile(join(path, f))]
         res = []
