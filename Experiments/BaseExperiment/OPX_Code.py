@@ -242,6 +242,7 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
     play("OD_FS", "AOM_2-2/3'", duration=OD_pulse_duration)
 
 
+# TODO: refactor out - move to transits experiment...
 def Transits_Exp_TT(m_off_time, m_time, m_window, shutter_open_time,
                     ON_counts_st1, ON_counts_st2, ON_counts_st3,
                     ON_counts_st6, ON_counts_st7, ON_counts_st8,
@@ -402,6 +403,8 @@ def opx_control(obj, qm):
 
         # MOT variables
         MOT_Repetitions = declare(int, value=obj.Exp_Values['MOT_rep'])
+
+        # TODO: why do we have here * 1e6 / 4 - if the Python code factors it before sending?
         post_MOT_delay = declare(int, value=int(obj.Exp_Values['Post_MOT_delay'] * 1e6 / 4))
 
         # AntiHelmholtz delay after MOT:
@@ -557,6 +560,7 @@ def opx_control(obj, qm):
                 Measure(Pulse_1_duration)  # This triggers camera (Control 7)
                 align(*all_elements)
 
+            # TODO: refactor out - move to transits experiment...
             with if_((Pulse_1_duration > 0) & Transits_Exp_ON):
                 align(*all_elements, "Dig_detectors", "AOM_2-2/3'")
                 Transits_Exp_TT(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,

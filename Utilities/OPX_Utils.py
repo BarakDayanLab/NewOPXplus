@@ -10,6 +10,10 @@ class OPX_Utils:
     def __init__(self):
         raise Exception('No need to initialize OPX_Utils class. It used for statis methods only')
 
+    @staticmethod
+    def post_MOT_delay():
+        return 2
+
     # TODO: Q:
     # TODO: Need to check what this does. It seems to do nothing as it multiplies by ZERO.
     # TODO: Dor says it's a hack by Quantum Machine that is suppose to tie variables to elements
