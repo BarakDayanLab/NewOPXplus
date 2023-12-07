@@ -23,7 +23,7 @@ calibrationData = None
 Initial_Values = {
     # 'Operation_Mode': 'Magnetic_fountain',
     # 'Operation_Mode': 'Imaging',
-    'Operation_Mode': 'PrePGC_Fountain',
+    # 'Operation_Mode': 'PrePGC_Fountain',
     # 'Operation_Mode': 'OD_FS',
     # 'Operation_Mode': 'Depump',
     # 'Operation_Mode': 'Transit_Exp',
@@ -32,7 +32,7 @@ Initial_Values = {
     # 'Operation_Mode': 'SPRINT_2-3_Exp',
     # 'Operation_Mode': 'SPRINT_Exp',
     # 'Operation_Mode': 'QRAM_Exp',
-    # 'Operation_Mode': 'Transits_Exp',
+    'Operation_Mode': 'Transits_Exp',
     # 'Operation_ModB-e': 'Continuous',
     'Imaging_Phase': 'Pulse_1',
     'Triggering_Phase': -1,  # Don't change this. Triggering phase should be defined within each operation mode (see below)
@@ -165,7 +165,7 @@ Operation_Modes = {
                     'Default_Values': {
                                         'MOT_rep': int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config.MOT_pulse_len)),
                                         'Triggering_Phase': 'Pulse_1',
-                                        'PrePulse_CH1_freq': Initial_Values['MOT_AOM_freq']-20e6,  # [Hz]
+                                        'PrePulse_CH1_freq': Initial_Values['MOT_freq'] - 10e6,  # [Hz]
                                         'PrePulse_CH2_freq': 133.325e6,  # Hz
                                         'Pulse_1_CH1_Freq_i': Initial_Values['MOT_freq'],
                                         # 'Pulse_1_CH1_Freq_i': Initial_Values['Flash_freq'],
@@ -367,6 +367,7 @@ Operation_Modes = {
                                       'Pulse_1_duration': int(max(Config_QRAM.readout_pulse_sprint_len_N,
                                                                   Config_QRAM.readout_pulse_sprint_len_S)) / 1e6,  # [msec]
                                       ## If with fountain:
+                                      # 'Fountain_duration': 0,  # [msec]
                                       'Fountain_duration': 0.5,  # [msec]
                                       'Fountain_prep_duration': 0.5,  # [msec], Can't be zero!!!
                                       'M_window': int(max(Config_QRAM.readout_pulse_sprint_len_N,

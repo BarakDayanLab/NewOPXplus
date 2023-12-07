@@ -473,7 +473,8 @@ def opx_control(obj, qm):
         # General measurements variables:
         Trigger_delay = declare(int, value=int(obj.Exp_Values['Trigger_delay'] * 1e6 / 4))
         PrePulse_duration = declare(int, value=int(obj.Exp_Values['PrePulse_duration'] * 1e6 / 4))
-        PushBeam_duration = declare(int, value=int(20000/4))
+        PushBeam_duration = declare(int, value=int(5000/4))
+        PushBeam_delay = declare(int, value=int(20000/4))
         OD_freq = declare(int, value=int(Config.IF_AOM_OD))
         PushBeam_Amp = declare(fixed, value=1)
 
@@ -566,9 +567,9 @@ def opx_control(obj, qm):
 
             # FreeFall sequence:
             with if_(Transits_Exp_ON):
-                assign(x, (766000 + 107000) // 4)
+                assign(x, (766000 + 115000) // 4)
             with else_():
-                assign(x, (0 + 107000) // 4)
+                assign(x, (0 + 115000) // 4)
             FreeFall(FreeFall_duration - x, coils_timing)
 
             ##########################
@@ -586,6 +587,7 @@ def opx_control(obj, qm):
             with else_():
                 wait(PrePulse_duration, "Cooling_Sequence")
                 # for push beam
+            wait(PushBeam_delay, "AOM_2-2/3'")
             play("OD_FS" * amp(PushBeam_Amp), "AOM_2-2/3'", duration=PushBeam_duration)
             align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "Dig_detectors")
 

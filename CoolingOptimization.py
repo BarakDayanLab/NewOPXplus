@@ -29,11 +29,11 @@ class CoolingSequenceOptimizer(OPX):
         self.camera = camera
         self.NAvg = 1
         self.NThrow = 3
-        self.imgBounds = (580,200,1600,1450) # bounds to crop out of the taken pictures
+        self.imgBounds = (580, 200, 1600, 1450) # bounds to crop out of the taken pictures
         # self.mm_to_pxl = 8.5/(830-56) # measured using ruler in focus 13/11/2022
         # self.mm_to_pxl = 8.5/(694-34) # measured using ruler in focus 12/11/2023
         self.mm_to_pxl = 8/(809-71) # measured using ruler in focus 29/11/2023
-        self.sigma_bounds = (15,100) # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
+        self.sigma_bounds = (15, 100) # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
 
     def connectCamera(self):
         try:
@@ -470,5 +470,6 @@ class CoolingSequenceOptimizer(OPX):
 #r = optimizePGC(c)
 if __name__ == "__main__":
     experiment = CoolingSequenceOptimizer(Config.config)
+    # experiment.GaussianFit(file_name_for_fit=r'U:\Lab_2021-2022\Experiment_results\Temperature\20231206_182041\PrePulse_duration=07.0.bmp', background_file = backgroundPath,saveFitsPath = saveFitsPath,imgBounds=imgBounds)
     # experiment.measureTemperature(PrePulseDurations=np.arange(0.5, 5, 0.5))
     #experiment.optimizePGC()

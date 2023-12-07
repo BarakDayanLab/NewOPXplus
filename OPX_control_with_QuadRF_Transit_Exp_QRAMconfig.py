@@ -547,6 +547,7 @@ def opx_control(obj, qm):
 
         # Boolean variables:
         AntiHelmholtz_ON = declare(bool, value=True)
+        PushBeam_ON = declare(bool, value=False)
         QRAM_Exp_ON = declare(bool, value=False)
 
         # MOT variables
@@ -583,9 +584,11 @@ def opx_control(obj, qm):
         PrePulse_duration = declare(int, value=int(obj.Exp_Values['PrePulse_duration'] * 1e6 / 4))
 
         # push beam params
-        PushBeam_duration = declare(int, value=int(20000/4))
+        PushBeam_duration = declare(int, value=int(5000/4))
+        PushBeam_delay = declare(int, value=int(20000/4))
         OD_freq = declare(int, value=int(Config.IF_AOM_OD))
         PushBeam_Amp = declare(fixed, value=1)
+
 
         # Pulse_1_parameters:
         Pulse_1_duration = declare(int, value=int(obj.Exp_Values['Pulse_1_duration'] * 1e6 / 4))
@@ -655,11 +658,12 @@ def opx_control(obj, qm):
             align(*all_elements)
 
             # Fountain sequence:
-            wait(fountain_duration, "Cooling_Sequence")
-            Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
-                                       fountain_pulse_duration_0, fountain_pulse_duration_minus,
-                                       fountain_pulse_duration_plus, fountain_aom_chirp_rate,
-                                       fountain_delta_f)
+            with if_(fountain_duration > 0):
+                wait(fountain_duration, "Cooling_Sequence")
+                Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
+                                           fountain_pulse_duration_0, fountain_pulse_duration_minus,
+                                           fountain_pulse_duration_plus, fountain_aom_chirp_rate,
+                                           fountain_delta_f)
 
             # PGC sequence:
             wait(pgc_duration, "Cooling_Sequence")
@@ -668,8 +672,7 @@ def opx_control(obj, qm):
 
             # FreeFall sequence:
             with if_(QRAM_Exp_ON):
-                assign(x, (
-                            30678780 - 3106 + 656000 * 2 + 4) // 4)  # TODO -  added 38688900 to fix new delay due to wait(1000) in saving sprint data with vector size 10000, should be fixed as well
+                assign(x, (30678780 - 3106 + 656000 * 2 + 4) // 4)  # TODO -  added 38688900 to fix new delay due to wait(1000) in saving sprint data with vector size 10000, should be fixed as well
             with else_():
                 assign(x, - 3106)
             FreeFall(FreeFall_duration - x, coils_timing)
@@ -683,13 +686,15 @@ def opx_control(obj, qm):
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
 
-            align("Cooling_Sequence", "AOM_Early", "AOM_Late")
+            align("Cooling_Sequence", "AOM_Early", "AOM_Late", "AOM_2-2/3'")
             with if_(QRAM_Exp_ON):
                 wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
             with else_():
                 wait(PrePulse_duration, "Cooling_Sequence")
             # push beam
-            play("OD_FS" * amp(PushBeam_Amp), "AOM_2-2/3'", duration=PushBeam_duration)
+            with if_(PushBeam_ON):
+                wait(PushBeam_delay, "AOM_2-2/3'")
+                play("OD_FS" * amp(PushBeam_Amp), "AOM_2-2/3'", duration=PushBeam_duration)
 
             align(*all_elements, "AOM_2-2/3'", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S",
                   "Dig_detectors", "AOM_Spectrum")
@@ -2648,7 +2653,7 @@ class OPX:
                 # Other actions can be added here
                 break
             if start:
-                if cycle > 2:
+                if cycle > 10:
                     start = False
                 else:
                     cycle += 1
