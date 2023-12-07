@@ -118,7 +118,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
         gaussianFitResult = self.gaussianFitAllPicturesInPath(path, backgroundPath=background_image_path, saveFitsPath=extra_files, imgBounds=self.imgBounds)
 
         # ---- Take Gaussian fit results and get temperature (x,y) and launch speed -----------
-        v_launch, alpha, v_launch_popt, v_launch_cov = self.fitVy_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult, extraFilesPath=extraFilesPath, plotResults=True)
+        v_launch, alpha, v_launch_popt, v_launch_cov = self.fitVy_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult, extraFilesPath=extra_files, plotResults=True)
         time_vector = np.array([res[0] for res in gaussianFitResult])
         y_position_vector = np.array([res[-1][2] for res in gaussianFitResult])
 
