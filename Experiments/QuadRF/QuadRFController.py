@@ -264,6 +264,8 @@ class QuadRFController:
                 except IOError as e:
                     self.logger.error(f'I/O error in saveLinesAsCSV {e}')
 
+    def get_channel_data(self, channel_num):
+        return self.lines[channel_num]
 
     def plotTables(self):
         self.logger.debug(self.lines)

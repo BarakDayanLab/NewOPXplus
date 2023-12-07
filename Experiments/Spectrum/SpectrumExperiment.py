@@ -1258,6 +1258,8 @@ class SpectrumExperiment(BaseExperiment):
             "tt_BP_measure_batch": self.tt_BP_measure_batch,
             "tt_DP_measure_batch": self.tt_DP_measure_batch,
 
+            #"quadrf_table_ch1": self.QuadRFControllers[0].get_channel_data(0),
+
             "FLR_measurement": FLR_measurement,
             "lock_error": lock_err_batch,
             "exp_timestr": Exp_timestr_batch,  # TODO: rename to drop timestamps? What is this one?

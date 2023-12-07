@@ -47,7 +47,34 @@
 			"type": "plt",
 			"skip": true
 		},
-
+		{
+			"description": "QuadRF Table - Channel 1",
+			"data": "quadrf_table_ch1",
+			"file_name": "QuadRF_table_ch1",
+			"folder": "meta_data",
+			"type": "csv_writer"
+		},
+		{
+			"description": "QuadRF Table - Channel 2",
+			"data": "quadrf_table_ch2",
+			"file_name": "QuadRF_table_ch2",
+			"folder": "meta_data",
+			"type": "csv_writer"
+		},
+		{
+			"description": "QuadRF Table - Channel 3",
+			"data": "quadrf_table_ch3",
+			"file_name": "QuadRF_table_ch3",
+			"folder": "meta_data",
+			"type": "csv_writer"
+		},
+		{
+			"description": "QuadRF Table - Channel 4",
+			"data": "quadrf_table_ch4",
+			"file_name": "QuadRF_table_ch4",
+			"folder": "meta_data",
+			"type": "csv_writer"
+		},
 		{
 			"# INPUT FILES": "-----------------------------------"
 		},

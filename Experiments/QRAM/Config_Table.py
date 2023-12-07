@@ -31,4 +31,6 @@ Experiment_Values = {
     'M_time': int(max(Config.readout_pulse_sprint_len_N, Config.readout_pulse_sprint_len_S)) / 1e6,
     # Pulse_length[nsec] * 1000 repetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
     'M_off_time': 1,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
+
+    'OPX_Quad_Misalignment_Delay': 4000  # = 4us [ns]
 }

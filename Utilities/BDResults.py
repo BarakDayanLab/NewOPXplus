@@ -1,4 +1,5 @@
 import os
+import csv
 import json
 import time
 import numpy as np
@@ -9,9 +10,8 @@ import matplotlib.pyplot as plt
 """
 TODO: Wishlist
 --------------
-1) Handle CSV - write file by elements in data
-2) Add "allow_empty" flag (to ignore empty vectors, empty strings, etc.
-3) Add Example JSON here...
+1) Add "allow_empty" flag (to ignore empty vectors, empty strings, etc.
+2) Add Example JSON here...
 """
 
 class BDResults:
@@ -66,6 +66,8 @@ class BDResults:
         for _type in types:
             if _type == 'csv':
                 self._save_csv_file(data_to_save, name_to_save, path, should_append, header)
+            elif _type == 'csv_writer':
+                self._save_csv_writer_file(data_to_save, path)
             elif _type == 'txt':
                 self._save_txt_file(data_to_save, path, should_append)
             elif _type == 'mat':
@@ -110,6 +112,31 @@ class BDResults:
             text_file.write(data + '\n')
         pass
 
+    def _save_csv_writer_file(self, data, path):
+        """
+        This function assumes the data object is of this format:
+        data = {
+            "header_1": [ val1, val2, val3, ...]
+            "header_2": [ val1, val2, val3, ...]
+            ...
+            "header_N": [ val1, val2, val3, ...]
+        }
+        """
+        # Ensure there is the ".csv" extension
+        if not path.endswith('.csv'):
+            path = path + '.csv'
+
+        try:
+            with open(path, "w", newline='', encoding='utf-8') as outfile:
+                writer = csv.writer(outfile)
+                # Write the headers
+                writer.writerow(data.keys())
+                # Write the data
+                writer.writerows(zip(*data.values()))
+        except IOError as e:
+            self.logger.error(f'I/O error in saveLinesAsCSV {e}')
+
+        pass
     def _save_numpy_file(self, data, path):
         # Ensure there is the ".npz" extension
         if not path.endswith('.npz'):
@@ -281,7 +308,12 @@ class BDResults:
             },
             "daily_experiment_comments": "20230831,102921,ignore,True,2,ignore",
             "input_vector": np.array([1, 2, 3, 4, 5]),
-            "output_vector": [6, 7, 8, 9]
+            "output_vector": [6, 7, 8, 9],
+            "test_data_for_csv_writer": {
+                "header_a": [1, 2, 3],
+                "header_b": [4, 5, 6],
+                "header_z": [-1, -3, -9]
+            }
         }
 
         # Initiate and test

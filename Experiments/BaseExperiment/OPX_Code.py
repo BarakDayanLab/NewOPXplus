@@ -205,188 +205,28 @@ def Measure(measuring_duration):
     play('Measure', "Measurement", duration=measuring_duration)
 
 
-def Depump_Measure(Depump_pulse_duration, spacing_duration):
-    """
-    The Measure function is an all purpose tool for any measurement is needed.
-
-    Parameters
-    ----------
-    :param Depump_pulse_duration: The duration of the OD pulses in [msec] and plays a trigger to the measuring component.
-    :param spacing_duration: The spacing duration between pulses in [msec].
-    :return:
-    """
-    update_frequency("AOM_2-2/3'", Config.IF_AOM_Depump)
-    play("Depump", "AOM_2-2/3'", duration=Depump_pulse_duration)
-    wait(spacing_duration, "AOM_2-2/3'")
-    play("Depump", "AOM_2-2/3'", duration=Depump_pulse_duration)
-    update_frequency("AOM_2-2/3'", Config.IF_AOM_OD)
-
-
-def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
-    """
-    The Measure function is an all purpose tool for any measurement is needed.
-
-    Parameters
-    ----------
-    :param OD_pulse_duration: The duration of the OD pulses in [msec] and plays a trigger to the measuring component.
-    :param spacing_duration: The spacing duration between pulses in [msec].
-    :return:
-    """
-    # update_frequency("AOM_2-2/3'", Config.IF_AOM_OD)
-    play("OD_FS", "AOM_2-2/3'", duration=OD_pulse_duration)
-    update_frequency("AOM_2-2/3'", Config.IF_AOM_Depump)
-    wait(OD_sleep, "AOM_2-2/3'")
-    play("Depump", "AOM_2-2/3'", duration=spacing_duration)
-    update_frequency("AOM_2-2/3'", Config.IF_AOM_OD)
-    wait(OD_sleep, "AOM_2-2/3'")
-    play("OD_FS", "AOM_2-2/3'", duration=OD_pulse_duration)
-
-
-# TODO: refactor out - move to transits experiment...
-def Transits_Exp_TT(m_off_time, m_time, m_window, shutter_open_time,
-                    ON_counts_st1, ON_counts_st2, ON_counts_st3,
-                    ON_counts_st6, ON_counts_st7, ON_counts_st8,
-                    tt_st_1, tt_st_2, tt_st_3, tt_st_6, tt_st_7, tt_st_8, rep_st):
-    """
-     Transit measurement with and without atoms.
-
-     Parameters
-     ----------
-     :param M_delay: The time delay from end of PGC until the first 2-3' pulse (OD + trigger).
-     :param rep: The number of measuring window repetitions, derived from OD measuring duration (M_time/M_window).
-     :param m_time: The duration of the entire measurement time.
-     :param m_window: The duration of each measuring window - fpr each window there is 28 nsec "deadtime".
-     :param counts_st1: The stream array for the number of photons counted at each measuring window for detector 1.
-     :param counts_st2: The stream array for the number of photons counted at each measuring window for detector 2.
-     :param counts_st3: The stream array for the number of photons counted at each measuring window for detector 3.
-     :param counts_st4: The stream array for the number of photons counted at each measuring window for detector 4.
-     :param counts_st5: The stream array for the number of photons counted at each measuring window for detector 5.
-     :param counts_st6: The stream array for the number of photons counted at each measuring window for detector 6.
-     :param counts_st7: The stream array for the number of photons counted at each measuring window for detector 7.
-     :param counts_st8: The stream array for the number of photons counted at each measuring window for detector 8.
-     """
-    vec_size = Config.vec_size
-
-    counts1 = declare(int)
-    counts2 = declare(int)
-    counts3 = declare(int)
-    counts6 = declare(int)
-    counts7 = declare(int)
-    counts8 = declare(int)
-
-    tt_vec1 = declare(int, size=vec_size)
-    tt_vec2 = declare(int, size=vec_size)
-    tt_vec3 = declare(int, size=vec_size)
-    tt_vec6 = declare(int, size=vec_size)
-    tt_vec7 = declare(int, size=vec_size)
-    tt_vec8 = declare(int, size=vec_size)
-
-    n = declare(int)
-    t = declare(int)
-    m = declare(int)
-
-    align("AOM_2-2/3'", "Dig_detectors")
-    play("OD", "AOM_2-2/3'", duration=shutter_open_time)
-    align("AOM_2-2/3'", "Dig_detectors")
-    play("OD", "AOM_2-2/3'", duration=(m_time + m_off_time))
-    with for_(n, 0, n < (m_time * 4), n + m_window):
-        measure("readout_CRUS", "Dig_detectors", None,
-                time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
-                time_tagging.digital(tt_vec2, m_window, element_output="out2", targetLen=counts2),
-                time_tagging.digital(tt_vec3, m_window, element_output="out3", targetLen=counts3),
-                time_tagging.digital(tt_vec6, m_window, element_output="out6", targetLen=counts6),
-                time_tagging.digital(tt_vec7, m_window, element_output="out7", targetLen=counts7),
-                time_tagging.digital(tt_vec8, m_window, element_output="out8", targetLen=counts8),
-                )
-
-        ## Save Data: ##
-
-        ## Number of Photons (NOP) Count stream for each detector: ##
-        save(counts1, ON_counts_st1)
-        save(counts2, ON_counts_st2)
-        save(counts3, ON_counts_st3)
-        save(counts6, ON_counts_st6)
-        save(counts7, ON_counts_st7)
-        save(counts8, ON_counts_st8)
-
-        with for_(m, 0, m < vec_size, m + 1):
-            wait(1000)
-            save(tt_vec1[m], tt_st_1)
-            save(tt_vec2[m], tt_st_2)
-            save(tt_vec3[m], tt_st_3)
-            save(tt_vec6[m], tt_st_6)
-            save(tt_vec7[m], tt_st_7)
-            save(tt_vec8[m], tt_st_8)
-            save(n, rep_st)
-
-
-def Probe_counts_Measure_SNSPDs(m_off_time, m_time, m_window, shutter_open_time,
-                                ON_counts_st1, ON_counts_st2, ON_counts_st3, ON_counts_st4,
-                                ON_counts_st5, ON_counts_st6, ON_counts_st7, ON_counts_st8, ):
-    """
-    Measuring the OD with and without atoms.
-
-    Parameters
-    ----------
-    :param M_delay: The time delay from end of PGC until the first Probe pulse.
-    :param rep: The number of measuring window repetitions, derived from OD measuring duration (M_time/M_window).
-    :param m_time: The duration of the entire measurement time.
-    :param m_window: The duration of each measuring window - fpr each window there is 28 nsec "deadtime".
-    :param counts_st1: The stream array for the number of photons counted at each measuring window for detector 1.
-    :param counts_st2: The stream array for the number of photons counted at each measuring window for detector 2.
-    :param counts_st3: The stream array for the number of photons counted at each measuring window for detector 3.
-    :param counts_st4: The stream array for the number of photons counted at each measuring window for detector 4.
-    :param counts_st5: The stream array for the number of photons counted at each measuring window for detector 5.
-    :param counts_st6: The stream array for the number of photons counted at each measuring window for detector 6.
-    :param counts_st7: The stream array for the number of photons counted at each measuring window for detector 7.
-    :param counts_st8: The stream array for the number of photons counted at each measuring window for detector 8.
-    """
-    counts1 = declare(int)
-    counts2 = declare(int)
-    counts3 = declare(int)
-    counts4 = declare(int)
-    counts5 = declare(int)
-    counts6 = declare(int)
-    counts7 = declare(int)
-    counts8 = declare(int)
-
-    n = declare(int)
-
-    align("AOM_2-2/3'", "Dig_detectors")
-    # wait(M_delay - shutter_open_time, "Dig_detectors", "AOM_2-2/3'")
-    play("OD", "AOM_2-2/3'", duration=shutter_open_time)
-    align("AOM_2-2/3'", "Dig_detectors")
-    play("OD", "AOM_2-2/3'", duration=m_time)
-    with for_(n, 0, n < (m_time * 4), n + m_window):
-        measure("readout", "Dig_detectors", None,
-                counting.digital(counts1, m_window, element_outputs="out1"),
-                counting.digital(counts2, m_window, element_outputs="out2"),
-                counting.digital(counts3, m_window, element_outputs="out3"),
-                counting.digital(counts4, m_window, element_outputs="out4"),
-                counting.digital(counts5, m_window, element_outputs="out5"),
-                counting.digital(counts6, m_window, element_outputs="out6"),
-                counting.digital(counts7, m_window, element_outputs="out7"),
-                counting.digital(counts8, m_window, element_outputs="out8"),
-                )
-        # wait(m_off_time, "Dig_detectors")
-
-        ## Save Data: ##
-
-        ## Number of Photons (NOP) Count stream for each detector: ##
-
-        save(counts1, ON_counts_st1)
-        save(counts2, ON_counts_st2)
-        save(counts3, ON_counts_st3)
-        save(counts4, ON_counts_st4)
-        save(counts5, ON_counts_st5)
-        save(counts6, ON_counts_st6)
-        save(counts7, ON_counts_st7)
-        save(counts8, ON_counts_st8)
-
-
 def opx_control(obj, qm):
     with program() as opx_control_prog:
-        ## declaring program variables: ##
+
+        # ----------------------------------
+        # Declaring program variables
+        # ----------------------------------
+
+        # Test  @@@
+        POST_MOT_DELAY_PARAM_INDEX = 3
+
+        # Declare a vector of parameters
+        p = declare(int, size=100)
+        val = int(obj.Exp_Values['Post_MOT_delay'] * 1e6 / 4)
+        assign(p[POST_MOT_DELAY_PARAM_INDEX], val)
+
+        # How it will eventually look:
+        params = declare(int, size=100)  # Declare a vector of 100 entries for all possible parameters
+        OPX_Utils.assign_values(params, obj.Exp_Values)  # Populate the parameters with default values
+        if False:
+            # Upon possible change:
+            assign(params[i], IO2)
+
         i = declare(int)
         filler = declare(int, value=1)
         Trigger_Phase = declare(int, value=obj.Exp_Values['Triggering_Phase'])
@@ -397,9 +237,6 @@ def opx_control(obj, qm):
         AntiHelmholtz_delay_ON = declare(bool, value=False)
         AntiHelmholtz_ON = declare(bool, value=True)
         Linear_PGC_ON = declare(bool, value=True)
-        Transits_Exp_ON = declare(bool, value=False)
-        CRUS_Exp_ON = declare(bool, value=False)
-        Probe_max_counts_Exp_ON = declare(bool, value=False)
 
         # MOT variables
         MOT_Repetitions = declare(int, value=obj.Exp_Values['MOT_rep'])
@@ -511,7 +348,8 @@ def opx_control(obj, qm):
             play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
 
             # Delay before fountain:
-            wait(post_MOT_delay, "Cooling_Sequence")
+            #wait(post_MOT_delay, "Cooling_Sequence")
+            wait(p[POST_MOT_DELAY_PARAM_INDEX], "Cooling_Sequence")
             align(*all_elements)
 
             # Fountain sequence:
@@ -528,12 +366,7 @@ def opx_control(obj, qm):
 
             # TODO: make the opx_quadrf_misalignment_delay a parameter
             # FreeFall sequence:
-            with if_(Transits_Exp_ON):
-                assign(x, 766000 // 4)
-                #assign(x, (766000 - 4000) // 4)
-            with else_():
-                assign(x, 0)
-                #assign(x, (0 - 4000) // 4)
+            assign(x, (0 - obj.Exp_Values['OPX_Quad_Misalignment_Delay']) // 4)
             FreeFall(FreeFall_duration - x, coils_timing)
 
             ##########################
@@ -545,35 +378,21 @@ def opx_control(obj, qm):
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
 
-            with if_(Transits_Exp_ON):
-                wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
-            with else_():
-                wait(PrePulse_duration, "Cooling_Sequence")
+            wait(PrePulse_duration, "Cooling_Sequence")
             align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "Dig_detectors") # , "Dig_detectors"
 
             with if_(Trigger_Phase == Phases.PULSE_1):  # when trigger on pulse 1
                 ## Trigger QuadRF Sequence #####################
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
+
             ## For taking an image:
-            with if_((Pulse_1_duration > 0) & ~Transits_Exp_ON):
+            with if_(Pulse_1_duration > 0):
                 align(*all_elements)
                 Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
                                 pulse_1_duration_minus, pulse_1_duration_plus)
                 Measure(Pulse_1_duration)  # This triggers camera (Control 7)
                 align(*all_elements)
-
-            # TODO: refactor out - move to transits experiment...
-            with if_((Pulse_1_duration > 0) & Transits_Exp_ON):
-                align(*all_elements, "Dig_detectors", "AOM_2-2/3'")
-                Transits_Exp_TT(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
-                                ON_counts_st1, ON_counts_st2, ON_counts_st3,
-                                ON_counts_st6, ON_counts_st7, ON_counts_st8,
-                                tt_st_1, tt_st_2, tt_st_3, tt_st_6, tt_st_7, tt_st_8, rep_st)
-                save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
-                with if_(AntiHelmholtz_ON):
-                    save(FLR, FLR_st)
-                align(*all_elements, "Dig_detectors", "AOM_2-2/3'")
 
             assign(N_Snaps, 1)
             assign(Buffer_Cycles, 0)
@@ -588,14 +407,14 @@ def opx_control(obj, qm):
                     assign(MOT_ON, IO2)
                 with if_(i == 2):
                     assign(Linear_PGC_ON, IO2)
-                with if_(i == 3):
-                    assign(Transits_Exp_ON, IO2)
-                with if_(i == 4):
-                    assign(CRUS_Exp_ON, IO2)
+                # with if_(i == 3):
+                #     assign(Transits_Exp_ON, IO2)  # TODO: uncomment this when we will make it generic
+                # with if_(i == 4):
+                #     assign(CRUS_Exp_ON, IO2)  # TODO: uncomment this when we will make it generic
                 with if_(i == 5):
                     assign(AntiHelmholtz_delay_ON, IO2)
-                with if_(i == 6):
-                    assign(Probe_max_counts_Exp_ON, IO2)
+                # with if_(i == 6):
+                #     assign(Probe_max_counts_Exp_ON, IO2)  # TODO: uncomment this when we will make it generic
                 with if_(i == 7):
                     assign(filler, IO2)
                 ## AntiHelmholtz control ##
@@ -604,8 +423,9 @@ def opx_control(obj, qm):
                 ## MOT variables control ##
                 with if_(i == 11):  # Live control over the
                     assign(MOT_Repetitions, IO2)
-                with if_(i == 12):  # Live control over the
-                    assign(post_MOT_delay, IO2)
+                with if_(i == 12):  # Live control over the post MOT delay
+                    #assign(post_MOT_delay, IO2)
+                    assign(p[POST_MOT_DELAY_PARAM_INDEX], IO2)  # @@@
 
                 ## PGC variables control ##
                 with if_(i == 20):  # Live control over the PGC duration
