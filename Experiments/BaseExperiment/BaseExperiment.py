@@ -197,6 +197,10 @@ class BaseExperiment:
                                        continuous=False)
         self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
 
+        # DEBUG DEBUG DEBUG - Test if it works - REMOVE
+        for qrdCtrl in self.QuadRFControllers:
+            test = qrdCtrl.get_channel_data(1)
+
         # TODO: why aren't the values below part of the experiment values or configuration values?
         qrfContr2 = QuadRFMOTController(MOGdevice=qrfContr.device,
                                         # TODO: remove this - we don't want 'Operation Mode' in the code anymore :-)
