@@ -155,20 +155,25 @@ class CoolingSequenceOptimizer(OPX):
         plt.close('all')
         return d
 
-    def measureFunnelDensity(self, t_measure,push_beam_duration_list,push_beam_amp_list,push_beam_freq_list):
+    def scanPushBeamParams(self, t_measure, push_beam_duration_list, push_beam_amp_list, push_beam_freq_list):
         '''
-        This function measures the atomic density insidethe funnel - it plots the average flourescence at upper and
-        lower segments of the funnnel.
+        This function scans the push beam params to maximize the atomic density inside the funnel -
+        it plots the average flourescence at upper and lower segments of the funnnel, for different params.
         :param t_measure: prepulse duration = time of taking pictures after end of the pgc
         :return:
         '''
         self.updateValue("PrePulse_duration", float(t_measure), update_parameters=True)
         self.avgFunnelImage = self.camera.captureAverageImage(NAvg = 3, NThrow = 0)
-        self.lowerFunnelSegment = self.chooseLineIn2DPlot(self.avgFunnelImage)
-        self.upperFunnelSegment = self.chooseLineIn2DPlot(self.avgFunnelImage)
-        for duration in range(len(push_beam_duration_list)):
-            for amp in range(len(push_beam_amp_list)):
-                for freq in push_beam_freq_list:
+        self.lowerFunnelSegment,_ = self.get1DSegmentIn2DPlot(self.avgFunnelImage)
+        self.upperFunnelSegment = self.get1DSegmentIn2DPlot(self.avgFunnelImage)
+
+        # initiate the input-output matrix
+        numOfIters = push_beam_duration_list * push_beam_amp_list * push_beam_freq_list
+        numOfParams = len([push_beam_duration_list, push_beam_amp_list, push_beam_freq_list])
+        self.pushBeamScan = np.zeros(len(numOfIters), len(numOfParams))
+        for duration_ind, duration in enumerate(push_beam_duration_list):
+            for amp_ind,amp in enumerate(push_beam_amp_list):
+                for freq_ind,freq in enumerate(push_beam_freq_list):
                     # update push beam parameters
                     self.update_PushBeam_duration(duration)
                     self.update_PushBeam_amp(amp)
@@ -177,9 +182,17 @@ class CoolingSequenceOptimizer(OPX):
                     # take an image
                     self.avgFunnelImage = self.camera.captureAverageImage(NAvg=3, NThrow=0)
                     # get the mean intensity in upper and lower funnel
-                    self.LowerFunnelAvg = np.mean(self.chooseLineIn2DPlot(self.avgFunnelImage))
-
-    def chooseLineIn2DPlot(sel,Img2D):
+                    self.lowerFunnelAvg = np.mean(self.avgFunnelImage[self.lowerFunnelSegment])
+                    self.upperFunnelAvg = np.mean(self.avgFunnelImage[self.upperFunnelSegment])
+                    # fill a matrix with the avg floursence and the input params
+                    self.pushBeamScan[duration_ind+amp_ind+freq_ind]\
+                        =[self.lowerFunnelAvg,self.upperFunnelAvg,duration,amp,freq]
+                plt.figure()
+                plt.plot(self.pushBeamScan[0],label = "lower funnel average flouresnce")
+                plt.plot(self.pushBeamScan[1],label = "upper funnel average flouresnce")
+                plt.legend()
+                plt.show()
+    def get1DSegmentIn2DPlot(self,img2D, input_segment=False):
         # Create array used for the plot
 
         # Function to give instructions in the plot
@@ -188,44 +201,46 @@ class CoolingSequenceOptimizer(OPX):
             a0.set_title(s, fontsize=16)
             plt.draw()
 
-        # Create a figure with 2 subplots: the image, and the plot of the transect's values
-        f, (a0, a1) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [3, 1]}, layout='constrained')
-        a0.imshow(Img2D, vmax=10)
+        if not input_segment:
+            # Create a figure with 2 subplots: the image, and the plot of the transect's values
+            f, (a0, a1) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [3, 1]}, layout='constrained')
+            a0.imshow(img2D, vmax=10)
 
-        # Allow 1 click-and-drag to zoom. If you don't want to zoom, simply click once
-        tellme('Zoom in an area if you want')
-        plt.waitforbuttonpress()
+            # Allow 1 click-and-drag to zoom. If you don't want to zoom, simply click once
+            tellme('Zoom in an area if you want')
+            plt.waitforbuttonpress()
 
-        # Select two points that will be the extremities of the transect
-        tellme('Select two points that will be the extremities of a transect')
-        while True:
-            pts = []
-            if 'p' in locals():
-                p.remove()
-                plt.draw()
-            while len(pts) < 2:
-                pts = np.asarray(plt.ginput(2, timeout=-1))
-                if len(pts) < 2:
-                    tellme('Too few points, starting over')
-                    time.sleep(1)  # Wait a second
+            # Select two points that will be the extremities of the transect
+            tellme('Select two points that will be the extremities of a transect')
+            while True:
+                pts = []
+                if 'p' in locals():
+                    p.remove()
+                    plt.draw()
+                while len(pts) < 2:
+                    pts = np.asarray(plt.ginput(2, timeout=-1))
+                    if len(pts) < 2:
+                        tellme('Too few points, starting over')
+                        time.sleep(1)  # Wait a second
 
-            tellme('Happy? Key click for yes, mouse click for no')
-            p, = a0.plot(pts[:, 0], pts[:, 1], 'r+')
+                tellme('Happy? Key click for yes, mouse click for no')
+                p, = a0.plot(pts[:, 0], pts[:, 1], 'r+')
 
-            if plt.waitforbuttonpress():
-                break
+                if plt.waitforbuttonpress():
+                    break
 
-        # Plot the transect
-        CS = a0.plot(pts[:, 0], pts[:, 1], color='red')
+            # Plot the transect
+            CS = a0.plot(pts[:, 0], pts[:, 1], color='red')
 
-        # Retrieve the coordinates of the transect's extremities
-        pts = pts.astype(int)
-        rr, cc = line(pts[0, 0], pts[0, 1], pts[1, 0], pts[1, 1])
+            # Retrieve the coordinates of the transect's extremities
+            pts = pts.astype(int)
+            rr, cc = line(pts[0, 0], pts[0, 1], pts[1, 0], pts[1, 1])
+            output_segment = rr, cc
 
         # Plot in the 2nd subplot the values of the cells crossed by the transect
-        a1.plot(img2D[rr, cc])
+        a1.plot(img2D[output_segment])
         a1.set_title('Values cells segment')
-        return img2D[rr, cc]
+        return output_segment, img2D[output_segment]
     '''optimizePGC is used to run over different parameters.
         Parameters are defined within function.
     '''
