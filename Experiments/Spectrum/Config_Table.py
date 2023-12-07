@@ -21,5 +21,7 @@ Experiment_Values = {
     'Fountain_duration': 0.5,  # [msec]
     'Fountain_prep_duration': 0.5,  # [msec], Can't be zero!!!
     'M_window': int(Config.readout_pulse_spectrum_len),  # [nsec]
-    'M_time': len(Config.Spectrum_Exp_Gaussian_samples) * 1000 * 21 * 4 / 1e6
+    'M_time': len(Config.Spectrum_Exp_Gaussian_samples) * 1000 * 21 * 4 / 1e6,
+
+    'OPX_Quad_Misalignment_Delay': 4000  # = 4us [ns]
 }

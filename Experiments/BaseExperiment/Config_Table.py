@@ -154,6 +154,8 @@ Initial_Values = {
 
     'PostPulses_freq': -1,
 
+    'OPX_Quad_Misalignment_Delay': 4000,  # = 4us [ns]
+
     'opticalPowerCalibrationFunction': None  # calibrationData  # Used for calibration of the power of the lock AOM (TOP1)
 }
 

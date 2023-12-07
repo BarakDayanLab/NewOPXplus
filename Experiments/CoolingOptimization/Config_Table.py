@@ -18,4 +18,6 @@ Experiment_Values = {
     'Imaging_Phase': Phases.PULSE_1,
     'PrePulse_duration': 1,  # [msec]
     'Pulse_1_duration': 0.2,  # [msec]
+
+    'OPX_Quad_Misalignment_Delay': 4000  # = 4us [ns]
 }

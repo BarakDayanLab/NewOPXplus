@@ -1,7 +1,6 @@
 import Config_Experiment as Config
 from Experiments.BaseExperiment.Phases import Phases
 from Experiments.BaseExperiment.IO_Parameters import IOParameters as IOP
-from Experiments.BaseExperiment.Config_Table import Phases_Names
 from qm.qua import *
 from Utilities.OPX_Utils import OPX_Utils
 
@@ -205,6 +204,16 @@ def Measure(measuring_duration):
     play('Measure', "Measurement", duration=measuring_duration)
 
 
+def opx_control_dbg(obj, qm):
+
+    with program() as opx_control_prog:
+        i = declare(int)
+        assign(i, 5)
+
+    job = qm.execute(opx_control_prog, flags=['auto-element-thread'])
+
+    return job
+
 def opx_control(obj, qm):
     with program() as opx_control_prog:
 
@@ -212,25 +221,23 @@ def opx_control(obj, qm):
         # Declaring program variables
         # ----------------------------------
 
-        # Test  @@@
-        POST_MOT_DELAY_PARAM_INDEX = 3
-
+        # ----------------------------------
+        # Test  @@@ - 1
+        # ----------------------------------
         # Declare a vector of parameters
-        p = declare(int, size=100)
-        val = int(obj.Exp_Values['Post_MOT_delay'] * 1e6 / 4)
-        assign(p[POST_MOT_DELAY_PARAM_INDEX], val)
+        # p = declare(int, size=100)
+        # val = int(obj.Exp_Values['Post_MOT_delay'] * 1e6 / 4)
+        # POST_MOT_DELAY_PARAM_INDEX = 3
+        # assign(p[POST_MOT_DELAY_PARAM_INDEX], val)
 
         # How it will eventually look:
-        params = declare(int, size=100)  # Declare a vector of 100 entries for all possible parameters
-        OPX_Utils.assign_values(params, obj.Exp_Values)  # Populate the parameters with default values
-        if False:
-            # Upon possible change:
-            assign(params[i], IO2)
+        #params = declare(int, size=100)  # Declare a vector of 100 entries for all possible parameters
+        #OPX_Utils.assign_values(params, obj.Exp_Values)  # Populate the parameters with default values
 
         i = declare(int)
         filler = declare(int, value=1)
-        Trigger_Phase = declare(int, value=obj.Exp_Values['Triggering_Phase'])
-        Imaging_Phase = declare(int, value=obj.Exp_Values['Imaging_Phase'])
+        Trigger_Phase = declare(int, value=int(obj.Exp_Values['Triggering_Phase']))
+        Imaging_Phase = declare(int, value=int(obj.Exp_Values['Imaging_Phase']))
 
         # Boolean variables:
         MOT_ON = declare(bool, value=True)
@@ -348,8 +355,10 @@ def opx_control(obj, qm):
             play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
 
             # Delay before fountain:
-            #wait(post_MOT_delay, "Cooling_Sequence")
-            wait(p[POST_MOT_DELAY_PARAM_INDEX], "Cooling_Sequence")
+
+            wait(post_MOT_delay, "Cooling_Sequence")
+            #wait(p[POST_MOT_DELAY_PARAM_INDEX], "Cooling_Sequence")  # @@@ - 2
+
             align(*all_elements)
 
             # Fountain sequence:
@@ -424,8 +433,8 @@ def opx_control(obj, qm):
                 with if_(i == 11):  # Live control over the
                     assign(MOT_Repetitions, IO2)
                 with if_(i == 12):  # Live control over the post MOT delay
-                    #assign(post_MOT_delay, IO2)
-                    assign(p[POST_MOT_DELAY_PARAM_INDEX], IO2)  # @@@
+                    assign(post_MOT_delay, IO2)
+                    #assign(p[POST_MOT_DELAY_PARAM_INDEX], IO2)  # @@@ - 4
 
                 ## PGC variables control ##
                 with if_(i == 20):  # Live control over the PGC duration
