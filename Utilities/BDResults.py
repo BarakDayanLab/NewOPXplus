@@ -39,6 +39,10 @@ class BDResults:
         if 'files' not in self.results_map:
             self._handle_error("Cannot find 'files' in results_map.json.", True)
 
+        # We initialize the folders map with None, since it is not relevant until someone
+        # invokes the create_folders() - so they are actually resolved and created.
+        self.folders = None
+
         # Perform version check
         if version is not None:
             if 'version' not in self.results_map:
@@ -207,6 +211,12 @@ class BDResults:
         resolved_path = self._resolve_parameterized(self.results_map['all_experiments_root'])
         return resolved_path
 
+    def get_folder_path(self, name):
+        if self.folders is None:
+            raise Exception('You must invoke create_folders() first to resolve/create the relevant folders')
+
+        return self.folders[name]
+
     def save_results(self, data_pool):
 
         # Resolve the root folder - with current time/date
@@ -263,8 +273,20 @@ class BDResults:
         pass
 
     def create_folders(self):
-
+        """
+        This method will create all folders defined in results_map.json
+        NOTE - it will do the path resolving and folder creation ONLY when it's called.
+               So, if there are {current_date} and/or {current_time} fields, they will get the NOW time
+               Until this method is not called, one cannot call get_folder_path(...) - they are simply not resolve/created
+        """
         resolved_path = self._resolve_parameterized(self.results_map['root'])
+
+        self.folders = {}
+
+        # Resolve and insert to dictionary the various root folders first
+        for root_name in ['root', 'experiment_root', 'all_experiments_root']:
+            if root_name in self.results_map:
+                self.folders[root_name] = self._resolve_parameterized(self.results_map[root_name])
 
         # Resolve the file names and folders in results map
         for entity in self.results_map['folders']:
@@ -275,6 +297,9 @@ class BDResults:
             path = os.path.join(resolved_path, entity['name'])
             if not os.path.exists(path):
                 os.makedirs(path, exist_ok=True)
+
+            # Create a resolved entry in the folders map
+            self.folders[entity['name']] = path
 
         pass
 

@@ -224,11 +224,11 @@ def opx_control(obj, qm):
         # ----------------------------------
         # Test  @@@ - 1
         # ----------------------------------
-        # Declare a vector of parameters
-        # p = declare(int, size=100)
-        # val = int(obj.Exp_Values['Post_MOT_delay'] * 1e6 / 4)
-        # POST_MOT_DELAY_PARAM_INDEX = 3
-        # assign(p[POST_MOT_DELAY_PARAM_INDEX], val)
+        # Declare a vector of parameters - TODO: Generalize this!
+        p = declare(int, size=100)
+        val = int(obj.Exp_Values['Post_MOT_delay'] * 1e6 / 4)
+        POST_MOT_DELAY_PARAM = 3
+        assign(p[POST_MOT_DELAY_PARAM], val)
 
         # How it will eventually look:
         #params = declare(int, size=100)  # Declare a vector of 100 entries for all possible parameters
@@ -321,6 +321,7 @@ def opx_control(obj, qm):
         Repetitions = declare(int, value=1)
         Delta_f = declare(int, value=0)
 
+        # TODO: can remove the following - not in use by the generic MOT sequence
         # Stream processing:
         ON_counts_st1 = declare_stream()
         ON_counts_st2 = declare_stream()
@@ -337,6 +338,8 @@ def opx_control(obj, qm):
         rep_st = declare_stream()
         AntiHelmholtz_ON_st = declare_stream()
         FLR_st = declare_stream()
+
+
         x = declare(int)
         assign(IO1, 0)
         assign(IO2, 0)
@@ -356,8 +359,8 @@ def opx_control(obj, qm):
 
             # Delay before fountain:
 
-            wait(post_MOT_delay, "Cooling_Sequence")
-            #wait(p[POST_MOT_DELAY_PARAM_INDEX], "Cooling_Sequence")  # @@@ - 2
+            #wait(post_MOT_delay, "Cooling_Sequence")
+            wait(p[POST_MOT_DELAY_PARAM], "Cooling_Sequence")  # @@@ - 2  TODO: Generalize this - for all parameters :-)
 
             align(*all_elements)
 
@@ -433,8 +436,8 @@ def opx_control(obj, qm):
                 with if_(i == 11):  # Live control over the
                     assign(MOT_Repetitions, IO2)
                 with if_(i == 12):  # Live control over the post MOT delay
-                    assign(post_MOT_delay, IO2)
-                    #assign(p[POST_MOT_DELAY_PARAM_INDEX], IO2)  # @@@ - 4
+                    #assign(post_MOT_delay, IO2)
+                    assign(p[POST_MOT_DELAY_PARAM], IO2)  # @@@ - 4  TODO: Generalize this! assign(p[i], IO2)
 
                 ## PGC variables control ##
                 with if_(i == 20):  # Live control over the PGC duration
@@ -510,21 +513,22 @@ def opx_control(obj, qm):
                 pause()
                 assign(i, IO1)
 
-        with stream_processing():
-            ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
-            ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
-            ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
-            ON_counts_st6.buffer(obj.rep).save('Det6_Counts')
-            ON_counts_st7.buffer(obj.rep).save('Det7_Counts')
-            ON_counts_st8.buffer(obj.rep).save('Det8_Counts')
-            (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
-            (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
-            (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
-            (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep).save('Det6_Probe_TT')
-            (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det7_Probe_TT')
-            (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det8_Probe_TT')
-            FLR_st.save('FLR_measure')
-            AntiHelmholtz_ON_st.save("antihelmholtz_on")
+        # TODO: remove the following - not in use by the generic MOT sequence
+        # with stream_processing():
+        #     ON_counts_st1.buffer(obj.rep).save('Det1_Counts')
+        #     ON_counts_st2.buffer(obj.rep).save('Det2_Counts')
+        #     ON_counts_st3.buffer(obj.rep).save('Det3_Counts')
+        #     ON_counts_st6.buffer(obj.rep).save('Det6_Counts')
+        #     ON_counts_st7.buffer(obj.rep).save('Det7_Counts')
+        #     ON_counts_st8.buffer(obj.rep).save('Det8_Counts')
+        #     (tt_st_1 + rep_st).buffer(obj.vec_size * obj.rep).save('Det1_Probe_TT')
+        #     (tt_st_2 + rep_st).buffer(obj.vec_size * obj.rep).save('Det2_Probe_TT')
+        #     (tt_st_3 + rep_st).buffer(obj.vec_size * obj.rep).save('Det3_Probe_TT')
+        #     (tt_st_6 + rep_st).buffer(obj.vec_size * obj.rep).save('Det6_Probe_TT')
+        #     (tt_st_7 + rep_st).buffer(obj.vec_size * obj.rep).save('Det7_Probe_TT')
+        #     (tt_st_8 + rep_st).buffer(obj.vec_size * obj.rep).save('Det8_Probe_TT')
+        #     FLR_st.save('FLR_measure')
+        #     AntiHelmholtz_ON_st.save("antihelmholtz_on")
 
     job = qm.execute(opx_control_prog, flags=['auto-element-thread'])
 

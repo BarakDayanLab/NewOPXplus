@@ -22,7 +22,7 @@ from Experiments.BaseExperiment.Config_Table import Default_Values
 from Experiments.BaseExperiment.Values_Transformer import Values_Transformer
 from Experiments.BaseExperiment.IO_Parameters import IOParameters as IOP
 
-from Experiments.QuadRF.QuadRFMOTController import QuadRFMOTController
+from Experiments.QuadRF.quadRFMOTController import QuadRFMOTController
 
 import logging
 from logging import StreamHandler, Formatter, INFO, WARN, ERROR

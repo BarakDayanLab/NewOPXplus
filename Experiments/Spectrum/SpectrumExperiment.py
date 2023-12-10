@@ -775,7 +775,8 @@ class SpectrumExperiment(BaseExperiment):
                             + '$\overline{Probe}_S = %.3f$' % (
                             (np.mean([sum(x) for x in self.tt_S_binning_resonance_batch]) * 1000)
                             / (self.M_time / 2),) + '[MPhotons/sec]'
-        textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (np.mean(self.FLR_measurement) * 1e5,) + r'$\times 10^{-5}$'
+        flr_measurement_avg = 0 if len(self.FLR_measurement) == 0 else np.mean(self.FLR_measurement) * 1e5
+        textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (flr_measurement_avg,) + r'$\times 10^{-5}$'
         textstr_No_transits = 'NO TRANSITS YET!!!'
 
         ax[0].plot(self.time_bins[::2], self.S_bins_res_acc, label='Counts histogram', color='b')
@@ -786,7 +787,7 @@ class SpectrumExperiment(BaseExperiment):
         ax[0].set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
         ax[0].text(0.05, 0.95, textstr_detuned, transform=ax[1].transAxes, fontsize=12,
                  verticalalignment='top', bbox=props)
-        ax[1].legend(loc='upper right')
+        ax[0].legend(loc='upper right')
 
         ax[1].plot(self.time_bins[::2], self.S_bins_detuned_acc, label='Counts histogram', color='b')
         # ax[1].plot([sum(time_bins[i:i+4]) for i in range(0, len(time_bins), 4)],
@@ -978,7 +979,7 @@ class SpectrumExperiment(BaseExperiment):
         self.sum_for_threshold = transit_counts_threshold
         # We will iterate at least 3 warmup cycles. If experiment in ON, we will iterate as long as within threshold:
         while (cycle < WARMUP_CYCLES) or (exp_flag and self.sum_for_threshold >= transit_counts_threshold):
-            self.logger.debug(f'Running cycle {cycle}')
+            self.logger.debug(f'Running cycle {cycle+1}')
 
             # Check if user terminated
             self.handle_user_events()
@@ -992,7 +993,7 @@ class SpectrumExperiment(BaseExperiment):
             # Check locking error - break if we are above threshold (if it is None - it means we can't find the error file, so ignore it)
             self.lock_err = (lock_err_threshold / 2) if exp_flag else self._read_locking_error()
             if self.lock_err is not None:
-                self.logger.debug(f'{self.lock_err}, {self.lock_err > lock_err_threshold}, {self.sum_for_threshold}')
+                self.logger.debug(f'Lock err: {self.lock_err}, Out of lock: {self.lock_err > lock_err_threshold}, Threshold: {self.sum_for_threshold}')
                 if self.lock_err > lock_err_threshold:
                     break
 
@@ -1001,7 +1002,7 @@ class SpectrumExperiment(BaseExperiment):
 
         ############################# WHILE 1 - END #############################
 
-        FLR_measurement = []
+        self.FLR_measurement = []  # TODO: May want to refactor this later (this is not a local variable, but in .self, as it is used in the plot method)
         Exp_timestr_batch = []
         lock_err_batch = []
 
@@ -1061,7 +1062,7 @@ class SpectrumExperiment(BaseExperiment):
         self.S_bins_detuned_acc = np.sum(np.array(self.tt_S_binning_detuned_batch), 0)  # tt_S_binning_resonance accumulated (sum over the batch)
 
 
-        FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]  # No need for the .toList()
+        self.FLR_measurement = self.FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]  # No need for the .toList()
         Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [time.strftime("%Y%m%d-%H%M%S")]
         lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
 
@@ -1196,7 +1197,7 @@ class SpectrumExperiment(BaseExperiment):
 
                 self.find_transit_events(N, transit_time_threshold=time_threshold, transit_counts_threshold=transit_counts_threshold)
 
-                FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
+                self.FLR_measurement = self.FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timestamp]
                 lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
                 self.save_tt_to_batch(Num_Of_dets, N)
@@ -1260,7 +1261,7 @@ class SpectrumExperiment(BaseExperiment):
 
             #"quadrf_table_ch1": self.QuadRFControllers[0].get_channel_data(0),
 
-            "FLR_measurement": FLR_measurement,
+            "FLR_measurement": self.FLR_measurement,
             "lock_error": lock_err_batch,
             "exp_timestr": Exp_timestr_batch,  # TODO: rename to drop timestamps? What is this one?
 
@@ -1351,8 +1352,8 @@ class SpectrumExperiment(BaseExperiment):
 if __name__ == "__main__":
 
     run_parameters = {
-        #'N': 500,
-        'N': 10,
+        'N': 500,
+        #'N': 10,
         'histogram_bin_size': 1000,
         'transit_profile_bin_size': 10,  # TODO: Q: should this be 10 or 100?
         'pre_comment': 'Transit experiment with 2uW of 731.30nm light coupled',  # TODO: Q: what should be the comment here?
