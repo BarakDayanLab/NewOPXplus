@@ -485,7 +485,7 @@ OD_pulse_samples = np.convolve(square_samples, Utils.gaussian(x, 600, 20))[900 /
 square_samples2 = ([0] * 400 + [0.8] * 400 + [0] * 400)
 xx = np.linspace(0, len(square_samples2), len(square_samples2))
 Gaussian_pulse_samples = (signal.gaussian(500, std=(300 / 2.355)) * 0.2).tolist()
-Gaussian_pulse_samples2 = (signal.gaussian(500, std=(150 / 2.355)) * 0.2).tolist()
+Gaussian_pulse_samples2 = (signal.gaussian(500, std=(300 / 2.355)) * 0.2).tolist()
 # Gaussian_pulse_samples = Utils.gauss_adaptive(0.45, 500)
 
 ## Attenuators (global) for AOMs 0, + & - of MOT sequence
