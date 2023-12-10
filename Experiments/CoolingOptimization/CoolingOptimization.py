@@ -78,7 +78,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
         if plotResults:
             self.plotDataAndFit(time_vector, y_position_vector, fitFunc=fitFunc, fitParams=v_launch_popt,
                                 title=f'Y position fit \n V_launch = {v_launch}; alpha = {alpha}', ylabel='Y_center [px]',
-                                saveFilePath=extraFilesPath + 'Y_position.png', show=False)
+                                saveFilePath=os.path.join(extraFilesPath, 'Y_position.png'), show=False)
         return (v_launch, alpha, v_launch_popt, v_launch_cov)
 
     def fitTemperaturesFromGaussianFitResults(self, gaussianFitResult, alpha=None, extraFilesPath=None, plotResults=True):
@@ -100,10 +100,10 @@ class CoolingSequenceOptimizer(BaseExperiment):
         if plotResults:
             self.plotDataAndFit(time_vector, sigma_x_vector, fitFunc=tempFromSigmaFunc, fitParams=x_temp_popt,
                                 title=f'X Temperature fit, Sigma_x[mm]  vs. Time [ms]\n T_x = {T_x} [uK]',
-                                ylabel=f'Sigma_x [mm]', saveFilePath=extraFilesPath + 'X_temp_fit.png', show=False)
+                                ylabel=f'Sigma_x [mm]', saveFilePath=os.path.join(extraFilesPath, 'X_temp_fit.png'), show=False)
             self.plotDataAndFit(time_vector, sigma_y_vector, fitFunc=tempFromSigmaFunc, fitParams=y_temp_popt,
                                 title=f'Y Temperature fit, Sigma_y[mm]  vs. Time [ms]\n T_y = {T_y} [uK]',
-                                ylabel=f'Sigma_y [mm]', saveFilePath=extraFilesPath + 'Y_temp_fit.png', show=False)
+                                ylabel=f'Sigma_y [mm]', saveFilePath=os.path.join(extraFilesPath, 'Y_temp_fit.png'), show=False)
         return (T_x, T_y)
 
     def perform_fit(self, path, fit_for_alpha=False):
@@ -300,7 +300,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
         res = []
         for f in files:
             try:
-                fullFileName = path + f
+                fullFileName = os.path.join(path, f)
                 fileRes = []
                 f = f.replace('.jpeg', '').replace('.bmp', '').replace(',', ';')
                 if f.find('background'):
@@ -399,7 +399,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
             ax.imshow(data_noisy.reshape(EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN), cmap=plt.cm.jet, origin='bottom',
                   extent=(x.min(), x.max(), y.min(), y.max()))
             ax.contour(x, y, data_fitted.reshape(EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN), 8, colors='w')
-            plt.savefig(saveFitsPath + fileName + '.png')
+            plt.savefig(os.path.join(saveFitsPath, fileName + '.png'))
             if PLOT_IMG: plt.show()
 
         if PLOT_SLICE:
