@@ -7,9 +7,11 @@ import signal
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 import time
 import math
 import pymsgbox
+import playsound
 from scipy.io import savemat
 from UtilityResources.HMP4040Control import HMP4040Visa
 
@@ -844,7 +846,7 @@ class SpectrumExperiment(BaseExperiment):
         self.tt_FS_measure_batch = self.tt_FS_measure_batch[-(N - 1):] + [self.tt_FS_measure]
 
     # TODO: this will probably be called from mainloop and will override a superclass function
-    def plot_figures(self, fig, ax, Num_Of_dets):
+    def plot_figures(self, fig, ax, Num_Of_dets, counter, locking_efficiency):
 
         ax[0].clear()
         ax[1].clear()
@@ -868,8 +870,8 @@ class SpectrumExperiment(BaseExperiment):
         props_thresholds = dict(boxstyle='round', edgecolor=flag_color, linewidth=2, facecolor=flag_color, alpha=0.5)
 
         pause_str = ' , PAUSED!' if self.pause_flag else ''
-        textstr_thresholds = '# %d - ' % self.Counter + 'Transmission: %d, ' % self.sum_for_threshold + \
-                             'Efficiency: %.2f, ' % self.lockingEfficiency + \
+        textstr_thresholds = '# %d - ' % counter + 'Transmission: %d, ' % self.sum_for_threshold + \
+                             'Efficiency: %.2f, ' % locking_efficiency + \
                              'Flr: %.2f, ' % (1000 * np.average(self.FLR_res.tolist())) + \
                              'Lock Error: %.3f' % self.lock_err + pause_str
 
@@ -1147,7 +1149,7 @@ class SpectrumExperiment(BaseExperiment):
 
                 self.sum_for_threshold = (np.sum(self.tt_S_binning_resonance) * 1000) / self.M_time
 
-                self.logger.debug(f'Lock err: {self.lock_err}, Out of lock: {self.lock_err > lock_err_threshold}, Threshold: {self.sum_for_threshold}')
+                self.logger.debug(f'Lock err: {self.lock_err}, Successful lock: {self.lock_err < lock_err_threshold}, Threshold: {self.sum_for_threshold}')
                 if self.lock_err > lock_err_threshold:
                     break
 
@@ -1257,7 +1259,8 @@ class SpectrumExperiment(BaseExperiment):
                 break
 
             # Informational printing
-            locking_efficiency_str = '%.2f' % (counter / repetitions)
+            locking_efficiency = counter / repetitions
+            locking_efficiency_str = '%.2f' % locking_efficiency
             fluorescence_str = '%.2f' % (1000 * np.average(self.FLR_res.tolist()))
             time_formatted = time.strftime("%Y/%m/%d, %H:%M:%S")
             self.logger.info(f'{time_formatted}: cycle {counter}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}')
@@ -1266,7 +1269,7 @@ class SpectrumExperiment(BaseExperiment):
 
             # Plot figures
             try:
-                self.plot_figures(fig, [ax1, ax2, ax3, ax4, ax5, ax6], Num_Of_dets)
+                self.plot_figures(fig, [ax1, ax2, ax3, ax4, ax5, ax6], Num_Of_dets, counter, locking_efficiency)
             except Exception as err:
                 print(f'>>> Got {err}')
 

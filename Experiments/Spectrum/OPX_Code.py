@@ -683,7 +683,7 @@ def opx_control(obj, qm):
                     update_frequency("MOT_AOM_0", Config.IF_AOM_MOT_OFF)
                 with if_(i == IOP.EXPERIMENT_SWITCH.value):  # We are setting here the experiment ON/OFF
                     assign(Experiment_ON, IO2)
-                with if_(i == IOP.OD_FREQUENCY):
+                with if_(i == IOP.OD_FREQUENCY.value):
                     # update_frequency("AOM_Spectrum", Config.IF_AOM_Spectrum + int(30e6))
                     assign(OD_freq, IO2)
                     update_frequency("AOM_Spectrum", OD_freq)
@@ -734,11 +734,11 @@ def opx_control(obj, qm):
                 # with if_(i == IOP.SHUTTER_OPENING_TIME.value):  # Live control of the delay due to shutter opening time.
                 #     assign(shutter_open_time, IO2)
 
-                with if_(i == IOP.PUSHBEAM_DURATION):
+                with if_(i == IOP.PUSHBEAM_DURATION.value):
                     assign(PushBeam_duration, IO2)
-                with if_(i == IOP.PUSHBEAM_AMPLITUDE):
+                with if_(i == IOP.PUSHBEAM_AMPLITUDE.value):
                     assign(PushBeam_Amp, IO2)
-                with if_(i == IOP.PUSHBEAM_FREQUENCY):
+                with if_(i == IOP.PUSHBEAM_FREQUENCY.value):
                     assign(OD_freq, IO2)
 
                 # Signal the Python code to send the next [key/value] pair
