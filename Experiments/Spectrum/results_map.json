@@ -75,6 +75,30 @@
 			"folder": "meta_data",
 			"type": "csv_writer"
 		},
+
+		{
+			"description": "Cavity Spectrum",
+			"data": "cavity_spectrum",
+			"file_name": "Cavity_spectrum",
+			"folder": "meta_data",
+			"type": "npz"
+		},
+		{
+			"description": "Cavity Atom Spectrum",
+			"data": "cavity_atom_spectrum",
+			"file_name": "Cavity_atom_spectrum",
+			"folder": "meta_data",
+			"type": "npz"
+		},
+		{
+			"description": "Frequency Vector",
+			"data": "frequency_vector",
+			"file_name": "frequency_vector",
+			"folder": "meta_data",
+			"type": "npz"
+		},
+
+
 		{
 			"# INPUT FILES": "-----------------------------------"
 		},
@@ -111,6 +135,13 @@
 			"data": "fs_sequence",
 			"name": "fs sequence",
 			"file_name": "FS_sequence_vector",
+			"folder": "input\\sequences",
+			"type": "npz"
+		},
+		{
+			"data": "all_transits_indx_batch",
+			"name": "all transits index batch",
+			"file_name": "all_transits_seq_index_batch",
 			"folder": "input\\sequences",
 			"type": "npz"
 		},

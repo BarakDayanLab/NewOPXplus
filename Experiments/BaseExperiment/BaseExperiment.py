@@ -17,7 +17,7 @@ from Utilities.BDResults import BDResults
 
 from Experiments.BaseExperiment import Config_Table
 from Experiments.BaseExperiment import Config_Experiment as Config  # Attempt to load the default config (may be overriden later)
-from Experiments.BaseExperiment import OPX_Code  # Attempt to load the OPX Code (may be overriden later)
+from Experiments.BaseExperiment import OPX_Code  # Attempt to load the OPX Code (maybe overriden later)
 from Experiments.BaseExperiment.Config_Table import Default_Values
 from Experiments.BaseExperiment.Values_Transformer import Values_Transformer
 from Experiments.BaseExperiment.IO_Parameters import IOParameters as IOP
@@ -843,6 +843,9 @@ class BaseExperiment:
     def AntiHelmholtz_Delay_switch(self, Bool):
         self.update_io_parameter(IOP.ANTIHELMHOLTZ_DELAY_SWITCH.value, Bool)
 
+    def Change_OD_freq(self, freq):
+        self.update_io_parameter(IOP.OD_FREQUENCY, int(Config.IF_AOM_Spectrum + freq))
+
     def Max_Probe_counts_switch(self, Bool):
         self.update_io_parameter(IOP.MAX_PROBE_COUNTS_SWITCH.value, Bool)
 
@@ -877,6 +880,16 @@ class BaseExperiment:
         self.fountain_aom_chirp_rate = int(df * 1e3 / (self.fountain_prep_duration * 4))  # mHz/nsec
         self.logger.info(self.fountain_aom_chirp_rate)
         self.update_io_parameter(IOP.FOUNTAIN_FINAL_DELTA_FREQ.value, self.fountain_aom_chirp_rate)
+
+    ## Push beam params
+    def update_PushBeam_duration(self, duration):
+        self.update_io_parameter(IOP.PUSHBEAM_DURATION, int(duration * 1e3 / 4))  # In [us]
+
+    def update_PushBeam_amp(self, Amp):
+        self.update_io_parameter(IOP.PUSHBEAM_AMPLITUDE, float(Amp))  #
+
+    def update_PushBeam_frequency(self, freq):
+        self.update_io_parameter(IOP.PUSHBEAM_FREQUENCY, int(Config.IF_AOM_OD + freq))  # In [us]
 
     ## Measuring variable update functions: ##
 
