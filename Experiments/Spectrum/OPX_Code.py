@@ -18,18 +18,21 @@ def MOT(mot_repetitions):
     """
     FLR = declare(fixed)
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-3'_for_interference", "FLR_detection",
-          "Measurement")  # , "Dig_detectors") # , "PULSER_N", "PULSER_S")
+          "AOM_2-2/3'", "AOM_2-3'_for_interference", "FLR_detection", "Measurement")  # , "Dig_detectors") # , "PULSER_N", "PULSER_S")
+    # update_frequency("AOM_Spectrum", 80000000)
 
     ## MOT build-up ##
     n = declare(int)
     m = declare(int)
     play("Detection" * amp(FLR * 0), "FLR_detection",
-         duration=4)  # we dont know why this works, but Yoav from QM made us write this line to solve an alignment problem we had in the next 2 for loops
+         duration=4)  # we don't know why this works, but Yoav from QM made us write this line to solve an alignment problem we had in the next 2 for loops
     with for_(n, 1, n <= mot_repetitions, n + 1):
         play("MOT_with_EOM" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0")
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
+        # with if_(n == mot_repetitions):
+        #     play("Const_open", "AOM_Spectrum", duration=50000)
+        # play("Const_open", "AOM_Spectrum")
         # play("Const_open", "PULSER_N")
         # play("OD_FS" * amp(0.1), "AOM_2-2/3'")
         play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
@@ -411,8 +414,8 @@ def Spectrum_Exp(m_off_time, m_time, m_window, shutter_open_time,
                 play("Spectrum_pulse", "AOM_Spectrum")
 
 
-    # wait(298, "Dig_detectors")
-    wait(345, "Dig_detectors")
+    wait(339, "Dig_detectors")
+    # wait(330, "Dig_detectors")
     # with for_(n, 0, n < m_time * 4, n + m_window):
     measure("readout_QRAM", "Dig_detectors", None,
             time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
@@ -470,6 +473,7 @@ def opx_control(obj, qm):
 
         # Boolean variables:
         AntiHelmholtz_ON = declare(bool, value=True)
+        PushBeam_ON = declare(bool, value=False)
         Experiment_ON = declare(bool, value=True)
 
         # MOT variables
@@ -504,6 +508,14 @@ def opx_control(obj, qm):
 
         # General measurements variables:
         PrePulse_duration = declare(int, value=int(obj.Exp_Values['PrePulse_duration'] * 1e6 / 4))
+
+        # Push beam params
+        PushBeam_duration = declare(int, value=int(5000/4))
+        PushBeam_delay = declare(int, value=int(20000/4))
+        # TODO: Q: this gets overriden in the code to follow - so do we need this?
+        OD_freq = declare(int, value=int(Config.IF_AOM_OD))
+        PushBeam_Amp = declare(fixed, value=1)
+
         # Pulse_1_parameters:
         Pulse_1_duration = declare(int, value=int(obj.Exp_Values['Pulse_1_duration'] * 1e6 / 4))
         Pulse_1_decay_time = declare(int, value=int(obj.Exp_Values['Pulse_1_decay_duration'] * 1e6 / 4))
@@ -521,6 +533,7 @@ def opx_control(obj, qm):
         ## In fiber:
         M_off_time = declare(int, value=int(obj.M_off_time / 4))
         shutter_open_time = declare(int, value=int(obj.Shutter_open_time * 1e6 / 4))
+        OD_freq = declare(int, value=int(Config.IF_AOM_Spectrum))
 
         ## Spectrum experiment:
         frequency_sweep_rep = declare(int, value=obj.frequency_sweep_rep)
@@ -571,11 +584,12 @@ def opx_control(obj, qm):
             align(*all_elements)
 
             # Fountain sequence:
-            wait(fountain_duration, "Cooling_Sequence")
-            Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
-                                       fountain_pulse_duration_0, fountain_pulse_duration_minus,
-                                       fountain_pulse_duration_plus, fountain_aom_chirp_rate,
-                                       fountain_delta_f)
+            with if_(fountain_duration > 0):
+                wait(fountain_duration, "Cooling_Sequence")
+                Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
+                                           fountain_pulse_duration_0, fountain_pulse_duration_minus,
+                                           fountain_pulse_duration_plus, fountain_aom_chirp_rate,
+                                           fountain_delta_f)
 
             # PGC sequence:
             wait(pgc_duration, "Cooling_Sequence")
@@ -584,8 +598,7 @@ def opx_control(obj, qm):
 
             # FreeFall sequence:
             with if_(Experiment_ON):
-                assign(x, (
-                            30678780 - 3106 + 656000 * 2 + 4) // 4)  # TODO -  added 38688900 to fix new delay due to wait(1000) in saving sprint data with vector size 10000, should be fixed as well
+                assign(x, (30678780 - 3106 + 656000 * 2 + 4) // 4)  # TODO -  added 38688900 to fix new delay due to wait(1000) in saving sprint data with vector size 10000, should be fixed as well
             with else_():
                 assign(x, - 3106)
             FreeFall(FreeFall_duration - x, coils_timing)
@@ -599,11 +612,17 @@ def opx_control(obj, qm):
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
 
-            align("Cooling_Sequence", "AOM_Early", "AOM_Late")
+            align("Cooling_Sequence", "AOM_Early", "AOM_Late", "AOM_2-2/3'")
             with if_(Experiment_ON):
                 wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
             with else_():
                 wait(PrePulse_duration, "Cooling_Sequence")
+
+            # Push beam
+            with if_(PushBeam_ON):
+                wait(PushBeam_delay, "AOM_2-2/3'")
+                play("OD_FS" * amp(PushBeam_Amp), "AOM_2-2/3'", duration=PushBeam_duration)
+
             align(*all_elements, "AOM_2-2/3'", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S",
                   "Dig_detectors", "AOM_Spectrum")
 
@@ -664,6 +683,10 @@ def opx_control(obj, qm):
                     update_frequency("MOT_AOM_0", Config.IF_AOM_MOT_OFF)
                 with if_(i == IOP.EXPERIMENT_SWITCH.value):  # We are setting here the experiment ON/OFF
                     assign(Experiment_ON, IO2)
+                with if_(i == IOP.OD_FREQUENCY):
+                    # update_frequency("AOM_Spectrum", Config.IF_AOM_Spectrum + int(30e6))
+                    assign(OD_freq, IO2)
+                    update_frequency("AOM_Spectrum", OD_freq)
                 # ## AntiHelmholtz control ##
                 # with if_(i == IOP.ANTIHELMHOLTZ_DELAY.value):
                 #     assign(antihelmholtz_delay, IO2)
@@ -710,6 +733,13 @@ def opx_control(obj, qm):
                 #     assign(Depump_pulses_spacing, IO2)
                 # with if_(i == IOP.SHUTTER_OPENING_TIME.value):  # Live control of the delay due to shutter opening time.
                 #     assign(shutter_open_time, IO2)
+
+                with if_(i == IOP.PUSHBEAM_DURATION):
+                    assign(PushBeam_duration, IO2)
+                with if_(i == IOP.PUSHBEAM_AMPLITUDE):
+                    assign(PushBeam_Amp, IO2)
+                with if_(i == IOP.PUSHBEAM_FREQUENCY):
+                    assign(OD_freq, IO2)
 
                 # Signal the Python code to send the next [key/value] pair
                 pause()

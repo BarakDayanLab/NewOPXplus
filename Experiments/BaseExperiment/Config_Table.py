@@ -126,6 +126,7 @@ Initial_Values = {
     'PrePulse_duration': 1,  # [msec]
     'Shutter_open_time': 0,  # [msec]
     'PrePulse_Repump_amp': 1,  # relative
+    'PrePulse_CH1_freq': -1,  # [Hz]
 
     'Pulse_1_amp_i': 1,              # relative amplitude 0 to 1 (change in db is calculated by script)
     'Pulse_1_amp_f': 1,              # relative amplitude 0 to 1 (change in db is calculated by script)
@@ -737,7 +738,9 @@ Key_to_Channel = {
     'AOM_Off_Detuning': [4],      # [Hz]; Frequency for essentially turnning light coming from AONs off
     'Snapshot_Intervals': [1, 4],   # [msec]
     'PrePulse_duration': [1, 4],            # [msec]
-    'Trigger_delay': [1, 4],          # [msec]
+    'PrePulse_CH1_freq': [1],  # [Hz]
+    'Trigger_delay': [1, 4],  # [msec]
+    'Pulse_1_duration': [1, 4],  # [msec]
     'Pulse_1_duration': [1, 4],       # [msec]
     'InterPulses_duration': [1, 4], # [msec]; Time between pulse 1 & 2.
     'Pulse_2_duration': [1, 4],      # [msec]; If 0 -> no snd pulse

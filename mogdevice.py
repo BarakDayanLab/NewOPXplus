@@ -64,7 +64,7 @@ class MOGDevice(object):
             self.dev.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.dev.settimeout(timeout)
             addr, port = self.connection.split(':')
-            self.dev.connect((addr, int(port)))
+            self.dev.connect((addr,int(port)))
         # check the connection?
         if check:
             try:

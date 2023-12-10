@@ -42,6 +42,8 @@ class IOParameters(Enum):
     PULSE_1_DECAY_DURATION = 44
     N_SNAPS = 45
     BUFFER_CYCLES = 46
+    PREPULSE_CH1_FREQ = 49
+    OD_FREQUENCY = 50
     OD_FS_START = 51
     OD_FS_PULSE_DURATION = 52
     OD_FS_PULSES_SPACING = 53
@@ -57,6 +59,10 @@ class IOParameters(Enum):
     MW_SPEC_OD_PULSE = 62
     MW_SPEC_REPETITION_TIMES = 63
     MW_SPEC_DELTA_FREQ = 64
+
+    PUSHBEAM_DURATION = 70,
+    PUSHBEAM_AMPLITUDE = 71,
+    PUSHBEAM_FREQUENCY = 72
 
     @classmethod
     def has(cls, key):
