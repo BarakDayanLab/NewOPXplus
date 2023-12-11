@@ -3099,7 +3099,7 @@ class OPX:
                                                      with_atoms=with_atoms)
 
     def Start_Spectrum_Exp_with_tt(self, N=1000, Transit_profile_bin_size=100, preComment=None, transit_cond=[2, 1, 2],
-                                  total_counts_threshold=0.1, transit_counts_threshold=3, FLR_threshold=0.03,
+                                  total_counts_threshold=0.2, transit_counts_threshold=3, FLR_threshold=0.03,
                                   lock_err_threshold=0.002, Exp_flag=True, with_atoms=True, Calibration_dirname=None):
         self.Spectrum_Exp_switch(True)
         self.MOT_switch(with_atoms)
