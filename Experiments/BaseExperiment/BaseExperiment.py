@@ -189,11 +189,11 @@ class BaseExperiment:
 
         self.QuadRFControllers = []
 
-        # Note: So as not to connect again and again to QuadRF each time we update table, we now save the MOGDevic (actual QuadRF device) connected,
+        # Note: So as not to connect again and again to QuadRF each time we update table, we now save the MOGDevice (actual QuadRF device) connected,
         # we hold this connection until update is finished, then we close the connection.
         # we do still hold the QuadRFController objects, for access to the table (read only!) when the experiment is running.
         qrfContr = QuadRFMOTController(initialValues=self.Exp_Values,
-                                       updateChannels=(1, 4),
+                                       updateChannels=(1, 2, 4),
                                        topticaLockWhenUpdating=False,
                                        debugging=True,
                                        continuous=False)
@@ -209,7 +209,7 @@ class BaseExperiment:
                                         #initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
                                         initialValues={'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
                                         updateChannels=[3],
-                                        debugging=False,
+                                        debugging=True,
                                         continuous=True)  # updates values on QuadRF (uploads table)
         self.QuadRFControllers.append(qrfContr2)  # updates values on QuadRF (uploads table)
 

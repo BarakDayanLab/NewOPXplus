@@ -218,7 +218,7 @@ class QuadRFMOTController(QuadRFController):
                 self.topticaController.setLocking(flag)  # set locking on/offR
                 self.topticaController = None  # destroy the controller, until next change
         except:
-            print('\033[93m' + 'Could not connect Toptica controller. Try to reset DigiLock server.' + '\033[0m' )
+            self.bdlogger.warn('Could not connect Toptica controller. Try to reset DigiLock server.')
             return
 
     # Make all parameters are in the right units (i.e., unless specified otherwise by user, to be Hz & dBm)
@@ -231,7 +231,7 @@ class QuadRFMOTController(QuadRFController):
                         if type(phaseAtt.amp) is not str: phaseAtt.amp = str(phaseAtt.amp) + 'dbm'
 
     # send a constant QuadRFPhase.ch to QuadRF
-    def sendCmdConstantPhase(self, ch, phase, phase_name = None):
+    def sendCmdConstantPhase(self, ch, phase, phase_name=None):
         assert type(phase) == QuadRFPhase # make sure we get an actual well-built phase
         chStr = 'ch_{}'.format(ch)  # e.g., 'ch_1', 'ch_2', etc.
         self.sendCmd('TABLE,APPEND,%d, %s, %s, 0x0, %s' % (ch, phase[chStr].freq, phase[chStr].amp, phase.duration), phase_name=phase_name)
@@ -247,7 +247,7 @@ class QuadRFMOTController(QuadRFController):
         ch = int(ch)
 
         # Iterate over all phases
-        for phase_index in range(0, len(self.phases_order)-1):
+        for phase_index in range(0, len(self.phases_order)):
             # Get the relevant phase according to experiment specific order
             i = (phase_index + self.trigger_on_phase) % len(self.phases_order)
             phase = self.phases_order[i]
