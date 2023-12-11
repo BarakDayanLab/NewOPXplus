@@ -18,6 +18,7 @@ from Utilities.BDResults import BDResults
 from Experiments.BaseExperiment import Config_Table
 from Experiments.BaseExperiment import Config_Experiment as Config  # Attempt to load the default config (may be overriden later)
 from Experiments.BaseExperiment import OPX_Code  # Attempt to load the OPX Code (maybe overriden later)
+from Experiments.BaseExperiment.Config_Table import Initial_Values
 from Experiments.BaseExperiment.Config_Table import Default_Values
 from Experiments.BaseExperiment.Values_Transformer import Values_Transformer
 from Experiments.BaseExperiment.IO_Parameters import IOParameters as IOP
@@ -86,8 +87,9 @@ class BaseExperiment:
         # the locking application that runs on a different computer. The file contains the current PID error value.
         self.lock_error_file = os.path.join(self.bd_results.get_experiment_root(), 'Locking_PID_Error', 'locking_err.npy')
 
-        # Load default values as the experiment values
-        self.Exp_Values = Default_Values  # Initialize experiment values to be as in the BaseExperiment Config_Table.py
+        # Load Initial Values and Default Values - merge them together (Default Values prevails!)
+        # These will be the experiment values
+        self.Exp_Values = Utils.merge_multiple_jsons([Initial_Values, Default_Values])
 
         # Dynamically import the config-experiment and config-table and merge the values
         try:

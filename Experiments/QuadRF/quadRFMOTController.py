@@ -79,7 +79,7 @@ class QuadRFMOTController(QuadRFController):
 
         # -----------------  MOT ------------------------
         self.MOT = QuadRFPhase(duration=values['MOT_duration'],
-                               initial_values=((values['MOT_freq'],self.Amp_Ch1), (AOMOffFreq, self.zeroAmp), (values['MOT_AOM_freq'], self.Amp_Ch3), (values['AOM_Repump_freq'], self.Amp_Ch4)))
+                               initial_values=((values['MOT_freq'], self.Amp_Ch1), (AOMOffFreq, self.zeroAmp), (values['MOT_AOM_freq'], self.Amp_Ch3), (values['AOM_Repump_freq'], self.Amp_Ch4)))
         # MOT Delay (turn everything off, except for repump)
         self.Post_MOT_delay = QuadRFPhase(duration=values['Post_MOT_delay'], initial_values=((values['MOT_freq'], self.Amp_Ch1), (AOMOffFreq, self.zeroAmp),
                                                                                              (AOMOffFreq, self.zeroAmp), (values['AOM_Repump_freq'], self.Amp_Ch4)))
@@ -128,21 +128,6 @@ class QuadRFMOTController(QuadRFController):
                                                     (values['Repump_PGC_freq'], self.Amp_Ch4)))
         # ----------------- Free-fall -----------------
         PrePulse_delta_amp_Repump = float(Utils.amplitudeMultiplierToDBm(values['PrePulse_Repump_amp']))
-        # Free fall - before pulses
-        # self.Free_Fall = QuadRFPhase(duration=values['PrePulse_duration'], initial_values=((values['MOT_freq'], self.Amp_Ch1), (AOMOffFreq, self.Amp_Ch2),
-        #                                                                                   (AOMOffFreq, self.Amp_Ch3), (AOMOffFreq, self.Amp_Ch4)))
-        # self.Free_Fall = QuadRFPhase(duration=values['PrePulse_duration'], initial_values=((values['Pulse_1_CH1_Freq_f'], self.Amp_Ch1), (AOMOffFreq, self.Amp_Ch2),
-        #                                                                                    (AOMOffFreq, self.Amp_Ch3), (values['AOM_Repump_freq'], self.Amp_Ch4)))
-
-        # TODO: REMOVE REMOVE - this is here so we can test the change after the Spectrum-experiment catch-up
-        # TODO:                 need to check that we have indeed a value for values['PrePulse_CH1_freq']. We don't need the PGC_final_amp_delta...
-        # TODO:                 Is there value for values['PrePulse_CH2_freq'] ? (in Spectrum experiment)
-        # self.Free_Fall = QuadRFPhase(duration=values['PrePulse_duration'],
-        #                              initial_values=((values['PGC_final_freq'], self.Amp_Ch1 + PGC_final_amp_delta),
-        #                                              (values['PrePulse_CH2_freq'], self.Amp_Ch2),
-        #                                              (AOMOffFreq, self.Amp_Ch3),
-        #                                              (values['Pulse_1_CH4_Freq'], self.Amp_Ch4 + PrePulse_delta_amp_Repump)))
-
         self.Free_Fall = QuadRFPhase(duration=values['PrePulse_duration'],
                                      initial_values=((values['PrePulse_CH1_freq'], self.Amp_Ch1),
                                                      (values['PrePulse_CH2_freq'], self.Amp_Ch2),

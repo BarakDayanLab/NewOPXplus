@@ -466,6 +466,11 @@ def opx_control(obj, qm):
     with program() as opx_control_prog:
 
         # Declaring program variables
+        p = declare(int, size=100)
+        val = int(obj.Exp_Values['Post_MOT_delay'] * 1e6 / 4)
+        POST_MOT_DELAY_PARAM = 3
+        assign(p[POST_MOT_DELAY_PARAM], val)
+
         i = declare(int)
         Trigger_Phase = declare(int, value=obj.Exp_Values['Triggering_Phase'])
         Imaging_Phase = declare(int, value=obj.Exp_Values['Imaging_Phase'])
@@ -580,7 +585,8 @@ def opx_control(obj, qm):
             play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
 
             # Delay before fountain:
-            wait(post_MOT_delay, "Cooling_Sequence")
+            #wait(post_MOT_delay, "Cooling_Sequence")
+            wait(p[POST_MOT_DELAY_PARAM], "Cooling_Sequence")  # @@@ - 2  TODO: Generalize this - for all parameters :-)
             align(*all_elements)
 
             # Fountain sequence:
@@ -600,7 +606,6 @@ def opx_control(obj, qm):
             with if_(Experiment_ON):
                 assign(x, (30678780 - 3106 + 656000 * 2 + 4) // 4)  # TODO -  added 38688900 to fix new delay due to wait(1000) in saving sprint data with vector size 10000, should be fixed as well
                 #assign(x, (0 - obj.Exp_Values['OPX_Quad_Misalignment_Delay']) // 4)
-
             with else_():
                 assign(x, - 3106)
             FreeFall(FreeFall_duration - x, coils_timing)
@@ -697,6 +702,9 @@ def opx_control(obj, qm):
                 #     assign(MOT_Repetitions, IO2)
                 # with if_(i == IOP.POST_MOT_DELAY.value):  # Live control over the
                 #     assign(post_MOT_delay, IO2)
+                with if_(i == IOP.POST_MOT_DELAY.value):  # Live control over the
+                    assign(p[POST_MOT_DELAY_PARAM], IO2)  # @@@ - 4  TODO: Generalize this! assign(p[i], IO2)
+
 
                 # ## PGC variables control ##
                 # with if_(i == IOP.PGC_DURATION.value):  # Live control over the PGC duration

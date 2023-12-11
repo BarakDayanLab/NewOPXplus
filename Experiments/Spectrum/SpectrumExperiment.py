@@ -316,10 +316,10 @@ class SpectrumExperiment(BaseExperiment):
 
         # remove zero-padding from tt-res and append into tt_measure
         for i in range(len(Num_Of_dets)):  # for different detectors
-            # TODO: check this:
-            # a = self.streams[f'Detector_{2}_Timetags']['results'])
-            # b = tt_res[2]
-            # Isn't a==b? If 'yes', why did we need the tt_res and count_res ?
+            # TODO: a and b are the same! So we can make the code more efficient/readable
+            # TODO: Since a==b, why do we need the tt_res and count_res ?
+            # a = self.streams[f'Detector_{2}_Timetags']['results']
+            # b = tt_res[1]
 
             self.tt_measure.append(tt_res[i][1:(tt_res[i][0])].tolist())
             self.tt_measure[i] = [elm + Config.detector_delays[i] for elm in self.tt_measure[i]
@@ -1049,7 +1049,8 @@ class SpectrumExperiment(BaseExperiment):
             self.tt_S_binning = np.zeros(self.histogram_bin_number * 2)
             for x in self.tt_S_no_gaps:
                 self.tt_S_binning[(x - 1) // Config.frequency_sweep_duration] += 1
-            S_det_isnt_full = sum(np.array(self.tt_S_binning[int(0.95*len(self.tt_S_binning)):])) != 0
+            percent = 0.95  # 0.95
+            S_det_isnt_full = sum(np.array(self.tt_S_binning[int(percent*len(self.tt_S_binning)):])) != 0
 
             if is_new_tts_S and S_det_isnt_full:
                 break
@@ -1539,10 +1540,10 @@ if __name__ == "__main__":
     # TODO: REMOVE, for debug only
     sequence_definitions = None
 
-    # if sequence_definitions is None:
-    #     experiment.run(run_parameters)
-    # else:
-    #     experiment.run_sequence(sequence_definitions, run_parameters)
+    if sequence_definitions is None:
+        experiment.run(run_parameters)
+    else:
+        experiment.run_sequence(sequence_definitions, run_parameters)
 
     #experiment.close_opx()
     #pass

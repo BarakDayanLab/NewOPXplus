@@ -139,7 +139,7 @@
 			"type": "npz"
 		},
 		{
-			"data": "all_transits_indx_batch",
+			"data": "all_transits_index_batch",
 			"name": "all transits index batch",
 			"file_name": "all_transits_seq_index_batch",
 			"folder": "input\\sequences",
@@ -205,18 +205,6 @@
 			"name": "detector 8 timetags",
 			"file_name": "Det8_timetags",
 			"folder": "output\\AllDetectors",
-			"type": "npz"
-		},
-
-		{
-			"# OUTPUT FILES - TRANSIT EVENTS BATCHED": "-----------------------------------"
-		},
-
-  		{
-			"data": "all_transits_batch",
-			"name": "all transits batch",
-			"file_name": "seq_transit_events_batched",
-			"folder": "output",
 			"type": "npz"
 		},
 
