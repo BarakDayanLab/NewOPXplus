@@ -466,7 +466,7 @@ if __name__ == "__main__":
     experiment = CoolingSequenceOptimizer()
 
     # Display menu to get action
-    selection = BDMenu(experiment, r'./menu.json', None).display()
+    #selection = BDMenu(experiment, r'./menu.json', None).display()
 
     # TODO: insert this into the cycles/runs schema
     #experiment.measureTemperature()

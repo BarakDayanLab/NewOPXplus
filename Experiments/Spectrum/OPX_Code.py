@@ -599,6 +599,8 @@ def opx_control(obj, qm):
             # FreeFall sequence:
             with if_(Experiment_ON):
                 assign(x, (30678780 - 3106 + 656000 * 2 + 4) // 4)  # TODO -  added 38688900 to fix new delay due to wait(1000) in saving sprint data with vector size 10000, should be fixed as well
+                #assign(x, (0 - obj.Exp_Values['OPX_Quad_Misalignment_Delay']) // 4)
+
             with else_():
                 assign(x, - 3106)
             FreeFall(FreeFall_duration - x, coils_timing)
