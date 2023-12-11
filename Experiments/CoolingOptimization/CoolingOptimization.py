@@ -117,6 +117,10 @@ class CoolingSequenceOptimizer(BaseExperiment):
         # Gaussian Fit to results (for each photo)
         gaussianFitResult = self.gaussianFitAllPicturesInPath(path, backgroundPath=background_image_path, saveFitsPath=extra_files, imgBounds=self.imgBounds)
 
+        if len(gaussianFitResult) == 0:
+            self.warn('No Guassian fit on images, not trying any fits. Skipping.')
+            return
+
         # ---- Take Gaussian fit results and get temperature (x,y) and launch speed -----------
         v_launch, alpha, v_launch_popt, v_launch_cov = self.fitVy_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult, extraFilesPath=extra_files, plotResults=True)
         time_vector = np.array([res[0] for res in gaussianFitResult])
@@ -378,7 +382,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
         initial_guess = (ImgToFit[img_max_index[1]][img_max_index[0]], img_max_index[1], img_max_index[0], EFFECTIVE_X_PIXEL_LEN/10, EFFECTIVE_Y_PIXEL_LEN/10, 0, 10)
         fitBounds =[0, (255, EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN, EFFECTIVE_X_PIXEL_LEN / 2, EFFECTIVE_Y_PIXEL_LEN / 2, 2* np.pi, 255)]
         # print(initial_guess)
-        popt, pcov = opt.curve_fit(self.twoD_Gaussian, (x, y), data_noisy, p0=initial_guess, bounds = fitBounds)
+        popt, pcov = opt.curve_fit(self.twoD_Gaussian, (x, y), data_noisy, p0=initial_guess, bounds=fitBounds)
 
         # --- Check sigmas are in-bound ----
         sigma = [popt[3], popt[4]]
