@@ -305,8 +305,7 @@ class QuadRFController:
             if 3 in channels: self.continuousTableForChannel(3, '110MHz', self.Amp_Ch3)
             if 4 in channels: self.continuousTableForChannel(4, '133.325MHz', self.Amp_Ch4)  # Depump
         else:
-            self.logger.debug('Continuous mode.')
-            # Otherwise, get the data from Config_Table
+            self.logger.debug('Continuous mode. Parameters taken initial values passed as parameters when inited QuadRFController')
             if 1 in channels: self.continuousTableForChannel(1, self.initialValues['CH1_freq'], self.initialValues['CH1_amp'])
             if 2 in channels: self.continuousTableForChannel(2, self.initialValues['CH2_freq'], self.initialValues['CH2_amp'])
             if 3 in channels: self.continuousTableForChannel(3, self.initialValues['CH3_freq'], self.initialValues['CH3_amp'])
