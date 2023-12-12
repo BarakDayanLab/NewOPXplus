@@ -1,5 +1,5 @@
 import Config_Experiment as Config
-from Experiments.BaseExperiment.Phases import Phases
+from Experiments.Enums.Phases import Phases
 from qm.qua import *
 
 all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]

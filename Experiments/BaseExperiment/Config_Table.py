@@ -1,6 +1,5 @@
-from enum import Enum
 import numpy as np
-from Experiments.BaseExperiment.Phases import Phases
+from Experiments.Enums.Phases import Phases
 import Experiments.BaseExperiment.Config_Experiment as Config
 from UtilityResources.AOMCalibration import calibrate, calibration_data
 from Utilities.Utils import Utils

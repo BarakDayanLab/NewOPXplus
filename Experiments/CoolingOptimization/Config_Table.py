@@ -1,4 +1,4 @@
-from Experiments.BaseExperiment.Phases import Phases
+from Experiments.Enums.Phases import Phases
 from Experiments.BaseExperiment.Config_Table import Initial_Values
 
 

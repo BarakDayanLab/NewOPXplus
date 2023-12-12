@@ -13,7 +13,7 @@ from Experiments.BaseExperiment import Config_Experiment as Config  # Attempt to
 # Both the updateValue uses factors and also the convenience functions
 
 
-class Values_Transformer:
+class ValuesTransformer:
 
     MODES = ['SET_VALUE', 'FACTOR_AND_CAST', 'TRANSFORM']
     

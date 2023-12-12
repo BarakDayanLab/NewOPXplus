@@ -1,5 +1,5 @@
 import numpy as np
-from Experiments.BaseExperiment.Phases import Phases
+from Experiments.Enums.Phases import Phases
 from Experiments.BaseExperiment.Config_Table import Initial_Values
 import Experiments.Spectrum.Config_Experiment as Config
 

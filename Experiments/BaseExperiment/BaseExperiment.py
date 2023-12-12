@@ -20,7 +20,7 @@ from Experiments.BaseExperiment import Config_Experiment as Config  # Attempt to
 from Experiments.BaseExperiment import OPX_Code  # Attempt to load the OPX Code (maybe overriden later)
 from Experiments.BaseExperiment.Config_Table import Initial_Values
 from Experiments.BaseExperiment.Config_Table import Default_Values
-from Experiments.BaseExperiment.Values_Transformer import Values_Transformer
+from Experiments.BaseExperiment.ValuesTransformer import ValuesTransformer
 
 from Experiments.QuadRF.quadRFMOTController import QuadRFMOTController
 
@@ -76,7 +76,7 @@ class BaseExperiment:
         # Debugging plot
         self.dbg_plot = None
 
-        self.transformer = Values_Transformer()
+        self.transformer = ValuesTransformer()
 
         # Initialize the BDResults helper - for saving experiment results
         self.bd_results = BDResults(json_map_path=self.paths_map['cwd'], version="0.1")

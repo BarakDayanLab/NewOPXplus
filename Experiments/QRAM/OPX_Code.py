@@ -1,5 +1,5 @@
 from Experiments.QRAM import Config_Experiment as Config
-from Experiments.BaseExperiment.Phases import Phases
+from Experiments.Enums.Phases import Phases
 from qm.qua import *
 from Utilities.OPX_Utils import OPX_Utils
 
