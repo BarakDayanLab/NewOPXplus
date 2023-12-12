@@ -165,7 +165,7 @@ class CoolingSequenceOptimizer(OPX):
         self.updateValue("PrePulse_duration", float(t_measure), update_parameters=True)
         self.avgFunnelImage = self.camera.captureAverageImage(NAvg = 3, NThrow = 0)
         self.lowerFunnelSegment,_ = self.get1DSegmentIn2DPlot(self.avgFunnelImage)
-        self.upperFunnelSegment = self.get1DSegmentIn2DPlot(self.avgFunnelImage)
+        self.upperFunnelSegment,_ = self.get1DSegmentIn2DPlot(self.avgFunnelImage)
 
         # initiate the input-output matrix
         numOfIters = push_beam_duration_list * push_beam_amp_list * push_beam_freq_list
@@ -177,7 +177,7 @@ class CoolingSequenceOptimizer(OPX):
                     # update push beam parameters
                     self.update_PushBeam_duration(duration)
                     self.update_PushBeam_amp(amp)
-                    self.update_PushBeam_frequency(freq)
+                    self.experiment.updateValue("PrePulse_CH1_freq", experiment.Exp_Values['MOT_freq'] - freq, True)
                     self.update_parameters()
                     # take an image
                     self.avgFunnelImage = self.camera.captureAverageImage(NAvg=3, NThrow=0)
@@ -485,6 +485,8 @@ class CoolingSequenceOptimizer(OPX):
 #r = optimizePGC(c)
 if __name__ == "__main__":
     experiment = CoolingSequenceOptimizer(Config.config)
-    # experiment.GaussianFit(file_name_for_fit=r'U:\Lab_2021-2022\Experiment_results\Temperature\20231206_182041\PrePulse_duration=07.0.bmp', background_file = backgroundPath,saveFitsPath = saveFitsPath,imgBounds=imgBounds)
     # experiment.measureTemperature(PrePulseDurations=np.arange(0.5, 5, 0.5))
     #experiment.optimizePGC()
+    # experiment.GaussianFit(file_name_for_fit=r'U:\Lab_2021-2022\Experiment_results\Temperature\20231206_182041\PrePulse_duration=07.0.bmp', background_file = backgroundPath,saveFitsPath = saveFitsPath,imgBounds=imgBounds)
+    # experiment.scanPushBeamParams(t_measure=7, push_beam_duration_list=[1, 5, 10], push_beam_amp_list=[0.5, 0.7, 0.9],
+    #                               push_beam_freq_list=[1e6, 5e6, 10e6])

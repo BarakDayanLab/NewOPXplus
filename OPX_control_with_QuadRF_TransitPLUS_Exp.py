@@ -1134,8 +1134,8 @@ class OPX:
         self.update_io_parameter(47, int(duration * 1e3 / 4)) # In [us]
     def update_PushBeam_amp(self, Amp):
         self.update_io_parameter(48, float(Amp)) #
-    def update_PushBeam_frequency(self, freq):
-        self.update_io_parameter(49, int(Config.IF_AOM_OD + freq))  # In [us]
+    # def update_PushBeam_frequency(self, freq):
+    #     self.update_io_parameter(49, int(Config.IF_AOM_OD + freq))  # In [us]
 
 
     def Get_Max_Probe_counts(self, repetitions):

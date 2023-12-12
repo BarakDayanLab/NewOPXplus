@@ -1670,7 +1670,7 @@ class OPX:
             #                               + self.histogram_bin_size) // self.Transit_profile_bin_size)
             # t_transit = np.linspace(0, len(transit_histogram) * self.Transit_profile_bin_size, len(transit_histogram))
 
-    def find_transits_events_spectrum_exp(self, tt_resonance_binning, N, cond=[2,1,2], minimum_number_of_seq_detected=2):
+    def find_transits_events_spectrum_exp(self, tt_resonance_binning, N, cond=[2,2,2], minimum_number_of_seq_detected=2):
         '''
         Find transits of atoms by searching events that satisfy the number of reflected photons per sequence required at
         each cond place with minimum number of conditions needed to be satisfied, defined by the minimum_number_of_seq_detected.
