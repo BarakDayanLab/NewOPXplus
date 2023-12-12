@@ -126,7 +126,7 @@ class BaseExperiment:
         self.connect_camera()
 
         # TODO: What is this? Do we need this in BaseExperiment
-        self.init_spectroscopy()
+        #self.init_spectroscopy()
 
         # Setup keyboard listener
         self.listener = keyboard.Listener(on_press=self._on_press, on_release=self._on_release)
