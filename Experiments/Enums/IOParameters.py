@@ -2,19 +2,19 @@ import inspect
 from enum import Enum
 # TODO: Document all parameters in this file
 
+# --------------------------------------------------------------------------------------------------------
+# IOParameters
+#
+# IO_Parameters are used to bridge between Python and OPX code. Each Enum is a parameter that can be controlled
+# and updated from the Python code (or console) and the OPX can relate to it and act upon the change.
+#
+# The int values have no real significance (as long as the OPX code also used these ENUMs and not hard-coded values)
+# --------------------------------------------------------------------------------------------------------
 
-# IO_Parameters used to bridge between Python and OPX code
-# They should all be integers.
-# The values have no real significance  except for in Parameters update in OPX control
 class IOParameters(Enum):
     MOT_SWITCH_ON = 1
     MOT_SWITCH_OFF = 2  # TODO: Do we want to leave this or make a change in OPX code?
-    #LINEAR_PGC_SWITCH = 2  # TODO: Do we need to give this a new number? Is it used?
-    TRANSIT_EXP_SWITCH = 3
-    #SPECTRUM_EXP_SWITCH = 4
-    #SPRINT_EXP_SWITCH = 4
-    #CRUS_EXP_SWITCH = 4
-    #QRAM_EXP_SWITCH = 4
+    #LINEAR_PGC_SWITCH = 2  # TODO: Do we need this? Did not see any OPX code that referes to it
     EXPERIMENT_SWITCH = 4  # Turn experiment on/off
     ANTIHELMHOLTZ_DELAY_SWITCH = 5
     MAX_PROBE_COUNTS_SWITCH = 6

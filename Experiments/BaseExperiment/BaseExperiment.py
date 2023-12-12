@@ -14,6 +14,7 @@ from Utilities.BDLogger import BDLogger
 from Utilities.BDResults import BDResults
 
 from Experiments.Enums.IOParameters import IOParameters as IOP
+from Experiments.Enums.KeyToChannel import KeyToChannel as K2C
 
 from Experiments.BaseExperiment import Config_Table
 from Experiments.BaseExperiment import Config_Experiment as Config  # Attempt to load the default config (may be overriden later)
@@ -676,11 +677,11 @@ class BaseExperiment:
                 self.Depump_Start = value
 
             # QuadRF - Keep track of which channels are updated
-            if key in Config_Table.Key_to_Channel:
-                for ch in Config_Table.Key_to_Channel[key]:
+            if key in K2C:
+                for ch in K2C[key]:
                     self.Update_QuadRF_channels.add(ch)
             else:
-                self.logger.warn(f'{key} is not in Key_to_Channel. What channel does this key belong to? [change in Config_Table.py]')
+                self.logger.warn(f'{key} is not in KeyToChannel. What channel does this key belong to? [change in Config_Table.py]')
                 # TODO: raise an exception here
 
         #-------------------------------------------------------
