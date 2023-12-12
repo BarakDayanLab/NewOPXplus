@@ -164,11 +164,11 @@ class BaseExperiment:
     # (a) Initialize QuadRF (b) Set experiment related variables (c) Initialize OPX
     def initialize_experiment(self):
 
-        # Initialize QuadRF
-        self.initiliaze_QuadRF()
-
         # Initialize Experiment Variables
         self.initialize_experiment_variables()
+
+        # Initialize QuadRF
+        self.initiliaze_QuadRF()
 
         # Initialize the OPX
         self.initialize_OPX()

@@ -66,10 +66,17 @@ class IOParameters(Enum):
 
     @classmethod
     def has(cls, key):
+        """
+        Given a string key, check if it appears in the list of Enums defined above as an IO Parameter
+        Key is case-insensitive - it is always converted to upper-case.
+        """
         return key.upper() in cls.__members__
 
     @classmethod
     def value_from_string(cls, key):
+        """
+        Given a string key, return the integer value assigned to the specific IO Parameter.
+        """
         return cls.__members__[key.upper()].value
 
     # def __init__(self):

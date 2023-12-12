@@ -1,5 +1,7 @@
 import Config_Experiment as Config
+from Experiments.Enums.IOParameters import IOParameters as IOP
 from Experiments.Enums.Phases import Phases
+from Utilities.OPX_Utils import OPX_Utils
 from qm.qua import *
 
 all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]
@@ -218,18 +220,9 @@ def opx_control(obj, qm):
         # Declaring program variables
         # ----------------------------------
 
-        # ----------------------------------
-        # Test  @@@ - 1
-        # ----------------------------------
-        # Declare a vector of parameters - TODO: Generalize this!
-        p = declare(int, size=100)
-        val = int(obj.Exp_Values['Post_MOT_delay'] * 1e6 / 4)
-        POST_MOT_DELAY_PARAM = 3
-        assign(p[POST_MOT_DELAY_PARAM], val)
-
-        # How it will eventually look:
-        #params = declare(int, size=100)  # Declare a vector of 100 entries for all possible parameters
-        #OPX_Utils.assign_values(params, obj.Exp_Values)  # Populate the parameters with default values
+        # TODO: when mechanism is complete, uncomment the below and test @@@ - 1
+        # Populate parameters vector with all experiment values
+        #p = OPX_Utils.assign_experiment_variables(obj)
 
         i = declare(int)
         filler = declare(int, value=1)
@@ -356,8 +349,8 @@ def opx_control(obj, qm):
 
             # Delay before fountain:
 
-            #wait(post_MOT_delay, "Cooling_Sequence")
-            wait(p[POST_MOT_DELAY_PARAM], "Cooling_Sequence")  # @@@ - 2  TODO: Generalize this - for all parameters :-)
+            wait(post_MOT_delay, "Cooling_Sequence")
+            #wait(params[IOP.POST_MOT_DELAY], "Cooling_Sequence")  # @@@ - 2  TODO: Generalize this - for all parameters :-)
 
             align(*all_elements)
 
@@ -433,8 +426,8 @@ def opx_control(obj, qm):
                 with if_(i == 11):  # Live control over the
                     assign(MOT_Repetitions, IO2)
                 with if_(i == 12):  # Live control over the post MOT delay
-                    #assign(post_MOT_delay, IO2)
-                    assign(p[POST_MOT_DELAY_PARAM], IO2)  # @@@ - 4  TODO: Generalize this! assign(p[i], IO2)
+                    assign(post_MOT_delay, IO2)
+                    #assign(params[IOP.POST_MOT_DELAY], IO2)  # @@@ - 4  TODO: Generalize this! assign(p[i], IO2)
 
                 ## PGC variables control ##
                 with if_(i == 20):  # Live control over the PGC duration

@@ -1,4 +1,7 @@
+import inspect
 from qm.qua import *
+from Experiments.Enums.IOParameters import IOParameters as IOP
+
 
 # -------------------------------------------------------------------
 # OPX Stuff - can be used from different OPX_Code in all experiments
@@ -9,6 +12,44 @@ class OPX_Utils:
 
     def __init__(self):
         raise Exception('No need to initialize OPX_Utils class. It used for statis methods only')
+
+    @staticmethod
+    def assign_experiment_variables(self_obj):
+        """
+        Populate the parameters with default values
+        """
+        MAX_SIZE_OF_PARAMS_VECTOR_IN_OPX = 100
+
+        # Declare a vector of 100 entries for all possible parameters
+        params = declare(int, size=MAX_SIZE_OF_PARAMS_VECTOR_IN_OPX)
+
+        parameters_count = 0
+        self_members = inspect.getmembers(self_obj)
+
+        # Iterate over all "self" values
+        for member in self_members:
+            member_name = member[0]
+            if member_name.startswith('_'):
+                continue
+
+            member_value = member[1]
+            member_value_type = type(member_value)
+            if member_value_type != int and member_value_type != float and member_value_type != bool:
+                continue
+
+            if IOP.has(member_name):
+                index = IOP.value_from_string(member_name)
+                assign(params[index], member_value)
+                parameters_count += 1
+
+        # Iterate over all experiment values
+        for key, value in self_obj.Exp_Values.items():
+            if IOP.has(key):
+                index = IOP.value_from_string(key)
+                assign(params[index], value)
+                parameters_count += 1
+
+        return params
 
     @staticmethod
     def parameters_update(param):
