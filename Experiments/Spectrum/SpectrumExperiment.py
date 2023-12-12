@@ -292,10 +292,11 @@ class SpectrumExperiment(BaseExperiment):
         """
 
         # Append all detector counts and detector timetags into a single array (of arrays)
-        counts_res = []
+        #counts_res = []
         tt_res = []
         for i in range(1, len(Num_Of_dets)+1):
-            counts_res.append(self.streams[f'Detector_{i}_Counts']['results'])
+            # TODO: Q: Can we remove this? No use of it in the code. (and why are we taking this data)
+            #counts_res.append(self.streams[f'Detector_{i}_Counts']['results'])
             tt_res.append(self.streams[f'Detector_{i}_Timetags']['results'])
 
         # TODO: Q: why are we changing the sign? Why is this a single scalar - coming from a stream?
@@ -339,54 +340,6 @@ class SpectrumExperiment(BaseExperiment):
         # self.tt_N_directional_measure = sorted(self.tt_S_measure + self.tt_FS_measure)
 
         # self.tt_S_directional_measure = sorted(self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure)
-        self.tt_S_directional_measure = sorted(self.tt_S_measure + self.tt_FS_measure)
-
-        self.fix_gaps_spectrum_exp_tts()
-
-    # TODO: we can remove this, after we ensure that our generic "replacement" is working properly
-    def get_tt_from_handles_DEPRECATED(self, Num_Of_dets, Counts_handle, tt_handle, FLR_handle):
-        self.counts_res = []
-        self.tt_res = []
-
-        # handles wait for values
-        for i in range(len(Num_Of_dets)):
-            tt_handle[i].wait_for_values(1)  # Time tags (e.g. Detector_<N>_Timetags)
-            Counts_handle[i].wait_for_values(1)  # Counts (e.g. Detector_<N>_Counts)
-        FLR_handle.wait_for_values(1)
-
-        # add the tt and counts to python vars
-        for i in range(len(Num_Of_dets)):
-            self.counts_res.append(Counts_handle[i].fetch_all())
-            self.tt_res.append(tt_handle[i].fetch_all())
-
-        self.FLR_res = -FLR_handle.fetch_all()
-
-        # clear tt's vecs from last data
-        self.tt_measure = []
-        self.tt_BP_measure = []
-        self.tt_DP_measure = []
-        self.tt_N_measure = []
-        self.tt_S_measure = []
-        self.tt_FS_measure = []
-
-        # remove zero-padding from tt-res and append into tt_measure
-        for i in range(len(Num_Of_dets)):  # for different detectors
-            # self.tt_measure.append([self.tt_res[i][(index * Config.vec_size): (index * Config.vec_size + counts)].tolist() for index, counts in
-            #                         enumerate(self.counts_res[i])])
-            self.tt_measure.append(self.tt_res[i][1:(self.tt_res[i][0])].tolist())
-            self.tt_measure[i] = [elm + Config.detector_delays[i] for elm in self.tt_measure[i]
-                                  if ((elm % self.M_window != 0) & (elm != 9999984) &
-                                      ((elm + Config.detector_delays[
-                                          i]) <= self.M_window))]  # Due to an unresolved bug in the OPD there are "ghost" readings of timetags equal to the maximum time of measuring window.
-            self.tt_measure[i].sort()
-        # unify detectors and windows within detectors and create vector of tt's for each direction (bright port, dark port, north, south and from FS) and sort them
-        self.tt_BP_measure = sorted(sum(self.tt_measure[:2], []))  # unify detectors 1-3 and windows within detectors
-        self.tt_DP_measure = sorted(sum(self.tt_measure[2:4], []))  # unify detectors 1-3 and windows within detectors
-        self.tt_N_measure = sorted(sum(self.tt_measure[7:], []))  # unify detectors 1-3 and windows within detectors
-        self.tt_S_measure = sorted(sum(self.tt_measure[4:5], []))  # unify detectors 6-8 and windows within detectors
-        self.tt_FS_measure = sorted(sum(self.tt_measure[5:7], []))  # unify detectors 6-8 and windows within detectors
-
-        self.tt_N_directional_measure = sorted(self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure)
         self.tt_S_directional_measure = sorted(self.tt_S_measure + self.tt_FS_measure)
 
         self.fix_gaps_spectrum_exp_tts()
@@ -1027,7 +980,7 @@ class SpectrumExperiment(BaseExperiment):
         - Too many cycles - no data arrived after a given number of cycles
         """
         WAIT_TIME = 0.01  # [sec]
-        TOO_MANY_WAITING_CYCLES = WAIT_TIME*100*20  # 5 seconds
+        TOO_MANY_WAITING_CYCLES = WAIT_TIME*100*20  # 5 seconds. Make this -1 to wait indefinitely
 
         count = 1
         while True:
@@ -1190,13 +1143,12 @@ class SpectrumExperiment(BaseExperiment):
             self.tt_N_binning[(x - 1) // Config.frequency_sweep_duration] += 1  # TODO: x-1?? in spectrum its x
         self.tt_N_binning_avg = self.tt_N_binning
 
-        # TODO: why aren't we using "elif" in the cases below?
         for x in self.tt_S_no_gaps:
             if x < 2e6:
                 self.folded_tt_S_acc[(x - 1) % self.histogram_bin_size] += 1
-            if 6e6 < x < 8e6:
+            elif 6e6 < x < 8e6:
                 self.folded_tt_S_acc_2[(x - 1) % self.histogram_bin_size] += 1
-            if 8e6 < x < 10e6:
+            elif 8e6 < x < 10e6:
                 self.folded_tt_S_acc_3[(x - 1) % self.histogram_bin_size] += 1
         self.tt_S_binning_avg = self.tt_S_binning
 
@@ -1228,12 +1180,6 @@ class SpectrumExperiment(BaseExperiment):
         #                                   transit_counts_threshold=transit_counts_threshold)
         self.find_transits_events_spectrum_exp(self.tt_S_binning_resonance, N, transit_cond)
 
-        counter = 1  # Total number of successful cycles
-        repetitions = 1  # Total number of cycles
-        self.acquisition_flag = True
-        self.threshold_flag = True
-        self.pause_flag = False
-
         # --------------------------------------------------------------
         # Create figures template
         # --------------------------------------------------------------
@@ -1250,8 +1196,16 @@ class SpectrumExperiment(BaseExperiment):
 
         ############################################ START MAIN LOOP #################################################
 
+        # Initialize the variables before loop starts
+        counter = 1  # Total number of successful cycles
+        repetitions = 1  # Total number of cycles
+        self.acquisition_flag = True
+        self.threshold_flag = True
+        self.pause_flag = False
         self.runs_status = TerminationReason.SUCCESS
-        for counter in range(1, N+1):
+
+        # Iterate until we will get N successful runs
+        while counter <= N:
 
             # Handle cases where user terminates or pauses experiment
             self.handle_user_events()
@@ -1265,13 +1219,11 @@ class SpectrumExperiment(BaseExperiment):
             time_formatted = time.strftime("%Y/%m/%d, %H:%M:%S")
             self.logger.info(f'{time_formatted}: cycle {counter}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}')
 
-            repetitions += 1
-
             # Plot figures
             try:
                 self.plot_figures(fig, [ax1, ax2, ax3, ax4, ax5, ax6], Num_Of_dets, counter, locking_efficiency)
             except Exception as err:
-                print(f'>>> Got {err}')
+                self.warn(f'Failed on plot_figures: {err}')
 
             # Await for values from OPX
             timestamp = self.await_for_values(Num_Of_dets)
@@ -1320,6 +1272,7 @@ class SpectrumExperiment(BaseExperiment):
 
             self.threshold_flag = (self.sum_for_threshold < total_counts_threshold)
 
+            # Time to check if we passed the threshold of a successful run
             if (self.threshold_flag or not exp_flag) and self.acquisition_flag and not self.pause_flag:
 
                 if counter < N:
@@ -1356,6 +1309,9 @@ class SpectrumExperiment(BaseExperiment):
                 Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timestamp]
                 lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
                 self.save_tt_to_batch(Num_Of_dets, N)
+
+            # End of while-loop. We completed another repetition.
+            repetitions += 1
 
         ############################################## END MAIN LOOP #################################################
 
@@ -1510,8 +1466,8 @@ if __name__ == "__main__":
         'N': 500,
         'transit_profile_bin_size': 100,  # TODO: Q: should this be 10 or 100?
         'pre_comment': 'Spectrum Experiment. No pre-comments defined',
-        'transit_cond': [2, 1, 2],
-        'total_counts_threshold': 0.1,
+        'transit_cond': [2, 2, 2],
+        'total_counts_threshold': 0.4,
         'transit_counts_threshold': 3,
         'FLR_threshold': 0.03,
         'lock_err_threshold': 0.002,

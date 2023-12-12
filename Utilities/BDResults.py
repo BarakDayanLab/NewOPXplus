@@ -211,6 +211,10 @@ class BDResults:
         resolved_path = self._resolve_parameterized(self.results_map['all_experiments_root'])
         return resolved_path
 
+    def get_custom_root(self, custom_root):
+        resolved_path = self._resolve_parameterized(self.results_map[custom_root])
+        return resolved_path
+
     def get_folder_path(self, name):
         if self.folders is None:
             raise Exception('You must invoke create_folders() first to resolve/create the relevant folders')

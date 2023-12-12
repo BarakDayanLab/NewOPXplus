@@ -77,7 +77,7 @@ class BaseExperiment:
 
         # Set the location of the locking error file - this is a generic file that serves as communication between
         # the locking application that runs on a different computer. The file contains the current PID error value.
-        self.lock_error_file = os.path.join(self.bd_results.get_experiment_root(), 'Locking_PID_Error', 'locking_err.npy')
+        self.lock_error_file = os.path.join(self.bd_results.get_custom_root('locking_error_root'), 'locking_err.npy')
 
         # Load Initial Values and Default Values - merge them together (Default Values prevails!)
         # These will be the experiment values

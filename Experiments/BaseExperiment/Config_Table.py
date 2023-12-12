@@ -26,8 +26,7 @@ Initial_Values = {
     # MOT parameters:
     'MOT_freq': 113e6,
     'MOT_AOM_freq': 110e6,
-    'MOT_duration': 2000,          # [msec]
-    # 'MOT_duration': 300,          # [msec]
+    'MOT_duration': 2000,  # [msec]  TODO: Can be lowered to 1400
     'MOT_rep': -1,
     'AntiHelmholtz_delay': 0.1,    # [msec]
     'Post_MOT_delay': 1,  # [msec] All lights are off (except depump) between MOT and PGC prep stages
