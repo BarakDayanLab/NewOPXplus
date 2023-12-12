@@ -1273,6 +1273,10 @@ class SpectrumExperiment(BaseExperiment):
             self.threshold_flag = (self.sum_for_threshold < total_counts_threshold)
 
             # Time to check if we passed the threshold of a successful run
+            # Conditions required:
+            # - We passed the threshold (or are not in experiment)
+            # - We have acquisition
+            # - We are not paused
             if (self.threshold_flag or not exp_flag) and self.acquisition_flag and not self.pause_flag:
 
                 if counter < N:
