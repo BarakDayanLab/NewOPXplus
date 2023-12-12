@@ -1090,7 +1090,8 @@ class SpectrumExperiment(BaseExperiment):
                              time of the 1st detection pulse pick location to the original sequence)
         :param reflection_threshold:
         :param reflection_threshold_time:
-        :return:
+
+        :return: Returns the run status (Success, User-Termination, Error, etc.)
         """
         # if not preComment:
         #     preComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
@@ -1438,6 +1439,8 @@ class SpectrumExperiment(BaseExperiment):
         self.updateValue("Experiment_Switch", False)  # TODO: why not change the flag to "True"?
         self.update_parameters()
 
+        return self.runs_status
+
     def maximize_figure(self):
         """
         Attempt to maximize figure based on the matplotlib backend engine. It is different per backed...
@@ -1486,7 +1489,7 @@ class SpectrumExperiment(BaseExperiment):
 
         # TODO: Q: Config.QRAM_Exp_Gaussian_samples_S is constructed in a function, using the parameter "sprint_pulse_len" - so why not use it here?
         # TODO: Q: (a) we don't want to use duplicate variables holding the same value, (b) it mentions "samples_S" - but it's the same for "N" as well...
-        self.Save_SNSPDs_Spectrum_Measurement_with_tt(N=rp['N'],
+        run_status = self.Save_SNSPDs_Spectrum_Measurement_with_tt(N=rp['N'],
                                                       transit_profile_bin_size=rp['transit_profile_bin_size'],
                                                       pre_comment=rp['pre_comment'],
                                                       transit_cond=rp['transit_cond'],
@@ -1496,6 +1499,7 @@ class SpectrumExperiment(BaseExperiment):
                                                       lock_err_threshold=rp['lock_err_threshold'],
                                                       exp_flag=rp['Exp_flag'],
                                                       with_atoms=rp['with_atoms'])
+        return run_status
 
     def post_run(self, run_parameters):
         pass

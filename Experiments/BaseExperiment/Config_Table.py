@@ -175,7 +175,7 @@ calibrationData = {
     }
 }
 
-start_delay_time = 0 if Initial_Values['Triggering_Phase'] == 'Pulse_1' else Initial_Values['PrePulse_duration']
+start_delay_time = 0 if Initial_Values['Triggering_Phase'] == Phases.PULSE_1 else Initial_Values['PrePulse_duration']
 Frequency_Scan_Config_Values = {
     'Start_Delay_time': start_delay_time,  # [ms], Time to wait before scan begins
     'Saw_Tooth_Scan': True,  # If TrueL jump. If false, reverse frequency direction (tiangle)

@@ -7,12 +7,12 @@ import pathlib
 import matplotlib.pyplot as plt
 import os
 import importlib
-from enum import auto
 
 from Utilities.Utils import Utils
 from Utilities.BDLogger import BDLogger
 from Utilities.BDResults import BDResults
 
+from Experiments.Enums.TerminationReason import TerminationReason
 from Experiments.Enums.IOParameters import IOParameters as IOP
 from Experiments.Enums.KeyToChannel import KeyToChannel as K2C
 
@@ -30,13 +30,6 @@ from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
 import pymsgbox
 from pynput import keyboard
-
-
-# Termination Reason Enumeration
-class TerminationReason(Enum):
-    USER = auto()
-    ERROR = auto()
-    SUCCESS = auto()
 
 
 class BaseExperiment:
@@ -556,6 +549,7 @@ class BaseExperiment:
 
     def run_sequence(self, sequence_definitions, run_parameters):
 
+        run_status = TerminationReason.SUCCESS
         num_cycles = sequence_definitions['total_cycles']
         for i in range(num_cycles):
             self.info(f'Starting cycle sequence # {i}')
@@ -565,17 +559,20 @@ class BaseExperiment:
                 merged_params = Utils.merge_jsons(run_parameters, run['parameters'])
 
                 self.pre_run(merged_params)
-                self.run(merged_params)
+                run_status = self.run(merged_params)
                 self.post_run(merged_params)
+                if run_status != TerminationReason.SUCCESS:
+                    break
 
-            if not self.should_continue():
+            if run_status != TerminationReason.SUCCESS:
                 break
 
             if sequence_definitions['delay_between_cycles']:
                 self.info(f'Sleeping')
                 time.sleep(sequence_definitions['delay_between_cycles'])
 
-        self.info(f'Completed {num_cycles} cycles!')
+        self.info(f'Completed {num_cycles} cycles! Run status: {run_status}')
+        return run_status
 
     """
         There are two vectors we get from the OPX/OPD: Counts and Time-Tags
@@ -646,9 +643,9 @@ class BaseExperiment:
 
         if key in self.Exp_Values:
             self.Exp_Values[key] = value
-            #------------------------------------------------
+            # ------------------------------------------------
             # Special cases
-            #------------------------------------------------
+            # ------------------------------------------------
             if key == 'MOT_duration':  # This is a patch. It should work, but still.
                 # TODO: Not sure I understood the above comment.... ?
                 MOT_rep = Config_Table.updateMOT_rep()
@@ -684,13 +681,11 @@ class BaseExperiment:
                 self.logger.warn(f'{key} is not in KeyToChannel. What channel does this key belong to? [change in Config_Table.py]')
                 # TODO: raise an exception here
 
-        #-------------------------------------------------------
+        # -------------------------------------------------------
         # Now we check if this is a param we need to update OPX
-        #-------------------------------------------------------
-        # if key in Config_Table.IOParametersMapping:
-        #     io1 = Config_Table.IOParametersMapping[key]
+        # -------------------------------------------------------
         if IOP.has(key):
-            io1 = IOP.value_from_string(key)
+            io1 = IOP.value_from_string(key)  # Get the Enum value from the string
             if self.transformer.knows(key):
                 mode = self.transformer.mode(key)
                 if mode == 'SET_VALUE':
@@ -699,10 +694,10 @@ class BaseExperiment:
                     io2 = self.transformer.factor_and_cast(key, value)
                     self.update_io_parameter(io1, io2)
                 elif mode == 'TRANSFORM':
+                    #io2 = self.transformer.transform(key, value)
                     msg = f'\n\nTransformer currently does not handle mode {mode}. Call Dror.\n\n'
                     self.logger.error(msg)
                     raise Exception(msg)
-                    #io2 = self.transformer.transform(key, value)
                 else:
                     pass
             else:
