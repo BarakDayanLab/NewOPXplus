@@ -77,7 +77,7 @@ class MOGDevice(object):
         return self.dev is not None
         
     def _check(self):
-        """Assers that the device is connected"""
+        """Asserts that the device is connected"""
         assert self.connected(), 'Not connected'
                  
     def versions(self):
