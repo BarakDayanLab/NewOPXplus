@@ -20,7 +20,7 @@ from Experiments.BaseExperiment import Config_Experiment as Config  # Attempt to
 from Experiments.BaseExperiment import OPX_Code  # Attempt to load the OPX Code (maybe overriden later)
 from Experiments.BaseExperiment.Config_Table import Initial_Values
 from Experiments.BaseExperiment.Config_Table import Default_Values
-from Experiments.BaseExperiment.ValuesTransformer import ValuesTransformer
+from Experiments.Enums.ValuesTransformer import ValuesTransformer
 
 from Experiments.QuadRF.quadRFMOTController import QuadRFMOTController
 

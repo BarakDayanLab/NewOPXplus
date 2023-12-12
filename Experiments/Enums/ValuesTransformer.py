@@ -1,8 +1,8 @@
 from Utilities.BDLogger import BDLogger
 from Experiments.BaseExperiment import Config_Experiment as Config  # Attempt to load the default config (may be overriden later)
 
-#----------------------------------------
-# Values_Factor Map
+# -------------------------------------------------------------------------------------------------------
+# ValuesFactor Map
 #
 # This map holds factoring for values - each key has an array:
 # - One element - just setting it
@@ -11,6 +11,7 @@ from Experiments.BaseExperiment import Config_Experiment as Config  # Attempt to
 #
 # E.g. "Prep_duration" is written in ms, we have to factor it into an int value, but in 4ns, for the OPX.
 # Both the updateValue uses factors and also the convenience functions
+# -------------------------------------------------------------------------------------------------------
 
 
 class ValuesTransformer:
@@ -21,7 +22,7 @@ class ValuesTransformer:
         self.logger = BDLogger()
         # Create internal dictionary from Values Factors
         self._entries_dict = {}
-        for k, v in Values_Factor.items():
+        for k, v in ValuesFactor.items():
             self._entries_dict[k.upper()] = v
         pass
 
@@ -40,7 +41,7 @@ class ValuesTransformer:
 
         # Ensure we have this key
         if not self.knows(key):
-            self.logger.error(f'Cannot find {key} in Values_Factor map')
+            self.logger.error(f'Cannot find {key} in ValuesFactor map')
         return self.MODES[len(self._entries_dict[key])-1]
 
     def factor_and_cast(self, key, value):
@@ -51,7 +52,7 @@ class ValuesTransformer:
 
         # Ensure we have this key
         if not self.knows(key):
-            self.logger.error(f'Cannot find {key} in Values_Factor map')
+            self.logger.error(f'Cannot find {key} in ValuesFactor map')
 
         value_type = self._entries_dict[key][0]
         value_factor = self._entries_dict[key][1]
@@ -62,8 +63,9 @@ class ValuesTransformer:
         # TODO: get the string - find the function and invoke it
         pass
 
-Values_Factor = {
-    # TODO: we believe we do not need these in Values_Factor - can we remove them?
+
+ValuesFactor = {
+    # TODO: we believe we do not need these in ValuesFactor - can we remove them?
     # "Transit_Exp_switch": [bool, None, Transit_Exp_switch],
     # "Spectrum_Exp_switch": [bool, None, Spectrum_Exp_switch],
     # "QRAM_Exp_switch": [bool, None, QRAM_Exp_switch],
