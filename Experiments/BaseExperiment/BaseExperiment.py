@@ -7,13 +7,13 @@ import pathlib
 import matplotlib.pyplot as plt
 import os
 import importlib
-from enum import Enum
 from enum import auto
-from pkgutil import iter_modules
 
 from Utilities.Utils import Utils
 from Utilities.BDLogger import BDLogger
 from Utilities.BDResults import BDResults
+
+from Experiments.Enums.IOParameters import IOParameters as IOP
 
 from Experiments.BaseExperiment import Config_Table
 from Experiments.BaseExperiment import Config_Experiment as Config  # Attempt to load the default config (may be overriden later)
@@ -21,12 +21,10 @@ from Experiments.BaseExperiment import OPX_Code  # Attempt to load the OPX Code 
 from Experiments.BaseExperiment.Config_Table import Initial_Values
 from Experiments.BaseExperiment.Config_Table import Default_Values
 from Experiments.BaseExperiment.Values_Transformer import Values_Transformer
-from Experiments.BaseExperiment.IO_Parameters import IOParameters as IOP
 
 from Experiments.QuadRF.quadRFMOTController import QuadRFMOTController
 
-import logging
-from logging import StreamHandler, Formatter, INFO, WARN, ERROR
+from logging import StreamHandler, Formatter, INFO
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
 import pymsgbox

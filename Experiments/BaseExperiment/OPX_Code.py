@@ -1,9 +1,6 @@
 import Config_Experiment as Config
 from Experiments.BaseExperiment.Phases import Phases
-from Experiments.BaseExperiment.IO_Parameters import IOParameters as IOP
 from qm.qua import *
-from Utilities.OPX_Utils import OPX_Utils
-
 
 all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]
 

@@ -1,6 +1,6 @@
 from Experiments.Spectrum import Config_Experiment as Config
 from Experiments.BaseExperiment.Phases import Phases
-from Experiments.BaseExperiment.IO_Parameters import IOParameters as IOP
+from Experiments.Enums.IOParameters import IOParameters as IOP
 from qm.qua import *
 from Utilities.OPX_Utils import OPX_Utils
 

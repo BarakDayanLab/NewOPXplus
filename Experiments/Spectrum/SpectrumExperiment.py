@@ -1,7 +1,6 @@
 from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
 from Experiments.BaseExperiment.BaseExperiment import TerminationReason
 from Experiments.Spectrum import Config_Experiment as Config
-from Experiments.BaseExperiment.IO_Parameters import IOParameters as IOP
 import signal
 
 import matplotlib
@@ -12,7 +11,6 @@ import time
 import math
 import pymsgbox
 import playsound
-from scipy.io import savemat
 from UtilityResources.HMP4040Control import HMP4040Visa
 
 
