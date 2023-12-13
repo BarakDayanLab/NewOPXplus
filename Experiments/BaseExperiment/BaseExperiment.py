@@ -877,6 +877,16 @@ class BaseExperiment:
         self.logger.info(self.fountain_aom_chirp_rate)
         self.update_io_parameter(IOP.FOUNTAIN_FINAL_DELTA_FREQ.value, self.fountain_aom_chirp_rate)
 
+    def update_mot_duration(self, duration):
+        # Update both the MOT duration and the MOT repetitions
+        rep = int(np.ceil((duration * 1e6) / Config.MOT_pulse_len))
+        self.logger.info(f'Updating MOT duration to {duration} and MOT repetitions to {rep}')
+        self.update_io_parameter(IOP.MOT_DURATION.value, duration)
+        self.update_io_parameter(IOP.MOT_REPETITION .value, rep)
+
+
+        pass
+
     ## Push beam params
     def update_PushBeam_duration(self, duration):
         self.update_io_parameter(IOP.PUSHBEAM_DURATION, int(duration * 1e3 / 4))  # In [us]

@@ -980,7 +980,8 @@ class SpectrumExperiment(BaseExperiment):
         - Too many cycles - no data arrived after a given number of cycles
         """
         WAIT_TIME = 0.01  # [sec]
-        TOO_MANY_WAITING_CYCLES = WAIT_TIME*100*20  # 5 seconds. Make this -1 to wait indefinitely
+        #TOO_MANY_WAITING_CYCLES = WAIT_TIME*100*20  # 5 seconds. Make this -1 to wait indefinitely
+        TOO_MANY_WAITING_CYCLES = -1
 
         count = 1
         while True:
@@ -1008,7 +1009,7 @@ class SpectrumExperiment(BaseExperiment):
 
             # Are we waiting too long?
             count += 1
-            if count > TOO_MANY_WAITING_CYCLES:
+            if TOO_MANY_WAITING_CYCLES != -1 and count > TOO_MANY_WAITING_CYCLES:
                 self.runs_status = TerminationReason.ERROR
                 break
 
