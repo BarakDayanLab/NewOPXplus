@@ -841,6 +841,8 @@ class SpectrumExperiment(BaseExperiment):
         textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (np.mean(self.FLR_measurement) * 1e5,) + r'$\times 10^{-5}$'
         textstr_No_transits = 'NO TRANSITS YET!!!'
 
+        self.debug(">>> plot: 1 <<<")
+
         ax[0].plot(self.time_bins[::2], self.S_bins_res_acc, label='Counts histogram', color='b')
         # ax[1].plot([sum(time_bins[i:i+4]) for i in range(0, len(time_bins), 4)],
         #          [sum(tt_S_binning_detuned[i:i+4]) for i in range(0, len(tt_S_binning_detuned), 4)],
@@ -853,6 +855,8 @@ class SpectrumExperiment(BaseExperiment):
                    verticalalignment='top', bbox=props_thresholds)
         ax[0].legend(loc='upper right')
 
+        self.debug(">>> plot: 2 <<<")
+
         ax[1].plot(self.time_bins[::2], self.S_bins_detuned_acc, label='Counts histogram', color='b')
         # ax[1].plot([sum(time_bins[i:i+4]) for i in range(0, len(time_bins), 4)],
         #          [sum(tt_S_binning_detuned[i:i+4]) for i in range(0, len(tt_S_binning_detuned), 4)],
@@ -862,6 +866,8 @@ class SpectrumExperiment(BaseExperiment):
         ax[1].text(0.05, 0.95, textstr_detuned, transform=ax[1].transAxes, fontsize=12,
                  verticalalignment='top', bbox=props)
         ax[1].legend(loc='upper right')
+
+        self.debug(">>> plot: 3 <<<")
 
         ax[2].plot(self.time_bins[::2], self.tt_S_binning_resonance, label='Counts histogram', color='b')
         # ax[2].plot(self.time_bins[::2], self.tt_S_binning_detuned, label='Counts histogram detuned', color='g')
@@ -879,12 +885,16 @@ class SpectrumExperiment(BaseExperiment):
                      bbox=dict(boxstyle=f"circle,pad={det_circle[3]}", edgecolor=det_color, linewidth=2, facecolor=det_color, alpha=0.5))
         ax[2].legend(loc='upper right')
 
+        self.debug(">>> plot: 4 <<<")
+
         # ax[3].plot(self.freq_bins/1e6, self.Cavity_atom_spectrum, label='Cavity-atom Spectrum', color='k')
         # ax[3].plot(self.freq_bins/1e6, self.Cavity_spectrum, label='Cavity Spectrum', color='b')
         ax[3].plot(self.freq_bins/1e6, self.Cavity_atom_spectrum_normalized, label='Cavity-atom Spectrum', color='k')
         ax[3].plot(self.freq_bins/1e6, self.Cavity_spectrum_normalized, label='Cavity Spectrum', color='b')
         ax[3].set(xlabel='Frequency [MHz]', ylabel='Transmission Normalized')
         ax[3].legend(loc='upper right')
+
+        self.debug(">>> plot: 5 <<<")
 
         ax[4].plot(np.linspace(0, self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc, label='pulses folded', color='k')
         ax[4].plot(np.linspace(0, self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc_2, label='pulses folded_2', color='b')
@@ -901,6 +911,8 @@ class SpectrumExperiment(BaseExperiment):
         #     textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (
         #                                     len([vec for elem in self.all_transits_batch for vec in elem]),) \
         #                                     + r'$[Counts]$' + '\n' + textstr_transit_counts
+
+        self.debug(">>> plot: 6 <<<")
 
         if len(self.all_transits_index_batch) > 0:
             # if self.all_transits:
@@ -932,8 +944,13 @@ class SpectrumExperiment(BaseExperiment):
         # ax[1].set_ylim(0, 8)
         # ax[2].set_ylim(0, 8)
 
+        self.debug(">>> plot: 7 <<<")
+
         # plt.tight_layout()
         plt.show()
+
+        self.debug(">>> plot: 8 <<<")
+
         plt.pause(0.5)
 
     def init_params_for_save_sprint(self, Num_Of_dets):
@@ -1476,7 +1493,7 @@ if __name__ == "__main__":
         'transit_counts_threshold': 3,
         'FLR_threshold': 0.03,
         'lock_err_threshold': 0.002,
-        'Exp_flag': False,
+        'Exp_flag': True,
         'with_atoms': True
     }
     sequence_definitions = {
