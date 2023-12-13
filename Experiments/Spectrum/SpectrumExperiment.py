@@ -12,6 +12,7 @@ import math
 import pymsgbox
 from Utilities.BDSound import SOUNDS
 from UtilityResources.HMP4040Control import HMP4040Visa
+from Utilities.Utils import Utils
 
 
 class SpectrumExperiment(BaseExperiment):
@@ -319,6 +320,14 @@ class SpectrumExperiment(BaseExperiment):
             # TODO: Since a==b, why do we need the tt_res and count_res ?
             # a = self.streams[f'Detector_{2}_Timetags']['results']
             # b = tt_res[1]
+
+            # TODO: Generalize this:
+            # A way to debug what we got in the measurement
+            # plt.clf()
+            # plt.figure(1)
+            # plt.plot(tt_res[2])
+            # OR:
+            # self._plot([tt_res[2]])
 
             self.tt_measure.append(tt_res[i][1:(tt_res[i][0])].tolist())
             self.tt_measure[i] = [elm + Config.detector_delays[i] for elm in self.tt_measure[i]
@@ -1257,7 +1266,10 @@ class SpectrumExperiment(BaseExperiment):
 
         self.FLR_measurement = self.FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]  # No need for the .toList()
         Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [time.strftime("%Y%m%d-%H%M%S")]
+
+        #lock_err_batch = Utils.append_fifo(lock_err_batch, self.lock_err, N)
         lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
+
         self.save_tt_to_batch(Num_Of_dets, N)
 
         # self.find_transit_events_spectrum(N, transit_time_threshold=time_threshold,

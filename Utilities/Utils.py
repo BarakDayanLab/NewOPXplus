@@ -206,6 +206,15 @@ class Utils:
         return buckets_counts, buckets_content
 
     @staticmethod
+    def append_fifo(arr, value, size):
+        """
+        Appends a new value to an array.
+        If the array size becomes larger than size, we throw out the first element (e.g. FIFO)
+        """
+        new_arr = arr[-(size-1):] + [value]
+        return new_arr
+
+    @staticmethod
     def bucket_timetags(timetags, window_size, buckets_number=1, filter=None, start_time=-math.inf, end_time=math.inf, filters=None):
         """
         This function takes a sequence of time-tags and divides thjem into buckets.
