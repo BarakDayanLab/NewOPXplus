@@ -10,7 +10,7 @@ import os
 import time
 import math
 import pymsgbox
-import playsound
+from Utilities.BDSound import SOUNDS
 from UtilityResources.HMP4040Control import HMP4040Visa
 
 
@@ -797,7 +797,22 @@ class SpectrumExperiment(BaseExperiment):
         self.tt_FS_measure_batch = self.tt_FS_measure_batch[-(N - 1):] + [self.tt_FS_measure]
 
     # TODO: this will probably be called from mainloop and will override a superclass function
-    def plot_figures(self, fig, ax, Num_Of_dets, counter, locking_efficiency):
+    def plot_figures(self, fig, ax, Num_Of_dets, locking_efficiency):
+
+        plot_switches = {
+            "playsound": True,
+            "header": True,
+            "detectors": True,
+            "graph-0": True,
+            "graph-1": True,
+            "graph-2": True,
+            "graph-3": True,
+            "graph-4": True,
+            "graph-5": True
+        }
+
+        # Take time
+        start_plot_time = time.time()
 
         ax[0].clear()
         ax[1].clear()
@@ -806,25 +821,22 @@ class SpectrumExperiment(BaseExperiment):
         ax[4].clear()
         ax[5].clear()
 
-        # Detectors display:
-        Detectors = []
-        for i, det in enumerate(Num_Of_dets):
-            Detectors.append(["Det %d" % det, -0.15, 1.9 - i * 0.4, 1])
+        # Play sound:
+        if plot_switches['playsound']:
+            if not self.acquisition_flag:
+                self.bdsound.play(SOUNDS.INDICATOR_1)
 
-        # Threshold Box:
-        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        if self.acquisition_flag:
-            flag_color = 'green'
-        else:
-            flag_color = 'red'
-            playsound('C:/Windows/Media/cricket-1.wav')
-        props_thresholds = dict(boxstyle='round', edgecolor=flag_color, linewidth=2, facecolor=flag_color, alpha=0.5)
-
+        # Prepare header text
         pause_str = ' , PAUSED!' if self.pause_flag else ''
-        textstr_thresholds = '# %d - ' % counter + 'Transmission: %d, ' % self.sum_for_threshold + \
-                             'Efficiency: %.2f, ' % locking_efficiency + \
-                             'Flr: %.2f, ' % (1000 * np.average(self.FLR_res.tolist())) + \
-                             'Lock Error: %.3f' % self.lock_err + pause_str
+        trs_str = self.sum_for_threshold
+        flr_str = '%.2f' % (1000 * np.average(self.FLR_res.tolist()))
+        eff_str = '%.2f' % locking_efficiency
+        lck_str = '%.3f' % self.lock_err
+        header_text = f'{self.counter} ({self.repetitions}) - Transmission: {trs_str}, Efficiency: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str} {pause_str}'
+        # header_text = '# %d - ' % counter + 'Transmission: %d, ' % self.sum_for_threshold + \
+        #                      'Efficiency: %.2f, ' % locking_efficiency + \
+        #                      'Flr: %.2f, ' % flr_avg + \
+        #                      'Lock Error: %.3f' % self.lock_err + pause_str
 
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
         textstr_detuned = r'$S_{detuned} = %.3f$' % (
@@ -838,118 +850,88 @@ class SpectrumExperiment(BaseExperiment):
                             (np.mean([sum(x) for x in self.tt_S_binning_resonance_batch]) * 1000)
                             / (self.M_time / 2),) + '[MPhotons/sec]'
         # TODO: If the textstr_FLR is not used, maybe we can make FLR_Measurement a local var instead of self.FLR...
-        textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (np.mean(self.FLR_measurement) * 1e5,) + r'$\times 10^{-5}$'
+        # textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (np.mean(self.FLR_measurement) * 1e5,) + r'$\times 10^{-5}$'
         textstr_No_transits = 'NO TRANSITS YET!!!'
 
-        self.debug(">>> plot: 1 <<<")
+        if plot_switches['graph-0']:
+            flag_color = 'green' if self.acquisition_flag else 'red'
+            props_thresholds = dict(boxstyle='round', edgecolor=flag_color, linewidth=2, facecolor=flag_color, alpha=0.5)
+            ax[0].plot(self.time_bins[::2], self.S_bins_res_acc, label='Counts histogram', color='b')
+            ax[0].set_title('On resonance histogram accumulated', fontweight="bold")
+            ax[0].set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
+            ax[0].text(0.05, 0.95, textstr_resonance, transform=ax[0].transAxes, fontsize=12,
+                     verticalalignment='top', bbox=props)
+            # Add figures header
+            ax[0].text(0.05, 1.4, header_text, transform=ax[0].transAxes, fontsize=28,
+                       verticalalignment='top', bbox=props_thresholds)
+            ax[0].legend(loc='upper right')
+            self.debug("Plot: Drew graph 0")
 
-        ax[0].plot(self.time_bins[::2], self.S_bins_res_acc, label='Counts histogram', color='b')
-        # ax[1].plot([sum(time_bins[i:i+4]) for i in range(0, len(time_bins), 4)],
-        #          [sum(tt_S_binning_detuned[i:i+4]) for i in range(0, len(tt_S_binning_detuned), 4)],
-        #          label='Counts histogram', color='b')
-        ax[0].set_title('On resonance histogram accumulated', fontweight="bold")
-        ax[0].set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
-        ax[0].text(0.05, 0.95, textstr_resonance, transform=ax[0].transAxes, fontsize=12,
-                 verticalalignment='top', bbox=props)
-        ax[0].text(0.05, 1.4, textstr_thresholds, transform=ax[0].transAxes, fontsize=28,
-                   verticalalignment='top', bbox=props_thresholds)
-        ax[0].legend(loc='upper right')
+        if plot_switches['graph-1']:
+            ax[1].plot(self.time_bins[::2], self.S_bins_detuned_acc, label='Counts histogram', color='b')
+            ax[1].set_title('Detuned histogram accumulated', fontweight="bold")
+            ax[1].set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
+            ax[1].text(0.05, 0.95, textstr_detuned, transform=ax[1].transAxes, fontsize=12, verticalalignment='top', bbox=props)
+            ax[1].legend(loc='upper right')
+            self.debug("Plot: Drew graph 1")
 
-        self.debug(">>> plot: 2 <<<")
+        if plot_switches['graph-2']:
+            ax[2].plot(self.time_bins[::2], self.tt_S_binning_resonance, label='Counts histogram', color='b')
+            ax[2].set_title('On resonant counts (live)', fontweight="bold")
+            ax[2].set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
 
-        ax[1].plot(self.time_bins[::2], self.S_bins_detuned_acc, label='Counts histogram', color='b')
-        # ax[1].plot([sum(time_bins[i:i+4]) for i in range(0, len(time_bins), 4)],
-        #          [sum(tt_S_binning_detuned[i:i+4]) for i in range(0, len(tt_S_binning_detuned), 4)],
-        #          label='Counts histogram', color='b')
-        ax[1].set_title('Detuned histogram accumulated', fontweight="bold")
-        ax[1].set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
-        ax[1].text(0.05, 0.95, textstr_detuned, transform=ax[1].transAxes, fontsize=12,
-                 verticalalignment='top', bbox=props)
-        ax[1].legend(loc='upper right')
+            # Detectors status:
+            if plot_switches['detectors']:
+                for i, det in enumerate(Num_Of_dets):
+                    x = -0.15
+                    y = 1.9 - i * 0.4
+                    pad = 1
+                    text = 'Det %d' % det
+                    det_color = 'red' if self.latched_detectors() else 'green'
+                    ax[2].text(x, y, text, ha="center", va="center", transform=ax[2].transAxes,
+                             bbox=dict(boxstyle=f"circle,pad={pad}", edgecolor=det_color, linewidth=2, facecolor=det_color, alpha=0.5))
+            ax[2].legend(loc='upper right')
+            self.debug("Plot: Drew graph 2")
 
-        self.debug(">>> plot: 3 <<<")
+        if plot_switches['graph-3']:
+            ax[3].plot(self.freq_bins/1e6, self.Cavity_atom_spectrum_normalized, label='Cavity-atom Spectrum', color='k')
+            ax[3].plot(self.freq_bins/1e6, self.Cavity_spectrum_normalized, label='Cavity Spectrum', color='b')
+            ax[3].set(xlabel='Frequency [MHz]', ylabel='Transmission Normalized')
+            ax[3].legend(loc='upper right')
+            self.debug("Plot: Drew graph 3")
 
-        ax[2].plot(self.time_bins[::2], self.tt_S_binning_resonance, label='Counts histogram', color='b')
-        # ax[2].plot(self.time_bins[::2], self.tt_S_binning_detuned, label='Counts histogram detuned', color='g')
-        # ax[2].plot([sum(time_bins[i:i+4]) for i in range(0, len(time_bins), 4)],
-        #          [sum(tt_S_binning_resonance[i:i+4]) for i in range(0, len(tt_S_binning_resonance), 4)],
-        #          label='Counts histogram', color='b')
-        ax[2].set_title('On resonant counts (live)', fontweight="bold")
-        ax[2].set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
-        for indx, det_circle in enumerate(Detectors):
-            if indx in self.latched_detectors():
-                det_color = 'red'
+        if plot_switches['graph-4']:
+            ax[4].plot(np.linspace(0, self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc, label='pulses folded', color='k')
+            ax[4].plot(np.linspace(0, self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc_2, label='pulses folded_2', color='b')
+            ax[4].plot(np.linspace(0, self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc_3, label='pulses folded_2', color='g')
+            ax[4].set(xlabel='Time [nsec]', ylabel='Counts [#Number]')
+            ax[4].legend(loc='upper right')
+            self.debug("Plot: Drew graph 4")
+
+        if plot_switches['graph-5']:
+            if len(self.all_transits_index_batch) > 0:
+                # if self.all_transits:
+                textstr_transit_counts = r'$N_{Transits} = %s $' % (len(self.all_transits_seq_indx),) + r'$[Counts]$'
+                textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (
+                                                len([vec for elem in self.all_transits_index_batch for vec in elem]),) \
+                                                + r'$[Counts]$' + '\n' + textstr_transit_counts
+
+                ax[5].plot(self.time_bins[::2], self.tt_S_transit_events_accumulated, label='Transit events histogram', marker='*', color='b')
+                ax[5].set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+                ax[5].text(0.05, 0.95, textstr_transit_event_counter, transform=ax[5].transAxes, fontsize=12,
+                           verticalalignment='top', bbox=props)
             else:
-                det_color = 'green'
-            ax[2].text(det_circle[1], det_circle[2], det_circle[0], ha="center", va="center", transform=ax[2].transAxes,
-                     bbox=dict(boxstyle=f"circle,pad={det_circle[3]}", edgecolor=det_color, linewidth=2, facecolor=det_color, alpha=0.5))
-        ax[2].legend(loc='upper right')
+                ax[5].plot(self.time_bins[::2], self.tt_S_transit_events_accumulated, label='Transit events histogram', marker='*', color='b')
+                ax[5].set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
+                ax[5].text(0.25, 0.5, textstr_No_transits, transform=ax[5].transAxes, fontsize=24,
+                           verticalalignment='center', bbox=props)
 
-        self.debug(">>> plot: 4 <<<")
-
-        # ax[3].plot(self.freq_bins/1e6, self.Cavity_atom_spectrum, label='Cavity-atom Spectrum', color='k')
-        # ax[3].plot(self.freq_bins/1e6, self.Cavity_spectrum, label='Cavity Spectrum', color='b')
-        ax[3].plot(self.freq_bins/1e6, self.Cavity_atom_spectrum_normalized, label='Cavity-atom Spectrum', color='k')
-        ax[3].plot(self.freq_bins/1e6, self.Cavity_spectrum_normalized, label='Cavity Spectrum', color='b')
-        ax[3].set(xlabel='Frequency [MHz]', ylabel='Transmission Normalized')
-        ax[3].legend(loc='upper right')
-
-        self.debug(">>> plot: 5 <<<")
-
-        ax[4].plot(np.linspace(0, self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc, label='pulses folded', color='k')
-        ax[4].plot(np.linspace(0, self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc_2, label='pulses folded_2', color='b')
-        ax[4].plot(np.linspace(0, self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc_3, label='pulses folded_2', color='g')
-        ax[4].set(xlabel='Time [nsec]', ylabel='Counts [#Number]')
-        ax[4].legend(loc='upper right')
-        # ax[4].plot(self.freq_bins, self.Cavity_spectrum, label='Cavity Spectrum', color='k')
-        # ax[4].set(xlabel='Time [msec]', ylabel='Counts [#Number]')
-        # ax[4].legend(loc='upper right')
-
-        # if len(self.all_transits_batch) > 0:
-        #     # if self.all_transits:
-        #     textstr_transit_counts = r'$N_{Transits} = %s $' % (len(self.all_transits),) + r'$[Counts]$'
-        #     textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (
-        #                                     len([vec for elem in self.all_transits_batch for vec in elem]),) \
-        #                                     + r'$[Counts]$' + '\n' + textstr_transit_counts
-
-        self.debug(">>> plot: 6 <<<")
-
-        if len(self.all_transits_index_batch) > 0:
-            # if self.all_transits:
-            textstr_transit_counts = r'$N_{Transits} = %s $' % (len(self.all_transits_seq_indx),) + r'$[Counts]$'
-            textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (
-                                            len([vec for elem in self.all_transits_index_batch for vec in elem]),) \
-                                            + r'$[Counts]$' + '\n' + textstr_transit_counts
-
-            # ax[5].plot(self.t_transit, self.transit_histogram, label='Transit profile', color='b')
-            # ax[5].set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-            # ax[5].text(0.05, 0.95, textstr_transit_counts, transform=ax[5].transAxes, fontsize=12,
-            #          verticalalignment='top', bbox=props)
-
-            ax[5].plot(self.time_bins[::2], self.tt_S_transit_events_accumulated, label='Transit events histogram', marker='*', color='b')
-            ax[5].set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-            ax[5].text(0.05, 0.95, textstr_transit_event_counter, transform=ax[5].transAxes, fontsize=12,
-                       verticalalignment='top', bbox=props)
-        else:
-            # ax[5].plot(self.t_transit, self.transit_histogram, label='Transit profile', color='b')
-            # ax[5].set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-            # ax[5].text(0.25, 0.5, textstr_No_transits, transform=ax[5].transAxes, fontsize=24,
-            #          verticalalignment='center', bbox=props)
-
-            ax[5].plot(self.time_bins[::2], self.tt_S_transit_events_accumulated, label='Transit events histogram', marker='*', color='b')
-            ax[5].set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-            ax[5].text(0.25, 0.5, textstr_No_transits, transform=ax[5].transAxes, fontsize=24,
-                       verticalalignment='center', bbox=props)
-
-        # ax[1].set_ylim(0, 8)
-        # ax[2].set_ylim(0, 8)
-
-        self.debug(">>> plot: 7 <<<")
+        # End timer
+        total_prep_time = time.time() - start_plot_time
 
         # plt.tight_layout()
         plt.show()
-
-        self.debug(">>> plot: 8 <<<")
+        self.debug(f'>>> plot: After plt.show (prep took: {total_prep_time} secs) <<<')
 
         plt.pause(0.5)
 
@@ -1215,15 +1197,15 @@ class SpectrumExperiment(BaseExperiment):
         ############################################ START MAIN LOOP #################################################
 
         # Initialize the variables before loop starts
-        counter = 1  # Total number of successful cycles
-        repetitions = 1  # Total number of cycles
+        self.counter = 1  # Total number of successful cycles
+        self.repetitions = 1  # Total number of cycles
         self.acquisition_flag = True
         self.threshold_flag = True
         self.pause_flag = False
         self.runs_status = TerminationReason.SUCCESS
 
         # Iterate until we will get N successful runs
-        while counter <= N:
+        while self.counter <= N:
 
             # Handle cases where user terminates or pauses experiment
             self.handle_user_events()
@@ -1231,15 +1213,15 @@ class SpectrumExperiment(BaseExperiment):
                 break
 
             # Informational printing
-            locking_efficiency = counter / repetitions
+            locking_efficiency = self.counter / self.repetitions
             locking_efficiency_str = '%.2f' % locking_efficiency
             fluorescence_str = '%.2f' % (1000 * np.average(self.FLR_res.tolist()))
             time_formatted = time.strftime("%Y/%m/%d, %H:%M:%S")
-            self.logger.info(f'{time_formatted}: cycle {counter}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}')
+            self.logger.info(f'{time_formatted}: cycle {self.counter}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}')
 
             # Plot figures
             try:
-                self.plot_figures(fig, [ax1, ax2, ax3, ax4, ax5, ax6], Num_Of_dets, counter, locking_efficiency)
+                self.plot_figures(fig, [ax1, ax2, ax3, ax4, ax5, ax6], Num_Of_dets, locking_efficiency)
             except Exception as err:
                 self.warn(f'Failed on plot_figures: {err}')
 
@@ -1297,20 +1279,20 @@ class SpectrumExperiment(BaseExperiment):
             # - We are not paused
             if (self.threshold_flag or not exp_flag) and self.acquisition_flag and not self.pause_flag:
 
-                if counter < N:
-                    counter += 1
+                if self.counter < N:
+                    self.counter += 1
 
                 self.tt_N_binning = np.zeros(self.histogram_bin_number*2)
                 self.tt_S_binning = np.zeros(self.histogram_bin_number*2)
                 self.tt_S_transit_events = np.zeros(self.histogram_bin_number)
 
-                self.tt_S_binning_avg = self.tt_S_binning_avg * (1 - 1 / counter)
+                self.tt_S_binning_avg = self.tt_S_binning_avg * (1 - 1 / self.counter)
 
                 for x in self.tt_N_directional_measure:
                     self.tt_N_binning[(x - 1) // self.histogram_bin_size] += 1
                 for x in self.tt_S_no_gaps:
                     self.tt_S_binning[(x - 1) // self.histogram_bin_size] += 1
-                    self.tt_S_binning_avg[(x - 1) // self.histogram_bin_size] += 1 / counter
+                    self.tt_S_binning_avg[(x - 1) // self.histogram_bin_size] += 1 / self.counter
 
                 self.tt_N_measure_batch = self.tt_N_measure_batch[-(N - 1):] + [self.tt_N_directional_measure]
                 self.tt_N_binning_batch = self.tt_N_binning_batch[-(N - 1):] + [self.tt_N_binning]
@@ -1333,20 +1315,20 @@ class SpectrumExperiment(BaseExperiment):
                 self.save_tt_to_batch(Num_Of_dets, N)
 
             # End of while-loop. We completed another repetition.
-            repetitions += 1
+            self.repetitions += 1
 
         ############################################## END MAIN LOOP #################################################
 
         if self.runs_status == TerminationReason.SUCCESS:
             self.logger.info(f'Finished {N} Runs, {"with" if with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.USER:
-            self.logger.info(f'User Terminated the measurements after {counter} Runs, {"with" if with_atoms else "without"} atoms')
+            self.logger.info(f'User Terminated the measurements after {self.counter} Runs, {"with" if with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.ERROR:
-            self.logger.info(f'Error Terminated the measurements after {counter} Runs, {"with" if with_atoms else "without"} atoms')
+            self.logger.info(f'Error Terminated the measurements after {self.counter} Runs, {"with" if with_atoms else "without"} atoms')
 
         # Adding comment to measurement [prompt whether stopped or finished regularly]
         if exp_flag:
-            if counter < N:
+            if self.counter < N:
                 aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
             else:
                 aftComment = ''
@@ -1406,7 +1388,7 @@ class SpectrumExperiment(BaseExperiment):
             "exp_timestr": Exp_timestr_batch,  # TODO: rename to drop timestamps? What is this one?
 
             "exp_comment": experiment_comment,
-            "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, with_atoms, counter),
+            "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, with_atoms, self.counter),
 
             #"max_probe_counts": "TBD",  # TODO: ...
 

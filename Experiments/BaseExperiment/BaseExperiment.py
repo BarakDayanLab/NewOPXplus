@@ -11,6 +11,7 @@ import importlib
 from Utilities.Utils import Utils
 from Utilities.BDLogger import BDLogger
 from Utilities.BDResults import BDResults
+from Utilities.BDSound import BDSound
 
 from Experiments.Enums.TerminationReason import TerminationReason
 from Experiments.Enums.IOParameters import IOParameters as IOP
@@ -63,6 +64,9 @@ class BaseExperiment:
 
         # Setup console logger. We do this first, so rest of code can use logging functions.
         self.logger = BDLogger()
+
+        # Initialize sound player
+        self.bdsound = BDSound()
 
         # Set paths map
         self._set_paths_map()
