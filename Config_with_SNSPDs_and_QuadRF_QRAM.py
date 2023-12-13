@@ -130,7 +130,8 @@ controller = 'con1'
 
 # Parameters:
 # delays [ns]:
-detector_delays = [26, 30, 33, 27, 8, 8, 8, 0]  # For detectors [1,2,3,9,15,6,7,8]
+# detector_delays = [26, 30, 33, 27, 8, 8, 8, 0]  # For detectors [1,2,3,9,15,6,7,8]
+detector_delays = [26, 30, 33, 27, 32, 32, 32, 0]  # For detectors [1,2,3,9,15,6,7,8] - updated @ 13.12.23
 AOM_Late_delay = 670
 AOM_Early_delay = 525
 AOM_S_to_N_delay = 40
@@ -247,14 +248,15 @@ sprint_pulse_amp_General = [1, 1, 1, 1]
 num_init_zeros_S = 10  # For only det pulses sequence
 num_mid_zeros_S = 10
 num_fin_zeros_S = 0  # For only det pulses sequence
-det_pulse_amp_S = [0, 0, 0, 0, 0, 0, 0, 0]
+# det_pulse_amp_S = [0, 0, 0, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_S = [0, 0.45, 0, 0.45]
 # For pulse sync
 # det_pulse_amp_S = [0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45]
 # sprint_pulse_amp_S = [0, 0, 0, 0]
 # sprint_pulse_amp_S = [1, 1, 1, 1]
 # For Bell |(0 + 1)c, 1t>
-# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
+det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
+# det_pulse_amp_S = [0.45, 0, 0, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_S = [0.075, 0, 0, 0]
 # |0c, (0 + 1)t>
 # det_pulse_amp_S = [0, 0, 0.45, 0, 0.45, 0, 0.45, 0]
@@ -286,14 +288,15 @@ num_fin_zeros_N = 0  # For only det pulses sequence
 # sprint_pulse_amp_N = [0, 0.105, 0, 0.105]
 # sprint_pulse_amp_N = [0, 0.25, 0, 0.25]
 # For pulse sync
-det_pulse_amp_N = [0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45]
+# det_pulse_amp_N = [0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45]
 # det_pulse_amp_N = [0, 0, 0, 0, 0, 0, 0, 0]
 # det_pulse_amp_N = [1, 1, 1, 1, 1, 1, 1, 1]
 # sprint_pulse_amp_N = [0.45, 0.45, 0.45, 0]
 # sprint_pulse_amp_N = [0.45, 0, 0.45, 0]
 # sprint_pulse_amp_N = [1, 1, 1, 1]
 # For Bell |(0 + 1)c, 1t>
-# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
+det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
+# det_pulse_amp_N = [0.45, 0, 0, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_N = [0, 0, 0, 0.085]
 # |0c, (0 + 1)t>
 # det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]

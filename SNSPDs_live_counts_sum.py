@@ -603,7 +603,7 @@ with program() as dig:
             # play("Square_Pulse", "PULSER_LO")
             # play("Const_open"*amp(0.7), "PULSER_LO")
             play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
-            play("Spectrum_pulse", "AOM_Spectrum")
+            # play("Spectrum_pulse", "AOM_Spectrum")
             # play("CRUS_pulse", "Pulser_CRUS")
 
             # measure("OD_measure", "digital_detectors_S", None,

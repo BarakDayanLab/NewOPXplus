@@ -2118,7 +2118,7 @@ class OPX:
 
         # plt.tight_layout()
         plt.show()
-        plt.pause(0.5)
+        plt.pause(1)
         ###########################################################################################################
 
     def init_params_for_save_sprint(self, Num_Of_dets):

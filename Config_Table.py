@@ -31,8 +31,8 @@ Initial_Values = {
     # 'Operation_Mode': 'CRUS_Exp',
     # 'Operation_Mode': 'SPRINT_2-3_Exp',
     # 'Operation_Mode': 'SPRINT_Exp',
-    # 'Operation_Mode': 'QRAM_Exp',
-    'Operation_Mode': 'Transits_Exp',
+    'Operation_Mode': 'QRAM_Exp',
+    # 'Operation_Mode': 'Transits_Exp',
     # 'Operation_ModB-e': 'Continuous',
     'Imaging_Phase': 'Pulse_1',
     'Triggering_Phase': -1,  # Don't change this. Triggering phase should be defined within each operation mode (see below)
@@ -325,7 +325,8 @@ Operation_Modes = {
                                     },
                     'QRAM_Exp':  {'Triggering_Phase': 'Free_Fall',
                                   'MOT_rep': int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config_QRAM.MOT_pulse_len)),
-                                  'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
+                                  # 'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
+                                  'Fountain_final_Delta_freq': 0.42e6,  # 0.42e6 - until 12.12.23
                                   'PrePulse_Repump_amp': 0.000001,  # relative
                                   'PrePulse_CH2_freq': 133.325e6,  # Hz
                                   'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],
@@ -336,7 +337,7 @@ Operation_Modes = {
                                   'Imaging_Phase': 'Pulse_1',
                                   # 'PrePulse_duration': 4,  # [msec]
                                   # 'PrePulse_duration': 14,  # [msec]
-                                  'PrePulse_duration': 12,  # [msec]
+                                  'PrePulse_duration': 13,  # [msec]
                                   'Shutter_open_time': 1,  # [msec]
                                   'Pulse_1_duration': int(max(Config_QRAM.readout_pulse_sprint_len_N,
                                                               Config_QRAM.readout_pulse_sprint_len_S)) / 1e6,  # [msec]
