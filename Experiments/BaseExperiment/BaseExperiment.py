@@ -647,10 +647,13 @@ class BaseExperiment:
 
         if key in self.Exp_Values:
             self.Exp_Values[key] = value
-            # ------------------------------------------------
-            # Special cases
-            # ------------------------------------------------
-            if key == 'MOT_duration':  # This is a patch. It should work, but still.
+            # ------------------------------------------------------------
+            # Special cases - these happen ON-TOP of the regular update
+            # Example: if we invoked updateValue("MOT_duration", 2):
+            # - it will first invoke updateValue("MOT_rep", ...)
+            # - then, it will return after it, and continue the function to also update the "MOT_Duration", the usual way
+            # ------------------------------------------------------------
+            if key == 'MOT_duration':
                 # TODO: Not sure I understood the above comment.... ?
                 MOT_rep = Config_Table.updateMOT_rep()
                 self.updateValue('MOT_rep', MOT_rep)
@@ -881,12 +884,13 @@ class BaseExperiment:
         self.logger.info(self.fountain_aom_chirp_rate)
         self.update_io_parameter(IOP.FOUNTAIN_FINAL_DELTA_FREQ.value, self.fountain_aom_chirp_rate)
 
-    def update_mot_duration(self, duration):
-        # Update both the MOT duration and the MOT repetitions
-        rep = int(np.ceil((duration * 1e6) / Config.MOT_pulse_len))
-        self.logger.info(f'Updating MOT duration to {duration} and MOT repetitions to {rep}')
-        self.update_io_parameter(IOP.MOT_DURATION.value, duration)
-        self.update_io_parameter(IOP.MOT_REPETITION .value, rep)
+    # TODO: the below was not yet tested
+    # def update_mot_duration(self, duration):
+    #     # Update both the MOT duration and the MOT repetitions
+    #     rep = int(np.ceil((duration * 1e6) / Config.MOT_pulse_len))
+    #     self.logger.info(f'Updating MOT duration to {duration} and MOT repetitions to {rep}')
+    #     self.update_io_parameter(IOP.MOT_DURATION.value, duration)
+    #     self.update_io_parameter(IOP.MOT_REPETITION .value, rep)
 
 
         pass
