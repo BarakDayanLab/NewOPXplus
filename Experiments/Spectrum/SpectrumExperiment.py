@@ -819,12 +819,12 @@ class SpectrumExperiment(BaseExperiment):
             "playsound": True,
             "header": True,
             "detectors": True,
-            "graph-0": True,
-            "graph-1": True,
-            "graph-2": True,
-            "graph-3": True,
-            "graph-4": True,
-            "graph-5": True
+            "graph-0": False,
+            "graph-1": False,
+            "graph-2": False,
+            "graph-3": False,
+            "graph-4": False,
+            "graph-5": False
         }
 
         # Take time
@@ -844,7 +844,7 @@ class SpectrumExperiment(BaseExperiment):
 
         # Prepare header text
         pause_str = ' , PAUSED!' if self.pause_flag else ''
-        trs_str = self.sum_for_threshold
+        trs_str = '%.2f' % self.sum_for_threshold
         flr_str = '%.2f' % (1000 * np.average(self.FLR_res.tolist()))
         eff_str = '%.2f' % locking_efficiency
         lck_str = '%.3f' % self.lock_err
@@ -941,6 +941,7 @@ class SpectrumExperiment(BaseExperiment):
                 ax[5].set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
                 ax[5].text(0.25, 0.5, textstr_No_transits, transform=ax[5].transAxes, fontsize=24,
                            verticalalignment='center', bbox=props)
+            self.debug("Plot: Drew graph 5")
 
         # End timer
         total_prep_time = time.time() - start_plot_time
@@ -1424,10 +1425,10 @@ class SpectrumExperiment(BaseExperiment):
                 # If first letter after the '_' is '!', we are at no-atoms, so now we will turn MOT ON
                 if self.switch_atom_no_atoms[1] == '!':
                     MOT_on = True
-                    self.switch_atom_no_atoms = self.switch_atom_no_atoms[2:]  # Remove the "_!"
+                    self.switch_atom_no_atoms = 'atoms'
                 else:
                     MOT_on = False
-                    self.switch_atom_no_atoms = self.switch_atom_no_atoms[1:]  # Remove the "_"
+                    self.switch_atom_no_atoms = '!atoms'
                 self.MOT_switch(MOT_on)
                 self.update_parameters()
 
@@ -1589,7 +1590,7 @@ if __name__ == "__main__":
         'transit_counts_threshold': 3,
         'FLR_threshold': 0.03,
         'lock_err_threshold': 0.002,
-        'Exp_flag': True,
+        'Exp_flag': False,
         'with_atoms': True
     }
     sequence_definitions = {
@@ -1616,10 +1617,10 @@ if __name__ == "__main__":
     # TODO: REMOVE, for debug only
     sequence_definitions = None
 
-    if sequence_definitions is None:
-        experiment.run(run_parameters)
-    else:
-        experiment.run_sequence(sequence_definitions, run_parameters)
+    # if sequence_definitions is None:
+    #     experiment.run(run_parameters)
+    # else:
+    #     experiment.run_sequence(sequence_definitions, run_parameters)
 
     #experiment.close_opx()
     #pass

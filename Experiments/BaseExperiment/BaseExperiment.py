@@ -481,6 +481,9 @@ class BaseExperiment:
         if str(key) == "'q'" or str(key) == "'Q'":
             self.keyPress = 'Q'
 
+        if str(key) == "'A'":
+            self.keyPress = 'A'
+
         if key == keyboard.Key.esc:
             self.keyPress = 'ESC'
 
@@ -658,7 +661,7 @@ class BaseExperiment:
             # - then, it will return after it, and continue the function to also update the "MOT_Duration", the usual way
             # ------------------------------------------------------------
             if key == 'MOT_duration':
-                # TODO: Not sure I understood the above comment.... ?
+                # TODO: The below is not working - need to find updateMOT_rep()
                 MOT_rep = Config_Table.updateMOT_rep()
                 self.updateValue('MOT_rep', MOT_rep)
             elif key == 'OD_FS_pulse_duration':
@@ -839,7 +842,7 @@ class BaseExperiment:
         if with_atoms:
             self.update_io_parameter(IOP.MOT_SWITCH_ON.value, 0)
         else:
-            self.update_io_parameter(IOP.MOT_SWITCH_OFF, 0)
+            self.update_io_parameter(IOP.MOT_SWITCH_OFF.value, 0)
 
     def Linear_PGC_switch(self, Bool):
         self.update_io_parameter(IOP.LINEAR_PGC_SWITCH.value, Bool)
