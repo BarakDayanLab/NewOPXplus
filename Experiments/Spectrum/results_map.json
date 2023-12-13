@@ -5,6 +5,7 @@
 	"experiment_root": "C:\\temp\\refactor_debug\\Experiment_results\\Spectrum",
 	"root": "C:\\temp\\refactor_debug\\Experiment_results\\Spectrum\\{current_date}\\{current_time}_Photon_TimeTags",
 	"locking_error_root": "U:\\Lab_2023\\Experiment_results\\QRAM\\Locking_PID_Error",
+	"calibration_folder": "U:\\Lab_2023\\Experiment_results\\QRAM\\20231116\\133237_Photon_TimeTags",
 	"files": [
 
 		{

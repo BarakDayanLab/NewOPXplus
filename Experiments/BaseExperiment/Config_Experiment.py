@@ -22,23 +22,6 @@ def gauss_adaptive(amplitude, length):
     gauss_wave = amplitude * np.exp(-(t ** 2) / (2 * sigma ** 2))
     return [float(x) for x in gauss_wave]
 
-
-def calc_cmat(correction_vars):
-    """
-    calculating the correction matrix required for IQ mixer using the variable \theta   k
-    :param correction_vars: array of correction variables
-    theta = correction_vars[0]
-    theta = correction_vars[1]
-    :return: correction matrix
-    """
-
-    theta = correction_vars[0]
-    k = correction_vars[1]
-    R = [[np.sin(theta), np.cos(theta)], [np.cos(theta), np.sin(theta)]]
-    c = [[k, 0], [0, 1 / k]]
-    return np.matmul(c, R).flatten().tolist()
-
-
 controller = 'con1'
 
 # Parameters:
@@ -147,21 +130,6 @@ AOM_Minus_Attenuation = 1 # 0.85 seems to be about right, for 0.8 the slopes are
 
 ## For Homodyne ##
 LO_pulse_samples = ([0.4] * 20) + [0] * 100
-
-# TODO: Remove the section below (after I find it's not used in QRAM experiment)
-## MW Spectroscopy parameters
-
-# with open('conf_args.json', 'r') as fp:
-#     confargs = json.load(fp)
-# dc_i = confargs['offsets']['I']
-# dc_q = confargs['offsets']['Q']
-# i_port = confargs['ports']['I']
-# q_port = confargs['ports']['Q']
-# lo_freq = confargs['lo_frequency']
-# im_freq = confargs['im_frequency']
-# wf_samples = [confargs['wf_samples']['wf1'], confargs['wf_samples']['wf2']]
-# correction_matrix = calc_cmat([confargs['correction_vars']['theta'], confargs['correction_vars']['k']])
-# pulse_time = confargs['pulse_time']
 
 config = {
 

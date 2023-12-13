@@ -330,11 +330,24 @@ class SpectrumExperiment(BaseExperiment):
         # Unify detectors and windows within detectors & create vector of tt's for each direction (bright port, dark port, north, south and from FS) and sort them
         # ------------------------------------------
 
-        self.tt_BP_measure = sorted(sum(self.tt_measure[:2], []))  # unify detectors 1-3 and windows within detectors
-        self.tt_DP_measure = sorted(sum(self.tt_measure[2:4], []))  # unify detectors 1-3 and windows within detectors
-        self.tt_N_measure = sorted(sum(self.tt_measure[7:], []))  # unify detectors 1-3 and windows within detectors
-        self.tt_S_measure = sorted(sum(self.tt_measure[4:5], []))  # unify detectors 6-8 and windows within detectors
-        self.tt_FS_measure = sorted(sum(self.tt_measure[5:7], []))  # unify detectors 6-8 and windows within detectors
+        # Unify detectors 0 & 1 and windows within detectors
+        self.tt_BP_measure = sorted(sum(self.tt_measure[0:2], []))
+
+        # Unify detectors 2 & 3 and windows within detectors
+        self.tt_DP_measure = sorted(sum(self.tt_measure[2:4], []))
+
+        # TODO: Q: why do we need the sum here?
+        # Unify detectors 7 & [] and windows within detectors
+        self.tt_N_measure = sorted(self.tt_measure[7])
+        #self.tt_N_measure = sorted(sum(self.tt_measure[7:], []))
+
+        # TODO: Q: why do we need the sum here?
+        # Unify detectors 4 & [] and windows within detectors
+        self.tt_S_measure = sorted(self.tt_measure[4])
+        #self.tt_S_measure = sorted(sum(self.tt_measure[4:5], []))
+
+        # Unify detectors 5 & 6 and windows within detectors
+        self.tt_FS_measure = sorted(sum(self.tt_measure[5:7], []))
 
         self.tt_N_directional_measure = sorted(self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure)
         # self.tt_N_directional_measure = sorted(self.tt_S_measure + self.tt_FS_measure)
@@ -342,6 +355,8 @@ class SpectrumExperiment(BaseExperiment):
         # self.tt_S_directional_measure = sorted(self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure)
         self.tt_S_directional_measure = sorted(self.tt_S_measure + self.tt_FS_measure)
 
+        # Fix gaps created by OPX
+        # We will take tt_S_directional_measure and convert it to self.tt_S_no_gaps
         self.fix_gaps_spectrum_exp_tts()
 
     # TODO: we need to bring this NEW method up-to-speed with the OLD one (Below). Ensure the .copy part.
@@ -356,7 +371,10 @@ class SpectrumExperiment(BaseExperiment):
     def fix_gaps_spectrum_exp_tts(self):
         """
         Fixes delays of 320 ns every 100 us in spectrum experiment
-        :return:
+        These gaps are caused by OPX when it is switching frequencies
+
+        Input:   self.tt_S_directional_measure
+        Output:  self.tt_S_no_gaps
         """
         self.real_M_window = ((2 * Config.frequency_sweep_duration) * (self.num_of_different_frequencies
                                                                        * self.same_frequency_rep
@@ -366,17 +384,6 @@ class SpectrumExperiment(BaseExperiment):
         self.total_real_time_of_same_freq_rep = (Config.frequency_sweep_duration * 2 * self.same_frequency_rep) + 320
         self.tt_S_no_gaps = [x - (x // self.total_real_time_of_freq_sweep) * 124 for x in self.tt_S_directional_measure]
         self.tt_S_no_gaps = [x - (x // self.total_real_time_of_same_freq_rep) * 320 for x in self.tt_S_no_gaps]
-
-        # self.tt_S_no_gaps = [x-(x//((Config.frequency_sweep_duration * 2 * self.same_frequency_rep) + 320))*320 for x in self.tt_S_directional_measure]
-        # self.tt_S_no_gaps = [x-(x//(int(self.real_M_window // self.frequency_sweep_rep) + 124))*124 for x in self.tt_S_no_gaps]
-        # self.tt_S_no_gaps = [int(x) for x in self.tt_S_no_gaps if x < self.real_M_window]
-
-        # self.tt_S_no_gaps = []
-        # for rep in range(self.frequency_sweep_rep):
-        #     self.start_tt = rep * self.total_real_time_of_freq_sweep
-        #     self.end_tt = (rep + 1) * self.total_real_time_of_freq_sweep
-        #     self.tt_S_no_gaps.append([x-(x//((Config.frequency_sweep_duration * 2 * self.same_frequency_rep) + 320))*320
-        #                               for x in self.tt_S_directional_measure[]])
 
     # TODO: In the case of Spectrum, we're checking only specific detectros. We need to make this configurable
     def latched_detectors(self):
@@ -962,15 +969,46 @@ class SpectrumExperiment(BaseExperiment):
         self.FLR_measurement = []
         self.Exp_timestr_batch = []
 
-    def AOM_power_per_freq_calibration(self, dirname):
-        if dirname is None:
+    # TODO: Document this method
+    # TODO: Q: Do we need to move this to BaseExperiment
+    def AOM_power_per_freq_calibration(self, calibration_file):
+        if calibration_file is None:
             return np.full((1, self.spectrum_bin_number), 1)[0]
-        if not os.path.exists(dirname):
+        if not os.path.exists(calibration_file):
             return np.full((1, self.spectrum_bin_number), 1)[0]
-        self.calibration_spectrum = np.load(dirname)
+        self.calibration_spectrum = np.load(calibration_file)
         return self.calibration_spectrum['arr_0']/max(self.calibration_spectrum['arr_0'])
 
-    def await_for_values(self, Num_Of_dets):
+    def new_timetags_detected(self, prev_measure, curr_measure):
+        """
+        Attempt to deduce if the time-tags that are in are new ones (as opposed to leftovers from prev measure)
+        We deduce it is, if the number of same values in Curr/Prev are less than 1/2 of the total number of values)
+
+        returns: True/False
+        """
+
+        # Get the minimum value between new measure (tt_S_no_gaps) and last old measure (tt_S_measure_batch)
+        min_len = min(len(prev_measure), len(curr_measure))
+
+        # Compare values of measurements
+        compare_values = np.array(prev_measure[:min_len]) == np.array(curr_measure[:min_len])
+
+        new_timetags = sum(compare_values) < min_len / 2
+        return new_timetags
+
+    def detectors_measurement_is_full(self, timetags, percent):
+        """
+        Checks that measurement fills 95% or more of the buffer
+        """
+        self.tt_S_binning = np.zeros(self.histogram_bin_number * 2)
+        for x in timetags:
+            self.tt_S_binning[(x - 1) // Config.frequency_sweep_duration] += 1
+
+        is_not_full = sum(np.array(self.tt_S_binning[int(percent * len(self.tt_S_binning)):])) != 0
+        return not is_not_full
+
+    # TODO: Remove when we know things are working properly with new function
+    def await_for_values_DEP(self, Num_Of_dets):
         """
         Awaits for values to come from OPX streams. Returns the timestamp of the incoming data.
         Returns the status of the operation (enumeration). It can be either:
@@ -1023,6 +1061,54 @@ class SpectrumExperiment(BaseExperiment):
 
             time.sleep(WAIT_TIME)
 
+        return timestamp
+
+    def await_for_values(self, Num_Of_dets):
+        """
+        Awaits for values to come from OPX streams. Returns the timestamp of the incoming data.
+        Returns the status of the operation (enumeration). It can be either:
+        - Successful - we got data
+        - User terminated - user terminated the experiment
+        - Too many cycles - no data arrived after a given number of cycles
+        """
+        WAIT_TIME = 0.01  # [sec]
+        #TOO_MANY_WAITING_CYCLES = WAIT_TIME*100*20  # 5 seconds. Make this -1 to wait indefinitely
+        TOO_MANY_WAITING_CYCLES = -1
+
+        count = 1
+        while True:
+
+            self.handle_user_events()
+            if self.runs_status == TerminationReason.USER:
+                break
+
+            # Get data from OPX streams
+            self.get_results_from_streams()
+            self.ingest_time_tags(Num_Of_dets)
+
+            prev_measure = self.tt_S_measure_batch[-1]
+            curr_measure = self.tt_S_no_gaps
+
+            # Check if new time tags arrived:
+            is_new_tts_S = self.new_timetags_detected(prev_measure, curr_measure)
+
+            # Check if time tags buffer is full
+            S_det_is_full = self.detectors_measurement_is_full(curr_measure, 0.95)
+
+            # We break if it is new data and not full
+            if is_new_tts_S and not S_det_is_full:
+                break
+
+            # Are we waiting too long?
+            count += 1
+            if TOO_MANY_WAITING_CYCLES != -1 and count > TOO_MANY_WAITING_CYCLES:
+                self.runs_status = TerminationReason.ERROR
+                break
+
+            time.sleep(WAIT_TIME)
+
+        # We return the timestamp - this is when we declare we got the measurement
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
         return timestamp
 
     def Save_SNSPDs_Spectrum_Measurement_with_tt(self, N, transit_profile_bin_size, pre_comment, transit_cond,
@@ -1131,12 +1217,10 @@ class SpectrumExperiment(BaseExperiment):
         self.Cavity_spectrum = np.zeros(self.spectrum_bin_number)
         self.Cavity_spectrum_normalized = np.zeros(self.spectrum_bin_number)
 
-        # TODO: move this to use roots from results file
-        # calibration_dirname = 'U:\\Lab_2023\\Experiment_results\\QRAM\\20231109\\160748_Photon_TimeTags\\Cavity_spectrum.npz'
-        # calibration_dirname = r'U:\Lab_2023\Experiment_results\QRAM\20231114\104323_Photon_TimeTags\Cavity_spectrum.npz'  # Widening spectrum
-        calibration_dirname = r'U:\Lab_2023\Experiment_results\QRAM\20231116\133237_Photon_TimeTags\Cavity_spectrum.npz'  # Widening spectrum
-        # calibration_dirname = None  # Set to None when you are running calibration process
-        self.power_per_freq_weight = self.AOM_power_per_freq_calibration(calibration_dirname)
+        # Get calibration weights from file
+        calibration_folder = self.bd_results.get_custom_root('calibration_folder')
+        calibration_file = os.path.join(calibration_folder, 'Cavity_spectrum.npz')
+        self.power_per_freq_weight = self.AOM_power_per_freq_calibration(calibration_file)
 
         # fold reflections and transmission
         for x in self.tt_N_directional_measure:
@@ -1397,6 +1481,7 @@ class SpectrumExperiment(BaseExperiment):
         self.bd_results.save_results(results)
 
         self.updateValue("Experiment_Switch", False)  # TODO: why not change the flag to "True"?
+        self.MOT_switch(True)
         self.update_parameters()
 
         return self.runs_status
