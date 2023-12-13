@@ -951,7 +951,10 @@ class SpectrumExperiment(BaseExperiment):
 
         plt.pause(0.5)
 
-    def init_params_for_save_sprint(self, Num_Of_dets):
+    def initialize_batches_arrays(self, Num_Of_dets):
+        """
+        Prepare all batches arrays we need for the experiment
+        """
         # define empty variables
         self.tt_measure = []
         self.tt_measure_batch = [[]] * len(Num_Of_dets)
@@ -1125,24 +1128,22 @@ class SpectrumExperiment(BaseExperiment):
                                                  lock_err_threshold, exp_flag, with_atoms):
 
         """
-        Function for analyzing,saving and displaying data from sprint experiment.
+        Function for analyzing,saving and displaying data from spectrum experiment.
         :param N: Number of maximum experiments (free throws) saved and displayed.
                  program we are looking for transits of atoms next to the toroid and record them.
-        :param qram_sequence_len: the number of sprint sequences (detection and sprint pulses combination)
+        :param transit_profile_bin_size:
         :param preComment: The comment added at the start of the experiment, usually consisting of unique experiment
                            parameters.
         :param transit_condition:
+        :param total_counts_threshold:
+        :param transit_counts_threshold
+        :param FLR_threshold:
         :param lock_err_threshold: The maximal error in locking resonator to rb line (in ms, depends on the scan width/vpp)
-        :param max_probe_counts: The maximum counts probe counts at each direction measured when cavity isn't locked.
-        :param filter_delay: Delay of the filter window compared to original location (can be taken by comparing the
-                             time of the 1st detection pulse pick location to the original sequence)
-        :param reflection_threshold:
-        :param reflection_threshold_time:
+        :param exp_flag:
+        :param with_atoms:
 
         :return: Returns the run status (Success, User-Termination, Error, etc.)
         """
-        # if not preComment:
-        #     preComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
 
         # set constant parameters for the function
         Num_Of_dets = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -1156,13 +1157,20 @@ class SpectrumExperiment(BaseExperiment):
                                      self.spectrum_bin_number)
         self.Transit_profile_bin_size = transit_profile_bin_size
         time_threshold = int(self.histogram_bin_size * 1.6)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
+        self.with_atoms = with_atoms
+        self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
+
+        # Start experiment flag and set MOT according to flag
+        self.updateValue("Experiment_Switch", True)
+        self.MOT_switch(self.with_atoms)
+        self.update_parameters()
 
         self.logger.blue('Press ESC to stop measurement.')
 
-        # initialize parameters - set zeros vectors and empty lists
-        # TODO: Q: why is this called "sprint" ?
-        # TODO: Do we need Num_Of_dets ?
-        self.init_params_for_save_sprint(Num_Of_dets)
+        # Set zeros vectors and empty lists
+        # TODO: (1) Do we need Num_Of_dets ?  This is a generic change we can make throught the code...
+        # TODO: (2) We can make a generic batch manager that will zero them all, append, etc.
+        self.initialize_batches_arrays(Num_Of_dets)
 
         # Associate the streams filled in OPX (FPGA) code with result handles
         self.get_handles_from_OPX_server()
@@ -1360,7 +1368,7 @@ class SpectrumExperiment(BaseExperiment):
 
             if exp_flag:
                 if (self.lock_err > lock_err_threshold) or \
-                        ((1000 * np.average(self.FLR_res.tolist()) < FLR_threshold) and with_atoms) or \
+                        ((1000 * np.average(self.FLR_res.tolist()) < FLR_threshold) and self.with_atoms) or \
                         self.latched_detectors():
                     self.acquisition_flag = False
                 else:
@@ -1410,17 +1418,30 @@ class SpectrumExperiment(BaseExperiment):
                 lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
                 self.save_tt_to_batch(Num_Of_dets, N)
 
+            # Do we need to change with/without atoms state?
+            # Value can be: "atom" or "!atom" or "_atom" or "_!atom"
+            if self.switch_atom_no_atoms.startswith('_'):
+                # If first letter after the '_' is '!', we are at no-atoms, so now we will turn MOT ON
+                if self.switch_atom_no_atoms[1] == '!':
+                    MOT_on = True
+                    self.switch_atom_no_atoms = self.switch_atom_no_atoms[2:]  # Remove the "_!"
+                else:
+                    MOT_on = False
+                    self.switch_atom_no_atoms = self.switch_atom_no_atoms[1:]  # Remove the "_"
+                self.MOT_switch(MOT_on)
+                self.update_parameters()
+
             # End of while-loop. We completed another repetition.
             self.repetitions += 1
 
         ############################################## END MAIN LOOP #################################################
 
         if self.runs_status == TerminationReason.SUCCESS:
-            self.logger.info(f'Finished {N} Runs, {"with" if with_atoms else "without"} atoms')
+            self.logger.info(f'Finished {N} Runs, {"with" if self.with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.USER:
-            self.logger.info(f'User Terminated the measurements after {self.counter} Runs, {"with" if with_atoms else "without"} atoms')
+            self.logger.info(f'User Terminated the measurements after {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.ERROR:
-            self.logger.info(f'Error Terminated the measurements after {self.counter} Runs, {"with" if with_atoms else "without"} atoms')
+            self.logger.info(f'Error Terminated the measurements after {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
 
         # Adding comment to measurement [prompt whether stopped or finished regularly]
         if exp_flag:
@@ -1484,7 +1505,7 @@ class SpectrumExperiment(BaseExperiment):
             "exp_timestr": Exp_timestr_batch,  # TODO: rename to drop timestamps? What is this one?
 
             "exp_comment": experiment_comment,
-            "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, with_atoms, self.counter),
+            "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, self.with_atoms, self.counter),
 
             #"max_probe_counts": "TBD",  # TODO: ...
 
@@ -1492,6 +1513,8 @@ class SpectrumExperiment(BaseExperiment):
         }
         self.bd_results.save_results(results)
 
+        # End of Experiment! Ensure we turn the experiment flag off and return the MOT
+        # TODO: move this to post_run()
         self.updateValue("Experiment_Switch", False)  # TODO: why not change the flag to "True"?
         self.MOT_switch(True)
         self.update_parameters()
@@ -1539,13 +1562,7 @@ class SpectrumExperiment(BaseExperiment):
     def run(self, run_parameters):
         rp = run_parameters  # Set so we can use in short - "rp", instead of "run_parameters"...
 
-        # Set switches
-        self.updateValue("Experiment_Switch", True)
-        self.MOT_switch(rp['with_atoms'])
-        self.update_parameters()
-
-        # TODO: Q: Config.QRAM_Exp_Gaussian_samples_S is constructed in a function, using the parameter "sprint_pulse_len" - so why not use it here?
-        # TODO: Q: (a) we don't want to use duplicate variables holding the same value, (b) it mentions "samples_S" - but it's the same for "N" as well...
+        # TODO: (!) Why do we need the extra method "Save_SNSPDs_Spectrum_Measurement_with_tt" ?
         run_status = self.Save_SNSPDs_Spectrum_Measurement_with_tt(N=rp['N'],
                                                       transit_profile_bin_size=rp['transit_profile_bin_size'],
                                                       pre_comment=rp['pre_comment'],

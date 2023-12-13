@@ -406,6 +406,10 @@ class BaseExperiment:
             self.logger.blue('SPACE pressed. Continuing measurement.')
             self.pause_flag = False
             self.keyPress = None
+        elif self.keyPress == 'A':
+            self.logger.blue('A pressed. Switching atoms/no-atoms.')
+            self.switch_atom_no_atoms = '_' + self.switch_atom_no_atoms
+            self.keyPress = None
         pass
 
     # Returns the error of the locking mechanism of the resonator to Rb line
