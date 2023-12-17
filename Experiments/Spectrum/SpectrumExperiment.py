@@ -923,49 +923,7 @@ class SpectrumExperiment(BaseExperiment):
         # Associate the streams filled in OPX (FPGA) code with result handles
         self.get_handles_from_OPX_server()
 
-        ############################# WHILE 1 - START #############################
-
-        # TODO: this is just workaround. If my refactor worked - we throw out this loop's code!
-        WARMUP_CYCLES = 0
-        cycle = 0
-        self.runs_status = TerminationReason.SUCCESS
-        self.sum_for_threshold = transit_counts_threshold  # is the resonance critically coupled enough
-        # Loop explanations:
-        # - We will iterate at least WARMUP_CYCLES times.
-        # - After the warmup, if EXPERIMENT is on, we will continue until we are within threshold:
-        while (cycle < WARMUP_CYCLES) or (self.exp_flag and self.sum_for_threshold >= transit_counts_threshold):
-            self.logger.debug(f'Running cycle {cycle+1}')
-
-            # Check if user terminated
-            self.handle_user_events()
-            if self.runs_status == TerminationReason.USER:
-                break
-
-            # Filter/Manipulate the values we got
-            self.get_results_from_streams()
-            self.ingest_time_tags(Num_Of_dets)
-
-            self.tt_S_binning = np.zeros(self.histogram_bin_number * 2)
-            for x in self.tt_S_no_gaps:
-                self.tt_S_binning[(x - 1) // Config.frequency_sweep_duration] += 1
-            self.tt_S_binning_resonance = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if not x % 2]  # even
-
-            # Check locking error - break if we are above threshold (if it is None - it means we can't find the error file, so ignore it)
-            self.lock_err = (self.lock_err_threshold / 2) if self.exp_flag else self._read_locking_error()
-            if self.lock_err is not None:
-
-                self.sum_for_threshold = (np.sum(self.tt_S_binning_resonance) * 1000) / (self.M_time / 2)  # TODO: ask Dor - is it a bug here?
-
-                self.logger.debug(f'Lock err: {self.lock_err}, Successful lock: {self.lock_err < self.lock_err_threshold}, Threshold: {self.sum_for_threshold}')
-                if self.lock_err > self.lock_err_threshold:
-                    break
-
-            cycle += 1
-            time.sleep(0.01)  # in seconds # TODO: move these WAIT TIMES to a constant somewhere
-
-        ############################# WHILE 1 - END #############################
-
-        self.FLR_measurement = []  # TODO: May want to refactor this later (this is not a local variable, but in .self, as it is used in the plot method)
+        self.FLR_measurement = []
         self.exp_timestr_batch = []
         self.lock_err_batch = []
 
