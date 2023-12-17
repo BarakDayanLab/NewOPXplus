@@ -14,7 +14,9 @@ class SOUNDS(Enum):
 class BDSound:
 
     def __init__(self):
-
+        """
+        The class will initiate the media folder
+        """
         # TODO: make this dependant on the user - are we on what machine?
         self.media_folder = r'C:\Windows\Media'
         pass

@@ -215,6 +215,75 @@ class Utils:
         return new_arr
 
     @staticmethod
+    def split_into_value_ranges(values, value_ranges, default=False):
+        """
+        Split a list of values into the given ranges.
+        Returns arrays with relevant values.
+        All values that do not fall into any of the ranges go into a default bucket
+
+        TODO: implement this more efficiently, no append, use fact it's sorted, sort ranges
+        """
+        # Initialize results array of arrays
+        results = []
+        for i in range(0, len(value_ranges)):
+            results.append([])
+
+        # Start going over values
+        values.sort()
+        for value in values:
+            for i, value_range in enumerate(value_ranges):
+                if value > value_range[0] and value < value_range[1]:
+                    results[i].append(value)
+
+        return results
+
+        pass
+
+    @staticmethod
+    def elements_in_even_places(values):
+        """
+        Returns all elements which are in even indices. First element is in place 0, then 2, etc.
+        If values is an empty array, and empty array is returned
+        """
+        return list(values[::2])
+
+    @staticmethod
+    def elements_in_odd_places(values):
+        """
+        Returns all elements which are in even indices. First element is in place 0, then 2, etc.
+        If values is an empty array, and empty array is returned
+        """
+        return list(values[1::2])
+
+    @staticmethod
+    def split_to_even_odd_elements(values):
+        even_indexed_elements = Utils.elements_in_even_places(values)
+        odd_indexed_elements = Utils.elements_in_odd_places(values)
+        return even_indexed_elements, odd_indexed_elements
+
+    @staticmethod
+    def tail_contains_non_zeros(values, percent):
+        """
+        Checks that the tailing end of the array has some values that are non-zero
+        TODO: add an option to have "head"/"trail"
+        """
+        percent = percent/100 if percent>100 else percent
+        index = int((1 - percent) * len(values))
+        tail_array = np.array(values[index:])
+        non_zero = sum(tail_array) != 0
+        return non_zero
+
+    @staticmethod
+    def bin_values(values, bin_size, num_of_bins):
+        """
+        Create a histogram of time-tags with <Num-of-bins> bins and each bin holds values from 0-<bin_size-1>
+        """
+        binned_time_tags = np.zeros(num_of_bins)
+        for x in values:
+            binned_time_tags[(x - 1) // bin_size] += 1
+        return binned_time_tags
+
+    @staticmethod
     def bucket_timetags(timetags, window_size, buckets_number=1, filter=None, start_time=-math.inf, end_time=math.inf, filters=None):
         """
         This function takes a sequence of time-tags and divides thjem into buckets.

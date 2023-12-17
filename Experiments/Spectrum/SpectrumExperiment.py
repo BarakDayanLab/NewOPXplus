@@ -812,8 +812,24 @@ class SpectrumExperiment(BaseExperiment):
         self.tt_DP_measure_batch = self.tt_DP_measure_batch[-(N - 1):] + [self.tt_DP_measure]
         self.tt_FS_measure_batch = self.tt_FS_measure_batch[-(N - 1):] + [self.tt_FS_measure]
 
-    # TODO: this will probably be called from mainloop and will override a superclass function
-    def plot_figures(self, fig, ax, Num_Of_dets, locking_efficiency):
+    def print_experiment_information(self):
+        """
+        Prints during the experiment a formatted line that brings all concise information
+        """
+        locking_efficiency = self.counter / self.repetitions
+        locking_efficiency_str = '%.2f' % locking_efficiency
+        fluorescence_str = '%.2f' % (1000 * np.average(self.FLR_res.tolist()))
+        time_formatted = time.strftime("%Y/%m/%d, %H:%M:%S")
+        self.logger.info(f'{time_formatted}: cycle {self.counter}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}, #Photons/[us]: {self.sum_of_threshold}')
+
+    def plot_figures(self, fig, subplots, Num_Of_dets):
+        try:
+            self._plot_figures(fig, subplots, Num_Of_dets)
+        except Exception as err:
+            self.warn(f'Failed on plot_figures: {err}')
+        pass
+
+    def _plot_figures(self, fig, ax, Num_Of_dets):
 
         plot_switches = {
             "playsound": True,
@@ -846,13 +862,9 @@ class SpectrumExperiment(BaseExperiment):
         pause_str = ' , PAUSED!' if self.pause_flag else ''
         trs_str = '%.2f' % self.sum_for_threshold
         flr_str = '%.2f' % (1000 * np.average(self.FLR_res.tolist()))
-        eff_str = '%.2f' % locking_efficiency
+        eff_str = '%.2f' % (self.counter / self.repetitions)
         lck_str = '%.3f' % self.lock_err
         header_text = f'{self.counter} ({self.repetitions}) - Transmission: {trs_str}, Efficiency: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str} {pause_str}'
-        # header_text = '# %d - ' % counter + 'Transmission: %d, ' % self.sum_for_threshold + \
-        #                      'Efficiency: %.2f, ' % locking_efficiency + \
-        #                      'Flr: %.2f, ' % flr_avg + \
-        #                      'Lock Error: %.3f' % self.lock_err + pause_str
 
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
         textstr_detuned = r'$S_{detuned} = %.3f$' % (
@@ -917,7 +929,7 @@ class SpectrumExperiment(BaseExperiment):
             self.debug("Plot: Drew graph 3")
 
         if plot_switches['graph-4']:
-            ax[4].plot(np.linspace(0, self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc, label='pulses folded', color='k')
+            ax[4].plot(np.linspace(0, self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc_1, label='pulses folded', color='k')
             ax[4].plot(np.linspace(0, self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc_2, label='pulses folded_2', color='b')
             ax[4].plot(np.linspace(0, self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc_3, label='pulses folded_2', color='g')
             ax[4].set(xlabel='Time [nsec]', ylabel='Counts [#Number]')
@@ -1009,73 +1021,6 @@ class SpectrumExperiment(BaseExperiment):
         new_timetags = sum(compare_values) < min_len / 2
         return new_timetags
 
-    def detectors_measurement_is_full(self, timetags, percent):
-        """
-        Checks that measurement fills 95% or more of the buffer
-        """
-        self.tt_S_binning = np.zeros(self.histogram_bin_number * 2)
-        for x in timetags:
-            self.tt_S_binning[(x - 1) // Config.frequency_sweep_duration] += 1
-
-        is_not_full = sum(np.array(self.tt_S_binning[int(percent * len(self.tt_S_binning)):])) != 0
-        return not is_not_full
-
-    # TODO: Remove when we know things are working properly with new function
-    def await_for_values_DEP(self, Num_Of_dets):
-        """
-        Awaits for values to come from OPX streams. Returns the timestamp of the incoming data.
-        Returns the status of the operation (enumeration). It can be either:
-        - Successful - we got data
-        - User terminated - user terminated the experiment
-        - Too many cycles - no data arrived after a given number of cycles
-        """
-        WAIT_TIME = 0.01  # [sec]
-        #TOO_MANY_WAITING_CYCLES = WAIT_TIME*100*20  # 5 seconds. Make this -1 to wait indefinitely
-        TOO_MANY_WAITING_CYCLES = -1
-
-        count = 1
-        while True:
-            timestamp = time.strftime("%Y%m%d-%H%M%S")  # TODO: Q: why are we taking the timestamp BEFORE the measurement is in?
-
-            # Get data from OPX streams
-            self.get_results_from_streams()
-            self.ingest_time_tags(Num_Of_dets)
-
-            # Check if new timetags arrived:
-            # (if the number of same values in the new and last vector are less than 1/2 of the total number of values)
-            lenS = min(len(self.tt_S_no_gaps), len(self.tt_S_measure_batch[-1]))
-
-            is_new_tts_S = sum(np.array(self.tt_S_no_gaps[:lenS]) == np.array(self.tt_S_measure_batch[-1][:lenS])) < lenS / 2
-
-            # make sure that measurement did not fill 95% or more the buffer
-            self.tt_S_binning = np.zeros(self.histogram_bin_number * 2)
-            for x in self.tt_S_no_gaps:
-                self.tt_S_binning[(x - 1) // Config.frequency_sweep_duration] += 1
-            percent = 0.95  # 0.95
-            S_det_isnt_full = sum(np.array(self.tt_S_binning[int(percent*len(self.tt_S_binning)):])) != 0
-
-            if is_new_tts_S and S_det_isnt_full:
-                break
-
-            # Are we waiting too long?
-            count += 1
-            if TOO_MANY_WAITING_CYCLES != -1 and count > TOO_MANY_WAITING_CYCLES:
-                self.runs_status = TerminationReason.ERROR
-                break
-
-            # Did the user ask to terminate?
-            if self.keyPress == 'ESC':
-                self.logger.blue('ESC pressed. Stopping measurement.')
-                self.updateValue("Experiment_Switch", False)
-                self.MOT_switch(True)
-                self.update_parameters()
-                self.runs_status = TerminationReason.USER
-                break
-
-            time.sleep(WAIT_TIME)
-
-        return timestamp
-
     def await_for_values(self, Num_Of_dets):
         """
         Awaits for values to come from OPX streams. Returns the timestamp of the incoming data.
@@ -1105,11 +1050,15 @@ class SpectrumExperiment(BaseExperiment):
             # Check if new time tags arrived:
             is_new_tts_S = self.new_timetags_detected(prev_measure, curr_measure)
 
+            # Bin the South time-tags we just got
+            self.tt_S_binning = Utils.bin_values(values=curr_measure, bin_size=Config.frequency_sweep_duration, num_of_bins=self.histogram_bin_number * 2)
+
             # Check if time tags buffer is full
-            S_det_is_full = self.detectors_measurement_is_full(curr_measure, 0.95)
+            # TODO: Need assaf to explain this to me...
+            S_det_isnt_full = Utils.tail_contains_non_zeros(values=self.tt_S_binning, percent=5)
 
             # We break if it is new data and not full
-            if is_new_tts_S and not S_det_is_full:
+            if is_new_tts_S and S_det_isnt_full:
                 break
 
             # Are we waiting too long?
@@ -1158,8 +1107,14 @@ class SpectrumExperiment(BaseExperiment):
                                      self.spectrum_bin_number)
         self.Transit_profile_bin_size = transit_profile_bin_size
         time_threshold = int(self.histogram_bin_size * 1.6)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
-        self.with_atoms = with_atoms
         self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
+
+        # TODO: These come as parameters for the experiment run - we may want to have them all under "self.params[..]" so we can
+        # TODO: (a) group logically (b) pass to other functions, instead of passing them one by one or relying on them being on self
+        self.with_atoms = with_atoms
+        self.lock_err_threshold = lock_err_threshold
+        self.warmup_cycles = 10  # Should also come as params, with some default. E.g. self.warmup_cycles = 10 if 'warmup_cycles' not in params else params['warmup_cycles]
+        self.total_counts_threshold = total_counts_threshold
 
         # Start experiment flag and set MOT according to flag
         self.updateValue("Experiment_Switch", True)
@@ -1178,11 +1133,14 @@ class SpectrumExperiment(BaseExperiment):
 
         ############################# WHILE 1 - START #############################
 
-        WARMUP_CYCLES = 10
+        # TODO: this is just workaround. If my refactor worked - we throw out this loop's code!
+        WARMUP_CYCLES = 0
         cycle = 0
         self.runs_status == TerminationReason.SUCCESS
         self.sum_for_threshold = transit_counts_threshold  # is the resonance critically coupled enough
-        # We will iterate at least 3 warmup cycles. If experiment in ON, we will iterate as long as within threshold:
+        # Loop explanations:
+        # - We will iterate at least WARMUP_CYCLES times.
+        # - After the warmup, if EXPERIMENT is on, we will continue until we are within threshold:
         while (cycle < WARMUP_CYCLES) or (exp_flag and self.sum_for_threshold >= transit_counts_threshold):
             self.logger.debug(f'Running cycle {cycle+1}')
 
@@ -1201,13 +1159,13 @@ class SpectrumExperiment(BaseExperiment):
             self.tt_S_binning_resonance = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if not x % 2]  # even
 
             # Check locking error - break if we are above threshold (if it is None - it means we can't find the error file, so ignore it)
-            self.lock_err = (lock_err_threshold / 2) if exp_flag else self._read_locking_error()
+            self.lock_err = (self.lock_err_threshold / 2) if exp_flag else self._read_locking_error()
             if self.lock_err is not None:
 
-                self.sum_for_threshold = (np.sum(self.tt_S_binning_resonance) * 1000) / self.M_time
+                self.sum_for_threshold = (np.sum(self.tt_S_binning_resonance) * 1000) / (self.M_time / 2)  # TODO: ask Dor - is it a bug here?
 
-                self.logger.debug(f'Lock err: {self.lock_err}, Successful lock: {self.lock_err < lock_err_threshold}, Threshold: {self.sum_for_threshold}')
-                if self.lock_err > lock_err_threshold:
+                self.logger.debug(f'Lock err: {self.lock_err}, Successful lock: {self.lock_err < self.lock_err_threshold}, Threshold: {self.sum_for_threshold}')
+                if self.lock_err > self.lock_err_threshold:
                     break
 
             cycle += 1
@@ -1225,7 +1183,7 @@ class SpectrumExperiment(BaseExperiment):
         self.tt_S_transit_events = np.zeros(self.histogram_bin_number)
         self.tt_S_transit_events_accumulated = np.zeros(self.histogram_bin_number)
         self.all_transits_accumulated = np.zeros(self.histogram_bin_number)
-        self.folded_tt_S_acc = np.zeros(self.histogram_bin_size, dtype=int)
+        self.folded_tt_S_acc_1 = np.zeros(self.histogram_bin_size, dtype=int)
         self.folded_tt_S_acc_2 = np.zeros(self.histogram_bin_size, dtype=int)
         self.folded_tt_S_acc_3 = np.zeros(self.histogram_bin_size, dtype=int)
 
@@ -1245,9 +1203,10 @@ class SpectrumExperiment(BaseExperiment):
             self.tt_N_binning[(x - 1) // Config.frequency_sweep_duration] += 1  # TODO: x-1?? in spectrum its x
         self.tt_N_binning_avg = self.tt_N_binning
 
+        # Prepare batches
         for x in self.tt_S_no_gaps:
             if x < 2e6:
-                self.folded_tt_S_acc[(x - 1) % self.histogram_bin_size] += 1
+                self.folded_tt_S_acc_1[(x - 1) % self.histogram_bin_size] += 1
             elif 6e6 < x < 8e6:
                 self.folded_tt_S_acc_2[(x - 1) % self.histogram_bin_size] += 1
             elif 8e6 < x < 10e6:
@@ -1257,6 +1216,7 @@ class SpectrumExperiment(BaseExperiment):
         # split the binning vector to odd and even - on and off resonance pulses
         self.tt_N_binning_detuned = [self.tt_N_binning[x] for x in range(len(self.tt_N_binning)) if x % 2]  # odd
         self.tt_N_binning_resonance = [self.tt_N_binning[x] for x in range(len(self.tt_N_binning)) if not x % 2]  # even
+
         self.tt_S_binning_detuned = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if x % 2]  # odd
 
         # --------------------------------------------------------------
@@ -1290,12 +1250,13 @@ class SpectrumExperiment(BaseExperiment):
         # --------------------------------------------------------------
 
         fig = plt.figure()
-        ax1 = plt.subplot2grid((6, 2), (0, 0), colspan=1, rowspan=2)
-        ax2 = plt.subplot2grid((6, 2), (0, 1), colspan=1, rowspan=2)
-        ax3 = plt.subplot2grid((6, 2), (2, 0), colspan=1, rowspan=2)
-        ax4 = plt.subplot2grid((6, 2), (2, 1), colspan=1, rowspan=2)
-        ax5 = plt.subplot2grid((6, 2), (4, 0), colspan=1, rowspan=2)
-        ax6 = plt.subplot2grid((6, 2), (4, 1), colspan=1, rowspan=2)
+        subplots = []
+        subplots.append(plt.subplot2grid((6, 2), (0, 0), colspan=1, rowspan=2))
+        subplots.append(plt.subplot2grid((6, 2), (0, 1), colspan=1, rowspan=2))
+        subplots.append(plt.subplot2grid((6, 2), (2, 0), colspan=1, rowspan=2))
+        subplots.append(plt.subplot2grid((6, 2), (2, 1), colspan=1, rowspan=2))
+        subplots.append(plt.subplot2grid((6, 2), (4, 0), colspan=1, rowspan=2))
+        subplots.append(plt.subplot2grid((6, 2), (4, 1), colspan=1, rowspan=2))
 
         #self.maximize_figure()  # TODO: uncomment
 
@@ -1309,8 +1270,13 @@ class SpectrumExperiment(BaseExperiment):
         self.pause_flag = False
         self.runs_status = TerminationReason.SUCCESS
 
-        # Iterate until we will get N successful runs
-        while self.counter <= N:
+        # ---------------------------------------------------------------------------------
+        # Experiment Mainloop
+        # ---------------------------------------------------------------------------------
+        # We iterate few warmup rounds
+        # We iterate until we got N successful runs, or user terminated
+        # ---------------------------------------------------------------------------------
+        while True:
 
             # Handle cases where user terminates or pauses experiment
             self.handle_user_events()
@@ -1318,37 +1284,31 @@ class SpectrumExperiment(BaseExperiment):
                 break
 
             # Informational printing
-            locking_efficiency = self.counter / self.repetitions
-            locking_efficiency_str = '%.2f' % locking_efficiency
-            fluorescence_str = '%.2f' % (1000 * np.average(self.FLR_res.tolist()))
-            time_formatted = time.strftime("%Y/%m/%d, %H:%M:%S")
-            self.logger.info(f'{time_formatted}: cycle {self.counter}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}')
-
-            # Plot figures
-            try:
-                self.plot_figures(fig, [ax1, ax2, ax3, ax4, ax5, ax6], Num_Of_dets, locking_efficiency)
-            except Exception as err:
-                self.warn(f'Failed on plot_figures: {err}')
+            self.print_experiment_information()
 
             # Await for values from OPX
             timestamp = self.await_for_values(Num_Of_dets)
             if self.runs_status != TerminationReason.SUCCESS:
                 break
 
+            # Plot figures
+            self.plot_figures(fig, subplots, Num_Of_dets)
+
             self.lock_err = self._read_locking_error()
 
-            # fold reflections and transmission
-            self.tt_N_binning = np.zeros(self.histogram_bin_number*2)
+            # Bin North time-tags (South time-tags were binned in await_for_values
+            self.tt_N_binning = Utils.bin_values(values=self.tt_N_directional_measure,bin_size=Config.frequency_sweep_duration, num_of_bins=self.histogram_bin_number*2)
 
-            for x in self.tt_N_directional_measure:
-                self.tt_N_binning[(x - 1) // Config.frequency_sweep_duration] += 1  # TODO: x-1?? in spectrum its x
             self.tt_N_binning_avg = self.tt_N_binning
-
             self.tt_S_binning_avg = self.tt_S_binning
-            # for x in self.tt_S_directional_measure:
+
+            # TODO: implement as new binning function
+            #self.folded_tt_S_acc = Utils.split_into_value_ranges(self.tt_S_no_gaps, [(6e6, 8e6), (8e6, 10e6)], default=True)
+
+            # Prepare folded arrays for display
             for x in self.tt_S_no_gaps:
                 # if x < (2e6 + 6400):
-                self.folded_tt_S_acc[(x-1) % self.histogram_bin_size] += 1
+                self.folded_tt_S_acc_1[(x - 1) % self.histogram_bin_size] += 1
                 # if (2e6 + 6400 + 120) < x < (4e6 + 6400*2 + 120):
                 if 6e6 < x < 8e6:
                     self.folded_tt_S_acc_2[(x - 1) % self.histogram_bin_size] += 1
@@ -1356,26 +1316,26 @@ class SpectrumExperiment(BaseExperiment):
                 if 8e6 < x < 10e6:
                     self.folded_tt_S_acc_3[(x - 1) % self.histogram_bin_size] += 1
 
-            # split the binning vector to odd and even - on and off resonance pulses
-            self.tt_N_binning_detuned = [self.tt_N_binning[x] for x in range(len(self.tt_N_binning)) if x % 2]  # odd
-            self.tt_N_binning_resonance = [self.tt_N_binning[x] for x in range(len(self.tt_N_binning)) if
-                                           not x % 2]  # even
-            self.tt_S_binning_detuned = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if x % 2]  # odd
-            self.tt_S_binning_resonance = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if
-                                           not x % 2]  # even
+            # Split the binning vector to even and odd - Off/On resonance pulses
+            self.tt_N_binning_resonance, self.tt_N_binning_detuned = Utils.split_to_even_odd_elements(self.tt_N_binning)
+            self.tt_S_binning_resonance, self.tt_S_binning_detuned = Utils.split_to_even_odd_elements(self.tt_S_binning)
 
+            # Calculate threshold for experiment
             self.sum_for_threshold = (np.sum(self.tt_S_binning_resonance) * 1000) / (self.M_time / 2)
-            self.debug(f'Num of photons in [us] {self.sum_for_threshold}')
+
+            # If we are still in warmup phase, we do not continue further and go back to beginning of loop
+            if self.is_warmup_phase():
+                continue
 
             if exp_flag:
-                if (self.lock_err > lock_err_threshold) or \
+                if (self.lock_err > self.lock_err_threshold) or \
                         ((1000 * np.average(self.FLR_res.tolist()) < FLR_threshold) and self.with_atoms) or \
                         self.latched_detectors():
                     self.acquisition_flag = False
                 else:
                     self.acquisition_flag = True
 
-            self.threshold_flag = (self.sum_for_threshold < total_counts_threshold)
+            self.threshold_flag = (self.sum_for_threshold < self.total_counts_threshold)
 
             # Time to check if we passed the threshold of a successful run
             # Conditions required:
@@ -1432,7 +1392,11 @@ class SpectrumExperiment(BaseExperiment):
                 self.MOT_switch(MOT_on)
                 self.update_parameters()
 
-            # End of while-loop. We completed another repetition.
+            # Did we complete N successful iterations?
+            if self.counter == N:
+                break
+
+            # We completed another repetition.
             self.repetitions += 1
 
         ############################################## END MAIN LOOP #################################################
@@ -1521,6 +1485,26 @@ class SpectrumExperiment(BaseExperiment):
         self.update_parameters()
 
         return self.runs_status
+
+    # TODO: make generic in superclass
+    def is_warmup_phase(self):
+        """
+        We are in warmup if these conditions are met:
+        - We haven't yet completed WARMUP_CYCLES
+        - We haven't yet acquired a lock on resonance
+        """
+        self.warmup_cycles -= 1
+
+        if self.warmup_cycles < 0:
+            return True
+
+        if self.lock_err > self.lock_error_threshold:
+            return True
+
+        if self.exp_flag and self.sum_for_threshold >= self.total_counts_threshold:
+            return True
+
+        return False
 
     def maximize_figure(self):
         """

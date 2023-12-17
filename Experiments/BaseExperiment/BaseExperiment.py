@@ -38,12 +38,14 @@ class BaseExperiment:
     This class is the base experiment for all other experiments we have:
 
     It contains the following utility functionalities:
-        - Logger
+        - BDLogger - Logger
         - Keyboard handlers
+        - BDSound - Sounds player
         - Camera usage
+        - Identifier for computer (use self.login)
         - Sequence/Automation running activity with different parameters (pre_run, run, post_run, run_sequence)
         - Plot/Debugging <TBD>
-        - Results/Paths Services <TBD>
+        - BDResults - Results/Paths Services <TBD>
 
     On the experiment side, it does the following:
         - Initializes OPX
@@ -64,6 +66,9 @@ class BaseExperiment:
 
         # Setup console logger. We do this first, so rest of code can use logging functions.
         self.logger = BDLogger()
+
+        # Get login - to understand on what computer we are running
+        self.login = os.getlogin()
 
         # Initialize sound player
         self.bdsound = BDSound()
