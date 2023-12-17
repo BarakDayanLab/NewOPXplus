@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import time
-import math
 import pymsgbox
 from Utilities.BDSound import SOUNDS
 from UtilityResources.HMP4040Control import HMP4040Visa
@@ -302,6 +301,8 @@ class SpectrumExperiment(BaseExperiment):
 
         # TODO: Q: why are we changing the sign? Why is this a single scalar - coming from a stream?
         self.FLR_res = -self.streams['FLR_measure']['results']
+        self.fluorescence_average = 1000 * np.average(self.FLR_res.tolist())
+
 
         #### By this point we should have counts_res, tt_res & FLR_res populated
         #### this is equivalent to self.streams['FLR_measure']['results']
@@ -465,95 +466,6 @@ class SpectrumExperiment(BaseExperiment):
 
         return tt_histogram_transmission, tt_histogram_reflection
 
-    def divide_tt_to_reflection_trans(self, sprint_pulse_len, num_of_det_pulses):
-        '''
-        A function designed to count the number of photons reflected or transmitted for each sequence, such that,
-        for the detection pulses the number of photons will be accumulated for each sequence and for the SPRINT
-        pulses there will be number of reflected or transmitted photons for each SPRINT pulse.
-        :param sprint_pulse_len: the length in [ns] of the SPRINT pulses in the sequence.
-        :param num_of_det_pulses: the number of detection pulses in the sequence.
-        :return:
-        '''
-        self.num_of_det_reflections_per_seq_S = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_reflections_per_seq_N = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_transmissions_per_seq_S = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_transmissions_per_seq_N = np.zeros(self.number_of_QRAM_sequences)
-
-        self.num_of_SPRINT_reflections_per_seq_S = np.zeros(
-            [self.number_of_QRAM_sequences, self.number_of_SPRINT_pulses_per_seq])
-        self.num_of_SPRINT_reflections_per_seq_N = np.zeros(
-            [self.number_of_QRAM_sequences, self.number_of_SPRINT_pulses_per_seq])
-        self.num_of_SPRINT_transmissions_per_seq_S = np.zeros(
-            [self.number_of_QRAM_sequences, self.number_of_SPRINT_pulses_per_seq])
-        self.num_of_SPRINT_transmissions_per_seq_N = np.zeros(
-            [self.number_of_QRAM_sequences, self.number_of_SPRINT_pulses_per_seq])
-
-        # tt_small_perturb = []
-        for element in self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure:
-            if (element > int(0.6e6)) and (element < int(9.6e6)):
-                tt_inseq = element % self.QRAM_sequence_len
-                if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
-                    self.num_of_det_reflections_per_seq_S[(element - 1) // self.QRAM_sequence_len] += self.filter_S[
-                        tt_inseq]
-                    self.num_of_det_transmissions_per_seq_N[(element - 1) // self.QRAM_sequence_len] += self.filter_N[
-                        tt_inseq]
-            # else:  # The part of the SPRINT pulses in the sequence
-            #     SPRINT_pulse_num = (tt_inseq - self.end_of_det_pulse_in_seq) // (sprint_pulse_len + Config.num_between_zeros)
-            #     if SPRINT_pulse_num < self.number_of_SPRINT_pulses_per_seq:
-            #         self.num_of_SPRINT_reflections_per_seq_S[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
-            #         self.num_of_SPRINT_transmissions_per_seq_N[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
-            #         tt_small_perturb+=[element]
-
-        for element in self.tt_S_measure + self.tt_FS_measure:
-            if (element > int(0.6e6)) and (element < int(9.6e6)):
-                tt_inseq = element % self.QRAM_sequence_len
-                if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
-                    self.num_of_det_reflections_per_seq_N[(element - 1) // self.QRAM_sequence_len] += self.filter_N[
-                        tt_inseq]
-                    self.num_of_det_transmissions_per_seq_S[(element - 1) // self.QRAM_sequence_len] += self.filter_S[
-                        tt_inseq]
-            # else:  # The part of the SPRINT pulses in the sequence
-            #     SPRINT_pulse_num = (tt_inseq - self.end_of_det_pulse_in_seq) // (sprint_pulse_len + Config.num_between_zeros)
-            #     if SPRINT_pulse_num < self.number_of_SPRINT_pulses_per_seq:
-            #         self.num_of_SPRINT_reflections_per_seq_N[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
-            #         self.num_of_SPRINT_transmissions_per_seq_S[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
-
-    def divide_BP_and_DP_counts(self, num_of_seq_per_count=50):
-        '''
-        A function designed to count the number of photons reflected or transmitted for each sequence, such that,
-        for the detection pulses the number of photons will be accumulated for each sequence and for the SPRINT
-        pulses there will be number of reflected or transmitted photons for each SPRINT pulse.
-        :param sprint_pulse_len: the length in [ns] of the SPRINT pulses in the sequence.
-        :param num_of_det_pulses: the number of detection pulses in the sequence.
-        :return:
-        '''
-
-        # self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences)
-        # self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences // num_of_seq_per_count)
-        self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences // num_of_seq_per_count)
-        self.num_of_S_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences // num_of_seq_per_count)
-
-        for element in self.tt_BP_measure:
-            tt_inseq = element % self.QRAM_sequence_len
-            if tt_inseq > self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
-                self.num_of_BP_counts_per_n_sequences[
-                    (element - 1) // (self.QRAM_sequence_len * num_of_seq_per_count)] += \
-                    np.ceil(Config.QRAM_Exp_Square_samples_Late[tt_inseq])
-
-        for element in self.tt_DP_measure:
-            tt_inseq = element % self.QRAM_sequence_len
-            if tt_inseq > self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
-                self.num_of_DP_counts_per_n_sequences[
-                    (element - 1) // (self.QRAM_sequence_len * num_of_seq_per_count)] += \
-                    np.ceil(Config.QRAM_Exp_Square_samples_Late[tt_inseq])
-
-        for element in self.tt_FS_measure + self.tt_S_measure:
-            tt_inseq = element % self.QRAM_sequence_len
-            if tt_inseq > self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
-                self.num_of_S_counts_per_n_sequences[
-                    (element - 1) // (self.QRAM_sequence_len * num_of_seq_per_count)] += \
-                    np.ceil(Config.QRAM_Exp_Square_samples_Late[tt_inseq])
 
     def plot_folded_tt_histogram(self):
 
@@ -707,28 +619,6 @@ class SpectrumExperiment(BaseExperiment):
                 seq_filter_with_smearing[j] = 1
         return pulses_loc, seq_filter_with_smearing
 
-    def get_avg_num_of_photons_in_seq_pulses(self, seq, pulse_loc, tt_measure):
-        avg_num_of_photons_in_seq_pulses = []
-        try:
-            real_number_of_seq = math.ceil(max(tt_measure) / len(Config.QRAM_Exp_Gaussian_samples_S))
-            # self.logger.info('Real number of seq = %d' %real_number_of_seq)
-        except:
-            real_number_of_seq = self.number_of_QRAM_sequences
-            # self.logger.info('Max number of seq')
-        for t in pulse_loc:
-            avg_num_of_photons_in_seq_pulses.append((sum(seq[t[0]:t[1]]) + seq[t[1]]) / (
-                        real_number_of_seq * 0.167))  # Sagnac configuiration efficiency 16.7%
-        return avg_num_of_photons_in_seq_pulses
-
-    def get_max_value_in_seq_pulses(self, seq, pulse_loc):
-        max_value_in_seq_pulses = []
-        for t in pulse_loc:
-            if t[1] < (len(seq) + 1):
-                max_value_in_seq_pulses.append(max(seq[t[0]:t[1]]))
-            else:
-                max_value_in_seq_pulses.append(max(seq[t[0]:]))
-        return max_value_in_seq_pulses
-
     def num_of_photons_txt_box_loc(self, pulse_loc):
         if pulse_loc:
             box_loc = (np.sum(pulse_loc, axis=1) / 2).astype(int)
@@ -818,9 +708,9 @@ class SpectrumExperiment(BaseExperiment):
         """
         locking_efficiency = self.counter / self.repetitions
         locking_efficiency_str = '%.2f' % locking_efficiency
-        fluorescence_str = '%.2f' % (1000 * np.average(self.FLR_res.tolist()))
+        fluorescence_str = '%.2f' % self.fluorescence_average
         time_formatted = time.strftime("%Y/%m/%d, %H:%M:%S")
-        self.logger.info(f'{time_formatted}: cycle {self.counter}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}, #Photons/[us]: {self.sum_of_threshold}')
+        self.logger.info(f'{time_formatted}: cycle {self.counter}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}, #Photons/[us]: {self.sum_for_threshold}')
 
     def plot_figures(self, fig, subplots, Num_Of_dets):
         try:
@@ -861,10 +751,11 @@ class SpectrumExperiment(BaseExperiment):
         # Prepare header text
         pause_str = ' , PAUSED!' if self.pause_flag else ''
         trs_str = '%.2f' % self.sum_for_threshold
-        flr_str = '%.2f' % (1000 * np.average(self.FLR_res.tolist()))
+        flr_str = '%.2f' % self.fluorescence_average
         eff_str = '%.2f' % (self.counter / self.repetitions)
         lck_str = '%.3f' % self.lock_err
-        header_text = f'{self.counter} ({self.repetitions}) - Transmission: {trs_str}, Efficiency: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str} {pause_str}'
+        status_str = f'[-Warm Up- {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
+        header_text = f'{status_str} - Transmission: {trs_str}, Efficiency: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str} {pause_str}'
 
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
         textstr_detuned = r'$S_{detuned} = %.3f$' % (
@@ -1053,12 +944,12 @@ class SpectrumExperiment(BaseExperiment):
             # Bin the South time-tags we just got
             self.tt_S_binning = Utils.bin_values(values=curr_measure, bin_size=Config.frequency_sweep_duration, num_of_bins=self.histogram_bin_number * 2)
 
-            # Check if time tags buffer is full
+            # If there are time-tags in the last 5%, it is ok!
             # TODO: Need assaf to explain this to me...
-            S_det_isnt_full = Utils.tail_contains_non_zeros(values=self.tt_S_binning, percent=5)
+            S_det_is_full = Utils.tail_contains_non_zeros(values=self.tt_S_binning, percent=5)
 
             # We break if it is new data and not full
-            if is_new_tts_S and S_det_isnt_full:
+            if is_new_tts_S and S_det_is_full:
                 break
 
             # Are we waiting too long?
@@ -1107,14 +998,16 @@ class SpectrumExperiment(BaseExperiment):
                                      self.spectrum_bin_number)
         self.Transit_profile_bin_size = transit_profile_bin_size
         time_threshold = int(self.histogram_bin_size * 1.6)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
-        self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
 
         # TODO: These come as parameters for the experiment run - we may want to have them all under "self.params[..]" so we can
         # TODO: (a) group logically (b) pass to other functions, instead of passing them one by one or relying on them being on self
         self.with_atoms = with_atoms
+        self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
         self.lock_err_threshold = lock_err_threshold
-        self.warmup_cycles = 10  # Should also come as params, with some default. E.g. self.warmup_cycles = 10 if 'warmup_cycles' not in params else params['warmup_cycles]
+        self.warm_up_cycles = 10  # Should also come as params, with some default. E.g. self.warm_up_cycles = 10 if 'warm_up_cycles' not in params else params['warm_up_cycles]
         self.total_counts_threshold = total_counts_threshold
+        self.FLR_threshold = FLR_threshold
+        self.exp_flag = exp_flag
 
         # Start experiment flag and set MOT according to flag
         self.updateValue("Experiment_Switch", True)
@@ -1140,7 +1033,7 @@ class SpectrumExperiment(BaseExperiment):
         # Loop explanations:
         # - We will iterate at least WARMUP_CYCLES times.
         # - After the warmup, if EXPERIMENT is on, we will continue until we are within threshold:
-        while (cycle < WARMUP_CYCLES) or (exp_flag and self.sum_for_threshold >= transit_counts_threshold):
+        while (cycle < WARMUP_CYCLES) or (self.exp_flag and self.sum_for_threshold >= transit_counts_threshold):
             self.logger.debug(f'Running cycle {cycle+1}')
 
             # Check if user terminated
@@ -1158,7 +1051,7 @@ class SpectrumExperiment(BaseExperiment):
             self.tt_S_binning_resonance = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if not x % 2]  # even
 
             # Check locking error - break if we are above threshold (if it is None - it means we can't find the error file, so ignore it)
-            self.lock_err = (self.lock_err_threshold / 2) if exp_flag else self._read_locking_error()
+            self.lock_err = (self.lock_err_threshold / 2) if self.exp_flag else self._read_locking_error()
             if self.lock_err is not None:
 
                 self.sum_for_threshold = (np.sum(self.tt_S_binning_resonance) * 1000) / (self.M_time / 2)  # TODO: ask Dor - is it a bug here?
@@ -1266,13 +1159,14 @@ class SpectrumExperiment(BaseExperiment):
         self.repetitions = 1  # Total number of cycles
         self.acquisition_flag = True
         self.threshold_flag = True
+        self.warm_up = True
         self.pause_flag = False
         self.runs_status = TerminationReason.SUCCESS
 
         # ---------------------------------------------------------------------------------
         # Experiment Mainloop
         # ---------------------------------------------------------------------------------
-        # We iterate few warmup rounds
+        # We iterate few warm-up rounds
         # We iterate until we got N successful runs, or user terminated
         # ---------------------------------------------------------------------------------
         while True:
@@ -1301,9 +1195,6 @@ class SpectrumExperiment(BaseExperiment):
             self.tt_N_binning_avg = self.tt_N_binning
             self.tt_S_binning_avg = self.tt_S_binning
 
-            # TODO: implement as new binning function
-            #self.folded_tt_S_acc = Utils.split_into_value_ranges(self.tt_S_no_gaps, [(6e6, 8e6), (8e6, 10e6)], default=True)
-
             # Prepare folded arrays for display
             for x in self.tt_S_no_gaps:
                 # if x < (2e6 + 6400):
@@ -1322,26 +1213,16 @@ class SpectrumExperiment(BaseExperiment):
             # Calculate threshold for experiment
             self.sum_for_threshold = (np.sum(self.tt_S_binning_resonance) * 1000) / (self.M_time / 2)
 
-            # If we are still in warmup phase, we do not continue further and go back to beginning of loop
-            if self.is_warmup_phase():
+            # If we are still in warm-up phase, we do not continue further and go back to beginning of loop
+            # TODO: uncomment if we have Py 3.8 in the lab
+            # if self.warm_up := self.is_warm_up_phase():
+            self.warm_up = self.is_warm_up_phase()
+            if self.warm_up:
                 continue
 
-            if exp_flag:
-                if (self.lock_err > self.lock_err_threshold) or \
-                        ((1000 * np.average(self.FLR_res.tolist()) < FLR_threshold) and self.with_atoms) or \
-                        self.latched_detectors():
-                    self.acquisition_flag = False
-                else:
-                    self.acquisition_flag = True
-
-            self.threshold_flag = (self.sum_for_threshold < self.total_counts_threshold)
-
-            # Time to check if we passed the threshold of a successful run
-            # Conditions required:
-            # - We passed the threshold (or are not in experiment)
-            # - We have acquisition
-            # - We are not paused
-            if (self.threshold_flag or not exp_flag) and self.acquisition_flag and not self.pause_flag:
+            # Determine if we're "acquired" - e.g., worthy to save data :-)
+            self.acquisition_flag = self.is_acquired()
+            if self.acquisition_flag and not self.pause_flag:
 
                 if self.counter < N:
                     self.counter += 1
@@ -1474,21 +1355,60 @@ class SpectrumExperiment(BaseExperiment):
 
         return self.runs_status
 
-    # TODO: make generic in superclass
-    def is_warmup_phase(self):
+    def is_acquired(self):
         """
-        We are in warmup if these conditions are met:
+        Acquired means that all conditions are met for the experiment to be valid for saving data.
+
+        So we check the following:
+        - Locking of resonator is occurring
+        - Fluorescence is in accordance to threshold when there are atoms (if no atoms, we don't care)
+        - The detectors are functioning and not latched
+        - The sum-for-threshold is within the params set for the experiment
+        """
+
+        # If we are not in experiment, we don't care about the rest - just say we're acquired.
+        if not self.exp_flag:
+            return True
+
+        # Are we properly locked on resonance?
+        if self.lock_err > self.lock_err_threshold:
+            return False
+
+        # Is fluorescence strong enough? (assuming we're running with atoms)
+        if self.fluorescence_average < self.FLR_threshold and self.with_atoms:
+            return False
+
+        # Are any of the detectors latched?
+        if self.latched_detectors():
+           return False
+
+        # Is the sum-for-threshold outside the params set for the experiment
+        if self.sum_for_threshold > self.total_counts_threshold:
+            return False
+
+        # All is well!
+        return True
+
+
+    # TODO: make generic in superclass
+    def is_warm_up_phase(self):
+        """
+        We are in warm-up if these conditions are met:
         - We haven't yet completed WARMUP_CYCLES
         - We haven't yet acquired a lock on resonance
+        - We are in experiment, and the threshold is not yet filled
         """
-        self.warmup_cycles -= 1
 
-        if self.warmup_cycles < 0:
+        # Did we finish going through all warm-up cycles? If not, we're still in warm-up -> return True
+        if self.warm_up_cycles > 0:
+            self.warm_up_cycles -= 1
             return True
 
-        if self.lock_err > self.lock_error_threshold:
+        # We stay in warm-up while we're not locked
+        if self.lock_err > self.lock_err_threshold:
             return True
 
+        # We stay in warm-up if we're not within threshold
         if self.exp_flag and self.sum_for_threshold >= self.total_counts_threshold:
             return True
 
