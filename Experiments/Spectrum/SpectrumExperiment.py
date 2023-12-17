@@ -359,7 +359,7 @@ class SpectrumExperiment(BaseExperiment):
         self.tt_S_no_gaps = [x - (x // self.total_real_time_of_freq_sweep) * 124 for x in self.tt_S_directional_measure]
         self.tt_S_no_gaps = [x - (x // self.total_real_time_of_same_freq_rep) * 320 for x in self.tt_S_no_gaps]
 
-    # TODO: In the case of Spectrum, we're checking only specific detectros. We need to make this configurable
+    # TODO: In the case of Spectrum, we're checking only specific detectors. We need to make this configurable
     def latched_detectors(self):
         latched_detectors = []
         for indx, det_tt_vec in enumerate(self.tt_measure[4:7]):  # for different detectors
@@ -607,7 +607,9 @@ class SpectrumExperiment(BaseExperiment):
         locking_efficiency_str = '%.2f' % locking_efficiency
         fluorescence_str = '%.2f' % self.fluorescence_average
         time_formatted = time.strftime("%Y/%m/%d, %H:%M:%S")
-        self.logger.info(f'{time_formatted}: cycle {self.counter}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}, #Photons/[us]: {self.sum_for_threshold}')
+        status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
+
+        self.logger.info(f'{time_formatted}: {status_str}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}, #Photons/[us]: {self.sum_for_threshold}')
 
     def plot_figures(self, fig, subplots, Num_Of_dets):
         try:
@@ -651,7 +653,7 @@ class SpectrumExperiment(BaseExperiment):
         flr_str = '%.2f' % self.fluorescence_average
         eff_str = '%.2f' % (self.counter / self.repetitions)
         lck_str = '%.3f' % self.lock_err
-        status_str = f'[-Warm Up- {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
+        status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
         header_text = f'{status_str} - Transmission: {trs_str}, Efficiency: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str} {pause_str}'
 
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
