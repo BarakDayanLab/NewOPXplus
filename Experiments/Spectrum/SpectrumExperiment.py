@@ -1,7 +1,6 @@
 from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
 from Experiments.BaseExperiment.BaseExperiment import TerminationReason
 from Experiments.Spectrum import Config_Experiment as Config
-import signal
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -10,19 +9,12 @@ import os
 import time
 import pymsgbox
 from Utilities.BDSound import SOUNDS
-from UtilityResources.HMP4040Control import HMP4040Visa
 from Utilities.Utils import Utils
 
 
 class SpectrumExperiment(BaseExperiment):
 
-    # TODO: if we can't get this working - we can remove it
-    def handle_signal(self):
-        print('>>>>>>>>>> handle signal <<<<<<<<<<<<')
-        self.__del__()
-
-    def __init__(self, config=Config.config):
-        signal.signal(signal.SIGTERM, self.handle_signal)
+    def __init__(self):
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
         super().__init__()
         pass
@@ -200,24 +192,6 @@ class SpectrumExperiment(BaseExperiment):
                                       (self.num_of_different_frequencies * self.frequency_sweep_rep)) # total time[10ms]/((1us sequence - 2 pulses time)*(num of sweeps)*(num of different freqs) )
         pass
 
-    def getHelmholtzCoilsState(self):
-        self.logger.info('Getting Helmholtz coils state...')
-        res = {}
-        try:
-            HCoilsController = HMP4040Visa()
-            for ch in [1, 2, 3]:
-                HCoilsController.setOutput(ch=ch)
-                state = HCoilsController.getOutputState()
-                current = HCoilsController.getCurrent()
-                voltage = HCoilsController.getVoltage()
-                res['Channel %s' % str(ch)] = {'Current': current, 'Voltage': voltage, 'state': state}
-            res['Output state'] = HCoilsController.getGeneralOutputState()
-            HCoilsController = None  # closing controller
-        except Exception:
-            res = 'Error getting Helmholtz coils data'
-            self.logger.error(res)
-        return res
-
     # ## Boolean functions: ##
     def update_pgc_final_amplitude(self, final_amplitude):
         x = np.log(int(1 / (1 - final_amplitude)))
@@ -262,21 +236,11 @@ class SpectrumExperiment(BaseExperiment):
         return [(np.average(Probe_counts_North) * 1000) / self.M_time,
                 (np.average(Probe_counts_South) * 1000) / self.M_time]
 
-    def get_avg_num_of_photons_in_det_pulse(self, det_pulse_len, sprint_sequence_delay, num_of_det_pulses,
-                                            num_of_sprint_sequences):
-        self.avg_num_of_photons_in_det_pulse = np.zeros(num_of_det_pulses)
-        for i in range(num_of_det_pulses):
-            detection_puls_ind = \
-                list(np.arange((sprint_sequence_delay + i * det_pulse_len),
-                               (sprint_sequence_delay + (i + 1) * det_pulse_len)))
-            self.avg_num_of_photons_in_det_pulse[i] = \
-                np.sum(self.tt_S_SPRINT_events[detection_puls_ind]) / num_of_sprint_sequences
-
     def get_handles_from_OPX_Server(self, Num_Of_dets):
-        '''
-         gets handles of timetags and counts from OPX
+        """
+         Gets handles of time-tags and counts from OPX
         :return:
-        '''
+        """
         Counts_handle = []
         tt_handle = []
 
@@ -406,7 +370,7 @@ class SpectrumExperiment(BaseExperiment):
     def get_pulses_bins(self, det_pulse_len, sprint_pulse_len, num_of_det_pulses, num_of_sprint_pulses,
                         sprint_sequence_delay, num_of_sprint_sequences, num_init_zeros, num_fin_zeros,
                         num_between_zeros):
-        '''
+        """
         generating bin vwctor with edges at the efges of pulses (such that the histogram would give the number of
         clicks within pulse).
         :param det_pulse_len:
@@ -414,8 +378,12 @@ class SpectrumExperiment(BaseExperiment):
         :param num_of_det_pulses:
         :param num_of_sprint_pulses:
         :param sprint_sequence_delay:
+        :param num_of_sprint_sequences:
+        :param num_init_zeros:
+        :param num_fin_zeros:
+        :param num_between_zeros:
         :return:
-        '''
+        """
         pulses_bins = [np.maximum(sprint_sequence_delay, 0)]
         for i in range(num_of_sprint_sequences):
             pulses_bins += (pulses_bins[-1] + np.arange(det_pulse_len, (num_of_det_pulses + 1) * det_pulse_len,
@@ -429,12 +397,12 @@ class SpectrumExperiment(BaseExperiment):
                                    sprint_sequence_delay_N,
                                    num_of_det_pulses,
                                    num_of_sprint_pulses, num_of_sprint_sequences):
-        '''
+        """
         dividing south and north tt's vectros into reflection and transmission vectors, by:
         1. converting them into counts vector in same time spacing as the initial pulse.
         2. taking the relevant pulses from the sequence to each vector (reflection/transmission)
         :return:
-        '''
+        """
         # create histogram with self.M_window bins
         self.pulses_bins_S = self.get_pulses_bins(det_pulse_len, sprint_pulse_len, num_of_det_pulses,
                                                   num_of_sprint_pulses
@@ -449,7 +417,7 @@ class SpectrumExperiment(BaseExperiment):
         self.tt_histogram_N, _ = np.histogram(self.tt_N_measure, self.pulses_bins_N)
         self.tt_histogram_S, _ = np.histogram(self.tt_S_measure, self.pulses_bins_S)
 
-        ### build reflection and transmission pulses indices, by setting non zero at indices elements ###
+        ### build reflection and transmission pulses indices, by setting non-zero at indices elements ###
         # build transmission South indices
 
         # transmission and reflection would take alternately reflection and transmission pulses
@@ -499,7 +467,7 @@ class SpectrumExperiment(BaseExperiment):
                                              self.spectrum_bin_number] += self.tt_S_binning_detuned[i + 1]
                     current_transit = [index]
                 else:
-                    # Finding if there any index that was saved to current transit and is close enough to the new index
+                    # Find if there is any index that was saved to current transit and is close enough to the new index
                     t = [i for i, elem in enumerate(current_transit) if ((index - elem) * 480) < transit_time_threshold]
                     if t:
                         current_transit = current_transit[t[0]:] + [index]
@@ -523,17 +491,20 @@ class SpectrumExperiment(BaseExperiment):
             #                               + self.histogram_bin_size) // self.Transit_profile_bin_size)
             # t_transit = np.linspace(0, len(transit_histogram) * self.Transit_profile_bin_size, len(transit_histogram))
 
-    def find_transits_events_spectrum_exp(self, tt_resonance_binning, N, cond=[2, 1, 2], minimum_number_of_seq_detected=2):
-        '''
+    def find_transits_events_spectrum_exp(self, tt_resonance_binning, N, cond=None, minimum_number_of_seq_detected=2):
+        """
         Find transits of atoms by searching events that satisfy the number of reflected photons per sequence required at
         each cond place with minimum number of conditions needed to be satisfied, defined by the minimum_number_of_seq_detected.
         For example:
         given cond=[2,1,2] and minimum_number_of_seq_detected=2, if in 3 consecutive sequences we get either 2-1-0 or
-        0-2-1 or 2-0-2, the condition is satisfied and it is defined as a transit.
+        0-2-1 or 2-0-2, the condition is satisfied, and it is defined as a transit.
         :param cond: The condition that need to be met for number of reflections per detection pulses in sequence.
         :param minimum_number_of_seq_detected: The number of terms needed to be satisfied per cond vector.
         :return:
-        '''
+        """
+
+        if cond is None:
+            cond = [2, 1, 2]
 
         current_transit = []
         self.all_transits_seq_indx = []  # Array of the sequence indexes of all recognized transits per cycle. The length of it will be the number of all transits at the current cycle.
@@ -570,7 +541,7 @@ class SpectrumExperiment(BaseExperiment):
                 self.tt_per_frequency[i % (self.num_of_different_frequencies * self.same_frequency_rep)
                                       // self.same_frequency_rep] += self.tt_S_binning_detuned[i]
             self.Cavity_atom_spectrum += self.tt_per_frequency
-            self.Transits_per_freuency += (self.tt_per_frequency != 0).astype(int)
+            self.Transits_per_frequency += (self.tt_per_frequency != 0)  # TODO: removed this: .astype(int). Test it.
 
         # building cavity spectrum
         for index, value in enumerate(self.tt_S_binning_detuned):
@@ -598,100 +569,26 @@ class SpectrumExperiment(BaseExperiment):
         after each pulse in the sequence to match the filter to the performance of the physical system (AOMs).
         :param delay: Between the actual sequence pulse location to the location of the folded data
         :param seq: The sequence of pulses from which the filter is generated.
-        :param smearing: The value that is added to the filter before and after the each pulse in the sequence.
+        :param smearing: The value that is added to the filter before and after each pulse in the sequence.
         :return:
         '''
         seq_filter = (np.array(seq) > 0).astype(int)
         seq_filter = np.roll(seq_filter, delay)
-        seq_indx = np.where(seq_filter > 0)[0]
+        seq_index = np.where(seq_filter > 0)[0]
         seq_filter_with_smearing = seq_filter
         pulses_loc = []
-        if seq_indx.any():
-            start_indx = seq_indx[0]
-            for i in range(1, len(seq_indx)):
-                if seq_indx[i] - seq_indx[i - 1] > 1:
-                    pulses_loc.append((start_indx - int(smearing), seq_indx[i - 1] + int(smearing)))
-                    for j in range(start_indx - int(smearing), seq_indx[i - 1] + int(smearing)):
+        if seq_index.any():
+            start_indx = seq_index[0]
+            for i in range(1, len(seq_index)):
+                if seq_index[i] - seq_index[i - 1] > 1:
+                    pulses_loc.append((start_indx - int(smearing), seq_index[i - 1] + int(smearing)))
+                    for j in range(start_indx - int(smearing), seq_index[i - 1] + int(smearing)):
                         seq_filter_with_smearing[j] = 1
-                    start_indx = seq_indx[i]
-            pulses_loc.append((start_indx - int(smearing), seq_indx[-1] + int(smearing)))
-            for j in range(start_indx - int(smearing), seq_indx[-1] + int(smearing)):
+                    start_indx = seq_index[i]
+            pulses_loc.append((start_indx - int(smearing), seq_index[-1] + int(smearing)))
+            for j in range(start_indx - int(smearing), seq_index[-1] + int(smearing)):
                 seq_filter_with_smearing[j] = 1
         return pulses_loc, seq_filter_with_smearing
-
-    def num_of_photons_txt_box_loc(self, pulse_loc):
-        if pulse_loc:
-            box_loc = (np.sum(pulse_loc, axis=1) / 2).astype(int)
-        else:
-            box_loc = np.array([])
-        return box_loc
-
-    def fold_tt_histogram(self, exp_sequence_len):
-
-        self.folded_tt_S = np.zeros(exp_sequence_len, dtype=int)
-        self.folded_tt_N = np.zeros(exp_sequence_len, dtype=int)
-        self.folded_tt_BP = np.zeros(exp_sequence_len, dtype=int)
-        self.folded_tt_DP = np.zeros(exp_sequence_len, dtype=int)
-        self.folded_tt_FS = np.zeros(exp_sequence_len, dtype=int)
-        self.folded_tt_S_directional = np.zeros(exp_sequence_len, dtype=int)
-        self.folded_tt_N_directional = np.zeros(exp_sequence_len, dtype=int)
-        self.folded_tt_BP_timebins = np.zeros(exp_sequence_len, dtype=int)
-        self.folded_tt_DP_timebins = np.zeros(exp_sequence_len, dtype=int)
-
-        for x in [elem for elem in self.tt_S_measure]:
-            self.folded_tt_S[x % exp_sequence_len] += 1
-        for x in [elem for elem in self.tt_N_measure]:
-            self.folded_tt_N[x % exp_sequence_len] += 1
-        for x in [elem for elem in self.tt_BP_measure]:
-            self.folded_tt_BP[x % exp_sequence_len] += 1
-        for x in [elem for elem in self.tt_DP_measure]:
-            self.folded_tt_DP[x % exp_sequence_len] += 1
-        for x in [elem for elem in self.tt_FS_measure]:
-            self.folded_tt_FS[x % exp_sequence_len] += 1
-
-        self.folded_tt_S_directional = (np.array(self.folded_tt_S) + np.array(self.folded_tt_FS))
-        # self.folded_tt_N_directional = self.folded_tt_N
-        self.folded_tt_N_directional[:self.end_of_det_pulse_in_seq] = \
-            np.array(self.folded_tt_N_directional[:self.end_of_det_pulse_in_seq]) \
-            + np.array(self.folded_tt_BP[:self.end_of_det_pulse_in_seq]) \
-            + np.array(self.folded_tt_DP[:self.end_of_det_pulse_in_seq])
-
-        self.folded_tt_BP_timebins[self.end_of_det_pulse_in_seq:] = self.folded_tt_BP[self.end_of_det_pulse_in_seq:]
-        self.folded_tt_DP_timebins[self.end_of_det_pulse_in_seq:] = self.folded_tt_DP[self.end_of_det_pulse_in_seq:]
-        if self.pulses_location_in_seq_A or (Config.sprint_pulse_amp_N[0] > 0):
-            self.folded_tt_N_directional[self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]] = \
-                (np.array(
-                    self.folded_tt_N_directional[self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]])
-                 + (Config.sprint_pulse_amp_Early[1]
-                    * np.array(self.folded_tt_BP[
-                               self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]]))
-                 + (Config.sprint_pulse_amp_Early[1]
-                    * np.array(self.folded_tt_DP[
-                               self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]]))
-                 )
-            self.folded_tt_BP_timebins[self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]] = \
-                (np.array(
-                    self.folded_tt_BP_timebins[self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]])
-                 - (Config.sprint_pulse_amp_Early[1]
-                    * np.array(self.folded_tt_BP[
-                               self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]]))
-                 )
-            self.folded_tt_DP_timebins[self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]] = \
-                (np.array(
-                    self.folded_tt_DP_timebins[self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]])
-                 - (Config.sprint_pulse_amp_Early[1]
-                    * np.array(self.folded_tt_DP[
-                               self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]]))
-                 )
-
-    def plt_pulses_roll(self, delay_det_N, delay_det_S, delay_rf_N, delay_rf_S):
-        plt.figure()
-        plt.plot(np.roll(self.folded_tt_S_delayed, delay_det_S), label='folded_S')
-        plt.plot(np.roll(self.folded_tt_N_delayed, delay_det_N), label='folded_N')
-        plt.plot(np.roll(self.S_pulses_loc_delayed, delay_rf_S), label='sent_S')
-        plt.plot(np.roll(self.N_pulses_loc_delayed, delay_rf_N), label='sent_N')
-        plt.legend()
-        plt.title([delay_det_N, delay_det_S, delay_rf_N, delay_rf_S])
 
     def save_tt_to_batch(self, Num_Of_dets, N):
         for i in range(len(Num_Of_dets)):
@@ -770,7 +667,7 @@ class SpectrumExperiment(BaseExperiment):
                             / (self.M_time / 2),) + '[MPhotons/sec]'
         # TODO: If the textstr_FLR is not used, maybe we can make FLR_Measurement a local var instead of self.FLR...
         # textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (np.mean(self.FLR_measurement) * 1e5,) + r'$\times 10^{-5}$'
-        textstr_No_transits = 'NO TRANSITS YET!!!'
+        textstr_no_transits = 'NO TRANSITS YET!!!'
 
         if plot_switches['graph-0']:
             flag_color = 'green' if self.acquisition_flag else 'red'
@@ -842,7 +739,7 @@ class SpectrumExperiment(BaseExperiment):
             else:
                 ax[5].plot(self.time_bins[::2], self.tt_S_transit_events_accumulated, label='Transit events histogram', marker='*', color='b')
                 ax[5].set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
-                ax[5].text(0.25, 0.5, textstr_No_transits, transform=ax[5].transAxes, fontsize=24,
+                ax[5].text(0.25, 0.5, textstr_no_transits, transform=ax[5].transAxes, fontsize=24,
                            verticalalignment='center', bbox=props)
             self.debug("Plot: Drew graph 5")
 
@@ -883,7 +780,7 @@ class SpectrumExperiment(BaseExperiment):
         self.all_transits_aligned_first_batch = []
         self.transit_histogram_batch = []
         self.FLR_measurement = []
-        self.Exp_timestr_batch = []
+        self.exp_timestr_batch = []
 
     # TODO: Document this method
     # TODO: Q: Do we need to move this to BaseExperiment
@@ -898,7 +795,6 @@ class SpectrumExperiment(BaseExperiment):
     def new_timetags_detected(self, prev_measure, curr_measure):
         """
         Attempt to deduce if the time-tags that are in are new ones (as opposed to leftovers from prev measure)
-        We deduce it is, if the number of same values in Curr/Prev are less than 1/2 of the total number of values)
 
         returns: True/False
         """
@@ -909,6 +805,8 @@ class SpectrumExperiment(BaseExperiment):
         # Compare values of measurements
         compare_values = np.array(prev_measure[:min_len]) == np.array(curr_measure[:min_len])
 
+        # TODO: replace the line below with the one in comment:
+        #new_timetags = np.sum(compare_values) < min_len / 2
         new_timetags = sum(compare_values) < min_len / 2
         return new_timetags
 
@@ -973,11 +871,11 @@ class SpectrumExperiment(BaseExperiment):
         :param N: Number of maximum experiments (free throws) saved and displayed.
                  program we are looking for transits of atoms next to the toroid and record them.
         :param transit_profile_bin_size:
-        :param preComment: The comment added at the start of the experiment, usually consisting of unique experiment
+        :param pre_comment: The comment added at the start of the experiment, usually consisting of unique experiment
                            parameters.
-        :param transit_condition:
+        :param transit_cond:
         :param total_counts_threshold:
-        :param transit_counts_threshold
+        :param transit_counts_threshold:
         :param FLR_threshold:
         :param lock_err_threshold: The maximal error in locking resonator to rb line (in ms, depends on the scan width/vpp)
         :param exp_flag:
@@ -1004,7 +902,7 @@ class SpectrumExperiment(BaseExperiment):
         self.with_atoms = with_atoms
         self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
         self.lock_err_threshold = lock_err_threshold
-        self.warm_up_cycles = 10  # Should also come as params, with some default. E.g. self.warm_up_cycles = 10 if 'warm_up_cycles' not in params else params['warm_up_cycles]
+        self.warm_up_cycles = 10  # Should also come as params, with some default. E.g. self.warm_up_cycles = 10 if 'warm_up_cycles' not in params else params['warm_up_cycles']
         self.total_counts_threshold = total_counts_threshold
         self.FLR_threshold = FLR_threshold
         self.exp_flag = exp_flag
@@ -1016,7 +914,7 @@ class SpectrumExperiment(BaseExperiment):
         self.logger.blue('Press ESC to stop measurement.')
 
         # Set zeros vectors and empty lists
-        # TODO: (1) Do we need Num_Of_dets ?  This is a generic change we can make throught the code...
+        # TODO: (1) Do we need Num_Of_dets ?  This is a generic change we can make throughout the code...
         # TODO: (2) We can make a generic batch manager that will zero them all, append, etc.
         self.initialize_batches_arrays(Num_Of_dets)
 
@@ -1028,7 +926,7 @@ class SpectrumExperiment(BaseExperiment):
         # TODO: this is just workaround. If my refactor worked - we throw out this loop's code!
         WARMUP_CYCLES = 0
         cycle = 0
-        self.runs_status == TerminationReason.SUCCESS
+        self.runs_status = TerminationReason.SUCCESS
         self.sum_for_threshold = transit_counts_threshold  # is the resonance critically coupled enough
         # Loop explanations:
         # - We will iterate at least WARMUP_CYCLES times.
@@ -1066,8 +964,8 @@ class SpectrumExperiment(BaseExperiment):
         ############################# WHILE 1 - END #############################
 
         self.FLR_measurement = []  # TODO: May want to refactor this later (this is not a local variable, but in .self, as it is used in the plot method)
-        Exp_timestr_batch = []
-        lock_err_batch = []
+        self.exp_timestr_batch = []
+        self.lock_err_batch = []
 
         # Initialization
         self.tt_N_binning = np.zeros(self.histogram_bin_number * 2)
@@ -1080,7 +978,7 @@ class SpectrumExperiment(BaseExperiment):
         self.folded_tt_S_acc_3 = np.zeros(self.histogram_bin_size, dtype=int)
 
         self.Cavity_atom_spectrum = np.zeros(self.spectrum_bin_number)
-        self.Transits_per_freuency = np.zeros(self.spectrum_bin_number)
+        self.Transits_per_frequency = np.zeros(self.spectrum_bin_number)
         self.Cavity_atom_spectrum_normalized = np.zeros(self.spectrum_bin_number)
         self.Cavity_spectrum = np.zeros(self.spectrum_bin_number)
         self.Cavity_spectrum_normalized = np.zeros(self.spectrum_bin_number)
@@ -1126,10 +1024,10 @@ class SpectrumExperiment(BaseExperiment):
 
 
         self.FLR_measurement = self.FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]  # No need for the .toList()
-        Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [time.strftime("%Y%m%d-%H%M%S")]
+        self.exp_timestr_batch = self.exp_timestr_batch[-(N - 1):] + [time.strftime("%Y%m%d-%H%M%S")]
 
-        #lock_err_batch = Utils.append_fifo(lock_err_batch, self.lock_err, N)
-        lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
+        #self.lock_err_batch = Utils.append_fifo(self.lock_err_batch, self.lock_err, N)
+        self.lock_err_batch = self.lock_err_batch[-(N - 1):] + [self.lock_err]
 
         self.save_tt_to_batch(Num_Of_dets, N)
 
@@ -1255,8 +1153,8 @@ class SpectrumExperiment(BaseExperiment):
                 self.find_transits_events_spectrum_exp(self.tt_S_binning_resonance, N, transit_cond)
 
                 self.FLR_measurement = self.FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
-                Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timestamp]
-                lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
+                self.exp_timestr_batch = self.exp_timestr_batch[-(N - 1):] + [timestamp]
+                self.lock_err_batch = self.lock_err_batch[-(N - 1):] + [self.lock_err]
                 self.save_tt_to_batch(Num_Of_dets, N)
 
             # Did user request we change with/without atoms state?
@@ -1336,8 +1234,8 @@ class SpectrumExperiment(BaseExperiment):
             #"quadrf_table_ch1": self.QuadRFControllers[0].get_channel_data(0),
 
             "FLR_measurement": self.FLR_measurement,
-            "lock_error": lock_err_batch,
-            "exp_timestr": Exp_timestr_batch,  # TODO: rename to drop timestamps? What is this one?
+            "lock_error": self.lock_err_batch,
+            "exp_timestr": self.exp_timestr_batch,  # TODO: rename to drop timestamps? What is this one?
 
             "exp_comment": experiment_comment,
             "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, self.with_atoms, self.counter),
@@ -1389,7 +1287,6 @@ class SpectrumExperiment(BaseExperiment):
         # All is well!
         return True
 
-
     # TODO: make generic in superclass
     def is_warm_up_phase(self):
         """
@@ -1430,21 +1327,21 @@ class SpectrumExperiment(BaseExperiment):
         else:
             self.logger.warn(f'Unknown matplotlib backend ({backend_name}). Cannot maximize figure')
 
-    def generate_experiment_summary_line(self, pre_comment, aftComment, with_atoms, counter):
+    def generate_experiment_summary_line(self, pre_comment, aft_comment, with_atoms, counter):
         time_str = time.strftime("%H%M%S")
         date_str = time.strftime("%Y%m%d")
-        cmnt = None
+        comment = None
         if pre_comment is not None:
-            cmnt = pre_comment + '; '
-        if aftComment is not None:
-            cmnt = aftComment
-        if pre_comment is None and aftComment is None:
-            cmnt = 'No comment.'
-        experiment_success = 'ignore' if 'ignore' in cmnt else 'valid'
-        full_line = f'{date_str},{time_str},{experiment_success},{with_atoms},{counter},{cmnt}'
+            comment = pre_comment + '; '
+        if aft_comment is not None:
+            comment = aft_comment
+        if pre_comment is None and aft_comment is None:
+            comment = 'No comment.'
+        experiment_success = 'ignore' if 'ignore' in comment else 'valid'
+        full_line = f'{date_str},{time_str},{experiment_success},{with_atoms},{counter},{comment}'
         return full_line
 
-        ## ------------------ end of saving section -------
+        # ------------------ end of saving section -------
 
     def pre_run(self, run_parameters):
         # Change the pre comment based on the with_atoms parameter
@@ -1473,7 +1370,7 @@ class SpectrumExperiment(BaseExperiment):
 
 if __name__ == "__main__":
 
-    run_parameters = {
+    run_parameters_0 = {
         'N': 500,
         'transit_profile_bin_size': 100,  # TODO: Q: should this be 10 or 100?
         'pre_comment': 'Spectrum Experiment. No pre-comments defined',
@@ -1510,9 +1407,9 @@ if __name__ == "__main__":
     sequence_definitions = None
 
     # if sequence_definitions is None:
-    #     experiment.run(run_parameters)
+    #     experiment.run(run_parameters_0)
     # else:
-    #     experiment.run_sequence(sequence_definitions, run_parameters)
+    #     experiment.run_sequence(sequence_definitions, run_parameters_0)
 
     #experiment.close_opx()
     #pass
