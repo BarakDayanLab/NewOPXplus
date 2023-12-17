@@ -379,6 +379,7 @@ class BaseExperiment:
         self.Pulse_Length_OD = 20  # [usec]
 
         # Main Experiment:
+        self.switch_atom_no_atoms = 'atoms'
         self.TOP2_pulse_len = int(Config.Probe_pulse_len / 4)  # [nsec]
         self.Calibration_time = 10  # [msec]
 
@@ -413,7 +414,10 @@ class BaseExperiment:
             self.keyPress = None
         elif self.keyPress == 'A':
             self.logger.blue('A pressed. Switching atoms/no-atoms.')
-            self.switch_atom_no_atoms = '_' + self.switch_atom_no_atoms
+            # Turn on the "switch" indication, but putting an "_" as a prefix
+            # Note: user may have pressed A fast multiple times, so no need to add multiple "_" prefixes until the switch is handled
+            if self.switch_atom_no_atoms[0] != '_':
+                self.switch_atom_no_atoms = '_' + self.switch_atom_no_atoms
             self.keyPress = None
         pass
 
@@ -646,6 +650,25 @@ class BaseExperiment:
 
         pass
 
+    def handle_user_atoms_on_off_switch(self):
+        """
+        This function checks if the user requested to switch - this is indidcated by "_"
+        If there needs to be a switch:
+        - The "_" is removed (since "command" is handled)
+        - The switch is flipped
+        - MOT param is updated to OPX accordingly
+        """
+        # Value can be: "atom" or "!atom" or "_atom" or "_!atom"
+        if self.switch_atom_no_atoms.startswith('_'):
+            # If first letter after the '_' is '!', we are at no-atoms, so now we will turn MOT ON
+            if self.switch_atom_no_atoms[1] == '!':
+                MOT_on = True
+                self.switch_atom_no_atoms = 'atoms'
+            else:
+                MOT_on = False
+                self.switch_atom_no_atoms = '!atoms'
+            self.MOT_switch(with_atoms=MOT_on, update_parameters=True)
+
     #------------------------------------------------------------------------
     # Updates a specific value - either related to (a) Operation Mode (b) QuadRF or (c) OPX
     #
@@ -843,11 +866,13 @@ class BaseExperiment:
 
 # ------------------ Utility/Fast-Access Functions
 
-    def MOT_switch(self, with_atoms):
+    def MOT_switch(self, with_atoms, update_parameters=False):
         if with_atoms:
             self.update_io_parameter(IOP.MOT_SWITCH_ON.value, 0)
         else:
             self.update_io_parameter(IOP.MOT_SWITCH_OFF.value, 0)
+        if update_parameters:
+            self.update_parameters()
 
     def Linear_PGC_switch(self, Bool):
         self.update_io_parameter(IOP.LINEAR_PGC_SWITCH.value, Bool)

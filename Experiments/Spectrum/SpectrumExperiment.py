@@ -1118,8 +1118,7 @@ class SpectrumExperiment(BaseExperiment):
 
         # Start experiment flag and set MOT according to flag
         self.updateValue("Experiment_Switch", True)
-        self.MOT_switch(self.with_atoms)
-        self.update_parameters()
+        self.MOT_switch(with_atoms=self.with_atoms, update_parameters=True)
 
         self.logger.blue('Press ESC to stop measurement.')
 
@@ -1379,18 +1378,8 @@ class SpectrumExperiment(BaseExperiment):
                 lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
                 self.save_tt_to_batch(Num_Of_dets, N)
 
-            # Do we need to change with/without atoms state?
-            # Value can be: "atom" or "!atom" or "_atom" or "_!atom"
-            if self.switch_atom_no_atoms.startswith('_'):
-                # If first letter after the '_' is '!', we are at no-atoms, so now we will turn MOT ON
-                if self.switch_atom_no_atoms[1] == '!':
-                    MOT_on = True
-                    self.switch_atom_no_atoms = 'atoms'
-                else:
-                    MOT_on = False
-                    self.switch_atom_no_atoms = '!atoms'
-                self.MOT_switch(MOT_on)
-                self.update_parameters()
+            # Did user request we change with/without atoms state?
+            self.handle_user_atoms_on_off_switch()
 
             # Did we complete N successful iterations?
             if self.counter == N:
@@ -1481,8 +1470,7 @@ class SpectrumExperiment(BaseExperiment):
         # End of Experiment! Ensure we turn the experiment flag off and return the MOT
         # TODO: move this to post_run()
         self.updateValue("Experiment_Switch", False)  # TODO: why not change the flag to "True"?
-        self.MOT_switch(True)
-        self.update_parameters()
+        self.MOT_switch(with_atoms=True, update_parameters=True)
 
         return self.runs_status
 
