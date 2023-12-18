@@ -263,7 +263,7 @@ class SpectrumExperiment(BaseExperiment):
             #counts_res.append(self.streams[f'Detector_{i}_Counts']['results'])
             tt_res.append(self.streams[f'Detector_{i}_Timetags']['results'])
 
-        # TODO: Q: why are we changing the sign? Why is this a single scalar - coming from a stream?
+        # TODO: Q: why are we changing the sign? Why is this a single scalar - coming from a stream? So why do we need "tolist()"?
         self.FLR_res = -self.streams['FLR_measure']['results']
         self.fluorescence_average = 1000 * np.average(self.FLR_res.tolist())
 
@@ -286,15 +286,10 @@ class SpectrumExperiment(BaseExperiment):
             # a = self.streams[f'Detector_{2}_Timetags']['results']
             # b = tt_res[1]
 
-            # TODO: Generalize this:
-            # A way to debug what we got in the measurement
-            # plt.clf()
-            # plt.figure(1)
-            # plt.plot(tt_res[2])
-            # OR:
-            # self._plot([tt_res[2]])
+            # TODO: Why are we turning the NP arrays into lists? Worth staying at NP speeds...
 
-            self.tt_measure.append(tt_res[i][1:(tt_res[i][0])].tolist())
+            time_tags_count = int(tt_res[i][0])
+            self.tt_measure.append(tt_res[i][1:time_tags_count].tolist())
             self.tt_measure[i] = [elm + Config.detector_delays[i] for elm in self.tt_measure[i]
                                   if ((elm % self.M_window != 0) & (elm != 9999984) &
                                       ((elm + Config.detector_delays[i]) <= self.M_window))]  # Due to an unresolved bug in the OPD there are "ghost" readings of timetags equal to the maximum time of measuring window.
@@ -624,12 +619,12 @@ class SpectrumExperiment(BaseExperiment):
             "playsound": True,
             "header": True,
             "detectors": True,
-            "graph-0": False,
-            "graph-1": False,
-            "graph-2": False,
-            "graph-3": False,
-            "graph-4": False,
-            "graph-5": False
+            "graph-0": True,
+            "graph-1": True,
+            "graph-2": True,
+            "graph-3": True,
+            "graph-4": True,
+            "graph-5": True
         }
 
         # Take time
@@ -654,7 +649,8 @@ class SpectrumExperiment(BaseExperiment):
         eff_str = '%.2f' % (self.counter / self.repetitions)
         lck_str = '%.3f' % self.lock_err
         status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
-        header_text = f'{status_str} - Transmission: {trs_str}, Efficiency: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str} {pause_str}'
+        playback_str = 'PLAYBACK: ' if self.playback['active'] else ''
+        header_text = f'{playback_str} {status_str} - Trans: {trs_str}, Eff: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str} {pause_str}'
 
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
         textstr_detuned = r'$S_{detuned} = %.3f$' % (
@@ -671,7 +667,15 @@ class SpectrumExperiment(BaseExperiment):
         # textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (np.mean(self.FLR_measurement) * 1e5,) + r'$\times 10^{-5}$'
         textstr_no_transits = 'NO TRANSITS YET!!!'
 
-        if plot_switches['graph-0']:
+        # Special handling for the warm-up case (there is still no calculated data to show in graphs)
+        if self.warm_up:
+            props_thresholds = dict(boxstyle='round', edgecolor='green', linewidth=2, facecolor='green', alpha=0.5)
+            ax[0].text(0.05, 1.4, header_text, transform=ax[0].transAxes, fontsize=26, verticalalignment='top', bbox=props_thresholds)
+            plt.show(block=False)
+            plt.pause(0.5)
+            return
+
+        elif plot_switches['graph-0']:
             flag_color = 'green' if self.acquisition_flag else 'red'
             props_thresholds = dict(boxstyle='round', edgecolor=flag_color, linewidth=2, facecolor=flag_color, alpha=0.5)
             ax[0].plot(self.time_bins[::2], self.S_bins_res_acc, label='Counts histogram', color='b')
@@ -680,10 +684,10 @@ class SpectrumExperiment(BaseExperiment):
             ax[0].text(0.05, 0.95, textstr_resonance, transform=ax[0].transAxes, fontsize=12,
                      verticalalignment='top', bbox=props)
             # Add figures header
-            ax[0].text(0.05, 1.4, header_text, transform=ax[0].transAxes, fontsize=28,
+            ax[0].text(0.05, 1.4, header_text, transform=ax[0].transAxes, fontsize=26,
                        verticalalignment='top', bbox=props_thresholds)
             ax[0].legend(loc='upper right')
-            self.debug("Plot: Drew graph 0")
+            #self.debug("Plot: Drew graph 0")
 
         if plot_switches['graph-1']:
             ax[1].plot(self.time_bins[::2], self.S_bins_detuned_acc, label='Counts histogram', color='b')
@@ -691,7 +695,7 @@ class SpectrumExperiment(BaseExperiment):
             ax[1].set(xlabel='Time [msec]', ylabel='Counts [Photons/usec]')
             ax[1].text(0.05, 0.95, textstr_detuned, transform=ax[1].transAxes, fontsize=12, verticalalignment='top', bbox=props)
             ax[1].legend(loc='upper right')
-            self.debug("Plot: Drew graph 1")
+            #self.debug("Plot: Drew graph 1")
 
         if plot_switches['graph-2']:
             ax[2].plot(self.time_bins[::2], self.tt_S_binning_resonance, label='Counts histogram', color='b')
@@ -709,14 +713,14 @@ class SpectrumExperiment(BaseExperiment):
                     ax[2].text(x, y, text, ha="center", va="center", transform=ax[2].transAxes,
                              bbox=dict(boxstyle=f"circle,pad={pad}", edgecolor=det_color, linewidth=2, facecolor=det_color, alpha=0.5))
             ax[2].legend(loc='upper right')
-            self.debug("Plot: Drew graph 2")
+            #self.debug("Plot: Drew graph 2")
 
         if plot_switches['graph-3']:
             ax[3].plot(self.freq_bins/1e6, self.Cavity_atom_spectrum_normalized, label='Cavity-atom Spectrum', color='k')
             ax[3].plot(self.freq_bins/1e6, self.Cavity_spectrum_normalized, label='Cavity Spectrum', color='b')
             ax[3].set(xlabel='Frequency [MHz]', ylabel='Transmission Normalized')
             ax[3].legend(loc='upper right')
-            self.debug("Plot: Drew graph 3")
+            #self.debug("Plot: Drew graph 3")
 
         if plot_switches['graph-4']:
             ax[4].plot(np.linspace(0, self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc_1, label='pulses folded', color='k')
@@ -724,7 +728,7 @@ class SpectrumExperiment(BaseExperiment):
             ax[4].plot(np.linspace(0, self.histogram_bin_size-1, self.histogram_bin_size), self.folded_tt_S_acc_3, label='pulses folded_2', color='g')
             ax[4].set(xlabel='Time [nsec]', ylabel='Counts [#Number]')
             ax[4].legend(loc='upper right')
-            self.debug("Plot: Drew graph 4")
+            #self.debug("Plot: Drew graph 4")
 
         if plot_switches['graph-5']:
             if len(self.all_transits_index_batch) > 0:
@@ -743,14 +747,13 @@ class SpectrumExperiment(BaseExperiment):
                 ax[5].set(xlabel='Time [nsec]', ylabel='Counts [Photons]')
                 ax[5].text(0.25, 0.5, textstr_no_transits, transform=ax[5].transAxes, fontsize=24,
                            verticalalignment='center', bbox=props)
-            self.debug("Plot: Drew graph 5")
+            #self.debug("Plot: Drew graph 5")
 
         # End timer
         total_prep_time = time.time() - start_plot_time
 
         # plt.tight_layout()
-        plt.show()
-        self.debug(f'>>> plot: After plt.show (prep took: {total_prep_time} secs) <<<')
+        plt.show(block=False)
 
         plt.pause(0.5)
 
@@ -835,11 +838,12 @@ class SpectrumExperiment(BaseExperiment):
             self.get_results_from_streams()
             self.ingest_time_tags(Num_Of_dets)
 
-            prev_measure = self.tt_S_measure_batch[-1]
+            is_new_tts_S = True  # We'll assume it's new data. Especially true in the first run, where there's no previous data to compare
             curr_measure = self.tt_S_no_gaps
 
-            # Check if new time tags arrived:
-            is_new_tts_S = self.new_timetags_detected(prev_measure, curr_measure)
+            # Check if new time tags arrived - compare previous time-tags with current:
+            if len(self.tt_S_measure_batch) > 0:
+                is_new_tts_S = self.new_timetags_detected(self.tt_S_measure_batch[-1], curr_measure)
 
             # Bin the South time-tags we just got
             self.tt_S_binning = Utils.bin_values(values=curr_measure, bin_size=Config.frequency_sweep_duration, num_of_bins=self.histogram_bin_number * 2)
@@ -948,53 +952,6 @@ class SpectrumExperiment(BaseExperiment):
         calibration_file = os.path.join(calibration_folder, 'Cavity_spectrum.npz')
         self.power_per_freq_weight = self.AOM_power_per_freq_calibration(calibration_file)
 
-        # fold reflections and transmission
-        for x in self.tt_N_directional_measure:
-            self.tt_N_binning[(x - 1) // Config.frequency_sweep_duration] += 1  # TODO: x-1?? in spectrum its x
-        self.tt_N_binning_avg = self.tt_N_binning
-
-        # Prepare batches
-        for x in self.tt_S_no_gaps:
-            if x < 2e6:
-                self.folded_tt_S_acc_1[(x - 1) % self.histogram_bin_size] += 1
-            elif 6e6 < x < 8e6:
-                self.folded_tt_S_acc_2[(x - 1) % self.histogram_bin_size] += 1
-            elif 8e6 < x < 10e6:
-                self.folded_tt_S_acc_3[(x - 1) % self.histogram_bin_size] += 1
-        self.tt_S_binning_avg = self.tt_S_binning
-
-        # split the binning vector to odd and even - on and off resonance pulses
-        self.tt_N_binning_detuned = [self.tt_N_binning[x] for x in range(len(self.tt_N_binning)) if x % 2]  # odd
-        self.tt_N_binning_resonance = [self.tt_N_binning[x] for x in range(len(self.tt_N_binning)) if not x % 2]  # even
-
-        self.tt_S_binning_detuned = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if x % 2]  # odd
-
-        # --------------------------------------------------------------
-        # Put into batches - we're always ensuring we have maximum N elements (FIFO style)
-        # --------------------------------------------------------------
-
-        self.tt_N_measure_batch = self.tt_N_measure_batch[-(N - 1):] + [self.tt_N_directional_measure]
-        self.tt_N_binning_batch = self.tt_N_binning_batch[-(N - 1):] + [self.tt_N_binning]
-        self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_no_gaps]
-        self.tt_S_binning_batch = self.tt_S_binning_batch[-(N - 1):] + [self.tt_S_binning]
-        self.tt_S_binning_resonance_batch = self.tt_S_binning_resonance_batch[-(N - 1):] + [self.tt_S_binning_resonance]
-        self.tt_S_binning_detuned_batch = self.tt_S_binning_detuned_batch[-(N - 1):] + [self.tt_S_binning_detuned]
-        self.S_bins_res_acc = np.sum(np.array(self.tt_S_binning_resonance_batch), 0)  # tt_S_binning_resonance accumulated (sum over the batch)
-        self.S_bins_detuned_acc = np.sum(np.array(self.tt_S_binning_detuned_batch), 0)  # tt_S_binning_resonance accumulated (sum over the batch)
-
-
-        self.FLR_measurement = self.FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]  # No need for the .toList()
-        self.exp_timestr_batch = self.exp_timestr_batch[-(N - 1):] + [time.strftime("%Y%m%d-%H%M%S")]
-
-        #self.lock_err_batch = Utils.append_fifo(self.lock_err_batch, self.lock_err, N)
-        self.lock_err_batch = self.lock_err_batch[-(N - 1):] + [self.lock_err]
-
-        self.save_tt_to_batch(Num_Of_dets, N)
-
-        # self.find_transit_events_spectrum(N, transit_time_threshold=time_threshold,
-        #                                   transit_counts_threshold=transit_counts_threshold)
-        self.find_transits_events_spectrum_exp(self.tt_S_binning_resonance, N, transit_cond)
-
         # --------------------------------------------------------------
         # Create figures template
         # --------------------------------------------------------------
@@ -1034,17 +991,12 @@ class SpectrumExperiment(BaseExperiment):
             if self.runs_status == TerminationReason.USER:
                 break
 
-            # Informational printing
-            self.print_experiment_information()
-
             # Await for values from OPX
             timestamp = self.await_for_values(Num_Of_dets)
             if self.runs_status != TerminationReason.SUCCESS:
                 break
 
-            # Plot figures
-            self.plot_figures(fig, subplots, Num_Of_dets)
-
+            # Get locking error
             self.lock_err = self._read_locking_error()
 
             # Bin North time-tags (South time-tags were binned in await_for_values
@@ -1070,6 +1022,15 @@ class SpectrumExperiment(BaseExperiment):
 
             # Calculate threshold for experiment
             self.sum_for_threshold = (np.sum(self.tt_S_binning_resonance) * 1000) / (self.M_time / 2)
+
+            # Informational printing
+            self.print_experiment_information()
+
+            # Plot figures
+            self.plot_figures(fig, subplots, Num_Of_dets)
+
+            if self.playback['active']:
+                time.sleep(self.playback['delay'])
 
             # If we are still in warm-up phase, we do not continue further and go back to beginning of loop
             # TODO: uncomment if we have Py 3.8 in the lab
@@ -1366,10 +1327,10 @@ if __name__ == "__main__":
     # TODO: REMOVE, for debug only
     sequence_definitions = None
 
-    # if sequence_definitions is None:
-    #     experiment.run(run_parameters_0)
-    # else:
-    #     experiment.run_sequence(sequence_definitions, run_parameters_0)
+    if sequence_definitions is None:
+        experiment.run(run_parameters_0)
+    else:
+        experiment.run_sequence(sequence_definitions, run_parameters_0)
 
     #experiment.close_opx()
     #pass

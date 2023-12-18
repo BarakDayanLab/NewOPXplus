@@ -7,6 +7,7 @@ import pathlib
 import matplotlib.pyplot as plt
 import os
 import importlib
+import numpy as np
 
 from Utilities.Utils import Utils
 from Utilities.BDLogger import BDLogger
@@ -61,9 +62,6 @@ class BaseExperiment:
 
     def __init__(self):
 
-        self._opx_skip = False
-        self._quadrf_skip = False
-
         # Setup console logger. We do this first, so rest of code can use logging functions.
         self.logger = BDLogger()
 
@@ -80,6 +78,24 @@ class BaseExperiment:
         self.dbg_plot = None
 
         self.transformer = ValuesTransformer()
+
+        self._opx_skip = False
+        self._quadrf_skip = False
+
+        # Playback definitions
+        self.playback = {
+            "active": True,
+            "data_loaded": False,
+            "save_results": False,
+            "plot_figures": False,
+            "delay": 0.5,  # sec
+            "row_count": 0,
+            "streams": {}
+        }
+        if self.playback["active"]:
+            self._opx_skip = True
+            self._quadrf_skip = True
+
 
         # Initialize the BDResults helper - for saving experiment results
         self.bd_results = BDResults(json_map_path=self.paths_map['cwd'], version="0.1")
@@ -627,10 +643,14 @@ class BaseExperiment:
             return
 
         self.streams = self.opx_definitions['streams']
-        for key, value in self.streams.items():
-            value['handler'] = self.job.result_handles.get(key)
 
-    def get_results_from_streams(self):
+        for key, value in self.streams.items():
+            if self.playback["active"]:
+                value['handler'] = "playback: data not loaded yet..."
+            else:
+                value['handler'] = self.job.result_handles.get(key)
+
+    def _get_results_from_opx_streams(self):
         """
         Given the streams config and handles, wait and fetch the values from OPX
         """
@@ -648,6 +668,72 @@ class BaseExperiment:
             else:
                 stream['results'] = None
 
+        pass
+
+    def _get_results_from_files(self):
+
+        # If this is the first time this is called, load the data from the files
+        if self.playback['data_loaded'] == False:
+            self.playback['data_loaded'] = True
+            self.playback['row_count'] = 0
+            self._load_data_for_playback()
+
+        # Advance all streams to hold the next data row
+        row = self.playback['row_count']
+        for stream in self.streams.values():
+            if 'all_rows' in stream:
+                stream['results'] = stream['all_rows'][row]
+                # Add length of time-tags. We do not do this for FLR.
+                # TODO: remove this when we will load "real" sensors data
+                if stream['name'] != 'FLR_measure':
+                    if len(stream['results']) == 0:
+                        # Handling the case specifically or Numpy will create an array with value 0.0 (as float)!
+                        stream['results'] = np.zeros(shape=1, dtype=int)
+                    else:
+                        stream['results'] = np.insert(stream['results'], 0, int(len(stream['results'])))
+
+        # Advance the row for the next time
+        self.playback['row_count'] += 1
+
+        pass
+
+    # TODO: (a) load all files/streams - FLR  (b) Turn off OPX/Quad
+    def _load_data_for_playback(self):
+
+        #DIR = r'U:\Lab_2023\Experiment_results\Spectrum\20231213\134648_Photon_TimeTags'
+        DIR = r'C:\temp\playback_data\134648_Photon_TimeTags'
+
+        # Iterate over all stream and load data from the relevant file
+        for stream in self.streams.values():
+            self.info(f"Loading stream for {stream['name']}...")
+            if stream['handler'] is not None:
+                stream['handler'] = 'playback: data loaded!'  # Mark the stream as loaded
+                if stream['name'] == 'FLR_measure':
+                    name = 'Flouresence.npz'
+                    data_file = os.path.join(DIR, name)
+                else:
+                    name = stream['name'].lower().replace('detector_', 'Det') + '.npz'
+                    data_file = os.path.join(DIR, 'AllDetectors', name)
+
+                # Load the file and add first element with the size
+                if os.path.exists(data_file):
+                    # Load the file
+                    zipped_data = np.load(data_file, allow_pickle=True)
+                    stream['all_rows'] = zipped_data['arr_0']
+
+        pass
+
+    def get_results_from_streams(self, playback=False):
+        """
+        Get the data from OPX or if in playback mode - from files
+        """
+        if self.streams is None:
+            return
+
+        if self.playback['active']:
+            self._get_results_from_files()
+        else:
+            self._get_results_from_opx_streams()
         pass
 
     def handle_user_atoms_on_off_switch(self):
@@ -751,6 +837,9 @@ class BaseExperiment:
             self.update_parameters()
 
     def update_io_parameter(self, io1, io2):
+        if self.playback["active"]:
+            return
+
         self.io1_list.append(io1)
         self.io2_list.append(io2)
 
@@ -759,6 +848,9 @@ class BaseExperiment:
         Update the OPX - "push" all [key,value] pairs that are awaiting on the io1_list and io2_list
         We do so by setting one pair, then waiting for the OPX to pause its work, signaling us we can send the next pair
         """
+        if self.playback["active"]:
+            return
+
         # If needed, update the QuadRF controller
         if len(self.Update_QuadRF_channels) != 0:
             quadController = QuadRFMOTController(initialValues=self.Exp_Values,
@@ -803,11 +895,6 @@ class BaseExperiment:
         # Reset the lists
         self.io1_list = []
         self.io2_list = []
-
-        # TODO: This call was here to save the experiment values on EVERY update. It puts all files, timestampes, in an archive folder
-        # TODO: We dont seem to be using it, so it's commented out
-        # Save Config_Table to a file with timestamp:
-        # self.save_config_table()
 
         # quadController.plotTables()
 
