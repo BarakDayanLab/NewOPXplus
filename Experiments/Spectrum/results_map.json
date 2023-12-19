@@ -6,6 +6,9 @@
 	"root": "C:\\temp\\refactor_debug\\Experiment_results\\Spectrum\\{current_date}\\{current_time}_Photon_TimeTags",
 	"locking_error_root": "U:\\Lab_2023\\Experiment_results\\QRAM\\Locking_PID_Error",
 	"calibration_folder": "U:\\Lab_2023\\Experiment_results\\QRAM\\20231116\\133237_Photon_TimeTags",
+	"playback_data_0": "U:\\Lab_2023\\Experiment_results\\Spectrum\\20231213\\134648_Photon_TimeTags",
+	"playback_data": "C:\\temp\\playback_data\\134648_Photon_TimeTags",
+
 	"files": [
 
 		{
@@ -154,59 +157,10 @@
 		},
 
   		{
-			"data": "tt_measure_batch_1",
-			"name": "detector 1 timetags",
-			"file_name": "Det1_timetags",
-			"folder": "output\\AllDetectors",
-			"type": "npz"
-		},
-  		{
-			"data": "tt_measure_batch_2",
-			"name": "detector 2 timetags",
-			"file_name": "Det2_timetags",
-			"folder": "output\\AllDetectors",
-			"type": "npz"
-		},
-  		{
-			"data": "tt_measure_batch_3",
-			"name": "detector 3 timetags",
-			"file_name": "Det3_timetags",
-			"folder": "output\\AllDetectors",
-			"type": "npz"
-		},
-  		{
-			"data": "tt_measure_batch_4",
-			"name": "detector 4 timetags",
-			"file_name": "Det4_timetags",
-			"folder": "output\\AllDetectors",
-			"type": "npz"
-		},
-  		{
-			"data": "tt_measure_batch_5",
-			"name": "detector 5 timetags",
-			"file_name": "Det5_timetags",
-			"folder": "output\\AllDetectors",
-			"type": "npz"
-		},
-  		{
-			"data": "tt_measure_batch_6",
-			"name": "detector 6 timetags",
-			"file_name": "Det6_timetags",
-			"folder": "output\\AllDetectors",
-			"type": "npz"
-		},
-  		{
-			"data": "tt_measure_batch_7",
-			"name": "detector 7 timetags",
-			"file_name": "Det7_timetags",
-			"folder": "output\\AllDetectors",
-			"type": "npz"
-		},
-  		{
-			"data": "tt_measure_batch_8",
-			"name": "detector 8 timetags",
-			"file_name": "Det8_timetags",
-			"folder": "output\\AllDetectors",
+			"data": "tt_measure_batch",
+			"name": "detector timetags",
+			"file_name": "All_detectors_timetags",
+			"folder": "output",
 			"type": "npz"
 		},
 
@@ -218,21 +172,21 @@
 			"data": "exp_timestr",
 			"name": "Drops Time",
 			"file_name": "Drops_time_stamps",
-			"folder": "Output",
+			"folder": "output",
 			"type": "npz"
 		},
 		{
 			"data": "FLR_measurement",
 			"name": "Flouresence",
 			"file_name": "Flouresence",
-			"folder": "Output",
+			"folder": "output",
 			"type": "npz"
 		},
 		{
 			"data": "lock_error",
 			"name": "Cavity Lock Error",
 			"file_name": "Cavity_Lock_Error",
-			"folder": "Output",
+			"folder": "output",
 			"type": "npz"
 		}
 

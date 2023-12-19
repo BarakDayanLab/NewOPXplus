@@ -263,10 +263,8 @@ class SpectrumExperiment(BaseExperiment):
             #counts_res.append(self.streams[f'Detector_{i}_Counts']['results'])
             tt_res.append(self.streams[f'Detector_{i}_Timetags']['results'])
 
-        # TODO: Q: why are we changing the sign? Why is this a single scalar - coming from a stream? So why do we need "tolist()"?
-        self.FLR_res = -self.streams['FLR_measure']['results']
-        self.fluorescence_average = 1000 * np.average(self.FLR_res.tolist())
-
+        self.FLR_res = -float(self.streams['FLR_measure']['results'])
+        self.fluorescence_average = 1000 * self.FLR_res
 
         #### By this point we should have counts_res, tt_res & FLR_res populated
         #### this is equivalent to self.streams['FLR_measure']['results']
@@ -305,15 +303,11 @@ class SpectrumExperiment(BaseExperiment):
         # Unify detectors 2 & 3 and windows within detectors
         self.tt_DP_measure = sorted(sum(self.tt_measure[2:4], []))
 
-        # TODO: Q: why do we need the sum here?
         # Unify detectors 7 & [] and windows within detectors
         self.tt_N_measure = sorted(self.tt_measure[7])
-        #self.tt_N_measure = sorted(sum(self.tt_measure[7:], []))
 
-        # TODO: Q: why do we need the sum here?
         # Unify detectors 4 & [] and windows within detectors
         self.tt_S_measure = sorted(self.tt_measure[4])
-        #self.tt_S_measure = sorted(sum(self.tt_measure[4:5], []))
 
         # Unify detectors 5 & 6 and windows within detectors
         self.tt_FS_measure = sorted(sum(self.tt_measure[5:7], []))
@@ -437,55 +431,6 @@ class SpectrumExperiment(BaseExperiment):
         plt.plot(sum(np.reshape(self.tt_histogram_S, [int(len(self.tt_histogram_S) / 9), 9])), label='tt_hist_S')
         plt.legend()
 
-    def find_transit_events(self, N, transit_time_threshold, transit_counts_threshold):
-        current_transit = []
-        self.all_transits = []
-        all_transits_aligned_first = []
-        t_transit = []
-        transit_histogram = []
-        for index, value in enumerate(self.tt_S_binning_resonance):
-            if not current_transit and value:  # if the array is empty
-                current_transit.append(index)
-            elif value:
-                if ((index - current_transit[0]) * Config.frequency_sweep_duration*2) < transit_time_threshold:
-                    current_transit.append(index)
-                elif sum([self.tt_S_binning_resonance[i] for i in current_transit]) > transit_counts_threshold:
-                    self.all_transits.append(current_transit)
-                    all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
-                    # tt_S_transit_events[tuple(current_transit)] += 1
-                    for i in range(current_transit[0], current_transit[-1]):
-                        # building cavit-atom spectrum with the counts of the detuned time bins between the start and
-                        # finish of the transit:
-                        self.Cavity_atom_spectrum[((((i + 1) * Config.frequency_sweep_duration * 2) %
-                                               experiment.M_window) // (
-                                                          Config.frequency_sweep_duration * 1000)) %
-                                             self.spectrum_bin_number] += self.tt_S_binning_detuned[i + 1]
-                    current_transit = [index]
-                else:
-                    # Find if there is any index that was saved to current transit and is close enough to the new index
-                    t = [i for i, elem in enumerate(current_transit) if ((index - elem) * 480) < transit_time_threshold]
-                    if t:
-                        current_transit = current_transit[t[0]:] + [index]
-                    else:
-                        current_transit = [index]
-
-        if self.spectrum_bin_number == 0:
-            return
-
-        for index, value in enumerate(self.tt_S_binning_detuned):
-            if index not in [vec for elem in self.all_transits for vec in elem]:
-                self.Cavity_spectrum[(((index * Config.frequency_sweep_duration * 2) %
-                                  experiment.M_window) // (Config.frequency_sweep_duration * 1000)) %
-                                self.spectrum_bin_number] += value
-
-        self.tt_S_transit_events[[i for i in [vec for elem in self.all_transits for vec in elem]]] += 1
-
-        if self.all_transits:
-            self.all_transits_batch = self.all_transits_batch[-(N - 1):] + [self.all_transits]
-            # transit_histogram = np.zeros((max([vec for elem in all_transits_aligned_first for vec in elem])
-            #                               + self.histogram_bin_size) // self.Transit_profile_bin_size)
-            # t_transit = np.linspace(0, len(transit_histogram) * self.Transit_profile_bin_size, len(transit_histogram))
-
     def find_transits_events_spectrum_exp(self, tt_resonance_binning, N, cond=None, minimum_number_of_seq_detected=2):
         """
         Find transits of atoms by searching events that satisfy the number of reflected photons per sequence required at
@@ -554,7 +499,7 @@ class SpectrumExperiment(BaseExperiment):
         self.tt_S_transit_events_accumulated = self.tt_S_transit_events_accumulated + self.tt_S_transit_events
 
         if self.all_transits_seq_indx:
-            self.all_transits_index_batch = self.all_transits_index_batch[-(N - 1):] + [self.all_transits_seq_indx]
+            self.batcher.add("all_transits_index_batch", self.all_transits_seq_indx)
 
     def get_pulses_location_in_seq(self, delay, seq=Config.QRAM_Exp_Gaussian_samples_S,
                                    smearing=int(Config.num_between_zeros / 2)):
@@ -584,15 +529,6 @@ class SpectrumExperiment(BaseExperiment):
             for j in range(start_indx - int(smearing), seq_index[-1] + int(smearing)):
                 seq_filter_with_smearing[j] = 1
         return pulses_loc, seq_filter_with_smearing
-
-    def save_tt_to_batch(self, Num_Of_dets, N):
-        for i in range(len(Num_Of_dets)):
-            self.tt_measure_batch[i] = self.tt_measure_batch[i][-(N - 1):] + [self.tt_measure[i]]
-        self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
-        self.tt_N_measure_batch = self.tt_N_measure_batch[-(N - 1):] + [self.tt_N_measure]
-        self.tt_BP_measure_batch = self.tt_BP_measure_batch[-(N - 1):] + [self.tt_BP_measure]
-        self.tt_DP_measure_batch = self.tt_DP_measure_batch[-(N - 1):] + [self.tt_DP_measure]
-        self.tt_FS_measure_batch = self.tt_FS_measure_batch[-(N - 1):] + [self.tt_FS_measure]
 
     def print_experiment_information(self):
         """
@@ -656,15 +592,13 @@ class SpectrumExperiment(BaseExperiment):
         textstr_detuned = r'$S_{detuned} = %.3f$' % (
         (sum(self.tt_S_binning_detuned) * 1000) / (self.M_time / 2),) + '[MPhotons/sec]\n' \
                           + '$\overline{S}_{detuned} = %.3f$' % (
-                          (np.mean([sum(x) for x in self.tt_S_binning_detuned_batch]) * 1000)
+                          (np.mean([sum(x) for x in self.batcher['tt_S_binning_detuned_batch']]) * 1000)
                           / (self.M_time / 2),) + '[MPhotons/sec]'
         textstr_resonance = r'$S_{res} = %.3f$' % (
         (sum(self.tt_S_binning_resonance) * 1000) / (self.M_time / 2),) + '[MPhotons/sec]\n' \
                             + '$\overline{S}_{res} = %.3f$' % (
-                            (np.mean([sum(x) for x in self.tt_S_binning_resonance_batch]) * 1000)
+                            (np.mean([sum(x) for x in self.batcher['tt_S_binning_resonance_batch']]) * 1000)
                             / (self.M_time / 2),) + '[MPhotons/sec]'
-        # TODO: If the textstr_FLR is not used, maybe we can make FLR_Measurement a local var instead of self.FLR...
-        # textstr_FLR = r'$\overline{FLR}_{MAX} = %.1f$' % (np.mean(self.FLR_measurement) * 1e5,) + r'$\times 10^{-5}$'
         textstr_no_transits = 'NO TRANSITS YET!!!'
 
         # Special handling for the warm-up case (there is still no calculated data to show in graphs)
@@ -731,11 +665,11 @@ class SpectrumExperiment(BaseExperiment):
             #self.debug("Plot: Drew graph 4")
 
         if plot_switches['graph-5']:
-            if len(self.all_transits_index_batch) > 0:
+            if len(self.batcher['all_transits_index_batch']) > 0:
                 # if self.all_transits:
                 textstr_transit_counts = r'$N_{Transits} = %s $' % (len(self.all_transits_seq_indx),) + r'$[Counts]$'
                 textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (
-                                                len([vec for elem in self.all_transits_index_batch for vec in elem]),) \
+                                                len([vec for elem in self.batcher['all_transits_index_batch'] for vec in elem]),) \
                                                 + r'$[Counts]$' + '\n' + textstr_transit_counts
 
                 ax[5].plot(self.time_bins[::2], self.tt_S_transit_events_accumulated, label='Transit events histogram', marker='*', color='b')
@@ -756,36 +690,6 @@ class SpectrumExperiment(BaseExperiment):
         plt.show(block=False)
 
         plt.pause(0.5)
-
-    def initialize_batches_arrays(self, Num_Of_dets):
-        """
-        Prepare all batches arrays we need for the experiment
-        """
-        # define empty variables
-        self.tt_measure = []
-        self.tt_measure_batch = [[]] * len(Num_Of_dets)
-        self.tt_N_measure_batch = []
-        self.tt_N_binning_batch = []
-        self.tt_N_resonance_batch = []
-        self.tt_N_detuned_batch = []
-        self.tt_S_measure_batch = []
-        self.tt_S_binning_batch = []
-        self.tt_S_binning_detuned_batch = []
-        self.tt_S_binning_resonance_batch = []
-        self.tt_N_binning_detuned_batch = []
-        self.tt_N_binning_resonance_batch = []
-        self.tt_S_resonance_batch = []
-        self.tt_S_detuned_batch = []
-        self.tt_BP_measure_batch = []
-        self.tt_DP_measure_batch = []
-        self.tt_FS_measure_batch = []
-        self.all_transits_batch = []
-        self.all_transits_index_batch = []
-        self.transit_histogram_batch = []
-        self.all_transits_aligned_first_batch = []
-        self.transit_histogram_batch = []
-        self.FLR_measurement = []
-        self.exp_timestr_batch = []
 
     # TODO: Document this method
     # TODO: Q: Do we need to move this to BaseExperiment
@@ -842,8 +746,8 @@ class SpectrumExperiment(BaseExperiment):
             curr_measure = self.tt_S_no_gaps
 
             # Check if new time tags arrived - compare previous time-tags with current:
-            if len(self.tt_S_measure_batch) > 0:
-                is_new_tts_S = self.new_timetags_detected(self.tt_S_measure_batch[-1], curr_measure)
+            if len(self.batcher['tt_S_measure_batch']) > 0:
+                is_new_tts_S = self.new_timetags_detected(self.batcher['tt_S_measure_batch'][-1], curr_measure)
 
             # Bin the South time-tags we just got
             self.tt_S_binning = Utils.bin_values(values=curr_measure, bin_size=Config.frequency_sweep_duration, num_of_bins=self.histogram_bin_number * 2)
@@ -919,18 +823,14 @@ class SpectrumExperiment(BaseExperiment):
 
         self.logger.blue('Press ESC to stop measurement.')
 
-        # Set zeros vectors and empty lists
-        # TODO: (1) Do we need Num_Of_dets ?  This is a generic change we can make throughout the code...
-        # TODO: (2) We can make a generic batch manager that will zero them all, append, etc.
-        self.initialize_batches_arrays(Num_Of_dets)
+        # Initialize the batcher
+        self.batcher.set_batch_size(N)
+        self.batcher.empty_all()
 
         # Associate the streams filled in OPX (FPGA) code with result handles
         self.get_handles_from_OPX_server()
 
-        self.FLR_measurement = []
-        self.exp_timestr_batch = []
-        self.lock_err_batch = []
-
+        # TODO: move this into the "real"/"united" initialization method
         # Initialization
         self.tt_N_binning = np.zeros(self.histogram_bin_number * 2)
         self.tt_N_transit_events = np.zeros(self.histogram_bin_number)
@@ -992,7 +892,7 @@ class SpectrumExperiment(BaseExperiment):
                 break
 
             # Await for values from OPX
-            timestamp = self.await_for_values(Num_Of_dets)
+            self.sampling_timestamp = self.await_for_values(Num_Of_dets)
             if self.runs_status != TerminationReason.SUCCESS:
                 break
 
@@ -1058,25 +958,13 @@ class SpectrumExperiment(BaseExperiment):
                     self.tt_S_binning[(x - 1) // self.histogram_bin_size] += 1
                     self.tt_S_binning_avg[(x - 1) // self.histogram_bin_size] += 1 / self.counter
 
-                self.tt_N_measure_batch = self.tt_N_measure_batch[-(N - 1):] + [self.tt_N_directional_measure]
-                self.tt_N_binning_batch = self.tt_N_binning_batch[-(N - 1):] + [self.tt_N_binning]
-                self.tt_N_binning_resonance_batch = self.tt_N_binning_resonance_batch[-(N - 1):] + [self.tt_N_binning_resonance]
-                self.tt_N_binning_detuned_batch = self.tt_N_binning_detuned_batch[-(N - 1):] + [self.tt_N_binning_detuned]
-                self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_no_gaps]
-                self.tt_S_binning_batch = self.tt_S_binning_batch[-(N - 1):] + [self.tt_S_binning]
-                self.tt_S_binning_resonance_batch = self.tt_S_binning_resonance_batch[-(N - 1):] + [self.tt_S_binning_resonance]
-                self.tt_S_binning_detuned_batch = self.tt_S_binning_detuned_batch[-(N - 1):] + [self.tt_S_binning_detuned]
-                self.S_bins_res_acc = np.sum(np.array(self.tt_S_binning_resonance_batch),0)  # tt_S_binning_resonance accumulated (sum over the batch)
-                self.S_bins_detuned_acc = np.sum(np.array(self.tt_S_binning_detuned_batch), 0)  # tt_S_binning_resonance accumulated (sum over the batch)
+                # Batch all data samples
+                self.batcher.batch_all(self)
 
-                # self.find_transit_events_spectrum(N, transit_time_threshold=time_threshold,
-                #                                   transit_counts_threshold=transit_counts_threshold)
+                self.S_bins_res_acc = np.sum(np.array(self.batcher['tt_S_binning_resonance_batch']),0)  # tt_S_binning_resonance accumulated (sum over the batch)
+                self.S_bins_detuned_acc = np.sum(np.array(self.batcher['tt_S_binning_detuned_batch']), 0)  # tt_S_binning_resonance accumulated (sum over the batch)
+
                 self.find_transits_events_spectrum_exp(self.tt_S_binning_resonance, N, transit_cond)
-
-                self.FLR_measurement = self.FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
-                self.exp_timestr_batch = self.exp_timestr_batch[-(N - 1):] + [timestamp]
-                self.lock_err_batch = self.lock_err_batch[-(N - 1):] + [self.lock_err]
-                self.save_tt_to_batch(Num_Of_dets, N)
 
             # Did user request we change with/without atoms state?
             self.handle_user_atoms_on_off_switch()
@@ -1106,18 +994,13 @@ class SpectrumExperiment(BaseExperiment):
         else:
             aftComment = 'ignore'
 
-        # if aftComment == 'Timeout': aftComment = None
-
-        #### Handle file-names and directories #####
-        ## Saving: np.savez(filedir, data = x) #note: @filedir is string of full directory; data is the queyword used to read @x from the file:
-        ## Loading: file = np.load(f, allow_pickle = True)
-        ##          x = file['data']
 
         # TODO: re-implement in QuadRF class - to get the data - and BDResults will save...
         # Save Quad RF controllers commands
-        dirname = self.bd_results.get_root()
-        for qrdCtrl in self.QuadRFControllers:
-            qrdCtrl.saveLinesAsCSV(f'{dirname}\\QuadRF_table.csv')
+        if not self.playback['active']:
+            dirname = self.bd_results.get_root()
+            for qrdCtrl in self.QuadRFControllers:
+                qrdCtrl.saveLinesAsCSV(f'{dirname}\\QuadRF_table.csv')
 
         # ------------------------------------------------------------------------
         #    Save (a) Input sequences (b) Output results (c) Meta Data
@@ -1131,38 +1014,23 @@ class SpectrumExperiment(BaseExperiment):
             "north_sequence": Config.QRAM_Exp_Gaussian_samples_N,
             "south_sequence": Config.QRAM_Exp_Gaussian_samples_S,
             "fs_sequence": Config.QRAM_Exp_Square_samples_FS,
-            "all_transits_index_batch": self.all_transits_index_batch,
-
-            "tt_measure_batch_1": self.tt_measure_batch[0],
-            "tt_measure_batch_2": self.tt_measure_batch[1],
-            "tt_measure_batch_3": self.tt_measure_batch[2],
-            "tt_measure_batch_4": self.tt_measure_batch[3],
-            "tt_measure_batch_5": self.tt_measure_batch[4],
-            "tt_measure_batch_6": self.tt_measure_batch[5],
-            "tt_measure_batch_7": self.tt_measure_batch[6],
-            "tt_measure_batch_8": self.tt_measure_batch[7],
-
-            "tt_N_measure_batch": self.tt_N_measure_batch,
-            "tt_S_measure_batch": self.tt_S_measure_batch,
-            "tt_FS_measure_batch": self.tt_FS_measure_batch,
-            "tt_BP_measure_batch": self.tt_BP_measure_batch,
-            "tt_DP_measure_batch": self.tt_DP_measure_batch,
-
+            "all_transits_index_batch": self.batcher['all_transits_index_batch'],
+            "tt_measure_batch": self.batcher['tt_measure_batch'],
+            "tt_N_measure_batch": self.batcher['tt_N_measure_batch'],
+            "tt_S_measure_batch": self.batcher['tt_S_measure_batch'],
+            "tt_FS_measure_batch": self.batcher['tt_FS_measure_batch'],
+            "tt_BP_measure_batch": self.batcher['tt_BP_measure_batch'],
+            "tt_DP_measure_batch": self.batcher['tt_DP_measure_batch'],
             "cavity_spectrum": self.Cavity_spectrum,
             "cavity_atom_spectrum": self.Cavity_atom_spectrum,
             "frequency_vector": self.freq_bins,
-
             #"quadrf_table_ch1": self.QuadRFControllers[0].get_channel_data(0),
-
-            "FLR_measurement": self.FLR_measurement,
-            "lock_error": self.lock_err_batch,
-            "exp_timestr": self.exp_timestr_batch,  # TODO: rename to drop timestamps? What is this one?
-
+            "FLR_measurement": self.batcher['flr_batch'],
+            "lock_error": self.batcher['lock_err_batch'],
+            "exp_timestr": self.batcher['exp_timestr_batch'],
             "exp_comment": experiment_comment,
             "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, self.with_atoms, self.counter),
-
             #"max_probe_counts": "TBD",  # TODO: ...
-
             "experiment_config_values": self.Exp_Values
         }
         self.bd_results.save_results(results)

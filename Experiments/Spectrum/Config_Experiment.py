@@ -7,8 +7,7 @@ from Utilities.Utils import Utils
 Spectrum_Exp_Gaussian_samples = [0] * 10 + (signal.gaussian(220, std=30) * 0.4).tolist() + [0] * 10
 readout_pulse_spectrum_len = int(len(Spectrum_Exp_Gaussian_samples) * 1000 * 21 * 4)
 
-# TODO 1 - can we move elsewhere?
-# TODO 2 - rename it from QRAM to Spectrum, or generic name (also rename parameters)
+# TODO - need to repalce all 'QRAM' to 'Spectrum', or a generic name (also rename parameters)
 def QRAM_Exp_Gaussian_samples(sprint_pulse_len=110, det_pulse_len=30, det_pulses_amp=[0.4]*6, sprint_pulses_amp=[0.4]*4,
                               num_between_zeros=10, num_init_zeros=12, num_mid_zeros=12, num_fin_zeros=0):
     qram_exp_gaussian_samples = [0] * (num_init_zeros - 2 + 42 + 16)  # -2 for echos from south

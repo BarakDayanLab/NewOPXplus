@@ -12,6 +12,7 @@ import numpy as np
 from Utilities.Utils import Utils
 from Utilities.BDLogger import BDLogger
 from Utilities.BDResults import BDResults
+from Utilities.BDBatch import BDBatch
 from Utilities.BDSound import BDSound
 
 from Experiments.Enums.TerminationReason import TerminationReason
@@ -47,6 +48,7 @@ class BaseExperiment:
         - Sequence/Automation running activity with different parameters (pre_run, run, post_run, run_sequence)
         - Plot/Debugging <TBD>
         - BDResults - Results/Paths Services <TBD>
+        - BDBatch - Batching Services (for gathering experiment samples)
 
     On the experiment side, it does the following:
         - Initializes OPX
@@ -99,6 +101,9 @@ class BaseExperiment:
 
         # Initialize the BDResults helper - for saving experiment results
         self.bd_results = BDResults(json_map_path=self.paths_map['cwd'], version="0.1")
+
+        # Initialize the BDBatch helper - to serve us when batching experiment samples
+        self.batcher = BDBatch(json_map_path=self.paths_map['cwd'])
 
         # Set the location of the locking error file - this is a generic file that serves as communication between
         # the locking application that runs on a different computer. The file contains the current PID error value.
@@ -573,9 +578,11 @@ class BaseExperiment:
     # Experiment Management related methods
     # -------------------------------------------------------
 
+    def get_batcher_map(self):
+        raise Exception("'get_batcher_map' method must be implemented in subclass!")
+
     def pre_run(self, run_parameters):
         raise Exception("'pre_run' method must be implemented in subclass!")
-        pass
 
     def run(self, run_parameters):
         raise Exception("'run' method must implemented in subclass!")
@@ -697,11 +704,11 @@ class BaseExperiment:
 
         pass
 
-    # TODO: (a) load all files/streams - FLR  (b) Turn off OPX/Quad
     def _load_data_for_playback(self):
-
-        #DIR = r'U:\Lab_2023\Experiment_results\Spectrum\20231213\134648_Photon_TimeTags'
-        DIR = r'C:\temp\playback_data\134648_Photon_TimeTags'
+        """
+        This function loads the playback data from the data folder
+        """
+        playback_folder = self.bd_results.get_custom_root('playback_data')
 
         # Iterate over all stream and load data from the relevant file
         for stream in self.streams.values():
@@ -710,10 +717,10 @@ class BaseExperiment:
                 stream['handler'] = 'playback: data loaded!'  # Mark the stream as loaded
                 if stream['name'] == 'FLR_measure':
                     name = 'Flouresence.npz'
-                    data_file = os.path.join(DIR, name)
+                    data_file = os.path.join(playback_folder, name)
                 else:
                     name = stream['name'].lower().replace('detector_', 'Det') + '.npz'
-                    data_file = os.path.join(DIR, 'AllDetectors', name)
+                    data_file = os.path.join(playback_folder, 'AllDetectors', name)
 
                 # Load the file and add first element with the size
                 if os.path.exists(data_file):

@@ -6,6 +6,7 @@ import itertools
 from pkgutil import iter_modules
 import pathlib
 import collections.abc
+import inspect
 
 
 class Utils:
@@ -364,11 +365,51 @@ class Utils:
 
         pass
 
-    """
-    Returns the names of the modules at a given package
-    """
+    @staticmethod
+    def get_self_members(self_object, prefix=None, suffix=None, specific=None):
+        """
+        Return the members of the self object starting/ending with rule
+        """
+        _list = []
+        for member in inspect.getmembers(self_object):
+            # Ignore private/protected functions and methods that do not start with a underscore
+            if not member[0].startswith('_') and not inspect.ismethod(member[1]):
+                if prefix is not None and not member[0].startswith(prefix):
+                    continue
+                if suffix is not None and not member[0].endswith(suffix):
+                    continue
+                if specific is not None and member[0] not in specific:
+                    continue
+                _list.append(member[0])
+        return _list
+
+    @staticmethod
+    def get_self_members_and_values(self_object, prefix=None, suffix=None, specific=None):
+        """
+        Return the members and values of the self object.
+        It can be filtered using three options:
+        - prefix - function will return only members that start with the prefix
+        - suffix - function will return only members that end with the suffix
+        - specific - an array of names - only these will return
+        """
+        _dict = {}
+        for member in inspect.getmembers(self_object):
+            # Ignore private/protected functions and methods that do not start with a underscore
+            if not member[0].startswith('_') and not inspect.ismethod(member[1]):
+                if prefix is not None and not member[0].startswith(prefix):
+                    continue
+                if suffix is not None and not member[0].endswith(suffix):
+                    continue
+                if specific is not None and member[0] not in specific:
+                    continue
+                _dict[member[0]] = member[1]
+        return _dict
+
     @staticmethod
     def get_modules_in_package(package_dir=None):
+        """
+        Returns the names of the modules at a given package
+        """
         if package_dir is None:
             package_dir = pathlib.Path(os.getcwd()).resolve()
 

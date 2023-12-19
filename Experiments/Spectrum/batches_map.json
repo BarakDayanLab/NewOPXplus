@@ -1,0 +1,49 @@
+{
+    "flr_batch": {
+        "value_name": "FLR_res"
+    },
+    "exp_timestr_batch": {
+        "value_name": "sampling_timestamp"
+    },
+    "lock_err_batch": {
+        "value_name": "lock_err"
+    },
+    "tt_measure_batch": {
+        "value_name": "tt_measure"
+    },
+    "tt_BP_measure_batch": {
+        "value_name": "tt_BP_measure"
+    },
+    "tt_DP_measure_batch": {
+        "value_name": "tt_DP_measure"
+    },
+    "tt_FS_measure_batch": {
+        "value_name": "tt_FS_measure"
+    },
+    "tt_N_measure_batch": {
+        "value_name": "tt_N_directional_measure"
+    },
+    "tt_N_binning_batch": {
+        "value_name": "tt_N_binning"
+    },
+    "tt_N_binning_resonance_batch": {
+        "value_name": "tt_N_binning_resonance"
+    },
+    "tt_N_binning_detuned_batch": {
+        "value_name": "tt_N_binning_detuned"
+    },
+    "tt_S_measure_batch": {
+        "value_name": "tt_S_no_gaps"
+    },
+    "tt_S_binning_batch": {
+        "value_name": "tt_S_binning"
+    },
+    "tt_S_binning_resonance_batch": {
+        "value_name": "tt_S_binning_resonance"
+    },
+    "tt_S_binning_detuned_batch": {
+        "value_name": "tt_S_binning_detuned"
+    },
+    "all_transits_index_batch": {
+    }
+}
