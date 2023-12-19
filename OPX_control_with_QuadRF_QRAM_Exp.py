@@ -46,20 +46,17 @@ logger.addHandler(handler)
 
 
 ###            Support functions          ###
-# TODO: Not used - remove?
 def find_nearest(array, value):
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
     return idx
 
-# TODO: Not used - remove?
 def moving_average(a, n=3) :
     ret = np.cumsum(a, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
 
 
-# TODO: Not used - remove?
 def assign_variables_to_element(element, *variables):
     """
     Forces the given variables to be used by the given element thread. Useful as a workaround for when the compiler
@@ -1079,9 +1076,8 @@ def opx_control(obj, qm):
             align(*all_elements)
 
             # FreeFall sequence:
-            # TODO: What is this calc?
             with if_(QRAM_Exp_ON):
-                assign(x, (30678780 - 3106 + 656000 * 2 + 4) // 4)  # TODO - added 38688900 to fix new delay due to wait(1000) in saving sprint data with vector size 10000, should be fixed as well
+                assign(x, (30678780 - 3106 + 656000 * 2 + 4) // 4) # TODO -  added 38688900 to fix new delay due to wait(1000) in saving sprint data with vector size 10000, should be fixed as well
             with else_():
                 assign(x, - 3106)
             # FreeFall(FreeFall_duration, coils_timing)
@@ -2414,7 +2410,6 @@ class OPX:
         self.num_of_det_reflections_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
         self.num_of_det_transmissions_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
 
-    # TODO: Analyze the results...
     def Save_SNSPDs_QRAM_Measurement_with_tt(self, N, qram_sequence_len, preComment, lock_err_threshold, transit_condition,
                                              max_probe_counts, filter_delay, reflection_threshold, reflection_threshold_time,
                                              photons_per_det_pulse_threshold, FLR_threshold, exp_flag, with_atoms,
@@ -3234,13 +3229,8 @@ class OPX:
                 break
 
     # @Values_Factor hold factoring for values - each key has an array:
-    # It can be used in two manners:
-    # 1) If there are 2 values in the array - it's a multiplication and casting
-    # 2) If there are 3 values in the array - it's calling the function
-    #
-    # E.g. for Prep_duration - it is given in ms, we have to factor it into an int value, but in 4ns, for the OPX.
-    #
-    # The conversions below are only factored in function "updateValue" in OPX control
+    # So, as Prep_duration is written in ms, we have to factor it into an int value, but in 4ns, for the OPX.
+    # These are only factored in function "updateValue" in OPX control
     Values_Factor = {
         'Transit_Exp_switch': [bool, None, Transit_Exp_switch],
         'Spectrum_Exp_switch': [bool, None, Spectrum_Exp_switch],
