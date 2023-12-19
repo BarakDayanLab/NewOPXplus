@@ -254,22 +254,11 @@ class SpectrumExperiment(BaseExperiment):
         """
         Takes all the raw results we got from the streams and does some processing on them - preparing "measures"
         """
-
-        # Append all detector counts and detector timetags into a single array (of arrays)
-        #counts_res = []
-        tt_res = []
-        for i in range(1, len(Num_Of_dets)+1):
-            # TODO: Q: Can we remove this? No use of it in the code. (and why are we taking this data)
-            #counts_res.append(self.streams[f'Detector_{i}_Counts']['results'])
-            tt_res.append(self.streams[f'Detector_{i}_Timetags']['results'])
-
+        # Get fluorescence data
         self.FLR_res = -float(self.streams['FLR_measure']['results'])
         self.fluorescence_average = 1000 * self.FLR_res
 
-        #### By this point we should have counts_res, tt_res & FLR_res populated
-        #### this is equivalent to self.streams['FLR_measure']['results']
-
-        # Ensure we clear timetags vectors from data from last iteration
+        # Ensure we clear time-tags vectors from data from last iteration
         self.tt_measure = []
         self.tt_BP_measure = []
         self.tt_DP_measure = []
@@ -277,25 +266,18 @@ class SpectrumExperiment(BaseExperiment):
         self.tt_S_measure = []
         self.tt_FS_measure = []
 
-        # remove zero-padding from tt-res and append into tt_measure
+        # Remove zero-padding from tt-res and append into tt_measure
         for i in range(len(Num_Of_dets)):  # for different detectors
-            # TODO: a and b are the same! So we can make the code more efficient/readable
-            # TODO: Since a==b, why do we need the tt_res and count_res ?
-            # a = self.streams[f'Detector_{2}_Timetags']['results']
-            # b = tt_res[1]
 
+            time_tags = self.streams[f'Detector_{i+1}_Timetags']['results']
+            #counts = self.streams[f'Detector_{i+1}_Counts']['results']
+            time_tags_count = int(time_tags[0])
             # TODO: Why are we turning the NP arrays into lists? Worth staying at NP speeds...
-
-            time_tags_count = int(tt_res[i][0])
-            self.tt_measure.append(tt_res[i][1:time_tags_count].tolist())
+            self.tt_measure.append(time_tags[1:time_tags_count].tolist())
             self.tt_measure[i] = [elm + Config.detector_delays[i] for elm in self.tt_measure[i]
                                   if ((elm % self.M_window != 0) & (elm != 9999984) &
                                       ((elm + Config.detector_delays[i]) <= self.M_window))]  # Due to an unresolved bug in the OPD there are "ghost" readings of timetags equal to the maximum time of measuring window.
             self.tt_measure[i].sort()
-
-        # ------------------------------------------
-        # Unify detectors and windows within detectors & create vector of tt's for each direction (bright port, dark port, north, south and from FS) and sort them
-        # ------------------------------------------
 
         # Unify detectors 0 & 1 and windows within detectors
         self.tt_BP_measure = sorted(sum(self.tt_measure[0:2], []))
@@ -318,8 +300,7 @@ class SpectrumExperiment(BaseExperiment):
         # self.tt_S_directional_measure = sorted(self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure)
         self.tt_S_directional_measure = sorted(self.tt_S_measure + self.tt_FS_measure)
 
-        # Fix gaps created by OPX
-        # We will take tt_S_directional_measure and convert it to self.tt_S_no_gaps
+        # Fix gaps created by OPX (take tt_S_directional_measure and convert it to self.tt_S_no_gaps)
         self.fix_gaps_spectrum_exp_tts()
 
     # TODO: we need to bring this NEW method up-to-speed with the OLD one (Below). Ensure the .copy part.
@@ -542,6 +523,12 @@ class SpectrumExperiment(BaseExperiment):
 
         self.logger.info(f'{time_formatted}: {status_str}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}, #Photons/[us]: {self.sum_for_threshold}')
 
+    def experiment_mainloop_delay(self):
+        if self.playback['active']:
+            time.sleep(self.playback['delay'])
+        else:
+            time.sleep(0.01)  # TODO: do we need this delay?
+
     def plot_figures(self, fig, subplots, Num_Of_dets):
         try:
             self._plot_figures(fig, subplots, Num_Of_dets)
@@ -688,7 +675,6 @@ class SpectrumExperiment(BaseExperiment):
 
         # plt.tight_layout()
         plt.show(block=False)
-
         plt.pause(0.5)
 
     # TODO: Document this method
@@ -830,7 +816,7 @@ class SpectrumExperiment(BaseExperiment):
         # Associate the streams filled in OPX (FPGA) code with result handles
         self.get_handles_from_OPX_server()
 
-        # TODO: move this into the "real"/"united" initialization method
+        # TODO: move this into the "real"/"united" initialization method - pre_run ?
         # Initialization
         self.tt_N_binning = np.zeros(self.histogram_bin_number * 2)
         self.tt_N_transit_events = np.zeros(self.histogram_bin_number)
@@ -873,10 +859,9 @@ class SpectrumExperiment(BaseExperiment):
         self.counter = 1  # Total number of successful cycles
         self.repetitions = 1  # Total number of cycles
         self.acquisition_flag = True
-        self.threshold_flag = True
         self.warm_up = True
         self.pause_flag = False
-        self.runs_status = TerminationReason.SUCCESS
+        self.runs_status = TerminationReason.SUCCESS  # default status of the run is Success
 
         # ---------------------------------------------------------------------------------
         # Experiment Mainloop
@@ -929,12 +914,10 @@ class SpectrumExperiment(BaseExperiment):
             # Plot figures
             self.plot_figures(fig, subplots, Num_Of_dets)
 
-            if self.playback['active']:
-                time.sleep(self.playback['delay'])
+            # Experiment delay
+            self.experiment_mainloop_delay()
 
             # If we are still in warm-up phase, we do not continue further and go back to beginning of loop
-            # TODO: uncomment if we have Py 3.8 in the lab
-            # if self.warm_up := self.is_warm_up_phase():
             self.warm_up = self.is_warm_up_phase()
             if self.warm_up:
                 continue
@@ -976,7 +959,9 @@ class SpectrumExperiment(BaseExperiment):
             # We completed another repetition.
             self.repetitions += 1
 
-        ############################################## END MAIN LOOP #################################################
+        ############################################## END MAIN-LOOP #################################################
+
+        # TODO: move all the below to post_run()
 
         if self.runs_status == TerminationReason.SUCCESS:
             self.logger.info(f'Finished {N} Runs, {"with" if self.with_atoms else "without"} atoms')
@@ -995,19 +980,30 @@ class SpectrumExperiment(BaseExperiment):
             aftComment = 'ignore'
 
 
-        # TODO: re-implement in QuadRF class - to get the data - and BDResults will save...
+        experiment_comment = f'Transit condition: {transit_cond}\nWhich means - for {len(transit_cond)} consecutive on-resonance pulses at least 2 of the conditions must apply.\n Each element represents the minimum number of photon required per pulse to be regarded as transit.'
+        daily_experiment_comments = self.generate_experiment_summary_line(pre_comment, aftComment, self.with_atoms, self.counter)
+
+        self.save_experiment_results(experiment_comment, daily_experiment_comments)
+
+        # End of Experiment! Ensure we turn the experiment flag off and return the MOT
+        self.updateValue("Experiment_Switch", False)  # TODO: why not change the flag to "True"?
+        self.MOT_switch(with_atoms=True, update_parameters=True)
+
+        return self.runs_status
+
+    def save_experiment_results(self, experiment_comment, daily_experiment_comments):
+        """
+        This method is responsible for saving all the results gathered in the experiment and required by analysis
+        """
+
         # Save Quad RF controllers commands
+        # TODO: re-implement in QuadRF class - to get the data - and BDResults will save...
         if not self.playback['active']:
             dirname = self.bd_results.get_root()
             for qrdCtrl in self.QuadRFControllers:
                 qrdCtrl.saveLinesAsCSV(f'{dirname}\\QuadRF_table.csv')
 
-        # ------------------------------------------------------------------------
-        #    Save (a) Input sequences (b) Output results (c) Meta Data
-        # ------------------------------------------------------------------------
-
-        experiment_comment = f'Transit condition: {transit_cond}\nWhich means - for {len(transit_cond)} consecutive on-resonance pulses at least 2 of the conditions must apply.\n Each element represents the minimum number of photon required per pulse to be regarded as transit.'
-
+        # Save all other files
         results = {
             "early_sequence": Config.QRAM_Exp_Square_samples_Early,  # TODO: Why are these called "QRAM" - need to rename them
             "late_sequence": Config.QRAM_Exp_Square_samples_Late,  # TODO: Why are these called "QRAM" - need to rename them
@@ -1029,18 +1025,12 @@ class SpectrumExperiment(BaseExperiment):
             "lock_error": self.batcher['lock_err_batch'],
             "exp_timestr": self.batcher['exp_timestr_batch'],
             "exp_comment": experiment_comment,
-            "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, self.with_atoms, self.counter),
+            "daily_experiment_comments": daily_experiment_comments,
             #"max_probe_counts": "TBD",  # TODO: ...
             "experiment_config_values": self.Exp_Values
         }
         self.bd_results.save_results(results)
 
-        # End of Experiment! Ensure we turn the experiment flag off and return the MOT
-        # TODO: move this to post_run()
-        self.updateValue("Experiment_Switch", False)  # TODO: why not change the flag to "True"?
-        self.MOT_switch(with_atoms=True, update_parameters=True)
-
-        return self.runs_status
 
     def is_acquired(self):
         """
