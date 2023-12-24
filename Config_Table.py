@@ -26,7 +26,6 @@ Initial_Values = {
     # 'Operation_Mode': 'PrePGC_Fountain',
     # 'Operation_Mode': 'OD_FS',
     # 'Operation_Mode': 'Depump',
-    # 'Operation_Mode': 'Transit_Exp',
     # 'Operation_Mode': 'Spectrum_Exp',
     # 'Operation_Mode': 'CRUS_Exp',
     # 'Operation_Mode': 'SPRINT_2-3_Exp',
@@ -50,7 +49,7 @@ Initial_Values = {
     # MOT parameters:
     'MOT_freq': 113e6,
     'MOT_AOM_freq': 110e6,
-    'MOT_duration': 2000,          # [msec]
+    'MOT_duration': 1600,          # [msec]
     # 'MOT_duration': 300,          # [msec]
     'MOT_rep': -1,
     'AntiHelmholtz_delay': 0.1,    # [msec]
@@ -165,7 +164,7 @@ Operation_Modes = {
                     'Default_Values': {
                                         'MOT_rep': int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config.MOT_pulse_len)),
                                         'Triggering_Phase': 'Pulse_1',
-                                        'PrePulse_CH1_freq': Initial_Values['MOT_freq'] - 10e6,  # [Hz]
+                                        'PrePulse_CH1_freq': Initial_Values['MOT_freq'] - 4e6,  # [Hz]
                                         'PrePulse_CH2_freq': 133.325e6,  # Hz
                                         'Pulse_1_CH1_Freq_i': Initial_Values['MOT_freq'],
                                         # 'Pulse_1_CH1_Freq_i': Initial_Values['Flash_freq'],
@@ -325,7 +324,8 @@ Operation_Modes = {
                                     },
                     'QRAM_Exp':  {'Triggering_Phase': 'Free_Fall',
                                   'MOT_rep': int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config_QRAM.MOT_pulse_len)),
-                                  'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
+                                  # 'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
+                                  'Fountain_final_Delta_freq': 0.42e6,  # 0.42e6 - until 12.12.23
                                   'PrePulse_Repump_amp': 0.000001,  # relative
                                   'PrePulse_CH2_freq': 133.325e6,  # Hz
                                   'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],
@@ -336,7 +336,7 @@ Operation_Modes = {
                                   'Imaging_Phase': 'Pulse_1',
                                   # 'PrePulse_duration': 4,  # [msec]
                                   # 'PrePulse_duration': 14,  # [msec]
-                                  'PrePulse_duration': 12,  # [msec]
+                                  'PrePulse_duration': 13,  # [msec]
                                   'Shutter_open_time': 1,  # [msec]
                                   'Pulse_1_duration': int(max(Config_QRAM.readout_pulse_sprint_len_N,
                                                               Config_QRAM.readout_pulse_sprint_len_S)) / 1e6,  # [msec]
@@ -351,8 +351,10 @@ Operation_Modes = {
                                   },
                     'Transits_Exp':  {'Triggering_Phase': 'Free_Fall',
                                       'MOT_rep': int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config_QRAM.MOT_pulse_len)),
-                                      'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
+                                      # 'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
+                                      'Fountain_final_Delta_freq': 0.42e6,  # 0.38e6 - until 30.10.22
                                       'PrePulse_Repump_amp': 1,  # relative
+                                      # 'PrePulse_Repump_amp': 0.000001,  # relative
                                       'PrePulse_CH2_freq': 133.325e6, # Hz
                                       'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],
                                       'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'],
@@ -361,8 +363,8 @@ Operation_Modes = {
                                       'Buffer_Cycles': 0,
                                       'Imaging_Phase': 'Pulse_1',
                                       # 'PrePulse_duration': 4,  # [msec]
-                                      'PrePulse_duration': 15,  # [msec]
-                                      # 'PrePulse_duration': 12,  # [msec]
+                                      'PrePulse_duration': 13,  # [msec]
+                                      # 'PrePulse_duration': 15,  # [msec]
                                       'Shutter_open_time': 3.5,  # [msec]
                                       'Pulse_1_duration': int(max(Config_QRAM.readout_pulse_sprint_len_N,
                                                                   Config_QRAM.readout_pulse_sprint_len_S)) / 1e6,  # [msec]
@@ -404,8 +406,8 @@ Operation_Modes = {
                                         'Pulse_1_CH1_Freq_f': Initial_Values['Flash_freq'],
                                         'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'],
                                         # Fountain
-                                        # 'Fountain_duration': 0.5,        # [msec]
-                                        'Fountain_duration': 0,        # [msec]
+                                        'Fountain_duration': 0.5,        # [msec]
+                                        # 'Fountain_duration': 0,        # [msec]
                                         'Fountain_prep_duration': 0.5,  # [msec], Can't be zero!!!
                                         # Imaging
                                         'Imaging_Phase': 'Pulse_1',
