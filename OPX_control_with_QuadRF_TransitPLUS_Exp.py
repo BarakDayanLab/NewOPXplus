@@ -554,11 +554,11 @@ def opx_control(obj, qm):
             align(*all_elements)
 
             # Fountain sequence:
-            # wait(fountain_duration, "Cooling_Sequence")
-            # Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
-            #                            fountain_pulse_duration_0, fountain_pulse_duration_minus,
-            #                            fountain_pulse_duration_plus, fountain_aom_chirp_rate,
-            #                            fountain_delta_f)
+            wait(fountain_duration, "Cooling_Sequence")
+            Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
+                                       fountain_pulse_duration_0, fountain_pulse_duration_minus,
+                                       fountain_pulse_duration_plus, fountain_aom_chirp_rate,
+                                       fountain_delta_f)
 
             # PGC sequence:
             wait(pgc_duration, "Cooling_Sequence")

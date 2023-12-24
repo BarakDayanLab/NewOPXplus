@@ -1865,11 +1865,11 @@ class OPX:
     def save_tt_to_batch(self, Num_Of_dets, N):
         for i in range(len(Num_Of_dets)):
             self.tt_measure_batch[i] = self.tt_measure_batch[i][-(N - 1):] + [self.tt_measure[i]]
-        self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
-        self.tt_N_measure_batch = self.tt_N_measure_batch[-(N - 1):] + [self.tt_N_measure]
-        self.tt_BP_measure_batch = self.tt_BP_measure_batch[-(N - 1):] + [self.tt_BP_measure]
-        self.tt_DP_measure_batch = self.tt_DP_measure_batch[-(N - 1):] + [self.tt_DP_measure]
-        self.tt_FS_measure_batch = self.tt_FS_measure_batch[-(N - 1):] + [self.tt_FS_measure]
+        # self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
+        # self.tt_N_measure_batch = self.tt_N_measure_batch[-(N - 1):] + [self.tt_N_measure]
+        # self.tt_BP_measure_batch = self.tt_BP_measure_batch[-(N - 1):] + [self.tt_BP_measure]
+        # self.tt_DP_measure_batch = self.tt_DP_measure_batch[-(N - 1):] + [self.tt_DP_measure]
+        # self.tt_FS_measure_batch = self.tt_FS_measure_batch[-(N - 1):] + [self.tt_FS_measure]
 
     def plot_transit_figures(self, fig, ax, Num_Of_dets):
         ########################## PLOT!!! ########################################################################
@@ -2978,9 +2978,9 @@ class OPX:
             filename_Det_tt.append(f'Det' + str(i) + f'_timetags.npz')
         filename_S_tt = f'South_timetags.npz'
         filename_N_tt = f'North_timetags.npz'
-        filename_DP_tt = f'Dark_timetags.npz'
-        filename_BP_tt = f'Bright_timetags.npz'
-        filename_FS_tt = f'FS_timetags.npz'
+        # filename_DP_tt = f'Dark_timetags.npz'
+        # filename_BP_tt = f'Bright_timetags.npz'
+        # filename_FS_tt = f'FS_timetags.npz'
         filename_FLR = f'Flouresence.npz'
         filename_timestamp = f'Drops_time_stamps.npz'
         filename_lockerr = f'Cavity_Lock_Error.npz'
@@ -3018,12 +3018,12 @@ class OPX:
             np.savez(dirname_S + filename_S_tt, self.tt_S_measure_batch)
         if len(self.tt_N_measure_batch) > 0:
             np.savez(dirname_N + filename_N_tt, self.tt_N_measure_batch)
-        if len(self.tt_DP_measure_batch) > 0:
-            np.savez(dirname_D + filename_DP_tt, self.tt_DP_measure_batch)
-        if len(self.tt_BP_measure_batch) > 0:
-            np.savez(dirname_B + filename_BP_tt, self.tt_BP_measure_batch)
-        if len(self.tt_FS_measure_batch) > 0:
-            np.savez(dirname_FS + filename_FS_tt, self.tt_FS_measure_batch)
+        # if len(self.tt_DP_measure_batch) > 0:
+        #     np.savez(dirname_D + filename_DP_tt, self.tt_DP_measure_batch)
+        # if len(self.tt_BP_measure_batch) > 0:
+        #     np.savez(dirname_B + filename_BP_tt, self.tt_BP_measure_batch)
+        # if len(self.tt_FS_measure_batch) > 0:
+        #     np.savez(dirname_FS + filename_FS_tt, self.tt_FS_measure_batch)
         if len(self.all_transits_indx_batch) > 0:
             np.savez(dirname + filename_transits_events, self.all_transits_indx_batch)
         if len(self.Cavity_spectrum) > 0:
@@ -3100,7 +3100,7 @@ class OPX:
 
     def Start_Spectrum_Exp_with_tt(self, N=1000, Transit_profile_bin_size=100, preComment=None, transit_cond=[2, 1, 2],
                                   total_counts_threshold=0.2, transit_counts_threshold=3, FLR_threshold=0.03,
-                                  lock_err_threshold=0.002, Exp_flag=True, with_atoms=True, Calibration_dirname=None):
+                                  lock_err_threshold=0.001, Exp_flag=True, with_atoms=True, Calibration_dirname=None):
         self.Spectrum_Exp_switch(True)
         self.MOT_switch(with_atoms)
         self.update_parameters()
@@ -3275,7 +3275,7 @@ class OPX:
 if __name__ == "__main__":
     # try:
     experiment = OPX(Config.config)
-    # experiment.Start_Spectrum_Exp_with_tt(preComment="Spectrum experiment; bandwidth 48 MHz, 1.5MHz jumps")
+    experiment.Start_Spectrum_Exp_with_tt(preComment="Spectrum experiment; bandwidth 48 MHz, 1.5MHz jumps",Exp_flag=False)
     # experiment.Start_Spectrum_Exp_with_tt(N=200, preComment="Spectrum experiment; On resonance max counts",
     #                                       total_counts_threshold=10, with_atoms=False)
     # experiment.Start_Spectrum_Exp_with_tt(Exp_flag=False)

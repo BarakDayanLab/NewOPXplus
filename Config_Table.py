@@ -26,13 +26,12 @@ Initial_Values = {
     # 'Operation_Mode': 'PrePGC_Fountain',
     # 'Operation_Mode': 'OD_FS',
     # 'Operation_Mode': 'Depump',
-    # 'Operation_Mode': 'Transit_Exp',
     # 'Operation_Mode': 'Spectrum_Exp',
     # 'Operation_Mode': 'CRUS_Exp',
     # 'Operation_Mode': 'SPRINT_2-3_Exp',
     # 'Operation_Mode': 'SPRINT_Exp',
-    'Operation_Mode': 'QRAM_Exp',
-    # 'Operation_Mode': 'Transits_Exp',
+    # 'Operation_Mode': 'QRAM_Exp',
+    'Operation_Mode': 'Transits_Exp',
     # 'Operation_ModB-e': 'Continuous',
     'Imaging_Phase': 'Pulse_1',
     'Triggering_Phase': -1,  # Don't change this. Triggering phase should be defined within each operation mode (see below)
@@ -407,8 +406,8 @@ Operation_Modes = {
                                         'Pulse_1_CH1_Freq_f': Initial_Values['Flash_freq'],
                                         'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'],
                                         # Fountain
-                                        # 'Fountain_duration': 0.5,        # [msec]
-                                        'Fountain_duration': 0,        # [msec]
+                                        'Fountain_duration': 0.5,        # [msec]
+                                        # 'Fountain_duration': 0,        # [msec]
                                         'Fountain_prep_duration': 0.5,  # [msec], Can't be zero!!!
                                         # Imaging
                                         'Imaging_Phase': 'Pulse_1',

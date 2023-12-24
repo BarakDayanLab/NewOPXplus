@@ -190,14 +190,14 @@ s_g1 = Slider(ax=ax_g1, label='$g$', valmin=0, valmax=100.0, valinit=g1_0, valfm
               facecolor='#cc7000')
 s_Kex = Slider(ax=ax_Kex, label='$\kappa_{ex} $', valmin=0, valmax=100.0, valinit=k_ex_0, valfmt=' %1.1f [MHz]',
                facecolor='#cc7000')
-s_h = Slider(ax=ax_h, label='h ', valmin=0, valmax=20.0, valinit=h_0, valfmt=' %1.1f [MHz]', facecolor='#cc7000')
-s_Ki = Slider(ax=ax_Ki, label='$\kappa_{i} $', valmin=0, valmax=20.0, valinit=k_i_0, valfmt=' %1.1f [MHz]',
+s_h = Slider(ax=ax_h, label='h ', valmin=0, valmax=40.0, valinit=h_0, valfmt=' %1.1f [MHz]', facecolor='#cc7000')
+s_Ki = Slider(ax=ax_Ki, label='$\kappa_{i} $', valmin=0, valmax=100.0, valinit=k_i_0, valfmt=' %1.1f [MHz]',
               facecolor='#cc7000')
 
 # Create TextBoxes
-Trasmission_textbox = TextBox(ax_txtbox_T, '$\%T(\Delta=0)=$ ', initial='%1.1f' % (T_f0 * 100), textalignment='center')
-Reflection_textbox = TextBox(ax_txtbox_R, '$\%R(\Delta=0)=$ ', initial='%1.1f' % (R_f0 * 100), textalignment='center')
-FWHM_textbox = TextBox(ax_txtbox_FWHM, '$T_{FWHM}[MHz]=$ ', initial='%1.1f' % FWHM, textalignment='center')
+Trasmission_textbox = TextBox(ax_txtbox_T, '$\%T(\Delta=0)=$ ', initial='%1.1f' % (T_f0 * 100)) #, textalignment='center')
+Reflection_textbox = TextBox(ax_txtbox_R, '$\%R(\Delta=0)=$ ', initial='%1.1f' % (R_f0 * 100)) #, textalignment='center')
+FWHM_textbox = TextBox(ax_txtbox_FWHM, '$T_{FWHM}[MHz]=$ ', initial='%1.1f' % FWHM) #, textalignment='center')
 
 # Create Button
 Eval_button = Button(ax_button, 'Evaluate')

@@ -3294,9 +3294,12 @@ if __name__ == "__main__":
     # experiment.run_daily_experiment([50, 500], transit_condition=[2, 1, 2], preComment='"N-N-N-N-N-N-N-N experiment"', lock_err_threshold=0.005,
     #                                 filter_delay=[0, 0, 0], reflection_threshold=2550, reflection_threshold_time=9e6,
     #                                 FLR_threshold=0.08, MZ_inidelity_threshold=1.12, Exp_flag=True)
+    print('you are running QRAM Experiment')
+    if not experiment.Exp_Values['Operation_Mode']== 'QRAM_Exp':
+        raise ValueError("at Config table - operation mode should be changed to QRAM_Exp")
     experiment.run_daily_experiment([500], transit_condition=[2, 1, 2], preComment='"N-N-N-N-N-N-N-N experiment"', lock_err_threshold=0.005,
                                     filter_delay=[0, 0, 0], reflection_threshold=2550, reflection_threshold_time=9e6,
-                                    FLR_threshold=0.08, MZ_inidelity_threshold=1.12, with_atoms_bool=True, Exp_flag=False)
+                                    FLR_threshold=0.08, MZ_inidelity_threshold=1.12, with_atoms_bool=True, Exp_flag=True)
 
     # experiment.run_daily_experiment([20, 50] * 2, transit_condition=[2, 1, 2], preComment='"1c(0+1)t"', lock_err_threshold=0.1,
     #                                 filter_delay=[0, 0, 0], reflection_threshold=6000, reflection_threshold_time=9e6,
