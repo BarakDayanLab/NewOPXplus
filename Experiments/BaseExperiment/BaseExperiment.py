@@ -86,7 +86,7 @@ class BaseExperiment:
 
         # Playback definitions
         self.playback = {
-            "active": True,
+            "active": False,
             "data_loaded": False,
             "save_results": False,
             "plot_figures": False,

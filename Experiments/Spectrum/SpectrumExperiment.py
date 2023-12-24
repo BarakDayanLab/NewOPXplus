@@ -1081,8 +1081,9 @@ class SpectrumExperiment(BaseExperiment):
             return True
 
         # We stay in warm-up while we're not locked
-        if self.lock_err > self.lock_err_threshold:
-            return True
+        # @@@
+        # if self.lock_err > self.lock_err_threshold:
+        #     return True
 
         # We stay in warm-up if we're not within threshold
         if self.exp_flag and self.sum_for_threshold >= self.total_counts_threshold:
@@ -1153,7 +1154,7 @@ if __name__ == "__main__":
         'N': 500,
         'transit_profile_bin_size': 100,  # TODO: Q: should this be 10 or 100?
         'pre_comment': 'Spectrum Experiment. No pre-comments defined',
-        'transit_cond': [2, 2, 2],
+        'transit_cond': [2, 1, 2],  # @@@
         'total_counts_threshold': 0.4,
         'transit_counts_threshold': 3,
         'FLR_threshold': 0.03,
