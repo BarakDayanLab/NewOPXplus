@@ -1659,46 +1659,46 @@ streams = {
 }
 
 streams = {
-    "Detector_1_Counts": {
-        "number": 1,
-        "name": "Detector_1_Counts",
-        "delay": 30
-    },
-    "Detector_2_Counts": {
-        "number": 2,
-        "name": "Detector_2_Counts",
-        "delay": 20
-    },
-    "Detector_3_Counts": {
-        "number": 3,
-        "name": "Detector_3_Counts",
-        "delay": 20
-    },
-    "Detector_4_Counts": {
-        "number": 4,
-        "name": "Detector_4_Counts",
-        "delay": 20
-    },
-    "Detector_5_Counts": {
-        "number": 5,
-        "name": "Detector_5_Counts",
-        "delay": 20
-    },
-    "Detector_6_Counts": {
-        "number": 6,
-        "name": "Detector_6_Counts",
-        "delay": 20
-    },
-    "Detector_7_Counts": {
-        "number": 7,
-        "name": "Detector_7_Counts",
-        "delay": 20
-    },
-    "Detector_8_Counts": {
-        "number": 8,
-        "name": "Detector_8_Counts",
-        "delay": 20
-    },
+    # "Detector_1_Counts": {
+    #     "number": 1,
+    #     "name": "Detector_1_Counts",
+    #     "delay": 30
+    # },
+    # "Detector_2_Counts": {
+    #     "number": 2,
+    #     "name": "Detector_2_Counts",
+    #     "delay": 20
+    # },
+    # "Detector_3_Counts": {
+    #     "number": 3,
+    #     "name": "Detector_3_Counts",
+    #     "delay": 20
+    # },
+    # "Detector_4_Counts": {
+    #     "number": 4,
+    #     "name": "Detector_4_Counts",
+    #     "delay": 20
+    # },
+    # "Detector_5_Counts": {
+    #     "number": 5,
+    #     "name": "Detector_5_Counts",
+    #     "delay": 20
+    # },
+    # "Detector_6_Counts": {
+    #     "number": 6,
+    #     "name": "Detector_6_Counts",
+    #     "delay": 20
+    # },
+    # "Detector_7_Counts": {
+    #     "number": 7,
+    #     "name": "Detector_7_Counts",
+    #     "delay": 20
+    # },
+    # "Detector_8_Counts": {
+    #     "number": 8,
+    #     "name": "Detector_8_Counts",
+    #     "delay": 20
+    # },
     "Detector_1_Timetags": {
         "number": 1,
         "name": "Detector_1_Timetags",

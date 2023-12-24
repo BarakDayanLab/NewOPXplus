@@ -39,7 +39,7 @@ class BDBatch:
 
     def empty_batch(self, key):
         # TODO: handle case where this is an array
-        self.batchs_map[key]['batches_data'] = []
+        self.batches_map[key]['batches_data'] = []
 
     def set_batch_size(self, batch_size):
         self.batch_size = batch_size

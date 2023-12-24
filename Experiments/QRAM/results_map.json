@@ -4,6 +4,11 @@
 	"all_experiments_root": "C:\\temp\\refactor_debug\\Experiment_results",
 	"experiment_root": "C:\\temp\\refactor_debug\\Experiment_results\\QRAM",
 	"root": "C:\\temp\\refactor_debug\\Experiment_results\\QRAM\\{current_date}\\{current_time}_Photon_TimeTags",
+	"locking_error_root": "U:\\Lab_2023\\Experiment_results\\QRAM\\Locking_PID_Error",
+	"calibration_folder__DO_WE_NEED__": "U:\\Lab_2023\\Experiment_results\\QRAM\\20231116\\133237_Photon_TimeTags",
+	"playback_data_0": "U:\\Lab_2023\\Experiment_results\\Spectrum\\20231213\\134648_Photon_TimeTags",
+	"playback_data": "C:\\temp\\playback_data\\QRAM\\081127_Photon_TimeTags",
+
 	"files": [
 
 		{

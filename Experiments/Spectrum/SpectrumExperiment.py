@@ -511,6 +511,34 @@ class SpectrumExperiment(BaseExperiment):
                 seq_filter_with_smearing[j] = 1
         return pulses_loc, seq_filter_with_smearing
 
+    def load_data_for_playback(self):
+        """
+        This function loads relevant data saved in previous experiments
+        and re-constructs the original streams raw data.
+        (the raw data will serve for the playback runs)
+        """
+        playback_folder = self.bd_results.get_custom_root('playback_data')
+
+        # Iterate over all stream and load data from the relevant file
+        for stream in self.streams.values():
+            self.info(f"Loading stream for {stream['name']}...")
+            if stream['handler'] is not None:
+                stream['handler'] = 'playback: data loaded!'  # Mark the stream as loaded
+                if stream['name'] == 'FLR_measure':
+                    name = 'Flouresence.npz'
+                    data_file = os.path.join(playback_folder, name)
+                else:
+                    name = stream['name'].lower().replace('detector_', 'Det') + '.npz'
+                    data_file = os.path.join(playback_folder, 'AllDetectors', name)
+
+                # Load the file and add first element with the size
+                if os.path.exists(data_file):
+                    # Load the file
+                    zipped_data = np.load(data_file, allow_pickle=True)
+                    stream['all_rows'] = zipped_data['arr_0']
+
+        pass
+
     def print_experiment_information(self):
         """
         Prints during the experiment a formatted line that brings all concise information
@@ -528,6 +556,17 @@ class SpectrumExperiment(BaseExperiment):
             time.sleep(self.playback['delay'])
         else:
             time.sleep(0.01)  # TODO: do we need this delay?
+
+    def prepare_figures(self):
+        fig = plt.figure()
+        subplots = []
+        subplots.append(plt.subplot2grid((6, 2), (0, 0), colspan=1, rowspan=2))
+        subplots.append(plt.subplot2grid((6, 2), (0, 1), colspan=1, rowspan=2))
+        subplots.append(plt.subplot2grid((6, 2), (2, 0), colspan=1, rowspan=2))
+        subplots.append(plt.subplot2grid((6, 2), (2, 1), colspan=1, rowspan=2))
+        subplots.append(plt.subplot2grid((6, 2), (4, 0), colspan=1, rowspan=2))
+        subplots.append(plt.subplot2grid((6, 2), (4, 1), colspan=1, rowspan=2))
+        return fig, subplots
 
     def plot_figures(self, fig, subplots, Num_Of_dets):
         try:
@@ -739,7 +778,6 @@ class SpectrumExperiment(BaseExperiment):
             self.tt_S_binning = Utils.bin_values(values=curr_measure, bin_size=Config.frequency_sweep_duration, num_of_bins=self.histogram_bin_number * 2)
 
             # If there are time-tags in the last 5%, it is ok!
-            # TODO: Need assaf to explain this to me...
             S_det_is_full = Utils.tail_contains_non_zeros(values=self.tt_S_binning, percent=5)
 
             # We break if it is new data and not full
@@ -758,6 +796,7 @@ class SpectrumExperiment(BaseExperiment):
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         return timestamp
 
+    # TODO: There's no need in Spectrum experiment for transit_counts_threshold ?
     def Save_SNSPDs_Spectrum_Measurement_with_tt(self, N, transit_profile_bin_size, pre_comment, transit_cond,
                                                  total_counts_threshold, transit_counts_threshold, FLR_threshold,
                                                  lock_err_threshold, exp_flag, with_atoms):
@@ -838,19 +877,8 @@ class SpectrumExperiment(BaseExperiment):
         calibration_file = os.path.join(calibration_folder, 'Cavity_spectrum.npz')
         self.power_per_freq_weight = self.AOM_power_per_freq_calibration(calibration_file)
 
-        # --------------------------------------------------------------
-        # Create figures template
-        # --------------------------------------------------------------
-
-        fig = plt.figure()
-        subplots = []
-        subplots.append(plt.subplot2grid((6, 2), (0, 0), colspan=1, rowspan=2))
-        subplots.append(plt.subplot2grid((6, 2), (0, 1), colspan=1, rowspan=2))
-        subplots.append(plt.subplot2grid((6, 2), (2, 0), colspan=1, rowspan=2))
-        subplots.append(plt.subplot2grid((6, 2), (2, 1), colspan=1, rowspan=2))
-        subplots.append(plt.subplot2grid((6, 2), (4, 0), colspan=1, rowspan=2))
-        subplots.append(plt.subplot2grid((6, 2), (4, 1), colspan=1, rowspan=2))
-
+        # Prepare the sub figures needed for the plotting phase
+        fig, subplots = self.prepare_figures()
         #self.maximize_figure()  # TODO: uncomment
 
         ############################################ START MAIN LOOP #################################################
@@ -865,9 +893,8 @@ class SpectrumExperiment(BaseExperiment):
 
         # ---------------------------------------------------------------------------------
         # Experiment Mainloop
-        # ---------------------------------------------------------------------------------
-        # We iterate few warm-up rounds
-        # We iterate until we got N successful runs, or user terminated
+        # - We iterate few warm-up rounds
+        # - We iterate until we got N successful runs, or user terminated
         # ---------------------------------------------------------------------------------
         while True:
 
@@ -986,7 +1013,7 @@ class SpectrumExperiment(BaseExperiment):
         self.save_experiment_results(experiment_comment, daily_experiment_comments)
 
         # End of Experiment! Ensure we turn the experiment flag off and return the MOT
-        self.updateValue("Experiment_Switch", False)  # TODO: why not change the flag to "True"?
+        self.updateValue("Experiment_Switch", False)
         self.MOT_switch(with_atoms=True, update_parameters=True)
 
         return self.runs_status
@@ -1081,8 +1108,8 @@ class SpectrumExperiment(BaseExperiment):
             return True
 
         # We stay in warm-up while we're not locked
-        if self.lock_err > self.lock_err_threshold:
-            return True
+        # if self.lock_err > self.lock_err_threshold:
+        #     return True
 
         # We stay in warm-up if we're not within threshold
         if self.exp_flag and self.sum_for_threshold >= self.total_counts_threshold:
@@ -1153,7 +1180,7 @@ if __name__ == "__main__":
         'N': 500,
         'transit_profile_bin_size': 100,  # TODO: Q: should this be 10 or 100?
         'pre_comment': 'Spectrum Experiment. No pre-comments defined',
-        'transit_cond': [2, 2, 2],
+        'transit_cond': [2, 1, 2],
         'total_counts_threshold': 0.4,
         'transit_counts_threshold': 3,
         'FLR_threshold': 0.03,

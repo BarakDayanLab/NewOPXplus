@@ -86,7 +86,7 @@ class BaseExperiment:
 
         # Playback definitions
         self.playback = {
-            "active": True,
+            "active": False,
             "data_loaded": False,
             "save_results": False,
             "plot_figures": False,
@@ -683,52 +683,26 @@ class BaseExperiment:
         if self.playback['data_loaded'] == False:
             self.playback['data_loaded'] = True
             self.playback['row_count'] = 0
-            self._load_data_for_playback()
+            self.load_data_for_playback()
 
-        # Advance all streams to hold the next data row
-        row = self.playback['row_count']
-        for stream in self.streams.values():
-            if 'all_rows' in stream:
-                stream['results'] = stream['all_rows'][row]
-                # Add length of time-tags. We do not do this for FLR.
-                # TODO: remove this when we will load "real" sensors data
-                if stream['name'] != 'FLR_measure':
-                    if len(stream['results']) == 0:
-                        # Handling the case specifically or Numpy will create an array with value 0.0 (as float)!
-                        stream['results'] = np.zeros(shape=1, dtype=int)
-                    else:
-                        stream['results'] = np.insert(stream['results'], 0, int(len(stream['results'])))
+        try:  # TODO: remove this try-except
+
+            # Advance all streams to hold the next data row from all_rows
+            row = self.playback['row_count']
+            for stream in self.streams.values():
+                if 'all_rows' in stream:
+                    stream['results'] = stream['all_rows'][row]
+
+        except Exception as err:
+            print(err)
 
         # Advance the row for the next time
         self.playback['row_count'] += 1
 
         pass
 
-    def _load_data_for_playback(self):
-        """
-        This function loads the playback data from the data folder
-        """
-        playback_folder = self.bd_results.get_custom_root('playback_data')
-
-        # Iterate over all stream and load data from the relevant file
-        for stream in self.streams.values():
-            self.info(f"Loading stream for {stream['name']}...")
-            if stream['handler'] is not None:
-                stream['handler'] = 'playback: data loaded!'  # Mark the stream as loaded
-                if stream['name'] == 'FLR_measure':
-                    name = 'Flouresence.npz'
-                    data_file = os.path.join(playback_folder, name)
-                else:
-                    name = stream['name'].lower().replace('detector_', 'Det') + '.npz'
-                    data_file = os.path.join(playback_folder, 'AllDetectors', name)
-
-                # Load the file and add first element with the size
-                if os.path.exists(data_file):
-                    # Load the file
-                    zipped_data = np.load(data_file, allow_pickle=True)
-                    stream['all_rows'] = zipped_data['arr_0']
-
-        pass
+    def load_data_for_playback(self):
+        raise Exception('Not implemented in base class. Implement in superclass!')
 
     def get_results_from_streams(self, playback=False):
         """

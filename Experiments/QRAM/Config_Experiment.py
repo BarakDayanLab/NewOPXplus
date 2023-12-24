@@ -1584,93 +1584,103 @@ config = {
     # }
 }
 
-# TODO: looks like we have TOO many streams... But the code of QRAM calls them: search the code for: "Bright_Port_Counts"
+# TODO: looks like we have TOO many streams... Need to revisit OPX code to check what is used
 streams = {
-    "Detector_1_Counts": {
-        "number": 1,
-        "name": "Detector_1_Counts",
-        "delay": 30
-    },
-    "Detector_2_Counts": {
-        "number": 2,
-        "name": "Detector_2_Counts",
-        "delay": 20
-    },
-    "Detector_3_Counts": {
-        "number": 3,
-        "name": "Detector_3_Counts",
-        "delay": 20
-    },
-    "Detector_4_Counts": {
-        "number": 4,
-        "name": "Detector_4_Counts",
-        "delay": 20
-    },
-    "Detector_5_Counts": {
-        "number": 5,
-        "name": "Detector_5_Counts",
-        "delay": 20
-    },
-    "Detector_6_Counts": {
-        "number": 6,
-        "name": "Detector_6_Counts",
-        "delay": 20
-    },
-    "Detector_7_Counts": {
-        "number": 7,
-        "name": "Detector_7_Counts",
-        "delay": 20
-    },
-    "Detector_8_Counts": {
-        "number": 8,
-        "name": "Detector_8_Counts",
-        "delay": 20
-    },
+    # "Detector_1_Counts": {
+    #     "number": 1,
+    #     "name": "Detector_1_Counts",
+    #     "delay": 30
+    # },
+    # "Detector_2_Counts": {
+    #     "number": 2,
+    #     "name": "Detector_2_Counts",
+    #     "delay": 20
+    # },
+    # "Detector_3_Counts": {
+    #     "number": 3,
+    #     "name": "Detector_3_Counts",
+    #     "delay": 20
+    # },
+    # "Detector_4_Counts": {
+    #     "number": 4,
+    #     "name": "Detector_4_Counts",
+    #     "delay": 20
+    # },
+    # "Detector_5_Counts": {
+    #     "number": 5,
+    #     "name": "Detector_5_Counts",
+    #     "delay": 20
+    # },
+    # "Detector_6_Counts": {
+    #     "number": 6,
+    #     "name": "Detector_6_Counts",
+    #     "delay": 20
+    # },
+    # "Detector_7_Counts": {
+    #     "number": 7,
+    #     "name": "Detector_7_Counts",
+    #     "delay": 20
+    # },
+    # "Detector_8_Counts": {
+    #     "number": 8,
+    #     "name": "Detector_8_Counts",
+    #     "delay": 20
+    # },
     "Detector_1_Timetags": {
         "number": 1,
         "name": "Detector_1_Timetags",
+        "playback": "Det1_timetags.npz",
         "delay": 30
     },
     "Detector_2_Timetags": {
         "number": 2,
         "name": "Detector_2_Timetags",
+        "playback": "Det1_timetags.npz",
         "delay": 20
     },
     "Detector_3_Timetags": {
         "number": 3,
         "name": "Detector_3_Timetags",
+        "playback": "Det1_timetags.npz",
         "delay": 20
     },
     "Detector_4_Timetags": {
         "number": 4,
         "name": "Detector_4_Timetags",
+        "playback": "Det1_timetags.npz",
         "delay": 20
     },
     "Detector_5_Timetags": {
         "number": 5,
         "name": "Detector_5_Timetags",
+        "playback": "Det1_timetags.npz",
         "delay": 20
     },
     "Detector_6_Timetags": {
         "number": 6,
         "name": "Detector_6_Timetags",
+        "playback": "Det1_timetags.npz",
         "delay": 20
     },
     "Detector_7_Timetags": {
         "number": 7,
         "name": "Detector_7_Timetags",
+        "playback": "Det1_timetags.npz",
         "delay": 20
     },
     "Detector_8_Timetags": {
         "number": 8,
         "name": "Detector_8_Timetags",
+        "playback": "Det1_timetags.npz",
         "delay": 20
     },
     "Bright_Port_Counts": {
         "name": "Bright_Port_Counts",
+        "playback": "Bright(1,2)\\Bright_timetags.npz"
     },
     "Dark_Port_Counts": {
         "name": "Dark_Port_Counts",
+        "playback": "Dark(3,4)\\Bright_timetags.npz"
     },
     "Phase_Correction_array": {
         "name": "Phase_Correction_array",
@@ -1686,5 +1696,9 @@ streams = {
     # },
     "FLR_measure": {
         "name": "FLR_measure",
+        "playback": "Flouresence.npz"
+    },
+    "antihelmholtz_on": {
+        "name": "antihelmholtz_on",
     }
 }

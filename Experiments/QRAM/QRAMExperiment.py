@@ -1,15 +1,16 @@
 from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
+from Experiments.BaseExperiment.BaseExperiment import TerminationReason
 from Experiments.QRAM import Config_Experiment as Config
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import time
-import json
 import os
+import time
 import math
-from playsound import playsound
-from UtilityResources.HMP4040Control import HMP4040Visa
+import pymsgbox
+
+from Utilities.BDSound import SOUNDS
 from Utilities.Utils import Utils
 
 
@@ -17,6 +18,11 @@ class QRAMExperiment(BaseExperiment):
     def __init__(self):
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
         super().__init__()
+        pass
+
+    def __del__(self):
+        print('**** SpectrumExperiment Destructor ****')
+        super(type(self), self).__del__()
         pass
 
     def initialize_experiment_variables(self):
@@ -172,31 +178,6 @@ class QRAMExperiment(BaseExperiment):
         self.Calibration_time = 10  # [msec]
         pass
 
-    # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
-    # -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-    # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
-
-    # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
-    # -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-    # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
-
-    def getHelmholtzCoilsState(self):
-        self.logger.info('Getting Helmholtz coils state...')
-        res = {}
-        try:
-            HCoilsController = HMP4040Visa()
-            for ch in [1, 2, 3]:
-                HCoilsController.setOutput(ch=ch)
-                state = HCoilsController.getOutputState()
-                current = HCoilsController.getCurrent()
-                voltage = HCoilsController.getVoltage()
-                res['Channel %s' % str(ch)] = {'Current': current, 'Voltage': voltage, 'state': state}
-            res['Output state'] = HCoilsController.getGeneralOutputState()
-            HCoilsController = None  # closing controller
-        except Exception:
-            self.logger.error('Error getting Helmholtz coils data')
-        return res
-
     # ## Boolean functions: ##
     def update_pgc_final_amplitude(self, final_amplitude):
         x = np.log(int(1 / (1 - final_amplitude)))
@@ -253,17 +234,12 @@ class QRAMExperiment(BaseExperiment):
 
     def ingest_time_tags(self, Num_Of_dets):
         """
-        This method goes over the time tag streams we got from the detectors and does the following:
-        1) Filters out garbage values (OPX bugs)
-        2) Adds delays per each detector
-        3) Unify specific detectors into single time-tags arrays
-
-        :param Num_Of_dets:
-        :return:
+        Takes all the raw results we got from the streams and does some processing on them - preparing "measures"
         """
 
-        # TODO: Q: why are we changing the sign?
+        # Get fluorescence data
         self.FLR_res = -self.streams['FLR_measure']['results']
+        self.fluorescence_average = 1000 * self.FLR_res
 
         # Clear time-tags vectors from last data
         self.tt_measure = []
@@ -317,6 +293,15 @@ class QRAMExperiment(BaseExperiment):
         self.Phase_Correction_value = self.streams['Phase_Correction_array']['results']['value_1'][-1]
         # self.Phase_diff = self.streams['Phase_diff']['results']
         self.MZ_S_tot_counts = self.streams['Max_counts']['results']
+
+        self.MZ_BP_counts_res_value_0 = self.streams['Bright_Port_Counts']['results']['value_0']  # batch
+        self.MZ_BP_counts_res_value_1 = self.streams['Bright_Port_Counts']['results']['value_1']  # check batch
+
+        self.MZ_DP_counts_res_value_0 = self.streams['Dark_Port_Counts']['results']['value_0']  # batch
+        self.MZ_DP_counts_res_value_1 = self.streams['Dark_Port_Counts']['results']['value_1']  # check batch
+
+        pass
+
 
     # TODO: Q: this currently does nothing. What was the intention and why isn't it in use?
     def latched_detectors(self):
@@ -537,7 +522,7 @@ class QRAMExperiment(BaseExperiment):
         atom_detect_data = [transit_sequences_init_tt, num_of_detected_atom]
         return atom_detect_data, sprints_data
 
-    def find_transits_and_sprint_events_changed(self, cond=[2, 2, 2], minimum_number_of_seq_detected=2):
+    def find_transits_and_sprint_events_changed(self, cond=None, minimum_number_of_seq_detected=2):
         '''
         Find transits of atoms by searching events that satisfy the number of reflected photons per sequence required at
         each cond place with minimum number of conditions needed to be satisfied, defined by the minimum_number_of_seq_detected.
@@ -548,6 +533,9 @@ class QRAMExperiment(BaseExperiment):
         :param minimum_number_of_seq_detected: The number of terms needed to be satisfied per cond vector.
         :return:
         '''
+
+        if cond is None:
+            cond = [2, 2, 2]
 
         current_transit = []
         self.all_transits_seq_indx = []  # Array of the sequence indexes of all recognized transits per cycle. The length of it will be the number of all transits at the current cycle.
@@ -768,6 +756,7 @@ class QRAMExperiment(BaseExperiment):
         self.tt_BP_measure_batch = self.tt_BP_measure_batch[-(N - 1):] + [self.tt_BP_measure]
         self.tt_DP_measure_batch = self.tt_DP_measure_batch[-(N - 1):] + [self.tt_DP_measure]
         self.tt_FS_measure_batch = self.tt_FS_measure_batch[-(N - 1):] + [self.tt_FS_measure]
+
         self.MZ_BP_counts_balancing_batch = self.MZ_BP_counts_balancing_batch[-(N - 1):] + [
             self.MZ_BP_counts_res['value_0']]
         self.MZ_BP_counts_balancing_check_batch = self.MZ_BP_counts_balancing_check_batch[-(N - 1):] + [
@@ -777,10 +766,133 @@ class QRAMExperiment(BaseExperiment):
         self.MZ_DP_counts_balancing_check_batch = self.MZ_DP_counts_balancing_check_batch[-(N - 1):] + [
             self.MZ_DP_counts_res['value_1']]
         self.Phase_Correction_vec_batch = self.Phase_Correction_vec_batch[-(N - 1):] + [self.Phase_Correction_vec]
-        self.Phase_Correction_min_vec_batch = self.Phase_Correction_min_vec_batch[-(N - 1):] + [
-            self.Phase_Correction_min_vec]
+        self.Phase_Correction_min_vec_batch = self.Phase_Correction_min_vec_batch[-(N - 1):] + [self.Phase_Correction_min_vec]
 
-    def plot_sprint_figures(self, fig, ax, Num_Of_dets, counter):
+    # TODO: move this to Base or Utils (make it static)
+    def merge_playback_data_files(self, file_1, file_2):
+        playback_folder = self.bd_results.get_custom_root('playback_data')
+
+        data_file_1 = os.path.join(playback_folder, file_1)
+        zipped_data_1 = np.load(data_file_1, allow_pickle=True)
+        data_1 = zipped_data_1['arr_0']
+        data_file_2 = os.path.join(playback_folder, file_2)
+        zipped_data_2 = np.load(data_file_2, allow_pickle=True)
+        data_2 = zipped_data_2['arr_0']
+
+        if len(data_1) != len(data_2):
+            raise Exception(f'Found files with different length - cannot construct playback! ({file_1}')
+
+        merged_array = []
+        for i in range(0, len(zipped_data_1['arr_0'])):
+            merged_array.append({
+                "value_0": data_1[i],
+                "value_1": data_2[i]
+            })
+        return merged_array
+
+    def load_data_for_playback(self):
+        """
+        This function loads relevant data saved in previous experiments
+        and re-constructs the original streams raw data.
+        (the raw data will serve for the playback runs)
+        """
+        playback_folder = self.bd_results.get_custom_root('playback_data')
+
+        # TODO: try/raise on all - to catch cases where data file is missing!
+
+        # Iterate over all stream and load detectors data from the relevant file
+        for stream in self.streams.values():
+            self.info(f"Loading stream for {stream['name']}...")
+            if stream['handler'] is not None:
+                stream['handler'] = 'playback: data loaded!'  # Mark the stream as loaded
+                if stream['name'].startswith('Detector_'):
+                    # Load the file and add first element with the size
+                    data_file = os.path.join(playback_folder, 'AllDetectors', stream['playback'])
+                    zipped_data = np.load(data_file, allow_pickle=True)
+                    stream['all_rows'] = zipped_data['arr_0']
+
+                    # Add the time-tags count as the first element of each array
+                    if len(stream['all_rows']) == 0:
+                        stream['all_rows'] = np.zeros(shape=1, dtype=int)  # Ensures we enter 0 as int!
+                    else:
+                        arr = stream['all_rows']
+                        [arr.insert(0, len(arr)) for arr in stream['all_rows']]
+
+        # Load flouresence
+        data_file = os.path.join(playback_folder, 'Flouresence.npz')
+        zipped_data = np.load(data_file, allow_pickle=True)
+        self.streams['FLR_measure']['all_rows'] = zipped_data['arr_0']
+
+        # Load Dark-Port/Bright-Port/Phase-Correction data from separate files and combine them
+        self.streams['Bright_Port_Counts']['all_rows'] = \
+            self.merge_playback_data_files(file_1='BalancingRes\\MZ_BrightPort_counts_balancing_batch.npz',
+                                           file_2='BalancingRes\\MZ_BrightPort_counts_balancing_check_batch.npz')
+        self.streams['Dark_Port_Counts']['all_rows'] = \
+            self.merge_playback_data_files(file_1='BalancingRes\\MZ_DarkPort_counts_balancing_batch.npz',
+                                           file_2='BalancingRes\\MZ_DarkPort_counts_balancing_check_batch.npz')
+        self.streams['Phase_Correction_array']['all_rows'] = \
+            self.merge_playback_data_files(file_1='BalancingRes\\MZ_balancing_Phase_Correction_vec_batch.npz',
+                                           file_2='BalancingRes\\MZ_balancing_Phase_Correction_min_vec_batch.npz')
+
+        # There is no file that saved this information, so we just put zeros here
+        self.streams['Max_counts']['all_rows'] = np.zeros(shape=len(zipped_data['arr_0']), dtype=int)
+
+    def print_experiment_information(self):
+        """
+        Prints during the experiment a formatted line that brings all concise information
+        """
+        locking_efficiency = self.counter / self.repetitions
+        locking_efficiency_str = '%.2f' % locking_efficiency
+        fluorescence_str = '%.2f' % self.fluorescence_average
+        time_formatted = time.strftime("%Y/%m/%d, %H:%M:%S")
+        status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
+
+        self.logger.info(f'{time_formatted}: {status_str}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}, #Photons/[us]: {self.sum_for_threshold}')
+
+    def experiment_mainloop_delay(self):
+        if self.playback['active']:
+            time.sleep(self.playback['delay'])
+        else:
+            time.sleep(0.01)  # TODO: do we need this delay?
+
+    def prepare_figures(self):
+        fig = plt.figure()
+        subplots = []
+        subplots.append(plt.subplot2grid((3, 4), (0, 0), colspan=2, rowspan=1))
+        subplots.append(plt.subplot2grid((3, 4), (0, 2), colspan=2, rowspan=1))
+        subplots.append(plt.subplot2grid((3, 4), (1, 0), colspan=2, rowspan=1))
+        subplots.append(plt.subplot2grid((3, 4), (1, 2), colspan=2, rowspan=1))
+        subplots.append(plt.subplot2grid((3, 4), (2, 0), colspan=1, rowspan=1))
+        subplots.append(plt.subplot2grid((3, 4), (2, 1), colspan=1, rowspan=1))
+        subplots.append(plt.subplot2grid((3, 4), (2, 2), colspan=2, rowspan=1))
+        subplots.append(subplots[3].twinx())
+        return fig, subplots
+
+    def plot_figures(self, fig, subplots, Num_Of_dets):
+        try:
+            self._plot_figures(fig, subplots, Num_Of_dets)
+        except Exception as err:
+            self.warn(f'Failed on plot_figures: {err}')
+        pass
+
+    def _plot_figures(self, fig, ax, Num_Of_dets):
+
+        plot_switches = {
+            "playsound": True,
+            "header": True,
+            "detectors": True,
+            "graph-0": True,
+            "graph-1": True,
+            "graph-2": True,
+            "graph-3": True,
+            "graph-4": True,
+            "graph-5": True,
+            "graph-6": True,
+            "graph-7": True
+        }
+
+        # Take time
+        start_plot_time = time.time()
 
         ax[0].clear()
         ax[1].clear()
@@ -791,6 +903,21 @@ class QRAMExperiment(BaseExperiment):
         ax[6].clear()
         ax[7].clear()
 
+        # Play sound:
+        if plot_switches['playsound']:
+            if not self.acquisition_flag:
+                self.bdsound.play(SOUNDS.INDICATOR_1)
+
+        # Prepare header text
+        pause_str = ' , PAUSED!' if self.pause_flag else ''
+        ref_str = '%.2f' % self.sum_for_threshold
+        flr_str = '%.2f' % self.fluorescence_average
+        eff_str = '%.2f' % (self.counter / self.repetitions)
+        lck_str = '%.3f' % self.lock_err
+        status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
+        playback_str = 'PLAYBACK: ' if self.playback['active'] else ''
+        header_text = f'{playback_str} {status_str} - Reflections: {ref_str}, Eff: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str} {pause_str}'
+
         # Detectors display:
         Detectors = []
         for i, det in enumerate(Num_Of_dets):
@@ -798,34 +925,20 @@ class QRAMExperiment(BaseExperiment):
 
         # Threshold Box:
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        if self.acquisition_flag:
-            flag_color = 'green'
-        else:
-            flag_color = 'red'
-            playsound('C:/Windows/Media/cricket-1.wav')
+        flag_color = 'green' if self.acquisition_flag else 'red'
         props_thresholds = dict(boxstyle='round', edgecolor=flag_color, linewidth=2, facecolor=flag_color, alpha=0.5)
 
         avg_BP = np.average(self.num_of_BP_counts_per_n_sequences)
-        # avg_BP_before = np.average(self.MZ_BP_counts_res['value_1'][:self.rep_MZ_check])
-        # avg_BP_after = np.average(self.MZ_BP_counts_res['value_1'][self.rep_MZ_check:])
         avg_DP = np.average(self.num_of_DP_counts_per_n_sequences)
-        # avg_DP_before = np.average(self.MZ_DP_counts_res['value_1'][:self.rep_MZ_check])
-        # avg_DP_after = np.average(self.MZ_DP_counts_res['value_1'][self.rep_MZ_check:])
-
-        pause_str = ' , PAUSED!' if self.pause_flag else ''
-        textstr_thresholds = '# %d - ' % counter + 'Reflections: %d, ' % self.sum_for_threshold + \
-                             'Efficiency: %.2f, ' % self.lockingEfficiency + \
-                             'Flr: %.2f, ' % (1000 * np.average(self.FLR_res.tolist())) + \
-                             'Lock Error: %.3f' % self.lock_err + pause_str
 
         textstr_total_reflections = 'Total reflections per cycle "N" = %d \n' % (
         sum(self.num_of_det_reflections_per_seq_N),) \
                                     + 'Total reflections per cycle "S" = %d \n' % (
                                     sum(self.num_of_det_reflections_per_seq_S),) \
                                     + 'Average reflections per cycle = %.2f \n' % (
-                                    sum(self.num_of_det_reflections_per_seq_accumulated / counter),) \
+                                    sum(self.num_of_det_reflections_per_seq_accumulated / self.counter),) \
                                     + 'Average transmissions per cycle = %.2f \n' % (
-                                    sum(self.num_of_det_transmissions_per_seq_accumulated / counter),) \
+                                    sum(self.num_of_det_transmissions_per_seq_accumulated / self.counter),) \
                                     + 'Average reflections precentage = %.2f' % (
                                     sum(self.num_of_det_reflections_per_seq_accumulated) /
                                     (sum(self.num_of_det_reflections_per_seq_accumulated) +
@@ -842,137 +955,132 @@ class QRAMExperiment(BaseExperiment):
         # 'phase difference S-N = %.2f \n' % (self.Phase_diff,) + \
         # 'S-N total counts ratio = %.2f \n' % (self.MZ_S_tot_counts,)
 
-        # for n in range(len(Num_Of_dets)):
-        #     ax[0].plot(self.single_det_folded[n], label='detectors %d' % (n+1))
-        # # ax[0].plot(self.folded_tt_N, label='"N" detectors')
-        # # ax[0].plot(self.folded_tt_S, label='"S" detectors')
-        # # ax[0].plot((self.filter_S) * max(self.folded_tt_N + self.folded_tt_S), '--', color='orange', label='Filter "S"')
-        # ax[0].set_title('binned timetags from all detectors folded (Live)', fontweight="bold")
-        # ax[0].legend(loc='upper right')
-        # # ax[0].text(0.4, 1.4, textstr_thresholds, transform=ax[0].transAxes, fontsize=28,
-        # #            verticalalignment='top', bbox=props_thresholds)
+        # Special handling for the warm-up case (there is still no calculated data to show in graphs)
+        if self.warm_up:
+            props_thresholds = dict(boxstyle='round', edgecolor='green', linewidth=2, facecolor='green', alpha=0.5)
+            ax[0].text(0.05, 1.4, header_text, transform=ax[0].transAxes, fontsize=26, verticalalignment='top', bbox=props_thresholds)
+            plt.show(block=False)
+            plt.pause(0.5)
+            return
 
-        # for m in range(len(Num_Of_dets)):
-        #     ax[1].plot(self.single_det_folded_accumulated[m], label='detectors %d' % (m+1))
-        # # ax[1].plot(self.folded_tt_N_batch, label='"N" detectors')
-        # # ax[1].plot(self.folded_tt_S_batch, label='"S" detectors')
-        # # ax[1].plot((self.filter_N) * max(self.folded_tt_N_batch + self.folded_tt_S_batch), '--b', label='Filter "N"')
-        # ax[1].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
-        # ax[1].legend(loc='upper right')
+        if plot_switches['graph-0']:
+            ax[0].plot(self.folded_tt_N_directional, label='"N" detectors')
+            ax[0].plot(self.folded_tt_S_directional, label='"S" detectors')
+            ax[0].plot(self.folded_tt_BP_timebins, label='"BP" detectors')
+            ax[0].plot(self.folded_tt_DP_timebins, label='"DP" detectors')
+            ax[0].plot((self.filter_S) * max(self.folded_tt_N_directional + self.folded_tt_S_directional),
+                       '--', color='orange', label='Filter "S"')
+            for i in range(len(self.Num_of_photons_txt_box_y_loc_live)):
+                ax[0].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc_live[i],
+                           '%.2f' % self.avg_num_of_photons_per_pulse_live[i],
+                           horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
+            for j in range(len(self.Num_of_photons_txt_box_y_loc_live_MZ)):
+                ax[0].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j],
+                           self.Num_of_photons_txt_box_y_loc_live_MZ[j][0],
+                           '%.2f' % self.avg_num_of_photons_per_pulse_live_MZ[j][0],
+                           horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
+                           color='#2ca02c')
+                ax[0].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j],
+                           self.Num_of_photons_txt_box_y_loc_live_MZ[j][1],
+                           '%.2f' % self.avg_num_of_photons_per_pulse_live_MZ[j][1],
+                           horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
+                           color='#d62728')
+            # ax[0].set_ylim(0, 0.3)
+            ax[0].set_title('binned timetags from all detectors folded (Live)', fontweight="bold")
+            ax[0].legend(loc='upper right')
+            ax[0].text(0.05, 1.4, header_text, transform=ax[0].transAxes, fontsize=26, verticalalignment='top', bbox=props_thresholds)
 
-        # ax[0].plot(self.folded_tt_N, label='"N" detectors')
-        # ax[0].plot(self.folded_tt_S, label='"S" detectors')
-        # ax[0].plot(self.folded_tt_BP, label='"BP" detectors')
-        # ax[0].plot(self.folded_tt_DP, label='"DP" detectors')
-        # ax[0].plot(self.folded_tt_FS, label='"FS" detectors')
-        ax[0].plot(self.folded_tt_N_directional, label='"N" detectors')
-        ax[0].plot(self.folded_tt_S_directional, label='"S" detectors')
-        ax[0].plot(self.folded_tt_BP_timebins, label='"BP" detectors')
-        ax[0].plot(self.folded_tt_DP_timebins, label='"DP" detectors')
-        ax[0].plot((self.filter_S) * max(self.folded_tt_N_directional + self.folded_tt_S_directional),
-                   '--', color='orange', label='Filter "S"')
-        for i in range(len(self.Num_of_photons_txt_box_y_loc_live)):
-            ax[0].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc_live[i],
-                       '%.2f' % self.avg_num_of_photons_per_pulse_live[i],
-                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
-        for j in range(len(self.Num_of_photons_txt_box_y_loc_live_MZ)):
-            ax[0].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j],
-                       self.Num_of_photons_txt_box_y_loc_live_MZ[j][0],
-                       '%.2f' % self.avg_num_of_photons_per_pulse_live_MZ[j][0],
-                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
-                       color='#2ca02c')
-            ax[0].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j],
-                       self.Num_of_photons_txt_box_y_loc_live_MZ[j][1],
-                       '%.2f' % self.avg_num_of_photons_per_pulse_live_MZ[j][1],
-                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
-                       color='#d62728')
-        # ax[0].set_ylim(0, 0.3)
-        ax[0].set_title('binned timetags from all detectors folded (Live)', fontweight="bold")
-        ax[0].legend(loc='upper right')
-        ax[0].text(0.05, 1.4, textstr_thresholds, transform=ax[0].transAxes, fontsize=28,
-                   verticalalignment='top', bbox=props_thresholds)
+        if plot_switches['graph-1']:
 
-        # ax[1].plot(self.folded_tt_BP_batch, label='"BP" detectors')
-        # ax[1].plot(self.folded_tt_DP_batch, label='"DP" detectors')
-        ax[1].plot(self.folded_tt_N_directional_batch, label='"N" detectors')
-        ax[1].plot(self.folded_tt_S_directional_batch, label='"S" detectors')
-        ax[1].plot(self.folded_tt_BP_timebins_batch, label='"BP" detectors')
-        ax[1].plot(self.folded_tt_DP_timebins_batch, label='"DP" detectors')
-        ax[1].plot((self.filter_N) * max(self.folded_tt_N_directional_batch + self.folded_tt_S_directional_batch),
-                   '--b', label='Filter "N"')
-        for i in range(len(self.Num_of_photons_txt_box_y_loc)):
-            ax[1].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc[i],
-                       '%.2f' % self.avg_num_of_photons_per_pulse[i],
-                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
-        for j in range(len(self.Num_of_photons_txt_box_y_loc_MZ)):
-            ax[1].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j],
-                       self.Num_of_photons_txt_box_y_loc_MZ[j][0],
-                       '%.2f' % self.avg_num_of_photons_per_pulse_MZ[j][0],
-                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
-                       color='#2ca02c')
-            ax[1].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j],
-                       self.Num_of_photons_txt_box_y_loc_MZ[j][1],
-                       '%.2f' % self.avg_num_of_photons_per_pulse_MZ[j][1],
-                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
-                       color='#d62728')
-        # ax[1].set_ylim(0, 0.3)
-        ax[1].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
-        ax[1].legend(loc='upper right')
+            # ax[1].plot(self.folded_tt_BP_batch, label='"BP" detectors')
+            # ax[1].plot(self.folded_tt_DP_batch, label='"DP" detectors')
+            ax[1].plot(self.folded_tt_N_directional_batch, label='"N" detectors')
+            ax[1].plot(self.folded_tt_S_directional_batch, label='"S" detectors')
+            ax[1].plot(self.folded_tt_BP_timebins_batch, label='"BP" detectors')
+            ax[1].plot(self.folded_tt_DP_timebins_batch, label='"DP" detectors')
+            ax[1].plot((self.filter_N) * max(self.folded_tt_N_directional_batch + self.folded_tt_S_directional_batch),
+                       '--b', label='Filter "N"')
+            for i in range(len(self.Num_of_photons_txt_box_y_loc)):
+                ax[1].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc[i],
+                           '%.2f' % self.avg_num_of_photons_per_pulse[i],
+                           horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
+            for j in range(len(self.Num_of_photons_txt_box_y_loc_MZ)):
+                ax[1].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j],
+                           self.Num_of_photons_txt_box_y_loc_MZ[j][0],
+                           '%.2f' % self.avg_num_of_photons_per_pulse_MZ[j][0],
+                           horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
+                           color='#2ca02c')
+                ax[1].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j],
+                           self.Num_of_photons_txt_box_y_loc_MZ[j][1],
+                           '%.2f' % self.avg_num_of_photons_per_pulse_MZ[j][1],
+                           horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
+                           color='#d62728')
+            # ax[1].set_ylim(0, 0.3)
+            ax[1].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
+            ax[1].legend(loc='upper right')
 
-        # self.Phase_Correction_min_diff += [(1 + (self.Phase_Correction_min_vec[-1] - self.Phase_Correction_min_vec[67])) % 1]
-        ax[2].plot(self.MZ_BP_counts_res['value_0'], label='MZ Bright port')
-        ax[2].plot(self.MZ_DP_counts_res['value_0'], label='MZ Dark port')
-        ax[2].plot(self.MZ_BP_counts_res['value_0'] - self.MZ_DP_counts_res['value_0'], label='Dif ports')
-        ax[6].tick_params(axis="y", labelcolor='#8c564b')
-        ax[6].plot(self.Phase_Correction_vec, label='Phase correction values', color='#8c564b')
-        ax[6].plot(self.Phase_Correction_min_vec, label='Phase correction values', color='#9467bd')
-        # ax[6].plot(self.Phase_Correction_min_diff, label='Phase correction values', color='red')
-        ax[2].set_ylim(0, 1.1 * np.max([self.MZ_BP_counts_res['value_0'], self.MZ_DP_counts_res['value_0']]))
-        ax[2].set_title('MZ outputs while locking', fontweight="bold")
-        ax[2].legend(loc='upper right')
-        # ax[6].legend(loc='upper left')
-        for indx, det_circle in enumerate(Detectors):
-            if indx in self.latched_detectors():
-                det_color = 'red'
-            else:
-                det_color = 'green'
-            ax[2].text(det_circle[1], det_circle[2], det_circle[0], ha="center", va="center", transform=ax[2].transAxes,
-                       bbox=dict(boxstyle=f"circle,pad={det_circle[3]}", edgecolor=det_color, linewidth=2,
-                                 facecolor=det_color, alpha=0.5))
-        # self.logger.debug(self.Phase_Correction_min_diff[-1])
-        # self.logger.debug(np.average(self.Phase_Correction_min_diff))
-        # self.logger.debug(np.std(self.Phase_Correction_min_diff))
+        if plot_switches['graph-2']:
 
-        max_reflect_avg = max(self.num_of_det_reflections_per_seq_accumulated / counter)
-        max_reflect = max(self.num_of_det_reflections_per_seq)
-        ax[3].plot(self.num_of_det_reflections_per_seq_accumulated / counter,
-                   label='Num of reflections per sequence')
-        ax[3].plot(self.num_of_det_reflections_per_seq * 0.5 * max_reflect_avg / max_reflect * 0.3,
-                   label='Num of reflections per sequence (Live)')
-        ax[3].set_title('Num of reflections per sequence', fontweight="bold")
-        ax[3].legend(loc='upper right')
-        # ax[3].text(0.1, 0.9*max(self.num_of_det_transmissions_per_seq_accumulated/counter), textstr_avg_reflections, fontsize=14,
-        ax[3].text(0.1, 0.9 * max_reflect_avg, textstr_total_reflections, fontsize=14,
-                   verticalalignment='top', bbox=props)
+            # self.Phase_Correction_min_diff += [(1 + (self.Phase_Correction_min_vec[-1] - self.Phase_Correction_min_vec[67])) % 1]
+            ax[2].plot(self.MZ_BP_counts_res_value_0, label='MZ Bright port')
+            ax[2].plot(self.MZ_DP_counts_res_value_0, label='MZ Dark port')
+            ax[2].plot(self.MZ_BP_counts_res_value_0 - self.MZ_DP_counts_res_value_0, label='Dif ports')
 
-        ax[4].plot(self.MZ_BP_counts_res['value_1'], label='MZ BP counts before and after')
-        ax[4].plot(self.MZ_DP_counts_res['value_1'], label='MZ DP port counts before and after')
-        ax[4].axvline(len(self.MZ_DP_counts_res['value_1']) / 2, linestyle='--', color='red')
-        ax[4].set_title('MZ outputs around experiment', fontweight="bold")
-        # ax[4].legend(loc='upper right')
-        ax[4].text(0.05, 0.6, textstr_BP_DP_BA, transform=ax[4].transAxes, fontsize=14,
-                   verticalalignment='top', bbox=props)
 
-        ax[7].plot(self.num_of_BP_counts_per_n_sequences, label='MZ BP counts per %d seq' % 50)
-        ax[7].plot(self.num_of_DP_counts_per_n_sequences, label='MZ DP counts per %d seq' % 50)
-        ax[7].plot(self.num_of_S_counts_per_n_sequences, label='"S" transmission counts per %d seq' % 50)
-        ax[7].plot(
-            self.num_of_S_counts_per_n_sequences + self.num_of_DP_counts_per_n_sequences + self.num_of_BP_counts_per_n_sequences,
-            label='"S" total counts per %d seq' % 50)
-        ax[7].set_title('MZ outputs during experiment', fontweight="bold")
-        # ax[7].legend(loc='upper right')
-        ax[7].text(0.05, 0.6, textstr_BP_DP, transform=ax[7].transAxes, fontsize=14,
-                   verticalalignment='top', bbox=props)
+            ax[6].tick_params(axis="y", labelcolor='#8c564b')
+            ax[6].plot(self.Phase_Correction_vec, label='Phase correction values', color='#8c564b')
+            ax[6].plot(self.Phase_Correction_min_vec, label='Phase correction values', color='#9467bd')
+            # ax[6].plot(self.Phase_Correction_min_diff, label='Phase correction values', color='red')
+            ax[2].set_ylim(0, 1.1 * np.max([self.MZ_BP_counts_res_value_0], self.MZ_DP_counts_res_value_0))
+            ax[2].set_title('MZ outputs while locking', fontweight="bold")
+            ax[2].legend(loc='upper right')
+            # ax[6].legend(loc='upper left')
+            for indx, det_circle in enumerate(Detectors):
+                if indx in self.latched_detectors():
+                    det_color = 'red'
+                else:
+                    det_color = 'green'
+                ax[2].text(det_circle[1], det_circle[2], det_circle[0], ha="center", va="center", transform=ax[2].transAxes,
+                           bbox=dict(boxstyle=f"circle,pad={det_circle[3]}", edgecolor=det_color, linewidth=2,
+                                     facecolor=det_color, alpha=0.5))
+            # self.logger.debug(self.Phase_Correction_min_diff[-1])
+            # self.logger.debug(np.average(self.Phase_Correction_min_diff))
+            # self.logger.debug(np.std(self.Phase_Correction_min_diff))
+
+        if plot_switches['graph-3']:
+
+            max_reflect_avg = max(self.num_of_det_reflections_per_seq_accumulated / self.counter)
+            max_reflect = max(self.num_of_det_reflections_per_seq)
+            ax[3].plot(self.num_of_det_reflections_per_seq_accumulated / self.counter,
+                       label='Num of reflections per sequence')
+            ax[3].plot(self.num_of_det_reflections_per_seq * 0.5 * max_reflect_avg / max_reflect * 0.3,
+                       label='Num of reflections per sequence (Live)')
+            ax[3].set_title('Num of reflections per sequence', fontweight="bold")
+            ax[3].legend(loc='upper right')
+            # ax[3].text(0.1, 0.9*max(self.num_of_det_transmissions_per_seq_accumulated/counter), textstr_avg_reflections, fontsize=14,
+            ax[3].text(0.1, 0.9 * max_reflect_avg, textstr_total_reflections, fontsize=14,
+                       verticalalignment='top', bbox=props)
+
+        if plot_switches['graph-4']:
+            ax[4].plot(self.MZ_BP_counts_res_value_1, label='MZ BP counts before and after')
+            ax[4].plot(self.MZ_DP_counts_res_value_1, label='MZ DP port counts before and after')
+            ax[4].axvline(len(self.MZ_DP_counts_res_value_1) / 2, linestyle='--', color='red')
+            ax[4].set_title('MZ outputs around experiment', fontweight="bold")
+            # ax[4].legend(loc='upper right')
+            ax[4].text(0.05, 0.6, textstr_BP_DP_BA, transform=ax[4].transAxes, fontsize=14,
+                       verticalalignment='top', bbox=props)
+
+        if plot_switches['graph-7']:
+            ax[7].plot(self.num_of_BP_counts_per_n_sequences, label='MZ BP counts per %d seq' % 50)
+            ax[7].plot(self.num_of_DP_counts_per_n_sequences, label='MZ DP counts per %d seq' % 50)
+            ax[7].plot(self.num_of_S_counts_per_n_sequences, label='"S" transmission counts per %d seq' % 50)
+            ax[7].plot(
+                self.num_of_S_counts_per_n_sequences + self.num_of_DP_counts_per_n_sequences + self.num_of_BP_counts_per_n_sequences,
+                label='"S" total counts per %d seq' % 50)
+            ax[7].set_title('MZ outputs during experiment', fontweight="bold")
+            # ax[7].legend(loc='upper right')
+            ax[7].text(0.05, 0.6, textstr_BP_DP, transform=ax[7].transAxes, fontsize=14,
+                       verticalalignment='top', bbox=props)
 
         if self.number_of_transits_live:
             textstr_transit_counts = r'$N_{Transits} = %s $' % (self.number_of_transits_live,) + r'$[Counts]$'
@@ -982,19 +1090,15 @@ class QRAMExperiment(BaseExperiment):
                                         + textstr_transit_counts
         # + textstr_total_SPRINT_reflections
 
-        # ax[4].plot(range(self.number_of_QRAM_sequences), self.seq_transit_events_live, label='Current transit events')
-        # ax[4].set(xlabel='Sequence [#]', ylabel='Counts [Photons]')
-        # ax[4].set_title('Transits per sequence (live)', fontweight="bold")
-        # ax[4].text(0.05, 0.95, textstr_transit_counts, transform=ax[4].transAxes, fontsize=14,
-        #            verticalalignment='top', bbox=props)
-        ax[5].plot(range(self.number_of_QRAM_sequences), self.seq_transit_events_batched,
-                   label='Transit Events Accumulated')
-        ax[5].plot(range(self.number_of_QRAM_sequences), self.seq_transit_events_live, label='Transit Events Live')
-        ax[5].set(xlabel='Sequence [#]', ylabel='Counts [Photons]')
-        ax[5].set_title('Transits per sequence', fontweight="bold")
-        ax[5].legend(loc='upper right')
-        ax[5].text(0.05, 0.95, textstr_transit_event_counter, transform=ax[5].transAxes, fontsize=14,
-                   verticalalignment='top', bbox=props)
+        if plot_switches['graph-5']:
+            ax[5].plot(range(self.number_of_QRAM_sequences), self.seq_transit_events_batched,
+                       label='Transit Events Accumulated')
+            ax[5].plot(range(self.number_of_QRAM_sequences), self.seq_transit_events_live, label='Transit Events Live')
+            ax[5].set(xlabel='Sequence [#]', ylabel='Counts [Photons]')
+            ax[5].set_title('Transits per sequence', fontweight="bold")
+            ax[5].legend(loc='upper right')
+            ax[5].text(0.05, 0.95, textstr_transit_event_counter, transform=ax[5].transAxes, fontsize=14,
+                       verticalalignment='top', bbox=props)
 
         figManager = plt.get_current_fig_manager()
         figManager.window.showMaximized()
@@ -1003,7 +1107,7 @@ class QRAMExperiment(BaseExperiment):
         plt.pause(1.0)
         ###########################################################################################################
 
-    def init_params_for_save_sprint(self, qram_sequence_len, Num_Of_dets):
+    def init_params_for_experiment(self, qram_sequence_len, Num_Of_dets):
         # define empty variables
         self.QRAM_sequence_len = qram_sequence_len
         self.number_of_QRAM_sequences = math.ceil(self.M_window / self.QRAM_sequence_len)
@@ -1048,6 +1152,81 @@ class QRAMExperiment(BaseExperiment):
         self.num_of_det_reflections_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
         self.num_of_det_transmissions_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
 
+    def new_timetags_detected(self, prev_measures, curr_measure):
+        """
+        Attempt to deduce if the time-tags that are in are new ones (as opposed to leftovers from prev measure)
+
+        returns: True/False
+        """
+
+        # If we don't have any previous measures, clearly it's new data
+        if len(prev_measures) == 0:
+            return True
+
+        # Take the last sample from batch of previous measurements
+        prev_measure = prev_measures[:-1]
+
+        # Get the minimum value between new measure (tt_S_no_gaps) and last old measure (tt_S_measure_batch)
+        min_len = min(len(prev_measure), len(curr_measure))
+
+        # Compare values of measurements
+        compare_values = np.array(prev_measure[:min_len]) == np.array(curr_measure[:min_len])
+
+        # TODO: replace the line below with the one in comment:
+        #new_timetags = np.sum(compare_values) < min_len / 2
+        new_timetags = sum(compare_values) < min_len / 2
+        return new_timetags
+
+    def await_for_values(self, Num_Of_dets):
+        """
+        Awaits for values to come from OPX streams. Returns the timestamp of the incoming data.
+        Returns the status of the operation (enumeration). It can be either:
+        - Successful - we got data
+        - User terminated - user terminated the experiment
+        - Too many cycles - no data arrived after a given number of cycles
+        """
+        WAIT_TIME = 0.01  # [sec]
+        #TOO_MANY_WAITING_CYCLES = WAIT_TIME*100*20  # 5 seconds. Make this -1 to wait indefinitely
+        TOO_MANY_WAITING_CYCLES = -1
+
+        count = 1
+        while True:
+
+            self.handle_user_events()
+            if self.runs_status == TerminationReason.USER:
+                break
+
+            # Get data from OPX streams
+            self.get_results_from_streams()
+            self.ingest_time_tags(Num_Of_dets)
+
+            if self.new_timetags_detected(self.batcher['tt_S_measure_batch'], self.tt_S_measure):
+                break
+
+            if self.new_timetags_detected(self.batcher['tt_N_measure_batch'], self.tt_N_measure):
+                break
+
+            if self.new_timetags_detected(self.batcher['tt_DP_measure_batch'], self.tt_DP_measure):
+                break
+
+            if self.new_timetags_detected(self.batcher['tt_BP_measure_batch'], self.tt_BP_measure):
+                break
+
+            if self.new_timetags_detected(self.batcher['tt_FS_measure_batch'], self.tt_FS_measure):
+                break
+
+            # Are we waiting too long?
+            count += 1
+            if TOO_MANY_WAITING_CYCLES != -1 and count > TOO_MANY_WAITING_CYCLES:
+                self.runs_status = TerminationReason.ERROR
+                break
+
+            time.sleep(WAIT_TIME)
+
+        # We return the timestamp - this is when we declare we got the measurement
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        return timestamp
+
     # TODO: Refactor/Rename (this method analyzes the results)
     def Save_SNSPDs_QRAM_Measurement_with_tt(self, N, qram_sequence_len, pre_comment, lock_err_threshold,
                                              transit_condition,
@@ -1072,11 +1251,6 @@ class QRAMExperiment(BaseExperiment):
         :return:
         """
 
-        # TODO: need to move this elsewhere. We are setting here something that is used by base class
-        # Prepare the full path for reading the error file - being written by the Cavity Lock process (running on a different computer)
-        experiment_folder_path = self.bd_results.get_experiment_root()
-        self.lock_error_file = os.path.join(experiment_folder_path, 'Locking_PID_Error', 'locking_err.npy')
-
         if not pre_comment:
             pre_comment = self.prompt('Add comment to measurement: ')
 
@@ -1089,10 +1263,21 @@ class QRAMExperiment(BaseExperiment):
         det_pulse_len = Config.det_pulse_len + Config.num_between_zeros
         sprint_pulse_len = Config.sprint_pulse_len + Config.num_between_zeros  # TODO: Q: what is num_between_zeros ?
 
+        # TODO: These come as parameters for the experiment run - we may want to have them all under "self.params[..]" so we can
+        # TODO: (a) group logically (b) pass to other functions, instead of passing them one by one or relying on them being on self
+        self.with_atoms = with_atoms
+        self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
+        self.lock_err_threshold = lock_err_threshold
+        self.warm_up_cycles = 10  # Should also come as params, with some default. E.g. self.warm_up_cycles = 10 if 'warm_up_cycles' not in params else params['warm_up_cycles']
+        self.transit_condition = transit_condition
+        self.reflection_threshold = reflection_threshold
+        self.FLR_threshold = FLR_threshold
+        self.exp_flag = exp_flag
+
         # initialize parameters - set zeros vectors and empty lists
         # TODO: Q: why is this called "sprint" ?
         # TODO: Do we need Num_Of_dets ?
-        self.init_params_for_save_sprint(qram_sequence_len, Num_Of_dets)
+        self.init_params_for_experiment(qram_sequence_len, Num_Of_dets)
 
         # ----------------------------------------------------------
         # Prepare pulses location of South, North and Ancilla
@@ -1134,14 +1319,23 @@ class QRAMExperiment(BaseExperiment):
         # Take the 2nd number in the last tuple (which is the time of the last pulse)
         self.end_of_det_pulse_in_seq = self.pulses_location_in_seq[self.num_of_detection_pulses - 1][1]
 
+        # Start experiment flag and set MOT according to flag
+        self.updateValue("Experiment_Switch", True)
+        self.MOT_switch(with_atoms=self.with_atoms, update_parameters=True)
+
         self.logger.blue('Press ESC to stop measurement.')
+
+        # Initialize the batcher
+        self.batcher.set_batch_size(N)
+        self.batcher.empty_all()
 
         # Associate the streams filled in OPX (FPGA) code with result handles
         self.get_handles_from_OPX_server()
 
         ############################# WHILE 1 - START #############################
 
-        WARMUP_CYCLES = 3
+        # TODO: remove the "old" warmup loop
+        WARMUP_CYCLES = -1
         cycle = 0
         self.sum_for_threshold = reflection_threshold
         while exp_flag and (cycle < WARMUP_CYCLES or self.sum_for_threshold > reflection_threshold):
@@ -1246,233 +1440,250 @@ class QRAMExperiment(BaseExperiment):
 
         ####    end get tt and counts from OPX to python   #####
 
-        self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
-                                                           + self.num_of_det_reflections_per_seq_N
-        self.num_of_det_transmissions_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S \
-                                                             + self.num_of_det_transmissions_per_seq_N
+        # TODO: Eventually remove this code
+        DONT_RUN_THIS_CODE = False
 
-        # divide south and north into reflection and transmission
-        self.tt_histogram_transmission, self.tt_histogram_reflection = \
-            self.divide_to_reflection_trans(det_pulse_len=det_pulse_len, sprint_pulse_len=sprint_pulse_len,
-                                            sprint_sequence_delay_S=delay_in_detection_S,
-                                            sprint_sequence_delay_N=delay_in_detection_N,
-                                            num_of_det_pulses=len(Config.det_pulse_amp_S),
-                                            num_of_sprint_pulses=len(Config.sprint_pulse_amp_S),
-                                            num_of_sprint_sequences=self.number_of_QRAM_sequences)
+        # ---------------------------------------------------------------------------------
+        # ----------------- DONT RUN ------------------- DONT RUN -------------------------
+        # ---------------------------------------------------------------------------------
 
-        # TODO: needed?
-        self.tt_S_SPRINT_events = np.zeros(qram_sequence_len)
-        self.tt_S_SPRINT_events_batch = np.zeros(qram_sequence_len)
-        self.tt_Single_det_SPRINT_events = np.zeros((len(Num_Of_dets), qram_sequence_len))
-        self.tt_Single_det_SPRINT_events_batch = np.zeros((len(Num_Of_dets), qram_sequence_len))
-        self.tt_N_det_SPRINT_events_batch = np.zeros(qram_sequence_len)
-        self.tt_S_det_SPRINT_events_batch = np.zeros(qram_sequence_len)
+        if DONT_RUN_THIS_CODE:
+            self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
+                                                               + self.num_of_det_reflections_per_seq_N
+            self.num_of_det_transmissions_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S \
+                                                                 + self.num_of_det_transmissions_per_seq_N
 
-        # fold reflections and transmission
-        self.fold_tt_histogram(exp_sequence_len=self.QRAM_sequence_len)
+            # divide south and north into reflection and transmission
+            self.tt_histogram_transmission, self.tt_histogram_reflection = \
+                self.divide_to_reflection_trans(det_pulse_len=det_pulse_len, sprint_pulse_len=sprint_pulse_len,
+                                                sprint_sequence_delay_S=delay_in_detection_S,
+                                                sprint_sequence_delay_N=delay_in_detection_N,
+                                                num_of_det_pulses=len(Config.det_pulse_amp_S),
+                                                num_of_sprint_pulses=len(Config.sprint_pulse_amp_S),
+                                                num_of_sprint_sequences=self.number_of_QRAM_sequences)
 
-        # fold data from different detectors: # TODO: is needed? @Dor
-        for i in range(len(Num_Of_dets)):
-            # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]: - for debugging assaf
-            for x in [elem for elem in self.tt_measure[i]]:
-                self.single_det_folded[i][x % self.QRAM_sequence_len] += 1
-                self.single_det_folded_accumulated[i][x % self.QRAM_sequence_len] += 1
+            # TODO: needed?
+            self.tt_S_SPRINT_events = np.zeros(qram_sequence_len)
+            self.tt_S_SPRINT_events_batch = np.zeros(qram_sequence_len)
+            self.tt_Single_det_SPRINT_events = np.zeros((len(Num_Of_dets), qram_sequence_len))
+            self.tt_Single_det_SPRINT_events_batch = np.zeros((len(Num_Of_dets), qram_sequence_len))
+            self.tt_N_det_SPRINT_events_batch = np.zeros(qram_sequence_len)
+            self.tt_S_det_SPRINT_events_batch = np.zeros(qram_sequence_len)
 
-        # Batch folded tt "N", "S", BP, DP, FS
-        self.folded_tt_S_batch = self.folded_tt_S
-        self.folded_tt_N_batch = self.folded_tt_N
-        self.folded_tt_BP_batch = self.folded_tt_BP
-        self.folded_tt_DP_batch = self.folded_tt_DP
-        self.folded_tt_FS_batch = self.folded_tt_FS
-        self.folded_tt_S_directional_batch = self.folded_tt_S_directional
-        self.folded_tt_N_directional_batch = self.folded_tt_N_directional
-        self.folded_tt_BP_timebins_batch = self.folded_tt_BP_timebins
-        self.folded_tt_DP_timebins_batch = self.folded_tt_DP_timebins
+            # fold reflections and transmission
+            self.fold_tt_histogram(exp_sequence_len=self.QRAM_sequence_len)
 
-        # get the average number of photons in detection pulse
-        self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(
-            self.folded_tt_S_directional, self.pulses_location_in_seq_S, self.tt_FS_measure)
-        self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(
-            self.folded_tt_N_directional, self.pulses_location_in_seq_N, self.tt_BP_measure + self.tt_DP_measure)
-        self.avg_num_of_photons_per_pulse_A_live = self.get_avg_num_of_photons_in_seq_pulses(
-            (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins)
-             + np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A,
-            self.tt_BP_measure + self.tt_DP_measure)
-        self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(
-            self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:], self.tt_BP_measure)
-        self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(
-            self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:], self.tt_DP_measure)
-        self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + \
-                                                 self.avg_num_of_photons_per_pulse_N_live + \
-                                                 self.avg_num_of_photons_per_pulse_A_live
-        self.avg_num_of_photons_per_pulse_live_MZ = [[x] + [y] for x, y in
-                                                     zip(self.avg_num_of_photons_per_pulse_BP_live,
-                                                         self.avg_num_of_photons_per_pulse_DP_live)]
-        #                                         self.avg_num_of_photons_per_pulse_BP_live + \
-        #                                         self.avg_num_of_photons_per_pulse_DP_live
-        self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_live
-        self.avg_num_of_photons_per_pulse_MZ = self.avg_num_of_photons_per_pulse_live_MZ
+            # fold data from different detectors: # TODO: is needed? @Dor
+            for i in range(len(Num_Of_dets)):
+                # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]: - for debugging assaf
+                for x in [elem for elem in self.tt_measure[i]]:
+                    self.single_det_folded[i][x % self.QRAM_sequence_len] += 1
+                    self.single_det_folded_accumulated[i][x % self.QRAM_sequence_len] += 1
 
-        # get box location on the y-axis:
-        self.max_value_per_pulse_S_live = self.get_max_value_in_seq_pulses(self.folded_tt_S_directional,
-                                                                           self.pulses_location_in_seq_S)
-        self.max_value_per_pulse_N_live = self.get_max_value_in_seq_pulses(self.folded_tt_N_directional,
-                                                                           self.pulses_location_in_seq_N)
-        self.max_value_per_pulse_A_live = self.get_max_value_in_seq_pulses(
-            (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins) +
-             np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A)
-        self.max_value_per_pulse_BP_live = self.get_max_value_in_seq_pulses(
-            self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:])
-        self.max_value_per_pulse_DP_live = self.get_max_value_in_seq_pulses(
-            self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:])
-        self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + \
-                                                 self.max_value_per_pulse_N_live + \
-                                                 self.max_value_per_pulse_A_live
+            # Batch folded tt "N", "S", BP, DP, FS
+            self.folded_tt_S_batch = self.folded_tt_S
+            self.folded_tt_N_batch = self.folded_tt_N
+            self.folded_tt_BP_batch = self.folded_tt_BP
+            self.folded_tt_DP_batch = self.folded_tt_DP
+            self.folded_tt_FS_batch = self.folded_tt_FS
+            self.folded_tt_S_directional_batch = self.folded_tt_S_directional
+            self.folded_tt_N_directional_batch = self.folded_tt_N_directional
+            self.folded_tt_BP_timebins_batch = self.folded_tt_BP_timebins
+            self.folded_tt_DP_timebins_batch = self.folded_tt_DP_timebins
 
-        self.Num_of_photons_txt_box_y_loc_live_MZ = [[x] + [y] for x, y in zip(self.max_value_per_pulse_BP_live,
-                                                                               self.max_value_per_pulse_DP_live)]
-        # self.Num_of_photons_txt_box_y_loc_live_MZ = self.max_value_per_pulse_BP_live + self.max_value_per_pulse_DP_live
-        self.Num_of_photons_txt_box_y_loc = self.Num_of_photons_txt_box_y_loc_live
-        self.Num_of_photons_txt_box_y_loc_MZ = self.Num_of_photons_txt_box_y_loc_live_MZ
+            # get the average number of photons in detection pulse
+            self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(
+                self.folded_tt_S_directional, self.pulses_location_in_seq_S, self.tt_FS_measure)
+            self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(
+                self.folded_tt_N_directional, self.pulses_location_in_seq_N, self.tt_BP_measure + self.tt_DP_measure)
+            self.avg_num_of_photons_per_pulse_A_live = self.get_avg_num_of_photons_in_seq_pulses(
+                (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins)
+                 + np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A,
+                self.tt_BP_measure + self.tt_DP_measure)
+            self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(
+                self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:], self.tt_BP_measure)
+            self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(
+                self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:], self.tt_DP_measure)
+            self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + \
+                                                     self.avg_num_of_photons_per_pulse_N_live + \
+                                                     self.avg_num_of_photons_per_pulse_A_live
+            self.avg_num_of_photons_per_pulse_live_MZ = [[x] + [y] for x, y in
+                                                         zip(self.avg_num_of_photons_per_pulse_BP_live,
+                                                             self.avg_num_of_photons_per_pulse_DP_live)]
+            #                                         self.avg_num_of_photons_per_pulse_BP_live + \
+            #                                         self.avg_num_of_photons_per_pulse_DP_live
+            self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_live
+            self.avg_num_of_photons_per_pulse_MZ = self.avg_num_of_photons_per_pulse_live_MZ
 
-        avg_BP_before = np.average(self.MZ_BP_counts_res['value_1'][:self.rep_MZ_check])
-        avg_BP_after = np.average(self.MZ_BP_counts_res['value_1'][self.rep_MZ_check:])
-        avg_DP_before = np.average(self.MZ_DP_counts_res['value_1'][:self.rep_MZ_check])
-        avg_DP_after = np.average(self.MZ_DP_counts_res['value_1'][self.rep_MZ_check:])
-        self.Infidelity_before = avg_DP_before / (avg_DP_before + avg_BP_before)
-        self.Infidelity_after = avg_DP_after / (avg_DP_after + avg_BP_after)
+            # get box location on the y-axis:
+            self.max_value_per_pulse_S_live = self.get_max_value_in_seq_pulses(self.folded_tt_S_directional,
+                                                                               self.pulses_location_in_seq_S)
+            self.max_value_per_pulse_N_live = self.get_max_value_in_seq_pulses(self.folded_tt_N_directional,
+                                                                               self.pulses_location_in_seq_N)
+            self.max_value_per_pulse_A_live = self.get_max_value_in_seq_pulses(
+                (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins) +
+                 np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A)
+            self.max_value_per_pulse_BP_live = self.get_max_value_in_seq_pulses(
+                self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:])
+            self.max_value_per_pulse_DP_live = self.get_max_value_in_seq_pulses(
+                self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:])
+            self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + \
+                                                     self.max_value_per_pulse_N_live + \
+                                                     self.max_value_per_pulse_A_live
 
-        ## record time
-        timest = time.strftime("%Y%m%d-%H%M%S")
-        datest = time.strftime("%Y%m%d")
-        FLR_measurement = []
-        Exp_timestr_batch = []
-        lock_err_batch = []
+            self.Num_of_photons_txt_box_y_loc_live_MZ = [[x] + [y] for x, y in zip(self.max_value_per_pulse_BP_live,
+                                                                                   self.max_value_per_pulse_DP_live)]
+            # self.Num_of_photons_txt_box_y_loc_live_MZ = self.max_value_per_pulse_BP_live + self.max_value_per_pulse_DP_live
+            self.Num_of_photons_txt_box_y_loc = self.Num_of_photons_txt_box_y_loc_live
+            self.Num_of_photons_txt_box_y_loc_MZ = self.Num_of_photons_txt_box_y_loc_live_MZ
 
-        FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
-        Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
-        lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
+            avg_BP_before = np.average(self.MZ_BP_counts_res['value_1'][:self.rep_MZ_check])
+            avg_BP_after = np.average(self.MZ_BP_counts_res['value_1'][self.rep_MZ_check:])
+            avg_DP_before = np.average(self.MZ_DP_counts_res['value_1'][:self.rep_MZ_check])
+            avg_DP_after = np.average(self.MZ_DP_counts_res['value_1'][self.rep_MZ_check:])
+            self.Infidelity_before = avg_DP_before / (avg_DP_before + avg_BP_before)
+            self.Infidelity_after = avg_DP_after / (avg_DP_after + avg_BP_after)
 
-        ### Dor version ###
-        self.find_transits_and_sprint_events_changed(cond=transit_condition, minimum_number_of_seq_detected=2)
-        self.seq_transit_events_live[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
-        self.seq_transit_events_batched[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
-        self.all_transits_seq_indx_batch = self.all_transits_seq_indx_batch[-(N - 1):] + [self.all_transits_seq_indx]
-        # self.reflection_SPRINT_data_per_transit_batch = self.reflection_SPRINT_data_per_transit_batch[-(N-1):]\
-        #                                                 + [self.reflection_SPRINT_data_per_transit]
-        # self.transmission_SPRINT_data_per_transit_batch = self.transmission_SPRINT_data_per_transit_batch[-(N-1):]\
-        #                                                   + [self.transmission_SPRINT_data_per_transit]
-        self.number_of_transits_live = len(self.all_transits_seq_indx)
-        self.number_of_transits_total = len([vec for lst in self.all_transits_seq_indx_batch for vec in lst])
-        # self.total_number_of_reflections_from_SPRINT_pulses_in_transits = \
-        #     np.sum(np.sum([vec for lst in self.reflection_SPRINT_data_per_transit_batch for vec in lst]))
-        ###################
+            ## record time
+            timest = time.strftime("%Y%m%d-%H%M%S")
+            datest = time.strftime("%Y%m%d")
+            FLR_measurement = []
+            Exp_timestr_batch = []
+            lock_err_batch = []
 
-        self.save_tt_to_batch(Num_Of_dets, N)
+            # Eventually remove these lines - batcher is doing this!
+            FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
+            Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
+            lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
 
-        counter = 1  # Total number of successful cycles
-        repetitions = 1  # Total number of cycles
+            ### Dor version ###
+            self.find_transits_and_sprint_events_changed(cond=transit_condition, minimum_number_of_seq_detected=2)
+            self.seq_transit_events_live[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
+            self.seq_transit_events_batched[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
+            self.all_transits_seq_indx_batch = self.all_transits_seq_indx_batch[-(N - 1):] + [self.all_transits_seq_indx]
+            # self.reflection_SPRINT_data_per_transit_batch = self.reflection_SPRINT_data_per_transit_batch[-(N-1):]\
+            #                                                 + [self.reflection_SPRINT_data_per_transit]
+            # self.transmission_SPRINT_data_per_transit_batch = self.transmission_SPRINT_data_per_transit_batch[-(N-1):]\
+            #                                                   + [self.transmission_SPRINT_data_per_transit]
+            self.number_of_transits_live = len(self.all_transits_seq_indx)
+            self.number_of_transits_total = len([vec for lst in self.all_transits_seq_indx_batch for vec in lst])
+            # self.total_number_of_reflections_from_SPRINT_pulses_in_transits = \
+            #     np.sum(np.sum([vec for lst in self.reflection_SPRINT_data_per_transit_batch for vec in lst]))
+            ###################
+
+            self.save_tt_to_batch(Num_Of_dets, N)
+
+        # ---------------------------------------------------------------------------------
+        # ----------------- DONT RUN ------------------- DONT RUN -------------------------
+        # ---------------------------------------------------------------------------------
 
         self.acquisition_flag = True
         self.threshold_flag = True
         self.pause_flag = False
         self.Phase_Correction_min_diff = []
-        #
-        # create figures template
-        fig = plt.figure()
-        ax1 = plt.subplot2grid((3, 4), (0, 0), colspan=2, rowspan=1)
-        ax2 = plt.subplot2grid((3, 4), (0, 2), colspan=2, rowspan=1)
-        ax3 = plt.subplot2grid((3, 4), (1, 0), colspan=2, rowspan=1)
-        ax4 = plt.subplot2grid((3, 4), (1, 2), colspan=2, rowspan=1)
-        ax5 = plt.subplot2grid((3, 4), (2, 0), colspan=1, rowspan=1)
-        ax8 = plt.subplot2grid((3, 4), (2, 1), colspan=1, rowspan=1)
-        ax6 = plt.subplot2grid((3, 4), (2, 2), colspan=2, rowspan=1)
-        ax7 = ax3.twinx()
 
+        # Prepare the sub figures needed for the plotting phase
+        fig, subplots = self.prepare_figures()
         #self.maximize_figure()  # TODO: uncomment
 
         ############################################ START WHILE LOOP #################################################
 
-        while True:
-            # TODO: need to handle this part - why is it here?
-            if self.keyPress == 'ESC':
-                self.logger.blue('ESC pressed. Stopping measurement.')
-                self.updateValue("Experiment_Switch", False)
-                self.MOT_switch(True)
-                self.update_parameters()
-                break
-            if self.keyPress == 'SPACE' and not self.pause_flag:
-                self.logger.blue('SPACE pressed. Pausing measurement.')
-                self.pause_flag = True
-                self.keyPress = None
-                # Other actions can be added here
-            if self.keyPress == 'SPACE' and self.pause_flag:
-                self.logger.blue('SPACE pressed. Continuing measurement.')
-                self.pause_flag = False
-                self.keyPress = None
-                # Other actions can be added here
-            self.lockingEfficiency = counter / repetitions
-            eff_formatted = '%.2f' % self.lockingEfficiency
-            flr_formatted = '%.2f' % (1000 * np.average(self.FLR_res.tolist()))
-            time_formatted = time.strftime("%Y/%m/%d, %H:%M:%S")
-            self.logger.info(f'{time_formatted}: cycle {counter}, Eff: {eff_formatted}, Flr: {flr_formatted}')
+        # Initialize the variables before loop starts
+        self.counter = 1  # Total number of successful cycles
+        self.repetitions = 1  # Total number of cycles
+        self.acquisition_flag = True
+        self.warm_up = True
+        self.pause_flag = False
+        self.runs_status = TerminationReason.SUCCESS  # default status of the run is Success
 
-            repetitions += 1
-            ######################################## PLOT!!! ###########################################################
-            ax = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
-            self.plot_sprint_figures(fig, ax, Num_Of_dets, counter)
-            ############################################################################################################
-            if counter == N:
+        # ---------------------------------------------------------------------------------
+        # Experiment Mainloop
+        # - We iterate few warm-up rounds
+        # - We iterate until we got N successful runs, or user terminated
+        # ---------------------------------------------------------------------------------
+        while True:
+
+            # Handle cases where user terminates or pauses experiment
+            self.handle_user_events()
+            if self.runs_status == TerminationReason.USER:
+                break
+
+            # Await for values from OPX
+            self.sampling_timestamp = self.await_for_values(Num_Of_dets)
+            if self.runs_status != TerminationReason.SUCCESS:
+                break
+
+            # Get locking error
+            self.lock_err = self._read_locking_error()
+
+            # Informational printing
+            self.print_experiment_information()
+
+            # Plot figures
+            self.plot_figures(fig, subplots, Num_Of_dets)
+
+            # Experiment delay
+            self.experiment_mainloop_delay()
+
+            # If we are still in warm-up phase, we do not continue further and go back to beginning of loop
+            self.warm_up = self.is_warm_up_phase()
+            if self.warm_up:
+                continue
+
+            if self.counter == N:
                 self.logger.blue(f'finished {N} Runs, {"with" if with_atoms else "without"} atoms')
                 # Other actions can be added here
                 break
-            count = 1
-            while True:
-                # record time:
-                # timest = time.strftime("%Y%m%d,%H%M%S") # TODO: is it needed? already writen above..
-                timest = time.strftime("%H%M%S")
-                datest = time.strftime("%Y%m%d")
 
-                self.get_results_from_streams()
-                self.ingest_time_tags(Num_Of_dets)
+            DONT_NEED_SMALL_LOOP = False
 
-                # Check if new tt's arrived:
-                lenS = min(len(self.tt_S_measure), len(self.tt_S_measure_batch[-1]))
-                lenN = min(len(self.tt_N_measure), len(self.tt_N_measure_batch[-1]))
-                lenDP = min(len(self.tt_DP_measure), len(self.tt_DP_measure_batch[-1]))
-                lenBP = min(len(self.tt_BP_measure), len(self.tt_BP_measure_batch[-1]))
-                lenFS = min(len(self.tt_FS_measure), len(self.tt_FS_measure_batch[-1]))
-                # Check if the number of same values in the new and last vector are less then 1/2 of the total number of values.
-                is_new_tts_S = sum(
-                    np.array(self.tt_S_measure[:lenS]) == np.array(self.tt_S_measure_batch[-1][:lenS])) < lenS / 2
-                is_new_tts_N = sum(
-                    np.array(self.tt_N_measure[:lenN]) == np.array(self.tt_N_measure_batch[-1][:lenN])) < lenN / 2
-                is_new_tts_BP = sum(
-                    np.array(self.tt_BP_measure[:lenBP]) == np.array(self.tt_BP_measure_batch[-1][:lenBP])) < lenBP / 2
-                is_new_tts_DP = sum(
-                    np.array(self.tt_DP_measure[:lenDP]) == np.array(self.tt_DP_measure_batch[-1][:lenDP])) < lenDP / 2
-                is_new_tts_FS = sum(
-                    np.array(self.tt_FS_measure[:lenFS]) == np.array(self.tt_FS_measure_batch[-1][:lenFS])) < lenFS / 2
+            if DONT_NEED_SMALL_LOOP:
+                count = 1
+                while True:
+                    # record time:
+                    # timest = time.strftime("%Y%m%d,%H%M%S") # TODO: is it needed? already writen above..
+                    timest = time.strftime("%H%M%S")
+                    datest = time.strftime("%Y%m%d")
 
-                # # Check if the number of same values in the new and last vector are less then 1/2 of the total number of values.
-                # is_new_tts_S = self.tt_S_measure[0] != self.tt_S_measure_batch[-1][0]
-                # is_new_tts_N = self.tt_N_measure[0] != self.tt_N_measure_batch[-1][0]
-                # is_new_tts_BP = self.tt_BP_measure[0] != self.tt_BP_measure_batch[-1][0]
-                # is_new_tts_DP = self.tt_DP_measure[0] != self.tt_DP_measure_batch[-1][0]
-                # is_new_tts_FS = self.tt_FS_measure[0] != self.tt_FS_measure_batch[-1][0]
+                    self.get_results_from_streams()
+                    self.ingest_time_tags(Num_Of_dets)
 
-                self.logger.debug(count)
-                count += 1
-                if is_new_tts_N or is_new_tts_S or is_new_tts_BP or is_new_tts_DP or is_new_tts_FS:
-                    break
-                if self.keyPress == 'ESC':
-                    self.logger.blue('ESC pressed. Stopping measurement.')
-                    self.updateValue("Experiment_Switch", False)
-                    self.MOT_switch(True)
-                    self.update_parameters()
-                    break
-            # assaf - if x=self.M_window the index is out of range so i added 1
-            self.lock_err = self._read_locking_error()
+                    # Check if new tt's arrived:
+                    lenS = min(len(self.tt_S_measure), len(self.tt_S_measure_batch[-1]))
+                    lenN = min(len(self.tt_N_measure), len(self.tt_N_measure_batch[-1]))
+                    lenDP = min(len(self.tt_DP_measure), len(self.tt_DP_measure_batch[-1]))
+                    lenBP = min(len(self.tt_BP_measure), len(self.tt_BP_measure_batch[-1]))
+                    lenFS = min(len(self.tt_FS_measure), len(self.tt_FS_measure_batch[-1]))
+                    # Check if the number of same values in the new and last vector are less then 1/2 of the total number of values.
+                    is_new_tts_S = sum(
+                        np.array(self.tt_S_measure[:lenS]) == np.array(self.tt_S_measure_batch[-1][:lenS])) < lenS / 2
+                    is_new_tts_N = sum(
+                        np.array(self.tt_N_measure[:lenN]) == np.array(self.tt_N_measure_batch[-1][:lenN])) < lenN / 2
+                    is_new_tts_BP = sum(
+                        np.array(self.tt_BP_measure[:lenBP]) == np.array(self.tt_BP_measure_batch[-1][:lenBP])) < lenBP / 2
+                    is_new_tts_DP = sum(
+                        np.array(self.tt_DP_measure[:lenDP]) == np.array(self.tt_DP_measure_batch[-1][:lenDP])) < lenDP / 2
+                    is_new_tts_FS = sum(
+                        np.array(self.tt_FS_measure[:lenFS]) == np.array(self.tt_FS_measure_batch[-1][:lenFS])) < lenFS / 2
+
+                    # # Check if the number of same values in the new and last vector are less then 1/2 of the total number of values.
+                    # is_new_tts_S = self.tt_S_measure[0] != self.tt_S_measure_batch[-1][0]
+                    # is_new_tts_N = self.tt_N_measure[0] != self.tt_N_measure_batch[-1][0]
+                    # is_new_tts_BP = self.tt_BP_measure[0] != self.tt_BP_measure_batch[-1][0]
+                    # is_new_tts_DP = self.tt_DP_measure[0] != self.tt_DP_measure_batch[-1][0]
+                    # is_new_tts_FS = self.tt_FS_measure[0] != self.tt_FS_measure_batch[-1][0]
+
+                    self.logger.debug(count)
+                    count += 1
+                    if is_new_tts_N or is_new_tts_S or is_new_tts_BP or is_new_tts_DP or is_new_tts_FS:
+                        break
+                    if self.keyPress == 'ESC':
+                        self.logger.blue('ESC pressed. Stopping measurement.')
+                        self.updateValue("Experiment_Switch", False)
+                        self.MOT_switch(True)
+                        self.update_parameters()
+                        break
+
 
             self.divide_tt_to_reflection_trans(sprint_pulse_len, self.num_of_detection_pulses)
             self.divide_BP_and_DP_counts(50)
@@ -1580,19 +1791,19 @@ class QRAMExperiment(BaseExperiment):
                 ###########################################
 
                 # Batch folded tt "N" and "S"
-                self.folded_tt_S_batch = (self.folded_tt_S_batch * (counter - 1) + self.folded_tt_S) / counter
-                self.folded_tt_N_batch = (self.folded_tt_N_batch * (counter - 1) + self.folded_tt_N) / counter
-                self.folded_tt_BP_batch = (self.folded_tt_BP_batch * (counter - 1) + self.folded_tt_BP) / counter
-                self.folded_tt_DP_batch = (self.folded_tt_DP_batch * (counter - 1) + self.folded_tt_DP) / counter
-                self.folded_tt_FS_batch = (self.folded_tt_FS_batch * (counter - 1) + self.folded_tt_FS) / counter
-                self.folded_tt_S_directional_batch = (self.folded_tt_S_directional_batch * (counter - 1)
-                                                      + self.folded_tt_S_directional) / counter
-                self.folded_tt_N_directional_batch = (self.folded_tt_N_directional_batch * (counter - 1)
-                                                      + self.folded_tt_N_directional) / counter
-                self.folded_tt_BP_timebins_batch = (self.folded_tt_BP_timebins_batch * (counter - 1)
-                                                    + self.folded_tt_BP_timebins) / counter
-                self.folded_tt_DP_timebins_batch = (self.folded_tt_DP_timebins_batch * (counter - 1)
-                                                    + self.folded_tt_DP_timebins) / counter
+                self.folded_tt_S_batch = (self.folded_tt_S_batch * (self.counter - 1) + self.folded_tt_S) / self.counter
+                self.folded_tt_N_batch = (self.folded_tt_N_batch * (self.counter - 1) + self.folded_tt_N) / self.counter
+                self.folded_tt_BP_batch = (self.folded_tt_BP_batch * (self.counter - 1) + self.folded_tt_BP) / self.counter
+                self.folded_tt_DP_batch = (self.folded_tt_DP_batch * (self.counter - 1) + self.folded_tt_DP) / self.counter
+                self.folded_tt_FS_batch = (self.folded_tt_FS_batch * (self.counter - 1) + self.folded_tt_FS) / self.counter
+                self.folded_tt_S_directional_batch = (self.folded_tt_S_directional_batch * (self.counter - 1)
+                                                      + self.folded_tt_S_directional) / self.counter
+                self.folded_tt_N_directional_batch = (self.folded_tt_N_directional_batch * (self.counter - 1)
+                                                      + self.folded_tt_N_directional) / self.counter
+                self.folded_tt_BP_timebins_batch = (self.folded_tt_BP_timebins_batch * (self.counter - 1)
+                                                    + self.folded_tt_BP_timebins) / self.counter
+                self.folded_tt_DP_timebins_batch = (self.folded_tt_DP_timebins_batch * (self.counter - 1)
+                                                    + self.folded_tt_DP_timebins) / self.counter
 
                 # get the average number of photons in detection pulse
                 self.avg_num_of_photons_per_pulse_S = self.get_avg_num_of_photons_in_seq_pulses(
@@ -1638,37 +1849,69 @@ class QRAMExperiment(BaseExperiment):
                         self.single_det_folded[i][x % self.QRAM_sequence_len] += 1
                         self.single_det_folded_accumulated[i][x % self.QRAM_sequence_len] += 1
 
-                FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
-                Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
-                lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
+                # Batch all data samples
+                self.batcher.batch_all(self)
+
+                # FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
+                # Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
+                # lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
                 self.save_tt_to_batch(Num_Of_dets, N)
-                if counter < N:
-                    counter += 1
 
-        ############################################## END WHILE LOOP #################################################
+                if self.counter < N:
+                    self.counter += 1
 
-        # For debugging:
-        # Utils.most_common([x for vec in self.tt_S_measure_batch + self.tt_N_measure_batch for x in vec])
+            # Did user request we change with/without atoms state?
+            self.handle_user_atoms_on_off_switch()
 
-        ## Adding comment to measurement [prompt whether stopped or finished regularly]
+            # Did we complete N successful iterations?
+            if self.counter == N:
+                break
+
+            # We completed another repetition.
+            self.repetitions += 1
+
+        ############################################## END WHILE-LOOP #################################################
+
+        if self.runs_status == TerminationReason.SUCCESS:
+            self.logger.info(f'Finished {N} Runs, {"with" if self.with_atoms else "without"} atoms')
+        elif self.runs_status == TerminationReason.USER:
+            self.logger.info(f'User Terminated the measurements after {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
+        elif self.runs_status == TerminationReason.ERROR:
+            self.logger.info(f'Error Terminated the measurements after {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
+
+        # Adding comment to measurement [prompt whether stopped or finished regularly]
         if exp_flag:
-            if counter < N:
-                aftComment = self.prompt('Add comment to measurement: ')
+            if self.counter < N:
+                aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
             else:
                 aftComment = ''
         else:
             aftComment = 'ignore'
 
-        # TODO: re-implement in QuadRF class - to get the data - and BDResults will save...
+        experiment_comment = f'Transit condition: {transit_condition}\nReflection threshold {reflection_threshold} @ {int(reflection_threshold_time/1e6)} ms'
+        daily_experiment_comments = self.generate_experiment_summary_line(pre_comment, aftComment, self.with_atoms, self.counter)
+
+        # Save all results of experiment
+        self.save_experiment_results(experiment_comment, daily_experiment_comments)
+
+        # End of Experiment! Ensure we turn the experiment flag off and return the MOT
+        self.updateValue("Experiment_Switch", False)
+        self.MOT_switch(with_atoms=True, update_parameters=True)
+
+        return self.runs_status
+
+    def save_experiment_results(self, experiment_comment, daily_experiment_comments):
+        """
+        This method is responsible for saving all the results gathered in the experiment and required by analysis
+        """
+
         # Save Quad RF controllers commands
+        # TODO: re-implement in QuadRF class - to get the data - and BDResults will save...
         dirname = self.bd_results.get_root()
         for qrdCtrl in self.QuadRFControllers:
             qrdCtrl.saveLinesAsCSV(f'{dirname}\\QuadRF_table.csv')
 
-        # ------------------------------------------------------------------------
-        #    NEW SAVE Stuff
-        # ------------------------------------------------------------------------
-
+        # Save all other files
         results = {
             "early_sequence": Config.QRAM_Exp_Gaussian_samples_Early,
             "late_sequence": Config.QRAM_Exp_Gaussian_samples_Late,
@@ -1698,12 +1941,12 @@ class QRAMExperiment(BaseExperiment):
             "Phase_Correction_vec_batch": self.Phase_Correction_vec_batch,
             "Phase_Correction_min_vec_batch": self.Phase_Correction_min_vec_batch,
 
-            "FLR_measurement": FLR_measurement,
-            "lock_error": lock_err_batch,
-            "exp_timestr": Exp_timestr_batch,  # TODO: rename to drop timestamps? What is this one?
+            "FLR_measurement": self.FLR_measurement,
+            "lock_error": self.lock_err_batch,
+            "exp_timestr": self.Exp_timestr_batch,  # TODO: rename to drop timestamps? What is this one?
 
             "exp_comment": f'transit condition: {transit_condition}; reflection threshold: {reflection_threshold} @ {int(reflection_threshold_time / 1e6)} ms',
-            "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, with_atoms, counter),
+            "daily_experiment_comments": self.generate_experiment_summary_line(pre_comment, aftComment, with_atoms, self.counter),
 
             #"max_probe_counts": "TBD",
 
@@ -1711,8 +1954,28 @@ class QRAMExperiment(BaseExperiment):
         }
         self.bd_results.save_results(results)
 
-        self.updateValue("Experiment_Switch", False)
-        self.update_parameters()
+    def is_warm_up_phase(self):
+        """
+        We are in warm-up if these conditions are met:
+        - We haven't yet completed WARMUP_CYCLES
+        - We haven't yet acquired a lock on resonance
+        - We are in experiment, and the threshold is not yet filled
+        """
+
+        # Did we finish going through all warm-up cycles? If not, we're still in warm-up -> return True
+        if self.warm_up_cycles > 0:
+            self.warm_up_cycles -= 1
+            return True
+
+        # We stay in warm-up while we're not locked
+        if self.lock_err > self.lock_err_threshold:
+            return True
+
+        # We stay in warm-up if we're not within threshold
+        if self.exp_flag and self.sum_for_threshold >= self.reflection_threshold:
+            return True
+
+        return False
 
     def maximize_figure(self):
         """
@@ -1763,7 +2026,7 @@ class QRAMExperiment(BaseExperiment):
 
         # TODO: Q: Config.QRAM_Exp_Gaussian_samples_S is constructed in a function, using the parameter "sprint_pulse_len" - so why not use it here?
         # TODO: Q: (a) we don't want to use duplicate variables holding the same value, (b) it mentions "samples_S" - but it's the same for "N" as well...
-        self.Save_SNSPDs_QRAM_Measurement_with_tt(N=rp['N'],
+        run_status = self.Save_SNSPDs_QRAM_Measurement_with_tt(N=rp['N'],
                                                   qram_sequence_len=len(Config.QRAM_Exp_Gaussian_samples_S),
                                                   pre_comment=rp['pre_comment'],
                                                   lock_err_threshold=rp['lock_err_threshold'],
@@ -1777,8 +2040,7 @@ class QRAMExperiment(BaseExperiment):
                                                   exp_flag=rp['Exp_flag'],
                                                   with_atoms=rp['with_atoms'],
                                                   MZ_infidelity_threshold=rp['MZ_infidelity_threshold'])
-
-        pass
+        return run_status
 
     def post_run(self, run_parameters):
         pass
@@ -1787,7 +2049,7 @@ class QRAMExperiment(BaseExperiment):
 if __name__ == "__main__":
 
     run_parameters = {
-        'dror': True,
+        'N': 500,
         'transit_condition': [2, 1, 2],
         'pre_comment': '"N-N-N-N-N-N-N-N experiment"',
         'lock_err_threshold': 0.005,
