@@ -12,6 +12,7 @@ import numpy as np
 from Utilities.Utils import Utils
 from Utilities.BDLogger import BDLogger
 from Utilities.BDResults import BDResults
+from Utilities.BDStreams import BDStreams
 from Utilities.BDBatch import BDBatch
 from Utilities.BDSound import BDSound
 
@@ -105,6 +106,9 @@ class BaseExperiment:
         # Initialize the BDBatch helper - to serve us when batching experiment samples
         self.batcher = BDBatch(json_map_path=self.paths_map['cwd'])
 
+        # Initialize the BDStreams
+        self.bdstreams = BDStreams(save_path=self.bd_results.get_custom_root('temp_root'))
+
         # Set the location of the locking error file - this is a generic file that serves as communication between
         # the locking application that runs on a different computer. The file contains the current PID error value.
         self.lock_error_file = os.path.join(self.bd_results.get_custom_root('locking_error_root'), 'locking_err.npy')
@@ -143,6 +147,9 @@ class BaseExperiment:
             'streams': Config.streams,  # OPX streams we're using
             'control': opx_control  # OPX Control code
         }
+
+        # Set the streams in the bdstreams - so it can write them to disk
+        self.bdstreams.set_streams_definitions(self.opx_definitions['streams'])
 
         # Set mainloop flags
         self.ignore_data = False
@@ -675,6 +682,9 @@ class BaseExperiment:
             else:
                 stream['results'] = None
 
+        # Save streams to file
+        self.bdstreams.save_streams()
+
         pass
 
     def _get_results_from_files(self):
@@ -719,7 +729,7 @@ class BaseExperiment:
 
     def handle_user_atoms_on_off_switch(self):
         """
-        This function checks if the user requested to switch - this is indidcated by "_"
+        This function checks if the user requested to switch - this is indicated by "_"
         If there needs to be a switch:
         - The "_" is removed (since "command" is handled)
         - The switch is flipped

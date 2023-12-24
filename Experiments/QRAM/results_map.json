@@ -1,6 +1,9 @@
 {
 	"version": "0.1",
 	"strict": false,
+
+	"temp_root": "C:\\temp",
+
 	"all_experiments_root": "C:\\temp\\refactor_debug\\Experiment_results",
 	"experiment_root": "C:\\temp\\refactor_debug\\Experiment_results\\QRAM",
 	"root": "C:\\temp\\refactor_debug\\Experiment_results\\QRAM\\{current_date}\\{current_time}_Photon_TimeTags",

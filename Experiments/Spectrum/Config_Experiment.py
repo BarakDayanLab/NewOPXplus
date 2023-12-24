@@ -1553,111 +1553,6 @@ config = {
     # }
 }
 
-# TODO: looks like we have TOO many streams... But the code of QRAM calls them: search the code for: "Bright_Port_Counts"
-streams = {
-    "Detector_1_Counts": {
-        "number": 1,
-        "name": "Detector_1_Counts",
-        "delay": 30
-    },
-    "Detector_2_Counts": {
-        "number": 2,
-        "name": "Detector_2_Counts",
-        "delay": 20
-    },
-    "Detector_3_Counts": {
-        "number": 3,
-        "name": "Detector_3_Counts",
-        "delay": 20
-    },
-    "Detector_4_Counts": {
-        "number": 4,
-        "name": "Detector_4_Counts",
-        "delay": 20
-    },
-    "Detector_5_Counts": {
-        "number": 5,
-        "name": "Detector_5_Counts",
-        "delay": 20
-    },
-    "Detector_6_Counts": {
-        "number": 6,
-        "name": "Detector_6_Counts",
-        "delay": 20
-    },
-    "Detector_7_Counts": {
-        "number": 7,
-        "name": "Detector_7_Counts",
-        "delay": 20
-    },
-    "Detector_8_Counts": {
-        "number": 8,
-        "name": "Detector_8_Counts",
-        "delay": 20
-    },
-    "Detector_1_Timetags": {
-        "number": 1,
-        "name": "Detector_1_Timetags",
-        "delay": 30
-    },
-    "Detector_2_Timetags": {
-        "number": 2,
-        "name": "Detector_2_Timetags",
-        "delay": 20
-    },
-    "Detector_3_Timetags": {
-        "number": 3,
-        "name": "Detector_3_Timetags",
-        "delay": 20
-    },
-    "Detector_4_Timetags": {
-        "number": 4,
-        "name": "Detector_4_Timetags",
-        "delay": 20
-    },
-    "Detector_5_Timetags": {
-        "number": 5,
-        "name": "Detector_5_Timetags",
-        "delay": 20
-    },
-    "Detector_6_Timetags": {
-        "number": 6,
-        "name": "Detector_6_Timetags",
-        "delay": 20
-    },
-    "Detector_7_Timetags": {
-        "number": 7,
-        "name": "Detector_7_Timetags",
-        "delay": 20
-    },
-    "Detector_8_Timetags": {
-        "number": 8,
-        "name": "Detector_8_Timetags",
-        "delay": 20
-    },
-    "Bright_Port_Counts": {
-        "name": "Bright_Port_Counts",
-    },
-    "Dark_Port_Counts": {
-        "name": "Dark_Port_Counts",
-    },
-    "Phase_Correction_array": {
-        "name": "Phase_Correction_array",
-    },
-    #"Phase_diff": {
-    #     "name": "Phase_diff",
-    # },
-    "Max_counts": {
-        "name": "Max_counts",
-    },
-    #"Phase_Correction_for_min": {
-    #     "name": "Phase_Correction_for_min",
-    # },
-    "FLR_measure": {
-        "name": "FLR_measure",
-    }
-}
-
 streams = {
     # "Detector_1_Counts": {
     #     "number": 1,
@@ -1702,44 +1597,62 @@ streams = {
     "Detector_1_Timetags": {
         "number": 1,
         "name": "Detector_1_Timetags",
+        "type": "int",
+        "playback": "Det1_timetags.npz",
         "delay": 30
     },
     "Detector_2_Timetags": {
         "number": 2,
         "name": "Detector_2_Timetags",
+        "type": "int",
+        "playback": "Det2_timetags.npz",
         "delay": 20
     },
     "Detector_3_Timetags": {
         "number": 3,
         "name": "Detector_3_Timetags",
+        "type": "int",
+        "playback": "Det3_timetags.npz",
         "delay": 20
     },
     "Detector_4_Timetags": {
         "number": 4,
         "name": "Detector_4_Timetags",
+        "type": "int",
+        "playback": "Det4_timetags.npz",
         "delay": 20
     },
     "Detector_5_Timetags": {
         "number": 5,
         "name": "Detector_5_Timetags",
+        "type": "int",
+        "playback": "Det5_timetags.npz",
         "delay": 20
     },
     "Detector_6_Timetags": {
         "number": 6,
         "name": "Detector_6_Timetags",
+        "type": "int",
+        "playback": "Det6_timetags.npz",
         "delay": 20
     },
     "Detector_7_Timetags": {
         "number": 7,
         "name": "Detector_7_Timetags",
+        "type": "int",
+        "playback": "Det7_timetags.npz",
         "delay": 20
     },
     "Detector_8_Timetags": {
         "number": 8,
         "name": "Detector_8_Timetags",
+        "type": "int",
+        "playback": "Det8_timetags.npz",
         "delay": 20
     },
     "FLR_measure": {
         "name": "FLR_measure",
+        "type": "float",
+        "playback": "Flouresence.npz"
     }
 }

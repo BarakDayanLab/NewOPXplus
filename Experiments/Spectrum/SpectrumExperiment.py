@@ -268,12 +268,15 @@ class SpectrumExperiment(BaseExperiment):
 
         # Remove zero-padding from tt-res and append into tt_measure
         for i in range(len(Num_Of_dets)):  # for different detectors
-
             time_tags = self.streams[f'Detector_{i+1}_Timetags']['results']
             #counts = self.streams[f'Detector_{i+1}_Counts']['results']
             time_tags_count = int(time_tags[0])
             # TODO: Why are we turning the NP arrays into lists? Worth staying at NP speeds...
-            self.tt_measure.append(time_tags[1:time_tags_count].tolist())
+            if type(time_tags) != list:
+                time_tags = time_tags[1:time_tags_count].tolist()
+            else:
+                time_tags = time_tags[1:time_tags_count]
+            self.tt_measure.append(time_tags)
             self.tt_measure[i] = [elm + Config.detector_delays[i] for elm in self.tt_measure[i]
                                   if ((elm % self.M_window != 0) & (elm != 9999984) &
                                       ((elm + Config.detector_delays[i]) <= self.M_window))]  # Due to an unresolved bug in the OPD there are "ghost" readings of timetags equal to the maximum time of measuring window.
@@ -524,18 +527,23 @@ class SpectrumExperiment(BaseExperiment):
             self.info(f"Loading stream for {stream['name']}...")
             if stream['handler'] is not None:
                 stream['handler'] = 'playback: data loaded!'  # Mark the stream as loaded
-                if stream['name'] == 'FLR_measure':
-                    name = 'Flouresence.npz'
-                    data_file = os.path.join(playback_folder, name)
-                else:
-                    name = stream['name'].lower().replace('detector_', 'Det') + '.npz'
-                    data_file = os.path.join(playback_folder, 'AllDetectors', name)
-
-                # Load the file and add first element with the size
-                if os.path.exists(data_file):
-                    # Load the file
+                if stream['name'].startswith('Detector_'):
+                    # Load the file and add first element with the size
+                    data_file = os.path.join(playback_folder, 'AllDetectors', stream['playback'])
                     zipped_data = np.load(data_file, allow_pickle=True)
                     stream['all_rows'] = zipped_data['arr_0']
+
+                    # Add the time-tags count as the first element of each array
+                    if len(stream['all_rows']) == 0:
+                        stream['all_rows'] = np.zeros(shape=1, dtype=int)  # Ensures we enter 0 as int!
+                    else:
+                        arr = stream['all_rows']
+                        [arr.insert(0, len(arr)) for arr in stream['all_rows']]
+
+        # Load flouresence
+        data_file = os.path.join(playback_folder, 'Flouresence.npz')
+        zipped_data = np.load(data_file, allow_pickle=True)
+        self.streams['FLR_measure']['all_rows'] = zipped_data['arr_0']
 
         pass
 
@@ -1015,6 +1023,9 @@ class SpectrumExperiment(BaseExperiment):
         # End of Experiment! Ensure we turn the experiment flag off and return the MOT
         self.updateValue("Experiment_Switch", False)
         self.MOT_switch(with_atoms=True, update_parameters=True)
+
+        # Close streams writer
+        self.bdstreams.close_file()
 
         return self.runs_status
 

@@ -2,6 +2,8 @@
 	"version": "0.1",
 	"strict": false,
 
+	"temp_root": "C:\\temp",
+
 	"all_experiments_root": "U:\\Lab_2023\\Experiment_results",
 	"all_experiments_root_local": "C:\\temp\\refactor_debug\\Experiment_results",
 
@@ -15,7 +17,7 @@
 	"calibration_folder": "U:\\Lab_2023\\Experiment_results\\QRAM\\20231116\\133237_Photon_TimeTags",
 
 	"playback_data_0": "U:\\Lab_2023\\Experiment_results\\Spectrum\\20231213\\134648_Photon_TimeTags",
-	"playback_data": "C:\\temp\\playback_data\\134648_Photon_TimeTags",
+	"playback_data": "C:\\temp\\playback_data\\Spectrum\\134648_Photon_TimeTags",
 
 	"files": [
 

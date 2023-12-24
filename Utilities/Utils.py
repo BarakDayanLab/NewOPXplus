@@ -366,6 +366,16 @@ class Utils:
         pass
 
     @staticmethod
+    def type_string_to_type_function(type_str):
+        if type_str == 'int' or type_str == 'integer':
+            return int
+        elif type_str == 'float':
+            return float
+        elif type_str == 'str' or type_str == 'string':
+            return str
+        else:
+            return None  # This will probably cause the called to crash, but it's good - should check itself...
+    @staticmethod
     def get_self_members(self_object, prefix=None, suffix=None, specific=None):
         """
         Return the members of the self object starting/ending with rule
