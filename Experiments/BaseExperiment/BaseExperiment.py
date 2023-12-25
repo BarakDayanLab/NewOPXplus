@@ -50,6 +50,7 @@ class BaseExperiment:
         - Plot/Debugging <TBD>
         - BDResults - Results/Paths Services <TBD>
         - BDBatch - Batching Services (for gathering experiment samples)
+        - BDStreams - Loading/Saving of raw stream data in real-time
 
     On the experiment side, it does the following:
         - Initializes OPX
@@ -95,6 +96,14 @@ class BaseExperiment:
             "row_count": 0,
             "streams": {}
         }
+
+        # Insert a prompt to check we're not running on live lab devices (OPX, QuadRF)
+        if not self.playback["active"] and self.login == 'drorg':
+            what_say_thou = pymsgbox.prompt('You are about to run LIVE from your workstation. Continue? (type YES)', default='', timeout=int(30e3))
+            if what_say_thou.lower() != 'yes':
+                sys.exit('Aborting. Do not want to run from private state on lab live.')
+
+
         if self.playback["active"]:
             self._opx_skip = True
             self._quadrf_skip = True
