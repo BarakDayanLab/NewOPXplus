@@ -695,16 +695,16 @@ class BaseExperiment:
             self.playback['row_count'] = 0
             self.load_data_for_playback()
 
-        try:  # TODO: remove this try-except
+        # Advance all streams to hold the next data row from all_rows
+        row = self.playback['row_count']
+        for stream in self.streams.values():
+            if 'all_rows' in stream:
+                # If there's no more playback data on this stream, we request to terminate experiment
+                if row == len(stream['all_rows']):
+                    self.runs_status = TerminationReason.PLAYBACK_END
+                    return
 
-            # Advance all streams to hold the next data row from all_rows
-            row = self.playback['row_count']
-            for stream in self.streams.values():
-                if 'all_rows' in stream:
-                    stream['results'] = stream['all_rows'][row]
-
-        except Exception as err:
-            print(err)
+                stream['results'] = stream['all_rows'][row]
 
         # Advance the row for the next time
         self.playback['row_count'] += 1

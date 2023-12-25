@@ -271,11 +271,7 @@ class SpectrumExperiment(BaseExperiment):
             time_tags = self.streams[f'Detector_{i+1}_Timetags']['results']
             #counts = self.streams[f'Detector_{i+1}_Counts']['results']
             time_tags_count = int(time_tags[0])
-            # TODO: Why are we turning the NP arrays into lists? Worth staying at NP speeds...
-            if type(time_tags) != list:
-                time_tags = time_tags[1:time_tags_count].tolist()
-            else:
-                time_tags = time_tags[1:time_tags_count]
+            time_tags = time_tags[1:time_tags_count]
             self.tt_measure.append(time_tags)
             self.tt_measure[i] = [elm + Config.detector_delays[i] for elm in self.tt_measure[i]
                                   if ((elm % self.M_window != 0) & (elm != 9999984) &
@@ -531,19 +527,18 @@ class SpectrumExperiment(BaseExperiment):
                     # Load the file and add first element with the size
                     data_file = os.path.join(playback_folder, 'AllDetectors', stream['playback'])
                     zipped_data = np.load(data_file, allow_pickle=True)
-                    stream['all_rows'] = zipped_data['arr_0']
+                    stream['all_rows'] = zipped_data['arr_0'].tolist()
 
                     # Add the time-tags count as the first element of each array
                     if len(stream['all_rows']) == 0:
-                        stream['all_rows'] = np.zeros(shape=1, dtype=int)  # Ensures we enter 0 as int!
+                        stream['all_rows'] = [0]
                     else:
-                        arr = stream['all_rows']
-                        [arr.insert(0, len(arr)) for arr in stream['all_rows']]
+                        stream['all_rows'] = [[len(arr)] + arr for arr in stream['all_rows']]
 
         # Load flouresence
         data_file = os.path.join(playback_folder, 'Flouresence.npz')
         zipped_data = np.load(data_file, allow_pickle=True)
-        self.streams['FLR_measure']['all_rows'] = zipped_data['arr_0']
+        self.streams['FLR_measure']['all_rows'] = zipped_data['arr_0'].tolist()
 
         pass
 
@@ -773,6 +768,9 @@ class SpectrumExperiment(BaseExperiment):
 
             # Get data from OPX streams
             self.get_results_from_streams()
+            if self.runs_status != TerminationReason.SUCCESS:
+                break
+
             self.ingest_time_tags(Num_Of_dets)
 
             is_new_tts_S = True  # We'll assume it's new data. Especially true in the first run, where there's no previous data to compare
@@ -1000,6 +998,8 @@ class SpectrumExperiment(BaseExperiment):
 
         if self.runs_status == TerminationReason.SUCCESS:
             self.logger.info(f'Finished {N} Runs, {"with" if self.with_atoms else "without"} atoms')
+        elif self.runs_status == TerminationReason.PLAYBACK_END:
+            self.logger.info(f'Playback completed. Finished {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.USER:
             self.logger.info(f'User Terminated the measurements after {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.ERROR:

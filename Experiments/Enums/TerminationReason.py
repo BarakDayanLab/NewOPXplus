@@ -14,3 +14,4 @@ class TerminationReason(Enum):
     USER = auto()
     ERROR = auto()
     SUCCESS = auto()
+    PLAYBACK_END = auto()

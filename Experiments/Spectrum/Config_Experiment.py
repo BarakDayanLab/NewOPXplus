@@ -1598,6 +1598,7 @@ streams = {
         "number": 1,
         "name": "Detector_1_Timetags",
         "type": "int",
+        "binary": "I",  # Unsigned int
         "playback": "Det1_timetags.npz",
         "delay": 30
     },
@@ -1605,6 +1606,7 @@ streams = {
         "number": 2,
         "name": "Detector_2_Timetags",
         "type": "int",
+        "binary": "I",  # Unsigned int
         "playback": "Det2_timetags.npz",
         "delay": 20
     },
@@ -1612,6 +1614,7 @@ streams = {
         "number": 3,
         "name": "Detector_3_Timetags",
         "type": "int",
+        "binary": "I",  # Unsigned int
         "playback": "Det3_timetags.npz",
         "delay": 20
     },
@@ -1619,6 +1622,7 @@ streams = {
         "number": 4,
         "name": "Detector_4_Timetags",
         "type": "int",
+        "binary": "I",  # Unsigned int
         "playback": "Det4_timetags.npz",
         "delay": 20
     },
@@ -1626,6 +1630,7 @@ streams = {
         "number": 5,
         "name": "Detector_5_Timetags",
         "type": "int",
+        "binary": "I",  # Unsigned int
         "playback": "Det5_timetags.npz",
         "delay": 20
     },
@@ -1633,6 +1638,7 @@ streams = {
         "number": 6,
         "name": "Detector_6_Timetags",
         "type": "int",
+        "binary": "I",  # Unsigned int
         "playback": "Det6_timetags.npz",
         "delay": 20
     },
@@ -1640,6 +1646,7 @@ streams = {
         "number": 7,
         "name": "Detector_7_Timetags",
         "type": "int",
+        "binary": "I",  # Unsigned int
         "playback": "Det7_timetags.npz",
         "delay": 20
     },
@@ -1647,12 +1654,14 @@ streams = {
         "number": 8,
         "name": "Detector_8_Timetags",
         "type": "int",
+        "binary": "I",  # Unsigned int
         "playback": "Det8_timetags.npz",
         "delay": 20
     },
     "FLR_measure": {
         "name": "FLR_measure",
         "type": "float",
+        "binary": "d",  # double
         "playback": "Flouresence.npz"
     }
 }
