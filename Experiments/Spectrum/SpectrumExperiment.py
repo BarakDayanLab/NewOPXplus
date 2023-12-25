@@ -569,6 +569,9 @@ class SpectrumExperiment(BaseExperiment):
         subplots.append(plt.subplot2grid((6, 2), (2, 1), colspan=1, rowspan=2))
         subplots.append(plt.subplot2grid((6, 2), (4, 0), colspan=1, rowspan=2))
         subplots.append(plt.subplot2grid((6, 2), (4, 1), colspan=1, rowspan=2))
+
+        #self.maximize_figure()  # TODO: uncomment
+
         return fig, subplots
 
     def plot_figures(self, fig, subplots, Num_Of_dets):
@@ -729,12 +732,19 @@ class SpectrumExperiment(BaseExperiment):
         self.calibration_spectrum = np.load(calibration_file)
         return self.calibration_spectrum['arr_0']/max(self.calibration_spectrum['arr_0'])
 
-    def new_timetags_detected(self, prev_measure, curr_measure):
+    def new_timetags_detected(self, prev_measures, curr_measure):
         """
         Attempt to deduce if the time-tags that are in are new ones (as opposed to leftovers from prev measure)
 
         returns: True/False
         """
+
+        # If we don't have any previous measures, clearly it's new data
+        if len(prev_measures) == 0:
+            return True
+
+        # Take the last sample from batch of previous measurements
+        prev_measure = prev_measures[-1]
 
         # Get the minimum value between new measure (tt_S_no_gaps) and last old measure (tt_S_measure_batch)
         min_len = min(len(prev_measure), len(curr_measure))
@@ -777,8 +787,7 @@ class SpectrumExperiment(BaseExperiment):
             curr_measure = self.tt_S_no_gaps
 
             # Check if new time tags arrived - compare previous time-tags with current:
-            if len(self.batcher['tt_S_measure_batch']) > 0:
-                is_new_tts_S = self.new_timetags_detected(self.batcher['tt_S_measure_batch'][-1], curr_measure)
+            is_new_tts_S = self.new_timetags_detected(self.batcher['tt_S_measure_batch'], curr_measure)
 
             # Bin the South time-tags we just got
             self.tt_S_binning = Utils.bin_values(values=curr_measure, bin_size=Config.frequency_sweep_duration, num_of_bins=self.histogram_bin_number * 2)
@@ -885,7 +894,6 @@ class SpectrumExperiment(BaseExperiment):
 
         # Prepare the sub figures needed for the plotting phase
         fig, subplots = self.prepare_figures()
-        #self.maximize_figure()  # TODO: uncomment
 
         ############################################ START MAIN LOOP #################################################
 
