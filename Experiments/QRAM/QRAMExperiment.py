@@ -9,6 +9,7 @@ import os
 import time
 import math
 import pymsgbox
+import traceback
 
 from Utilities.BDSound import SOUNDS
 from Utilities.Utils import Utils
@@ -735,27 +736,6 @@ class QRAMExperiment(BaseExperiment):
         plt.legend()
         plt.title([delay_det_N, delay_det_S, delay_rf_N, delay_rf_S])
 
-    # TODO: Can be removed?
-    def save_tt_to_batch_DEP(self, Num_Of_dets, N):
-        for i in range(len(Num_Of_dets)):
-            self.tt_measure_batch[i] = self.tt_measure_batch[i][-(N - 1):] + [self.tt_measure[i]]
-        self.tt_S_measure_batch = self.tt_S_measure_batch[-(N - 1):] + [self.tt_S_measure]
-        self.tt_N_measure_batch = self.tt_N_measure_batch[-(N - 1):] + [self.tt_N_measure]
-        self.tt_BP_measure_batch = self.tt_BP_measure_batch[-(N - 1):] + [self.tt_BP_measure]
-        self.tt_DP_measure_batch = self.tt_DP_measure_batch[-(N - 1):] + [self.tt_DP_measure]
-        self.tt_FS_measure_batch = self.tt_FS_measure_batch[-(N - 1):] + [self.tt_FS_measure]
-
-        self.MZ_BP_counts_balancing_batch = self.MZ_BP_counts_balancing_batch[-(N - 1):] + [
-            self.MZ_BP_counts_res['value_0']]
-        self.MZ_BP_counts_balancing_check_batch = self.MZ_BP_counts_balancing_check_batch[-(N - 1):] + [
-            self.MZ_BP_counts_res['value_1']]
-        self.MZ_DP_counts_balancing_batch = self.MZ_DP_counts_balancing_batch[-(N - 1):] + [
-            self.MZ_DP_counts_res['value_0']]
-        self.MZ_DP_counts_balancing_check_batch = self.MZ_DP_counts_balancing_check_batch[-(N - 1):] + [
-            self.MZ_DP_counts_res['value_1']]
-        self.Phase_Correction_vec_batch = self.Phase_Correction_vec_batch[-(N - 1):] + [self.Phase_Correction_vec]
-        self.Phase_Correction_min_vec_batch = self.Phase_Correction_min_vec_batch[-(N - 1):] + [self.Phase_Correction_min_vec]
-
     # TODO: move this to Base or Utils (make it static)
     def merge_playback_data_files(self, file_1, file_2):
         playback_folder = self.bd_results.get_custom_root('playback_data')
@@ -840,8 +820,9 @@ class QRAMExperiment(BaseExperiment):
         fluorescence_str = '%.2f' % self.fluorescence_average
         time_formatted = time.strftime("%Y/%m/%d, %H:%M:%S")
         status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
+        photons_str = '' if self.warm_up else f', #Photons/[us]: {self.sum_for_threshold}'
 
-        self.logger.info(f'{time_formatted}: {status_str}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}, #Photons/[us]: {self.sum_for_threshold}')
+        self.logger.info(f'{time_formatted}: {status_str}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}{photons_str}')
 
     def experiment_mainloop_delay(self):
         if self.playback['active']:
@@ -869,6 +850,7 @@ class QRAMExperiment(BaseExperiment):
         try:
             self._plot_figures(fig, subplots, Num_Of_dets)
         except Exception as err:
+            tb = traceback.format_exc()
             self.warn(f'Failed on plot_figures: {err}')
         pass
 
@@ -1016,7 +998,7 @@ class QRAMExperiment(BaseExperiment):
                            horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
                            color='#d62728')
             # ax[1].set_ylim(0, 0.3)
-            ax[1].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
+            ax[1].set_title('binned time-tags from all detectors folded (Averaged)', fontweight="bold")
             ax[1].legend(loc='upper right')
 
         if plot_switches['graph-2']:
@@ -1120,15 +1102,15 @@ class QRAMExperiment(BaseExperiment):
         }
         self.number_of_SPRINT_pulses_per_seq = len(Config.sprint_pulse_amp_S)
 
-        self.folded_tt_S_batch = None
-        self.folded_tt_N_batch = None
-        self.folded_tt_BP_batch = None
-        self.folded_tt_DP_batch = None
-        self.folded_tt_FS_batch = None
-        self.folded_tt_S_directional_batch = None
-        self.folded_tt_N_directional_batch = None
-        self.folded_tt_BP_timebins_batch = None
-        self.folded_tt_DP_timebins_batch = None
+        # self.folded_tt_S_batch = None
+        # self.folded_tt_N_batch = None
+        # self.folded_tt_BP_batch = None
+        # self.folded_tt_DP_batch = None
+        # self.folded_tt_FS_batch = None
+        # self.folded_tt_S_directional_batch = None
+        # self.folded_tt_N_directional_batch = None
+        # self.folded_tt_BP_timebins_batch = None
+        # self.folded_tt_DP_timebins_batch = None
 
         self.tt_measure = []
         self.tt_S_measure = []
@@ -1715,24 +1697,22 @@ class QRAMExperiment(BaseExperiment):
             # Get locking error
             self.lock_err = self._read_locking_error()
 
-            # Informational printing
-            self.print_experiment_information()
-
-            # Plot figures
-            # TODO: this is temporary - condition plotting with the warmup phase
-            if not self.warm_up:
-                self.plot_figures(fig, subplots, Num_Of_dets)
-
             # Experiment delay
             self.experiment_mainloop_delay()
+
+            # Informational printing
+            self.print_experiment_information()
 
             # If we are still in warm-up phase, we do not continue further and go back to beginning of loop
             self.warm_up = self.is_warm_up_phase()
             if self.warm_up:
                 continue
 
+            # Perform all analytics and calculations needed for display
             self.experiment_calculations(sprint_pulse_len, reflection_threshold_time, Num_Of_dets)
 
+            # Plot figures
+            self.plot_figures(fig, subplots, Num_Of_dets)
 
             # Determine if we're "acquired" - e.g., worthy to save data :-)
             self.acquisition_flag = self.is_acquired()
@@ -1838,16 +1818,6 @@ class QRAMExperiment(BaseExperiment):
 
                 # Batch all data samples
                 self.batcher.batch_all(self)
-
-                # FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
-                # Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
-                # lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
-
-                # TODO: need to ensure we are batching all those who are batched in "save_tt_to_batch"
-                #self.save_tt_to_batch(Num_Of_dets, N)
-
-                if self.counter < N:
-                    self.counter += 1
 
             # Did user request we change with/without atoms state?
             self.handle_user_atoms_on_off_switch()
