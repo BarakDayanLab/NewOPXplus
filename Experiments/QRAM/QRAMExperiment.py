@@ -244,25 +244,11 @@ class QRAMExperiment(BaseExperiment):
         # Clear time-tags vectors from last data
         self.tt_measure = []
 
-        # TODO: Q: the comment below seems irrelevant - we are not removing zero-padding...
-        # remove zero-padding from tt-res and append into tt_measure
+        # Normalize the data coming from the detectors
         for detector_index in range(len(Num_Of_dets)):  # for different detectors
             tt_res = self.streams[f'Detector_{detector_index + 1}_Timetags']['results']
-
-            # We transform the time-tags by giving them a delay of the specific detector
-            # We filter out some wrong time-tags that are result of OPX bugs:
-            # 1) If tt is 9999984
-            # 2) If tt is an exact modulus of the measurement window
-            # 3) If we will exceed measurement window by adding the delay
-            # M-Window - Measurement time (window) milli-seconds
-            self.tt_measure.append([])
-            for tt_index in range(1, tt_res[0]):  # First element in vector is the count, so we skip it
-                data = tt_res[tt_index]
-                if data % self.M_window != 0 and data != 9999984 and (
-                        data + Config.detector_delays[detector_index]) <= self.M_window:
-                    self.tt_measure[detector_index].append(data + Config.detector_delays[detector_index])
-            # Ensure time-tags of the specific detector are sorted
-            self.tt_measure[detector_index].sort()
+            normalized_stream = self.bdstreams.normalize_stream(tt_res, detector_index, Config.detector_delays, self.M_window)
+            self.tt_measure.append(normalized_stream)
 
         # ------------------------------------------
         # Unify detectors and windows within detectors and create vector of tt's for each direction (bright port, dark port, north, south and from FS) and sort them
@@ -811,19 +797,25 @@ class QRAMExperiment(BaseExperiment):
                     # Load the file and add first element with the size
                     data_file = os.path.join(playback_folder, 'AllDetectors', stream['playback'])
                     zipped_data = np.load(data_file, allow_pickle=True)
-                    stream['all_rows'] = zipped_data['arr_0']
+                    stream['all_rows'] = zipped_data['arr_0'].tolist()
+
 
                     # Add the time-tags count as the first element of each array
                     if len(stream['all_rows']) == 0:
-                        stream['all_rows'] = np.zeros(shape=1, dtype=int)  # Ensures we enter 0 as int!
+                        stream['all_rows'] = [0]
                     else:
-                        arr = stream['all_rows']
-                        [arr.insert(0, len(arr)) for arr in stream['all_rows']]
+                        # Reduce the detector delay that was added originally before experiment saved the data
+                        delay = Config.detector_delays[stream['number'] - 1]
+                        for i in range(len(stream['all_rows'])):
+                            if len(stream['all_rows'][i]) > 0:
+                                stream['all_rows'][i] = [time_tag - delay for time_tag in stream['all_rows'][i]]
+                        # Add the count before the data
+                        stream['all_rows'] = [[len(arr)] + arr for arr in stream['all_rows']]
 
-        # Load flouresence
+        # Load fluorescence
         data_file = os.path.join(playback_folder, 'Flouresence.npz')
         zipped_data = np.load(data_file, allow_pickle=True)
-        self.streams['FLR_measure']['all_rows'] = zipped_data['arr_0']
+        self.streams['FLR_measure']['all_rows'] = zipped_data['arr_0'].tolist()
 
         # Load Dark-Port/Bright-Port/Phase-Correction data from separate files and combine them
         self.streams['Bright_Port_Counts']['all_rows'] = \

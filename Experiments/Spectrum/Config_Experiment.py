@@ -1556,107 +1556,91 @@ config = {
 streams = {
     # "Detector_1_Counts": {
     #     "number": 1,
-    #     "name": "Detector_1_Counts",
-    #     "delay": 30
+    #     "name": "Detector_1_Counts"
     # },
     # "Detector_2_Counts": {
     #     "number": 2,
-    #     "name": "Detector_2_Counts",
-    #     "delay": 20
+    #     "name": "Detector_2_Counts"
     # },
     # "Detector_3_Counts": {
     #     "number": 3,
-    #     "name": "Detector_3_Counts",
-    #     "delay": 20
+    #     "name": "Detector_3_Counts"
     # },
     # "Detector_4_Counts": {
     #     "number": 4,
-    #     "name": "Detector_4_Counts",
-    #     "delay": 20
+    #     "name": "Detector_4_Counts"
     # },
     # "Detector_5_Counts": {
     #     "number": 5,
-    #     "name": "Detector_5_Counts",
-    #     "delay": 20
+    #     "name": "Detector_5_Counts"
     # },
     # "Detector_6_Counts": {
     #     "number": 6,
-    #     "name": "Detector_6_Counts",
-    #     "delay": 20
+    #     "name": "Detector_6_Counts"
     # },
     # "Detector_7_Counts": {
     #     "number": 7,
-    #     "name": "Detector_7_Counts",
-    #     "delay": 20
+    #     "name": "Detector_7_Counts"
     # },
     # "Detector_8_Counts": {
     #     "number": 8,
-    #     "name": "Detector_8_Counts",
-    #     "delay": 20
+    #     "name": "Detector_8_Counts"
     # },
     "Detector_1_Timetags": {
         "number": 1,
         "name": "Detector_1_Timetags",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det1_timetags.npz",
-        "delay": 30
+        "playback": "Det1_timetags.npz"
     },
     "Detector_2_Timetags": {
         "number": 2,
         "name": "Detector_2_Timetags",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det2_timetags.npz",
-        "delay": 20
+        "playback": "Det2_timetags.npz"
     },
     "Detector_3_Timetags": {
         "number": 3,
         "name": "Detector_3_Timetags",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det3_timetags.npz",
-        "delay": 20
+        "playback": "Det3_timetags.npz"
     },
     "Detector_4_Timetags": {
         "number": 4,
         "name": "Detector_4_Timetags",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det4_timetags.npz",
-        "delay": 20
+        "playback": "Det4_timetags.npz"
     },
     "Detector_5_Timetags": {
         "number": 5,
         "name": "Detector_5_Timetags",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det5_timetags.npz",
-        "delay": 20
+        "playback": "Det5_timetags.npz"
     },
     "Detector_6_Timetags": {
         "number": 6,
         "name": "Detector_6_Timetags",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det6_timetags.npz",
-        "delay": 20
+        "playback": "Det6_timetags.npz"
     },
     "Detector_7_Timetags": {
         "number": 7,
         "name": "Detector_7_Timetags",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det7_timetags.npz",
-        "delay": 20
+        "playback": "Det7_timetags.npz"
     },
     "Detector_8_Timetags": {
         "number": 8,
         "name": "Detector_8_Timetags",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det8_timetags.npz",
-        "delay": 20
+        "playback": "Det8_timetags.npz"
     },
     "FLR_measure": {
         "name": "FLR_measure",

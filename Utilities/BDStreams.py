@@ -41,6 +41,33 @@ class BDStreams:
 
     def set_streams_definitions(self, streams):
         self.streams_defs = streams
+        pass
+
+
+    def normalize_stream(self, stream_data, detector_index, detector_delays, M_window):
+        """
+        Given a stream data, normalize it:
+        - Remove the first element - the count
+        - Remove time-tags who are exactly on the M_window
+        - Remove junk values coming from the OPX (9999984)
+        - Remove time-tags that after adding the delay will be outside the window
+        """
+        stream_len = stream_data[0]
+        delay = detector_delays[detector_index]
+
+        # Iterate starting from the first position after the count and build the normalized stream
+        normalized = []
+        for tt_index in range(1, stream_len+1):
+            data = stream_data[tt_index]
+            if data % M_window == 0 or data == 9999984:
+                continue
+
+            delayed_time_tag = data + delay
+            if delayed_time_tag < M_window:
+                normalized.append(delayed_time_tag)
+
+        normalized.sort()
+        return normalized
 
     def clean_streams(self):
         for stream in self.streams_defs.values():

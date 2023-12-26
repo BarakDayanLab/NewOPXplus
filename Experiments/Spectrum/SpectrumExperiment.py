@@ -260,23 +260,22 @@ class SpectrumExperiment(BaseExperiment):
 
         # Ensure we clear time-tags vectors from data from last iteration
         self.tt_measure = []
+
+        # Normalize the data coming from the detectors
+        for detector_index in range(len(Num_Of_dets)):  # for different detectors
+            tt_res = self.streams[f'Detector_{detector_index + 1}_Timetags']['results']
+            normalized_stream = self.bdstreams.normalize_stream(tt_res, detector_index, Config.detector_delays, self.M_window)
+            self.tt_measure.append(normalized_stream)
+
+        # ------------------------------------------
+        # Unify detectors and windows within detectors and create vector of tt's for each direction (bright port, dark port, north, south and from FS) and sort them
+        # ------------------------------------------
+
         self.tt_BP_measure = []
         self.tt_DP_measure = []
         self.tt_N_measure = []
         self.tt_S_measure = []
         self.tt_FS_measure = []
-
-        # Remove zero-padding from tt-res and append into tt_measure
-        for i in range(len(Num_Of_dets)):  # for different detectors
-            time_tags = self.streams[f'Detector_{i+1}_Timetags']['results']
-            #counts = self.streams[f'Detector_{i+1}_Counts']['results']
-            time_tags_count = int(time_tags[0])
-            time_tags = time_tags[1:time_tags_count]
-            self.tt_measure.append(time_tags)
-            self.tt_measure[i] = [elm + Config.detector_delays[i] for elm in self.tt_measure[i]
-                                  if ((elm % self.M_window != 0) & (elm != 9999984) &
-                                      ((elm + Config.detector_delays[i]) <= self.M_window))]  # Due to an unresolved bug in the OPD there are "ghost" readings of timetags equal to the maximum time of measuring window.
-            self.tt_measure[i].sort()
 
         # Unify detectors 0 & 1 and windows within detectors
         self.tt_BP_measure = sorted(sum(self.tt_measure[0:2], []))
@@ -533,6 +532,12 @@ class SpectrumExperiment(BaseExperiment):
                     if len(stream['all_rows']) == 0:
                         stream['all_rows'] = [0]
                     else:
+                        # Reduce the detector delay that was added originally before experiment saved the data
+                        delay = Config.detector_delays[stream['number'] - 1]
+                        for i in range(len(stream['all_rows'])):
+                            if len(stream['all_rows'][i]) > 0:
+                                stream['all_rows'][i] = [time_tag - delay for time_tag in stream['all_rows'][i]]
+                        # Add the count before the data
                         stream['all_rows'] = [[len(arr)] + arr for arr in stream['all_rows']]
 
         # Load flouresence
