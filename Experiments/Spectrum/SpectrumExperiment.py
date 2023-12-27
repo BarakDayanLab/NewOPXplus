@@ -543,7 +543,7 @@ class SpectrumExperiment(BaseExperiment):
         # Load flouresence
         data_file = os.path.join(playback_folder, 'Flouresence.npz')
         zipped_data = np.load(data_file, allow_pickle=True)
-        self.streams['FLR_measure']['all_rows'] = zipped_data['arr_0'].tolist()
+        self.streams['FLR_measure']['all_rows'] = (-zipped_data['arr_0']).tolist()
 
         pass
 
