@@ -47,6 +47,9 @@
     },
     "Phase_Correction_min_vec_batch": {
         "value_name": "Phase_Correction_min_vec"
+    },
+    "all_transits_seq_indx_batch": {
+        "value_name": "all_transits_seq_indx"
     }
 
 

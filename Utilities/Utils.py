@@ -22,6 +22,9 @@ class Utils:
         return idx
 
     @staticmethod
+    def running_average(values, new_value, counter):
+        return (values * (counter - 1) + new_value) / counter
+    @staticmethod
     def moving_average(a, n=3):
         ret = np.cumsum(a, dtype=float)
         ret[n:] = ret[n:] - ret[:-n]

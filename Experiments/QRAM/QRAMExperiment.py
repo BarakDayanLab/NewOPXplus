@@ -223,17 +223,7 @@ class QRAMExperiment(BaseExperiment):
         return [(np.average(Probe_counts_North) * 1000) / self.M_time,
                 (np.average(Probe_counts_South) * 1000) / self.M_time]
 
-    def get_avg_num_of_photons_in_det_pulse(self, det_pulse_len, sprint_sequence_delay, num_of_det_pulses,
-                                            num_of_sprint_sequences):
-        self.avg_num_of_photons_in_det_pulse = np.zeros(num_of_det_pulses)
-        for i in range(num_of_det_pulses):
-            detection_puls_ind = \
-                list(np.arange((sprint_sequence_delay + i * det_pulse_len),
-                               (sprint_sequence_delay + (i + 1) * det_pulse_len)))
-            self.avg_num_of_photons_in_det_pulse[i] = \
-                np.sum(self.tt_S_SPRINT_events[detection_puls_ind]) / num_of_sprint_sequences
-
-    def ingest_time_tags(self, Num_Of_dets):
+    def ingest_time_tags(self):
         """
         Takes all the raw results we got from the streams and does some processing on them - preparing "measures"
         """
@@ -246,7 +236,7 @@ class QRAMExperiment(BaseExperiment):
         self.tt_measure = []
 
         # Normalize the data coming from the detectors
-        for detector_index in range(len(Num_Of_dets)):  # for different detectors
+        for detector_index in range(len(self.Num_Of_dets)):  # for different detectors
             tt_res = self.streams[f'Detector_{detector_index + 1}_Timetags']['results']
             normalized_stream = self.bdstreams.normalize_stream(tt_res, detector_index, Config.detector_delays, self.M_window)
             self.tt_measure.append(normalized_stream)
@@ -299,7 +289,7 @@ class QRAMExperiment(BaseExperiment):
         #         latched_detectors.append(indx)
         return latched_detectors
 
-    def get_pulses_bins(self, det_pulse_len, sprint_pulse_len, num_of_det_pulses, num_of_sprint_pulses,
+    def get_pulses_bins(self, sprint_pulse_len, num_of_det_pulses, num_of_sprint_pulses,
                         sprint_sequence_delay, num_of_sprint_sequences, num_init_zeros, num_fin_zeros,
                         num_between_zeros):
         '''
@@ -314,17 +304,14 @@ class QRAMExperiment(BaseExperiment):
         '''
         pulses_bins = [np.maximum(sprint_sequence_delay, 0)]
         for i in range(num_of_sprint_sequences):
-            pulses_bins += (pulses_bins[-1] + np.arange(det_pulse_len, (num_of_det_pulses + 1) * det_pulse_len,
-                                                        det_pulse_len)).tolist()
+            pulses_bins += (pulses_bins[-1] + np.arange(self.det_pulse_len, (num_of_det_pulses + 1) * self.det_pulse_len,
+                                                        self.det_pulse_len)).tolist()
             pulses_bins += (pulses_bins[-1] + np.arange(sprint_pulse_len, (num_of_sprint_pulses + 1) * sprint_pulse_len,
                                                         sprint_pulse_len)).tolist()
             pulses_bins[-1] += num_fin_zeros + num_init_zeros - num_between_zeros
         return pulses_bins
 
-    def divide_to_reflection_trans(self, det_pulse_len, sprint_pulse_len, sprint_sequence_delay_S,
-                                   sprint_sequence_delay_N,
-                                   num_of_det_pulses,
-                                   num_of_sprint_pulses, num_of_sprint_sequences):
+    def divide_to_reflection_trans(self, sprint_pulse_len, num_of_det_pulses, num_of_sprint_pulses, num_of_sprint_sequences):
         '''
         dividing south and north tt's vectors into reflection and transmission vectors, by:
         1. converting them into counts vector in same time spacing as the initial pulse.
@@ -332,16 +319,14 @@ class QRAMExperiment(BaseExperiment):
         :return:
         '''
         # create histogram with self.M_window bins
-        self.pulses_bins_S = self.get_pulses_bins(det_pulse_len, sprint_pulse_len, num_of_det_pulses,
-                                                  num_of_sprint_pulses
-                                                  , sprint_sequence_delay_S, num_of_sprint_sequences,
-                                                  Config.num_init_zeros_S
-                                                  , Config.num_fin_zeros_S, Config.num_between_zeros)
-        self.pulses_bins_N = self.get_pulses_bins(det_pulse_len, sprint_pulse_len, num_of_det_pulses,
-                                                  num_of_sprint_pulses
-                                                  , sprint_sequence_delay_N, num_of_sprint_sequences,
-                                                  Config.num_init_zeros_N
-                                                  , Config.num_fin_zeros_N, Config.num_between_zeros)
+        self.pulses_bins_S = self.get_pulses_bins(sprint_pulse_len, num_of_det_pulses,
+                                                  num_of_sprint_pulses, self.delay_in_detection_S,
+                                                  num_of_sprint_sequences, Config.num_init_zeros_S,
+                                                  Config.num_fin_zeros_S, Config.num_between_zeros)
+        self.pulses_bins_N = self.get_pulses_bins(sprint_pulse_len, num_of_det_pulses,
+                                                  num_of_sprint_pulses, self.delay_in_detection_N,
+                                                  num_of_sprint_sequences, Config.num_init_zeros_N,
+                                                  Config.num_fin_zeros_N, Config.num_between_zeros)
         self.tt_histogram_N, _ = np.histogram(self.tt_N_measure, self.pulses_bins_N)
         self.tt_histogram_S, _ = np.histogram(self.tt_S_measure, self.pulses_bins_S)
 
@@ -363,7 +348,7 @@ class QRAMExperiment(BaseExperiment):
         return tt_histogram_transmission, tt_histogram_reflection
 
     # TODO: Q: the below function does not use the parameters it gets...
-    def divide_tt_to_reflection_trans(self, sprint_pulse_len, num_of_det_pulses):
+    def divide_tt_to_reflection_trans(self):
         '''
         A function designed to count the number of photons reflected or transmitted for each sequence, such that,
         for the detection pulses the number of photons will be accumulated for each sequence and for the SPRINT
@@ -396,7 +381,7 @@ class QRAMExperiment(BaseExperiment):
                     self.num_of_det_reflections_per_seq_S[seq_num] += self.filter_S[tt_inseq]
                     self.num_of_det_transmissions_per_seq_N[seq_num] += self.filter_N[tt_inseq]
             # else:  # The part of the SPRINT pulses in the sequence
-            #     SPRINT_pulse_num = (tt_inseq - self.end_of_det_pulse_in_seq) // (sprint_pulse_len + Config.num_between_zeros)
+            #     SPRINT_pulse_num = (tt_inseq - self.end_of_det_pulse_in_seq) // (self.sprint_pulse_len + Config.num_between_zeros)
             #     if SPRINT_pulse_num < self.number_of_SPRINT_pulses_per_seq:
             #         self.num_of_SPRINT_reflections_per_seq_S[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
             #         self.num_of_SPRINT_transmissions_per_seq_N[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
@@ -410,7 +395,7 @@ class QRAMExperiment(BaseExperiment):
                     self.num_of_det_reflections_per_seq_N[seq_num] += self.filter_N[tt_inseq]
                     self.num_of_det_transmissions_per_seq_S[seq_num] += self.filter_S[tt_inseq]
             # else:  # The part of the SPRINT pulses in the sequence
-            #     SPRINT_pulse_num = (tt_inseq - self.end_of_det_pulse_in_seq) // (sprint_pulse_len + Config.num_between_zeros)
+            #     SPRINT_pulse_num = (tt_inseq - self.end_of_det_pulse_in_seq) // (self.sprint_pulse_len + Config.num_between_zeros)
             #     if SPRINT_pulse_num < self.number_of_SPRINT_pulses_per_seq:
             #         self.num_of_SPRINT_reflections_per_seq_N[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
             #         self.num_of_SPRINT_transmissions_per_seq_S[(element-1) // self.QRAM_sequence_len][SPRINT_pulse_num] += 1
@@ -452,16 +437,26 @@ class QRAMExperiment(BaseExperiment):
         for element in self.tt_DP_measure:
             tt_inseq = element % self.QRAM_sequence_len
             if tt_inseq > self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
-                self.num_of_DP_counts_per_n_sequences[
-                    (element - 1) // (self.QRAM_sequence_len * num_of_seq_per_count)] += \
-                    np.ceil(Config.QRAM_Exp_Square_samples_Late[tt_inseq])
+                try:
+                    self.num_of_DP_counts_per_n_sequences[
+                        (element - 1) // (self.QRAM_sequence_len * num_of_seq_per_count)] += \
+                        np.ceil(Config.QRAM_Exp_Square_samples_Late[tt_inseq])
+                except Exception as err:
+                    print(err)
 
         for element in self.tt_FS_measure + self.tt_S_measure:
             tt_inseq = element % self.QRAM_sequence_len
             if tt_inseq > self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
-                self.num_of_S_counts_per_n_sequences[
-                    (element - 1) // (self.QRAM_sequence_len * num_of_seq_per_count)] += \
-                    np.ceil(Config.QRAM_Exp_Square_samples_Late[tt_inseq])
+                try:
+                    # lll = (element - 1) // (self.QRAM_sequence_len * num_of_seq_per_count)
+                    # if (element - 1) // (self.QRAM_sequence_len * num_of_seq_per_count) > 385:
+                    #     lll = 385
+                    # self.num_of_S_counts_per_n_sequences[lll] += np.ceil(Config.QRAM_Exp_Square_samples_Late[tt_inseq])
+                    self.num_of_S_counts_per_n_sequences[
+                        (element - 1) // (self.QRAM_sequence_len * num_of_seq_per_count)] += \
+                        np.ceil(Config.QRAM_Exp_Square_samples_Late[tt_inseq])
+                except Exception as err:
+                    print(err)
 
     def plot_folded_tt_histogram(self):
 
@@ -644,7 +639,7 @@ class QRAMExperiment(BaseExperiment):
             # self.logger.debug('Max number of seq')
         for t in pulse_loc:
             avg_num_of_photons_in_seq_pulses.append((sum(seq[t[0]:t[1]]) + seq[t[1]]) / (
-                        real_number_of_seq * 0.167))  # Sagnac configuiration efficiency 16.7%
+                        real_number_of_seq * 0.167))  # Sagnac configuration efficiency 16.7%
         return avg_num_of_photons_in_seq_pulses
 
     def get_max_value_in_seq_pulses(self, seq, pulse_loc):
@@ -846,15 +841,15 @@ class QRAMExperiment(BaseExperiment):
 
         return fig, subplots
 
-    def plot_figures(self, fig, subplots, Num_Of_dets):
+    def plot_figures(self, fig, subplots):
         try:
-            self._plot_figures(fig, subplots, Num_Of_dets)
+            self._plot_figures(fig, subplots)
         except Exception as err:
             tb = traceback.format_exc()
             self.warn(f'Failed on plot_figures: {err}')
         pass
 
-    def _plot_figures(self, fig, ax, Num_Of_dets):
+    def _plot_figures(self, fig, ax):
 
         plot_switches = {
             "playsound": True,
@@ -947,13 +942,13 @@ class QRAMExperiment(BaseExperiment):
 
         # Binned time-tags from all detectors folded (Averaged)
         if plot_switches['graph-1']:
-            # ax[1].plot(self.folded_tt_BP_batch, label='"BP" detectors')
-            # ax[1].plot(self.folded_tt_DP_batch, label='"DP" detectors')
-            ax[1].plot(self.folded_tt_N_directional_batch, label='"N" detectors')
-            ax[1].plot(self.folded_tt_S_directional_batch, label='"S" detectors')
-            ax[1].plot(self.folded_tt_BP_timebins_batch, label='"BP" detectors')
-            ax[1].plot(self.folded_tt_DP_timebins_batch, label='"DP" detectors')
-            ax[1].plot((self.filter_N) * max(self.folded_tt_N_directional_batch + self.folded_tt_S_directional_batch),
+            # ax[1].plot(self.folded_tt_BP_cumulative_avg, label='"BP" detectors')
+            # ax[1].plot(self.folded_tt_DP_cumulative_avg, label='"DP" detectors')
+            ax[1].plot(self.folded_tt_N_directional_cumulative_avg, label='"N" detectors')
+            ax[1].plot(self.folded_tt_S_directional_cumulative_avg, label='"S" detectors')
+            ax[1].plot(self.folded_tt_BP_timebins_cumulative_avg, label='"BP" detectors')
+            ax[1].plot(self.folded_tt_DP_timebins_cumulative_avg, label='"DP" detectors')
+            ax[1].plot((self.filter_N) * max(self.folded_tt_N_directional_cumulative_avg + self.folded_tt_S_directional_cumulative_avg),
                        '--b', label='Filter "N"')
             for i in range(len(self.Num_of_photons_txt_box_y_loc)):
                 ax[1].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc[i],
@@ -987,7 +982,7 @@ class QRAMExperiment(BaseExperiment):
 
             # Detectors status:
             if plot_switches['detectors']:
-                for i, det in enumerate(Num_Of_dets):
+                for i, det in enumerate(self.Num_Of_dets):
                     x = -0.15
                     y = 1.9 - i * 0.4
                     pad = 1
@@ -1079,50 +1074,21 @@ class QRAMExperiment(BaseExperiment):
         plt.show(block=False)
         plt.pause(0.5)
 
-    def init_params_for_experiment(self, qram_sequence_len, Num_Of_dets):
+    def init_params_for_experiment(self):
         # define empty variables
-        self.QRAM_sequence_len = qram_sequence_len
         self.number_of_QRAM_sequences = math.ceil(self.M_window / self.QRAM_sequence_len)
 
         # Reformatting the above variables into an object - (a) for better clarity (b) make it "experiment-agnostic"
         self.experiment = {
-            "sequence_length": qram_sequence_len,
+            "sequence_length": self.QRAM_sequence_len,
             "measurement_window": self.M_window,  # [ns]
             "number_of_sequences": math.ceil(self.M_window / self.QRAM_sequence_len)
         }
         self.number_of_SPRINT_pulses_per_seq = len(Config.sprint_pulse_amp_S)
 
-        # TODO: @@@ Remove these
-        # self.folded_tt_S_batch = None
-        # self.folded_tt_N_batch = None
-        # self.folded_tt_BP_batch = None
-        # self.folded_tt_DP_batch = None
-        # self.folded_tt_FS_batch = None
-        # self.folded_tt_S_directional_batch = None
-        # self.folded_tt_N_directional_batch = None
-        # self.folded_tt_BP_timebins_batch = None
-        # self.folded_tt_DP_timebins_batch = None
-
+        # TODO: Do we need these?
         self.tt_measure = []
         self.tt_S_measure = []
-
-        # TODO: @@@ Remove these
-        self.tt_measure_batch = [[]] * len(Num_Of_dets)
-        self.tt_S_measure_batch = []
-        self.tt_N_measure_batch = []
-        self.tt_BP_measure_batch = []
-        self.tt_DP_measure_batch = []
-        self.tt_FS_measure_batch = []
-        self.transit_sequences_batch = []
-        self.all_transits_seq_indx_batch = []
-        self.reflection_SPRINT_data_per_transit_batch = []
-        self.transmission_SPRINT_data_per_transit_batch = []
-        self.MZ_BP_counts_balancing_batch = []
-        self.MZ_BP_counts_balancing_check_batch = []
-        self.MZ_DP_counts_balancing_batch = []
-        self.MZ_DP_counts_balancing_check_batch = []
-        self.Phase_Correction_vec_batch = []
-        self.Phase_Correction_min_vec_batch = []
 
         self.folded_transmission = np.zeros(len(Config.QRAM_Exp_Gaussian_samples_S))
         self.folded_reflection = np.zeros(len(Config.QRAM_Exp_Gaussian_samples_S))
@@ -1132,8 +1098,8 @@ class QRAMExperiment(BaseExperiment):
         self.seq_transit_events_batched = np.zeros(self.number_of_QRAM_sequences)
         self.tt_S_SPRINT_events = np.zeros(self.QRAM_sequence_len)
         self.tt_S_SPRINT_events_batch = np.zeros(self.QRAM_sequence_len)
-        self.single_det_folded = np.zeros((len(Num_Of_dets), self.QRAM_sequence_len))
-        self.single_det_folded_accumulated = np.zeros((len(Num_Of_dets), self.QRAM_sequence_len))
+        self.single_det_folded = np.zeros((len(self.Num_Of_dets), self.QRAM_sequence_len))
+        self.single_det_folded_accumulated = np.zeros((len(self.Num_Of_dets), self.QRAM_sequence_len))
         self.num_of_det_reflections_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
         self.num_of_det_transmissions_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
 
@@ -1162,7 +1128,7 @@ class QRAMExperiment(BaseExperiment):
         # Take the last sample from batch of previous measurements
         prev_measure = prev_measures[-1]
 
-        # Get the minimum value between new measure (tt_S_no_gaps) and last old measure (tt_S_measure_batch)
+        # Get the minimum value between new measure (tt_S_no_gaps) and last old measure
         min_len = min(len(prev_measure), len(curr_measure))
 
         # Compare values of measurements
@@ -1173,7 +1139,7 @@ class QRAMExperiment(BaseExperiment):
         new_timetags = sum(compare_values) < min_len / 2
         return new_timetags
 
-    def await_for_values(self, Num_Of_dets):
+    def await_for_values(self):
         """
         Awaits for values to come from OPX streams. Returns the timestamp of the incoming data.
         Returns the status of the operation (enumeration). It can be either:
@@ -1197,7 +1163,7 @@ class QRAMExperiment(BaseExperiment):
             if self.runs_status != TerminationReason.SUCCESS:
                 break
 
-            self.ingest_time_tags(Num_Of_dets)
+            self.ingest_time_tags()
 
             if self.new_timetags_detected(self.batcher['tt_S_measure_batch'], self.tt_S_measure):
                 break
@@ -1226,9 +1192,9 @@ class QRAMExperiment(BaseExperiment):
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         return timestamp
 
-    def experiment_calculations(self, sprint_pulse_len, Num_Of_dets):
+    def experiment_calculations(self):
 
-        self.divide_tt_to_reflection_trans(sprint_pulse_len, self.num_of_detection_pulses)
+        self.divide_tt_to_reflection_trans()
 
         # TODO: replace this with my code?
         self.divide_BP_and_DP_counts(50)
@@ -1245,7 +1211,7 @@ class QRAMExperiment(BaseExperiment):
             Config.QRAM_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
 
         # fold reflections and transmission
-        self.single_det_folded = np.zeros((len(Num_Of_dets), self.QRAM_sequence_len))
+        self.single_det_folded = np.zeros((len(self.Num_Of_dets), self.QRAM_sequence_len))
         self.fold_tt_histogram(exp_sequence_len=self.QRAM_sequence_len)
 
         # get the average number of photons in detection pulse
@@ -1297,41 +1263,19 @@ class QRAMExperiment(BaseExperiment):
         self.Infidelity_before = avg_DP_before / (avg_DP_before + avg_BP_before)
         self.Infidelity_after = avg_DP_after / (avg_DP_after + avg_BP_after)
 
-        # TODO: @@@ should make this happen here?
-        #self.folded_tt_N_directional_batch = self.folded_tt_N_directional
-
         pass
 
-    def batch_them(self):
-        if not hasattr(self, 'folded_tt_S_batch'):
-            self.folded_tt_S_batch = self.folded_tt_S
-            self.folded_tt_N_batch = self.folded_tt_N
-            self.folded_tt_BP_batch = self.folded_tt_BP
-            self.folded_tt_DP_batch = self.folded_tt_DP
-            self.folded_tt_FS_batch = self.folded_tt_FS
-            self.folded_tt_S_directional_batch = self.folded_tt_S_directional
-            self.folded_tt_N_directional_batch = self.folded_tt_N_directional
-            self.folded_tt_BP_timebins_batch = self.folded_tt_BP_timebins
-            self.folded_tt_DP_timebins_batch = self.folded_tt_DP_timebins
-
-        else:
-            # Batch folded tt "N" and "S"
-            self.folded_tt_S_batch = (self.folded_tt_S_batch * (self.counter - 1) + self.folded_tt_S) / self.counter
-            self.folded_tt_N_batch = (self.folded_tt_N_batch * (self.counter - 1) + self.folded_tt_N) / self.counter
-            self.folded_tt_BP_batch = (self.folded_tt_BP_batch * (self.counter - 1) + self.folded_tt_BP) / self.counter
-            self.folded_tt_DP_batch = (self.folded_tt_DP_batch * (self.counter - 1) + self.folded_tt_DP) / self.counter
-            self.folded_tt_FS_batch = (self.folded_tt_FS_batch * (self.counter - 1) + self.folded_tt_FS) / self.counter
-            self.folded_tt_S_directional_batch = (self.folded_tt_S_directional_batch * (self.counter - 1)
-                                                  + self.folded_tt_S_directional) / self.counter
-            self.folded_tt_N_directional_batch = (self.folded_tt_N_directional_batch * (self.counter - 1)
-                                                  + self.folded_tt_N_directional) / self.counter
-            self.folded_tt_BP_timebins_batch = (self.folded_tt_BP_timebins_batch * (self.counter - 1)
-                                                + self.folded_tt_BP_timebins) / self.counter
-            self.folded_tt_DP_timebins_batch = (self.folded_tt_DP_timebins_batch * (self.counter - 1)
-                                                + self.folded_tt_DP_timebins) / self.counter
-
+    def calculate_running_averages(self):
+        self.folded_tt_S_cumulative_avg = Utils.running_average(self.folded_tt_S_cumulative_avg, self.folded_tt_S, self.counter)
+        self.folded_tt_N_cumulative_avg = Utils.running_average(self.folded_tt_N_cumulative_avg, self.folded_tt_N, self.counter)
+        self.folded_tt_BP_cumulative_avg = Utils.running_average(self.folded_tt_BP_cumulative_avg, self.folded_tt_BP, self.counter)
+        self.folded_tt_DP_cumulative_avg = Utils.running_average(self.folded_tt_DP_cumulative_avg, self.folded_tt_DP, self.counter)
+        self.folded_tt_FS_cumulative_avg = Utils.running_average(self.folded_tt_FS_cumulative_avg, self.folded_tt_FS, self.counter)
+        self.folded_tt_S_directional_cumulative_avg = Utils.running_average(self.folded_tt_S_directional_cumulative_avg, self.folded_tt_S_directional, self.counter)
+        self.folded_tt_N_directional_cumulative_avg = Utils.running_average(self.folded_tt_N_directional_cumulative_avg, self.folded_tt_N_directional, self.counter)
+        self.folded_tt_BP_timebins_cumulative_avg = Utils.running_average(self.folded_tt_BP_timebins_cumulative_avg, self.folded_tt_BP_timebins, self.counter)
+        self.folded_tt_DP_timebins_cumulative_avg = Utils.running_average(self.folded_tt_DP_timebins_cumulative_avg, self.folded_tt_DP_timebins, self.counter)
         pass
-
 
     # TODO: Refactor/Rename (this method analyzes the results)
     def Save_SNSPDs_QRAM_Measurement_with_tt(self, N, qram_sequence_len, pre_comment, lock_err_threshold,
@@ -1363,18 +1307,21 @@ class QRAMExperiment(BaseExperiment):
         # set constant parameters for the function
 
         # TODO: Q: Are these just detector "names"/"Symbols"? And also used to define the number of detectors (e.g. 8)?
-        Num_Of_dets = [1, 2, 3, 4, 5, 6, 7, 8]
-        delay_in_detection_N = 30  # choose the correct delay in samples to the first detection pulse # TODO: 40?
-        delay_in_detection_S = 20  # choose the correct delay in samples to the first detection pulse # TODO: 40?
-        det_pulse_len = Config.det_pulse_len + Config.num_between_zeros
-        sprint_pulse_len = Config.sprint_pulse_len + Config.num_between_zeros  # TODO: Q: what is num_between_zeros ?
+        self.Num_Of_dets = [1, 2, 3, 4, 5, 6, 7, 8]
+
+        self.delay_in_detection_N = 30  # choose the correct delay in samples to the first detection pulse # TODO: 40?
+        self.delay_in_detection_S = 20  # choose the correct delay in samples to the first detection pulse # TODO: 40?
+
+        self.det_pulse_len = Config.det_pulse_len + Config.num_between_zeros
+
+        self.sprint_pulse_len = Config.sprint_pulse_len + Config.num_between_zeros  # TODO: Q: what is num_between_zeros ?
 
         # TODO: These come as parameters for the experiment run - we may want to have them all under "self.params[..]" so we can
         # TODO: (a) group logically (b) pass to other functions, instead of passing them one by one or relying on them being on self
+        self.QRAM_sequence_len = qram_sequence_len
         self.with_atoms = with_atoms
         self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
         self.lock_err_threshold = lock_err_threshold
-        self.warm_up_cycles = 2 #  10  # Should also come as params, with some default. E.g. self.warm_up_cycles = 10 if 'warm_up_cycles' not in params else params['warm_up_cycles']
         self.transit_condition = transit_condition
         self.reflection_threshold = reflection_threshold
         self.reflection_threshold_time = reflection_threshold_time
@@ -1383,10 +1330,12 @@ class QRAMExperiment(BaseExperiment):
         self.FLR_threshold = FLR_threshold
         self.exp_flag = exp_flag
 
+        self.warm_up_cycles = 3  # Should also come as params, with some default. E.g. self.warm_up_cycles = 10 if 'warm_up_cycles' not in params else params['warm_up_cycles']
+
         # initialize parameters - set zeros vectors and empty lists
         # TODO: Q: why is this called "sprint" ?
         # TODO: Do we need Num_Of_dets ?
-        self.init_params_for_experiment(qram_sequence_len, Num_Of_dets)
+        self.init_params_for_experiment()
 
         # ----------------------------------------------------------
         # Prepare pulses location of South, North and Ancilla
@@ -1462,7 +1411,7 @@ class QRAMExperiment(BaseExperiment):
 
             # Filter/Manipulate the values we got
             self.get_results_from_streams()
-            self.ingest_time_tags(Num_Of_dets)
+            self.ingest_time_tags()
 
             # TODO: Review:
             # TODO: The below calls come instead of:          self.divide_tt_to_reflection_trans(...)
@@ -1491,7 +1440,7 @@ class QRAMExperiment(BaseExperiment):
             self.num_of_det_reflections_per_seq_N = buckets["reflections_north"]["counts"]
             self.num_of_det_transmissions_per_seq_S = buckets["transmissions_south"]["counts"]
 
-            # self.divide_tt_to_reflection_trans(sprint_pulse_len, self.num_of_detection_pulses)
+            # self.divide_tt_to_reflection_trans(self.sprint_pulse_len, self.num_of_detection_pulses)
 
             # TODO: Review:
             # TODO: The below calls come instead of:          self.divide_BP_and_DP_counts(50)
@@ -1549,143 +1498,6 @@ class QRAMExperiment(BaseExperiment):
 
         ####    end get tt and counts from OPX to python   #####
 
-        # TODO: Eventually remove this code
-        DONT_RUN_THIS_CODE = False
-
-        # ---------------------------------------------------------------------------------
-        # ----------------- DONT RUN ------------------- DONT RUN -------------------------
-        # ---------------------------------------------------------------------------------
-
-        if DONT_RUN_THIS_CODE:
-            self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
-                                                               + self.num_of_det_reflections_per_seq_N
-            self.num_of_det_transmissions_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S \
-                                                                 + self.num_of_det_transmissions_per_seq_N
-
-            # divide south and north into reflection and transmission
-            self.tt_histogram_transmission, self.tt_histogram_reflection = \
-                self.divide_to_reflection_trans(det_pulse_len=det_pulse_len, sprint_pulse_len=sprint_pulse_len,
-                                                sprint_sequence_delay_S=delay_in_detection_S,
-                                                sprint_sequence_delay_N=delay_in_detection_N,
-                                                num_of_det_pulses=len(Config.det_pulse_amp_S),
-                                                num_of_sprint_pulses=len(Config.sprint_pulse_amp_S),
-                                                num_of_sprint_sequences=self.number_of_QRAM_sequences)
-
-            # TODO: needed?
-            self.tt_S_SPRINT_events = np.zeros(qram_sequence_len)
-            self.tt_S_SPRINT_events_batch = np.zeros(qram_sequence_len)
-            self.tt_Single_det_SPRINT_events = np.zeros((len(Num_Of_dets), qram_sequence_len))
-            self.tt_Single_det_SPRINT_events_batch = np.zeros((len(Num_Of_dets), qram_sequence_len))
-            self.tt_N_det_SPRINT_events_batch = np.zeros(qram_sequence_len)
-            self.tt_S_det_SPRINT_events_batch = np.zeros(qram_sequence_len)
-
-            # fold reflections and transmission
-            self.fold_tt_histogram(exp_sequence_len=self.QRAM_sequence_len)
-
-            # fold data from different detectors: # TODO: is needed? @Dor
-            for i in range(len(Num_Of_dets)):
-                # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]: - for debugging assaf
-                for x in [elem for elem in self.tt_measure[i]]:
-                    self.single_det_folded[i][x % self.QRAM_sequence_len] += 1
-                    self.single_det_folded_accumulated[i][x % self.QRAM_sequence_len] += 1
-
-            # Batch folded tt "N", "S", BP, DP, FS
-            self.folded_tt_S_batch = self.folded_tt_S
-            self.folded_tt_N_batch = self.folded_tt_N
-            self.folded_tt_BP_batch = self.folded_tt_BP
-            self.folded_tt_DP_batch = self.folded_tt_DP
-            self.folded_tt_FS_batch = self.folded_tt_FS
-            self.folded_tt_S_directional_batch = self.folded_tt_S_directional
-            self.folded_tt_N_directional_batch = self.folded_tt_N_directional
-            self.folded_tt_BP_timebins_batch = self.folded_tt_BP_timebins
-            self.folded_tt_DP_timebins_batch = self.folded_tt_DP_timebins
-
-            # get the average number of photons in detection pulse
-            self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(
-                self.folded_tt_S_directional, self.pulses_location_in_seq_S, self.tt_FS_measure)
-            self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(
-                self.folded_tt_N_directional, self.pulses_location_in_seq_N, self.tt_BP_measure + self.tt_DP_measure)
-            self.avg_num_of_photons_per_pulse_A_live = self.get_avg_num_of_photons_in_seq_pulses(
-                (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins)
-                 + np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A,
-                self.tt_BP_measure + self.tt_DP_measure)
-            self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(
-                self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:], self.tt_BP_measure)
-            self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(
-                self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:], self.tt_DP_measure)
-            self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + \
-                                                     self.avg_num_of_photons_per_pulse_N_live + \
-                                                     self.avg_num_of_photons_per_pulse_A_live
-            self.avg_num_of_photons_per_pulse_live_MZ = [[x] + [y] for x, y in
-                                                         zip(self.avg_num_of_photons_per_pulse_BP_live,
-                                                             self.avg_num_of_photons_per_pulse_DP_live)]
-            #                                         self.avg_num_of_photons_per_pulse_BP_live + \
-            #                                         self.avg_num_of_photons_per_pulse_DP_live
-            self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_live
-            self.avg_num_of_photons_per_pulse_MZ = self.avg_num_of_photons_per_pulse_live_MZ
-
-            # get box location on the y-axis:
-            self.max_value_per_pulse_S_live = self.get_max_value_in_seq_pulses(self.folded_tt_S_directional,
-                                                                               self.pulses_location_in_seq_S)
-            self.max_value_per_pulse_N_live = self.get_max_value_in_seq_pulses(self.folded_tt_N_directional,
-                                                                               self.pulses_location_in_seq_N)
-            self.max_value_per_pulse_A_live = self.get_max_value_in_seq_pulses(
-                (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins) +
-                 np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A)
-            self.max_value_per_pulse_BP_live = self.get_max_value_in_seq_pulses(
-                self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:])
-            self.max_value_per_pulse_DP_live = self.get_max_value_in_seq_pulses(
-                self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:])
-            self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + \
-                                                     self.max_value_per_pulse_N_live + \
-                                                     self.max_value_per_pulse_A_live
-
-            self.Num_of_photons_txt_box_y_loc_live_MZ = [[x] + [y] for x, y in zip(self.max_value_per_pulse_BP_live,
-                                                                                   self.max_value_per_pulse_DP_live)]
-            # self.Num_of_photons_txt_box_y_loc_live_MZ = self.max_value_per_pulse_BP_live + self.max_value_per_pulse_DP_live
-            self.Num_of_photons_txt_box_y_loc = self.Num_of_photons_txt_box_y_loc_live
-            self.Num_of_photons_txt_box_y_loc_MZ = self.Num_of_photons_txt_box_y_loc_live_MZ
-
-            avg_BP_before = np.average(self.MZ_BP_counts_res_value_1[:self.rep_MZ_check])
-            avg_BP_after = np.average(self.MZ_BP_counts_res_value_1[self.rep_MZ_check:])
-            avg_DP_before = np.average(self.MZ_DP_counts_res_value_1[:self.rep_MZ_check])
-            avg_DP_after = np.average(self.MZ_DP_counts_res_value_1[self.rep_MZ_check:])
-            self.Infidelity_before = avg_DP_before / (avg_DP_before + avg_BP_before)
-            self.Infidelity_after = avg_DP_after / (avg_DP_after + avg_BP_after)
-
-            ## record time
-            timest = time.strftime("%Y%m%d-%H%M%S")
-            datest = time.strftime("%Y%m%d")
-            FLR_measurement = []
-            Exp_timestr_batch = []
-            lock_err_batch = []
-
-            # Eventually remove these lines - batcher is doing this!
-            FLR_measurement = FLR_measurement[-(N - 1):] + [self.FLR_res.tolist()]
-            Exp_timestr_batch = Exp_timestr_batch[-(N - 1):] + [timest]
-            lock_err_batch = lock_err_batch[-(N - 1):] + [self.lock_err]
-
-            ### Dor version ###
-            self.find_transits_and_sprint_events_changed(cond=self.self.transit_condition, minimum_number_of_seq_detected=2)
-            self.seq_transit_events_live[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
-            self.seq_transit_events_batched[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
-            self.all_transits_seq_indx_batch = self.all_transits_seq_indx_batch[-(N - 1):] + [self.all_transits_seq_indx]
-            # self.reflection_SPRINT_data_per_transit_batch = self.reflection_SPRINT_data_per_transit_batch[-(N-1):]\
-            #                                                 + [self.reflection_SPRINT_data_per_transit]
-            # self.transmission_SPRINT_data_per_transit_batch = self.transmission_SPRINT_data_per_transit_batch[-(N-1):]\
-            #                                                   + [self.transmission_SPRINT_data_per_transit]
-            self.number_of_transits_live = len(self.all_transits_seq_indx)
-            self.number_of_transits_total = len([vec for lst in self.all_transits_seq_indx_batch for vec in lst])
-            # self.total_number_of_reflections_from_SPRINT_pulses_in_transits = \
-            #     np.sum(np.sum([vec for lst in self.reflection_SPRINT_data_per_transit_batch for vec in lst]))
-            ###################
-
-            self.save_tt_to_batch(Num_Of_dets, N)
-
-        # ---------------------------------------------------------------------------------
-        # ----------------- DONT RUN ------------------- DONT RUN -------------------------
-        # ---------------------------------------------------------------------------------
-
         self.acquisition_flag = True
         self.threshold_flag = True
         self.pause_flag = False
@@ -1701,6 +1513,9 @@ class QRAMExperiment(BaseExperiment):
         self.repetitions = 1  # Total number of cycles
         self.acquisition_flag = True
         self.warm_up = True
+        # TODO: Change this to Experiment Phase - with enum
+        self.post_warm_up_completed = False  # Did we finish the post warm-up process
+
         self.pause_flag = False
         self.runs_status = TerminationReason.SUCCESS  # default status of the run is Success
 
@@ -1716,30 +1531,35 @@ class QRAMExperiment(BaseExperiment):
             if self.runs_status == TerminationReason.USER:
                 break
 
-            # Await for values from OPX
-            self.sampling_timestamp = self.await_for_values(Num_Of_dets)
-            if self.runs_status != TerminationReason.SUCCESS:
-                break
-
             # Get locking error
             self.lock_err = self._read_locking_error()
 
             # Experiment delay
             self.experiment_mainloop_delay()
 
+            # Handle warm-up phase
+            self.warm_up = self.handle_warm_up_phase()
+            if self.warm_up:
+                continue
+
+            # Await for values from OPX
+            self.sampling_timestamp = self.await_for_values()
+            if self.runs_status != TerminationReason.SUCCESS:
+                break
+
             # Informational printing
             self.print_experiment_information()
 
             # If we are still in warm-up phase, we do not continue further and go back to beginning of loop
-            self.warm_up = self.is_warm_up_phase()
-            if self.warm_up:
-                continue
+            # self.warm_up = self.is_warm_up_phase()
+            # if self.warm_up:
+            #     continue
 
             # Perform all analytics and calculations needed for display
-            self.experiment_calculations(sprint_pulse_len, Num_Of_dets)
+            self.experiment_calculations()
 
             # Plot figures
-            self.plot_figures(fig, subplots, Num_Of_dets)
+            self.plot_figures(fig, subplots)
 
             # Determine if we're "acquired" - e.g., worthy to save data :-)
             self.acquisition_flag = self.is_acquired()
@@ -1760,32 +1580,24 @@ class QRAMExperiment(BaseExperiment):
                 self.find_transits_and_sprint_events_changed(cond=self.transit_condition, minimum_number_of_seq_detected=2)
                 self.seq_transit_events_live[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
                 self.seq_transit_events_batched[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
-                self.all_transits_seq_indx_batch = self.all_transits_seq_indx_batch[-(N - 1):] \
-                                                   + [self.all_transits_seq_indx]
-                # self.reflection_SPRINT_data_per_transit_batch = self.reflection_SPRINT_data_per_transit_batch[-(N - 1):] \
-                #                                                 + [self.reflection_SPRINT_data_per_transit]
-                # self.transmission_SPRINT_data_per_transit_batch = self.transmission_SPRINT_data_per_transit_batch[-(N - 1):] \
-                #                                                   + [self.transmission_SPRINT_data_per_transit]
-                self.number_of_transits_live = len(self.all_transits_seq_indx)
-                self.number_of_transits_total = len([vec for lst in self.all_transits_seq_indx_batch for vec in lst])
-                # self.total_number_of_reflections_from_SPRINT_pulses_in_transits = \
-                #     np.sum(np.sum([vec for lst in self.reflection_SPRINT_data_per_transit_batch for vec in lst]))
-                ###########################################
 
-                self.batch_them()
+                self.number_of_transits_live = len(self.all_transits_seq_indx)
+                self.number_of_transits_total = len([vec for lst in self.batcher['all_transits_seq_indx_batch'] for vec in lst])
+
+                self.calculate_running_averages()
 
                 # get the average number of photons in detection pulse
                 self.avg_num_of_photons_per_pulse_S = self.get_avg_num_of_photons_in_seq_pulses(
-                    self.folded_tt_S_directional_batch, self.pulses_location_in_seq_S, [])
+                    self.folded_tt_S_directional_cumulative_avg, self.pulses_location_in_seq_S, [])
                 self.avg_num_of_photons_per_pulse_N = self.get_avg_num_of_photons_in_seq_pulses(
-                    self.folded_tt_N_directional_batch, self.pulses_location_in_seq_N, [])
+                    self.folded_tt_N_directional_cumulative_avg, self.pulses_location_in_seq_N, [])
                 self.avg_num_of_photons_per_pulse_A = self.get_avg_num_of_photons_in_seq_pulses(
-                    (np.array(self.folded_tt_S_directional_batch) + np.array(self.folded_tt_BP_timebins_batch)
-                     + np.array(self.folded_tt_DP_timebins_batch)).tolist(), self.pulses_location_in_seq_A, [])
+                    (np.array(self.folded_tt_S_directional_cumulative_avg) + np.array(self.folded_tt_BP_timebins_cumulative_avg)
+                     + np.array(self.folded_tt_DP_timebins_cumulative_avg)).tolist(), self.pulses_location_in_seq_A, [])
                 self.avg_num_of_photons_per_pulse_BP = self.get_avg_num_of_photons_in_seq_pulses(
-                    self.folded_tt_BP_timebins_batch, self.pulses_location_in_seq[-2:], [])
+                    self.folded_tt_BP_timebins_cumulative_avg, self.pulses_location_in_seq[-2:], [])
                 self.avg_num_of_photons_per_pulse_DP = self.get_avg_num_of_photons_in_seq_pulses(
-                    self.folded_tt_DP_timebins_batch, self.pulses_location_in_seq[-2:], [])
+                    self.folded_tt_DP_timebins_cumulative_avg, self.pulses_location_in_seq[-2:], [])
                 self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_S + \
                                                     self.avg_num_of_photons_per_pulse_N + \
                                                     self.avg_num_of_photons_per_pulse_A
@@ -1795,17 +1607,17 @@ class QRAMExperiment(BaseExperiment):
                 # self.avg_num_of_photons_per_pulse_MZ = self.avg_num_of_photons_per_pulse_BP + \
                 #                                        self.avg_num_of_photons_per_pulse_DP
                 # get box location on the y-axis:
-                self.max_value_per_pulse_S = self.get_max_value_in_seq_pulses(self.folded_tt_S_directional_batch,
+                self.max_value_per_pulse_S = self.get_max_value_in_seq_pulses(self.folded_tt_S_directional_cumulative_avg,
                                                                               self.pulses_location_in_seq_S)
-                self.max_value_per_pulse_N = self.get_max_value_in_seq_pulses(self.folded_tt_N_directional_batch,
+                self.max_value_per_pulse_N = self.get_max_value_in_seq_pulses(self.folded_tt_N_directional_cumulative_avg,
                                                                               self.pulses_location_in_seq_N)
                 self.max_value_per_pulse_A = self.get_max_value_in_seq_pulses(
-                    (np.array(self.folded_tt_S_directional_batch) + np.array(self.folded_tt_BP_timebins_batch) +
-                     np.array(self.folded_tt_DP_timebins_batch)).tolist(), self.pulses_location_in_seq_A)
+                    (np.array(self.folded_tt_S_directional_cumulative_avg) + np.array(self.folded_tt_BP_timebins_cumulative_avg) +
+                     np.array(self.folded_tt_DP_timebins_cumulative_avg)).tolist(), self.pulses_location_in_seq_A)
                 self.max_value_per_pulse_BP = self.get_max_value_in_seq_pulses(
-                    self.folded_tt_BP_timebins_batch, self.pulses_location_in_seq[-2:])
+                    self.folded_tt_BP_timebins_cumulative_avg, self.pulses_location_in_seq[-2:])
                 self.max_value_per_pulse_DP = self.get_max_value_in_seq_pulses(
-                    self.folded_tt_DP_timebins_batch, self.pulses_location_in_seq[-2:])
+                    self.folded_tt_DP_timebins_cumulative_avg, self.pulses_location_in_seq[-2:])
                 self.Num_of_photons_txt_box_y_loc = self.max_value_per_pulse_S + self.max_value_per_pulse_N + \
                                                     self.max_value_per_pulse_A
                 self.Num_of_photons_txt_box_y_loc_MZ = [[x] + [y] for x, y in zip(self.max_value_per_pulse_BP,
@@ -1813,7 +1625,7 @@ class QRAMExperiment(BaseExperiment):
                 # self.Num_of_photons_txt_box_y_loc_MZ = self.max_value_per_pulse_BP + self.max_value_per_pulse_DP
 
                 # fold for different detectors: # TODO: delete after everything works
-                for i in range(len(Num_Of_dets)):
+                for i in range(len(self.Num_Of_dets)):
                     for x in [elem for elem in self.tt_measure[i]]:
                         self.single_det_folded[i][x % self.QRAM_sequence_len] += 1
                         self.single_det_folded_accumulated[i][x % self.QRAM_sequence_len] += 1
@@ -1937,9 +1749,39 @@ class QRAMExperiment(BaseExperiment):
         # All is well!
         return True
 
-    def is_warm_up_phase(self):
+    def handle_warm_up_phase(self):
+
+        if self.post_warm_up_completed:
+            return False
+
+        # Get data from OPX streams
+        self.get_results_from_streams()
+
+        # Make something out of the data we received on the streams
+        self.ingest_time_tags()
+
+        self.divide_tt_to_reflection_trans()
+        self.divide_BP_and_DP_counts(50)
+        self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S + self.num_of_det_reflections_per_seq_N
+        self.num_of_det_transmissions_per_seq = self.num_of_det_transmissions_per_seq_S + self.num_of_det_transmissions_per_seq_N
+
+        # Summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
+        self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(self.reflection_threshold_time // len(Config.QRAM_Exp_Gaussian_samples_S)):])
+
+        # Check if conditions have been met for the completeion of the warm-up phase
+        warm_up_phase_complete = self.is_warm_up_phase_complete()
+
+        # This is the first time we realize we are no loger in warm-up - so run post stage
+        if warm_up_phase_complete:
+            self.post_warm_up()
+            self.post_warm_up_completed = True  # Mark the fact we are done
+
+        return not warm_up_phase_complete
+
+    def is_warm_up_phase_complete(self):
         """
         We are in warm-up if these conditions are met:
+        - We didn't complete already the warm-up post process
         - We haven't yet completed WARMUP_CYCLES
         - We haven't yet acquired a lock on resonance
         - We are in experiment, and the threshold is not yet filled
@@ -1948,17 +1790,107 @@ class QRAMExperiment(BaseExperiment):
         # Did we finish going through all warm-up cycles? If not, we're still in warm-up -> return True
         if self.warm_up_cycles > 0:
             self.warm_up_cycles -= 1
-            return True
+            return False
 
         # We stay in warm-up while we're not locked
         if self.lock_err > self.lock_err_threshold:
-            return True
+            return False
 
         # We stay in warm-up if we're not within threshold
         if self.exp_flag and self.sum_for_threshold > self.reflection_threshold:
-            return True
+            return False
 
-        return False
+        return True
+
+    def post_warm_up(self):
+        """
+        Assuming warm-up phase has completed and we have some information, we now prepare for the display and the experiment cycles
+        """
+
+        self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S + self.num_of_det_reflections_per_seq_N
+        self.num_of_det_transmissions_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S + self.num_of_det_transmissions_per_seq_N
+
+        # Divide south and north into reflection and transmission
+        self.tt_histogram_transmission, self.tt_histogram_reflection = \
+        self.divide_to_reflection_trans(sprint_pulse_len=self.sprint_pulse_len,
+                                        num_of_det_pulses=len(Config.det_pulse_amp_S),
+                                        num_of_sprint_pulses=len(Config.sprint_pulse_amp_S),
+                                        num_of_sprint_sequences=self.number_of_QRAM_sequences)
+
+        # TODO: needed?
+        self.tt_S_SPRINT_events = np.zeros(self.QRAM_sequence_len)
+        self.tt_S_SPRINT_events_batch = np.zeros(self.QRAM_sequence_len)
+        self.tt_Single_det_SPRINT_events = np.zeros((len(self.Num_Of_dets), self.QRAM_sequence_len))
+        self.tt_Single_det_SPRINT_events_batch = np.zeros((len(self.Num_Of_dets), self.QRAM_sequence_len))
+        self.tt_N_det_SPRINT_events_batch = np.zeros(self.QRAM_sequence_len)
+        self.tt_S_det_SPRINT_events_batch = np.zeros(self.QRAM_sequence_len)
+
+        # Fold time-tags: S, N, BP, DP, FS, N-directional, S-directional, BP-timebins, DP-timebins
+        self.fold_tt_histogram(exp_sequence_len=self.QRAM_sequence_len)
+
+        # Batch folded tt "N", "S", BP, DP, FS
+        self.folded_tt_S_cumulative_avg = self.folded_tt_S
+        self.folded_tt_N_cumulative_avg = self.folded_tt_N
+        self.folded_tt_BP_cumulative_avg = self.folded_tt_BP
+        self.folded_tt_DP_cumulative_avg = self.folded_tt_DP
+        self.folded_tt_FS_cumulative_avg = self.folded_tt_FS
+        self.folded_tt_S_directional_cumulative_avg = self.folded_tt_S_directional
+        self.folded_tt_N_directional_cumulative_avg = self.folded_tt_N_directional
+        self.folded_tt_BP_timebins_cumulative_avg = self.folded_tt_BP_timebins
+        self.folded_tt_DP_timebins_cumulative_avg = self.folded_tt_DP_timebins
+
+        # Fold data from different detectors:
+        for i in range(len(self.Num_Of_dets)):
+            # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]: - for debugging assaf
+            for x in [elem for elem in self.tt_measure[i]]:
+                self.single_det_folded[i][x % self.QRAM_sequence_len] += 1
+                self.single_det_folded_accumulated[i][x % self.QRAM_sequence_len] += 1
+
+        # Get the average number of photons in detection pulse
+        self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S_directional, self.pulses_location_in_seq_S, self.tt_FS_measure)
+        self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N_directional, self.pulses_location_in_seq_N, self.tt_BP_measure + self.tt_DP_measure)
+        self.avg_num_of_photons_per_pulse_A_live = self.get_avg_num_of_photons_in_seq_pulses((np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins)+ np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A,self.tt_BP_measure + self.tt_DP_measure)
+        self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:], self.tt_BP_measure)
+        self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:], self.tt_DP_measure)
+        self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + self.avg_num_of_photons_per_pulse_N_live + self.avg_num_of_photons_per_pulse_A_live
+        self.avg_num_of_photons_per_pulse_live_MZ = [[x]+[y] for x, y in zip(self.avg_num_of_photons_per_pulse_BP_live, self.avg_num_of_photons_per_pulse_DP_live)]
+
+        self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_live
+        self.avg_num_of_photons_per_pulse_MZ = self.avg_num_of_photons_per_pulse_live_MZ
+
+        # get box location on the y-axis:
+        self.max_value_per_pulse_S_live = self.get_max_value_in_seq_pulses(self.folded_tt_S_directional, self.pulses_location_in_seq_S)
+        self.max_value_per_pulse_N_live = self.get_max_value_in_seq_pulses(self.folded_tt_N_directional, self.pulses_location_in_seq_N)
+        self.max_value_per_pulse_A_live = self.get_max_value_in_seq_pulses((np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins) + np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A)
+        self.max_value_per_pulse_BP_live = self.get_max_value_in_seq_pulses(self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:])
+        self.max_value_per_pulse_DP_live = self.get_max_value_in_seq_pulses(self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:])
+
+        self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + self.max_value_per_pulse_N_live + self.max_value_per_pulse_A_live
+        self.Num_of_photons_txt_box_y_loc_live_MZ = [[x]+[y] for x, y in zip(self.max_value_per_pulse_BP_live, self.max_value_per_pulse_DP_live)]
+        # self.Num_of_photons_txt_box_y_loc_live_MZ = self.max_value_per_pulse_BP_live + self.max_value_per_pulse_DP_live
+
+        self.Num_of_photons_txt_box_y_loc = self.Num_of_photons_txt_box_y_loc_live
+        self.Num_of_photons_txt_box_y_loc_MZ = self.Num_of_photons_txt_box_y_loc_live_MZ
+
+        avg_BP_before = np.average(self.MZ_BP_counts_res_value_1[:self.rep_MZ_check])
+        avg_BP_after = np.average(self.MZ_BP_counts_res_value_1[self.rep_MZ_check:])
+        avg_DP_before = np.average(self.MZ_DP_counts_res_value_1[:self.rep_MZ_check])
+        avg_DP_after = np.average(self.MZ_DP_counts_res_value_1[self.rep_MZ_check:])
+
+        self.Infidelity_before = avg_DP_before / (avg_DP_before + avg_BP_before)
+        self.Infidelity_after = avg_DP_after / (avg_DP_after + avg_BP_after)
+
+        self.find_transits_and_sprint_events_changed(cond=self.transit_condition, minimum_number_of_seq_detected=2)
+
+        self.seq_transit_events_live[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
+        self.seq_transit_events_batched[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
+
+        self.number_of_transits_live = len(self.all_transits_seq_indx)
+
+        self.batcher.batch_all(self)
+
+        self.number_of_transits_total = len([vec for lst in self.batcher['all_transits_seq_indx_batch'] for vec in lst])
+        pass
 
     def maximize_figure(self):
         """

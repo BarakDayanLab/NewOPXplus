@@ -46,20 +46,17 @@ logger.addHandler(handler)
 
 
 ###            Support functions          ###
-# TODO: Not used - remove?
 def find_nearest(array, value):
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
     return idx
 
-# TODO: Not used - remove?
 def moving_average(a, n=3) :
     ret = np.cumsum(a, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
 
 
-# TODO: Not used - remove?
 def assign_variables_to_element(element, *variables):
     """
     Forces the given variables to be used by the given element thread. Useful as a workaround for when the compiler
@@ -1079,9 +1076,8 @@ def opx_control(obj, qm):
             align(*all_elements)
 
             # FreeFall sequence:
-            # TODO: What is this calc?
             with if_(QRAM_Exp_ON):
-                assign(x, (30678780 - 3106 + 656000 * 2 + 4) // 4)  # TODO - added 38688900 to fix new delay due to wait(1000) in saving sprint data with vector size 10000, should be fixed as well
+                assign(x, (30678780 - 3106 + 656000 * 2 + 4) // 4) # TODO -  added 38688900 to fix new delay due to wait(1000) in saving sprint data with vector size 10000, should be fixed as well
             with else_():
                 assign(x, - 3106)
             # FreeFall(FreeFall_duration, coils_timing)
@@ -1808,8 +1804,8 @@ class OPX:
         #         latched_detectors.append(indx)
         return latched_detectors
 
-    def get_pulses_bins(self,det_pulse_len,sprint_pulse_len,num_of_det_pulses,num_of_sprint_pulses,
-                        sprint_sequence_delay,num_of_sprint_sequences,num_init_zeros,num_fin_zeros,num_between_zeros):
+    def get_pulses_bins(self, det_pulse_len, sprint_pulse_len, num_of_det_pulses, num_of_sprint_pulses,
+                        sprint_sequence_delay, num_of_sprint_sequences,num_init_zeros,num_fin_zeros,num_between_zeros):
         '''
         generating bin vwctor with edges at the efges of pulses (such that the histogram would give the number of
         clicks within pulse).
@@ -2097,6 +2093,18 @@ class OPX:
         return box_loc
 
     def fold_tt_histogram(self, exp_sequence_len):
+        """
+        Sets the following:
+        - folded_tt_S
+        - folded_tt_N
+        - folded_tt_BP
+        - folded_tt_DP
+        - folded_tt_FS
+        - folded_tt_N_directional
+        - folded_tt_S_directional
+        - folded_tt_BP_timebins
+        - folded_tt_DP_timebins
+        """
 
         self.folded_tt_S = np.zeros(exp_sequence_len, dtype=int)
         self.folded_tt_N = np.zeros(exp_sequence_len, dtype=int)
@@ -2240,9 +2248,9 @@ class OPX:
 
         # for m in range(len(Num_Of_dets)):
         #     ax[1].plot(self.single_det_folded_accumulated[m], label='detectors %d' % (m+1))
-        # # ax[1].plot(self.folded_tt_N_batch, label='"N" detectors')
-        # # ax[1].plot(self.folded_tt_S_batch, label='"S" detectors')
-        # # ax[1].plot((self.filter_N) * max(self.folded_tt_N_batch + self.folded_tt_S_batch), '--b', label='Filter "N"')
+        # # ax[1].plot(self.folded_tt_N_cumulative_avg, label='"N" detectors')
+        # # ax[1].plot(self.folded_tt_S_cumulative_avg, label='"S" detectors')
+        # # ax[1].plot((self.filter_N) * max(self.folded_tt_N_cumulative_avg + self.folded_tt_S_cumulative_avg), '--b', label='Filter "N"')
         # ax[1].set_title('binned timetags from all detectors folded (Averaged)', fontweight="bold")
         # ax[1].legend(loc='upper right')
 
@@ -2274,8 +2282,8 @@ class OPX:
         ax[0].text(0.05, 1.4, textstr_thresholds, transform=ax[0].transAxes, fontsize=28,
                    verticalalignment='top', bbox=props_thresholds)
 
-        # ax[1].plot(self.folded_tt_BP_batch, label='"BP" detectors')
-        # ax[1].plot(self.folded_tt_DP_batch, label='"DP" detectors')
+        # ax[1].plot(self.folded_tt_BP_cumulative_avg, label='"BP" detectors')
+        # ax[1].plot(self.folded_tt_DP_cumulative_avg, label='"DP" detectors')
         ax[1].plot(self.folded_tt_N_directional_batch, label='"N" detectors')
         ax[1].plot(self.folded_tt_S_directional_batch, label='"S" detectors')
         ax[1].plot(self.folded_tt_BP_timebins_batch, label='"BP" detectors')
@@ -2414,7 +2422,6 @@ class OPX:
         self.num_of_det_reflections_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
         self.num_of_det_transmissions_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
 
-    # TODO: Analyze the results...
     def Save_SNSPDs_QRAM_Measurement_with_tt(self, N, qram_sequence_len, preComment, lock_err_threshold, transit_condition,
                                              max_probe_counts, filter_delay, reflection_threshold, reflection_threshold_time,
                                              photons_per_det_pulse_threshold, FLR_threshold, exp_flag, with_atoms,
@@ -2541,10 +2548,10 @@ class OPX:
                     print('error in loading file')
         ####    end get tt and counts from OPX to python   #####
 
-        self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S \
-                                                           + self.num_of_det_reflections_per_seq_N
-        self.num_of_det_transmissions_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S \
-                                                             + self.num_of_det_transmissions_per_seq_N
+        # START 1 - after WARMUP
+
+        self.num_of_det_reflections_per_seq_accumulated += self.num_of_det_reflections_per_seq_S + self.num_of_det_reflections_per_seq_N
+        self.num_of_det_transmissions_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S + self.num_of_det_transmissions_per_seq_N
 
         # divide south and north into reflection and transmission
         self.tt_histogram_transmission, self.tt_histogram_reflection = \
@@ -2563,14 +2570,18 @@ class OPX:
         self.tt_S_det_SPRINT_events_batch = np.zeros(qram_sequence_len)
 
         # fold reflections and transmission
+        # Sets the following:
+        # - folded_tt_S
+        # - folded_tt_N
+        # - folded_tt_BP
+        # - folded_tt_DP
+        # - folded_tt_FS
+        # - folded_tt_N_directional
+        # - folded_tt_S_directional
+        # - folded_tt_BP_timebins
+        # - folded_tt_DP_timebins
         self.fold_tt_histogram(exp_sequence_len=self.QRAM_sequence_len)
 
-        # fold data from different detectors: # TODO: is needed? @Dor
-        for i in range(len(Num_Of_dets)):
-            # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]: - for debugging assaf
-            for x in [elem for elem in self.tt_measure[i]]:
-                self.single_det_folded[i][x % self.QRAM_sequence_len] += 1
-                self.single_det_folded_accumulated[i][x % self.QRAM_sequence_len] += 1
 
         # Batch folded tt "N", "S", BP, DP, FS
         self.folded_tt_S_batch = self.folded_tt_S
@@ -2583,46 +2594,36 @@ class OPX:
         self.folded_tt_BP_timebins_batch = self.folded_tt_BP_timebins
         self.folded_tt_DP_timebins_batch = self.folded_tt_DP_timebins
 
+        # fold data from different detectors:
+        for i in range(len(Num_Of_dets)):
+            # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]: - for debugging assaf
+            for x in [elem for elem in self.tt_measure[i]]:
+                self.single_det_folded[i][x % self.QRAM_sequence_len] += 1
+                self.single_det_folded_accumulated[i][x % self.QRAM_sequence_len] += 1
+
         # get the average number of photons in detection pulse
-        self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(
-            self.folded_tt_S_directional, self.pulses_location_in_seq_S, self.tt_FS_measure)
-        self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(
-            self.folded_tt_N_directional, self.pulses_location_in_seq_N, self.tt_BP_measure + self.tt_DP_measure)
-        self.avg_num_of_photons_per_pulse_A_live = self.get_avg_num_of_photons_in_seq_pulses(
-            (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins)
-            + np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A,
-            self.tt_BP_measure + self.tt_DP_measure)
-        self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(
-            self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:], self.tt_BP_measure)
-        self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(
-            self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:], self.tt_DP_measure)
-        self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + \
-                                                 self.avg_num_of_photons_per_pulse_N_live + \
-                                                 self.avg_num_of_photons_per_pulse_A_live
-        self.avg_num_of_photons_per_pulse_live_MZ = [[x]+[y] for x, y in zip(self.avg_num_of_photons_per_pulse_BP_live,
-                                                                             self.avg_num_of_photons_per_pulse_DP_live)]
-            #                                         self.avg_num_of_photons_per_pulse_BP_live + \
-            #                                         self.avg_num_of_photons_per_pulse_DP_live
+        self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S_directional, self.pulses_location_in_seq_S, self.tt_FS_measure)
+        self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N_directional, self.pulses_location_in_seq_N, self.tt_BP_measure + self.tt_DP_measure)
+        self.avg_num_of_photons_per_pulse_A_live = self.get_avg_num_of_photons_in_seq_pulses((np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins)+ np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A,self.tt_BP_measure + self.tt_DP_measure)
+        self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:], self.tt_BP_measure)
+        self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:], self.tt_DP_measure)
+        self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + self.avg_num_of_photons_per_pulse_N_live + self.avg_num_of_photons_per_pulse_A_live
+        self.avg_num_of_photons_per_pulse_live_MZ = [[x]+[y] for x, y in zip(self.avg_num_of_photons_per_pulse_BP_live, self.avg_num_of_photons_per_pulse_DP_live)]
+
         self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_live
         self.avg_num_of_photons_per_pulse_MZ = self.avg_num_of_photons_per_pulse_live_MZ
 
         # get box location on the y-axis:
         self.max_value_per_pulse_S_live = self.get_max_value_in_seq_pulses(self.folded_tt_S_directional, self.pulses_location_in_seq_S)
         self.max_value_per_pulse_N_live = self.get_max_value_in_seq_pulses(self.folded_tt_N_directional, self.pulses_location_in_seq_N)
-        self.max_value_per_pulse_A_live = self.get_max_value_in_seq_pulses(
-            (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins) +
-             np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A)
-        self.max_value_per_pulse_BP_live = self.get_max_value_in_seq_pulses(
-            self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:])
-        self.max_value_per_pulse_DP_live = self.get_max_value_in_seq_pulses(
-            self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:])
-        self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + \
-                                                 self.max_value_per_pulse_N_live + \
-                                                 self.max_value_per_pulse_A_live
+        self.max_value_per_pulse_A_live = self.get_max_value_in_seq_pulses((np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins) + np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A)
+        self.max_value_per_pulse_BP_live = self.get_max_value_in_seq_pulses(self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:])
+        self.max_value_per_pulse_DP_live = self.get_max_value_in_seq_pulses(self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:])
 
-        self.Num_of_photons_txt_box_y_loc_live_MZ = [[x]+[y] for x, y in zip(self.max_value_per_pulse_BP_live,
-                                                                             self.max_value_per_pulse_DP_live)]
+        self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + self.max_value_per_pulse_N_live + self.max_value_per_pulse_A_live
+        self.Num_of_photons_txt_box_y_loc_live_MZ = [[x]+[y] for x, y in zip(self.max_value_per_pulse_BP_live, self.max_value_per_pulse_DP_live)]
         # self.Num_of_photons_txt_box_y_loc_live_MZ = self.max_value_per_pulse_BP_live + self.max_value_per_pulse_DP_live
+
         self.Num_of_photons_txt_box_y_loc = self.Num_of_photons_txt_box_y_loc_live
         self.Num_of_photons_txt_box_y_loc_MZ = self.Num_of_photons_txt_box_y_loc_live_MZ
 
@@ -2630,6 +2631,7 @@ class OPX:
         avg_BP_after = np.average(self.MZ_BP_counts_res['value_1'][self.rep_MZ_check:])
         avg_DP_before = np.average(self.MZ_DP_counts_res['value_1'][:self.rep_MZ_check])
         avg_DP_after = np.average(self.MZ_DP_counts_res['value_1'][self.rep_MZ_check:])
+
         self.Infidelity_before = avg_DP_before / (avg_DP_before + avg_BP_before)
         self.Infidelity_after = avg_DP_after / (avg_DP_after + avg_BP_after)
 
@@ -2761,13 +2763,13 @@ class OPX:
                 pass
                 print('error in loading file')
 
+            # START 2 - after data arrived
+
             self.divide_tt_to_reflection_trans(sprint_pulse_len, self.num_of_detection_pulses)
             self.divide_BP_and_DP_counts(50)
 
-            self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
-                                                  + self.num_of_det_reflections_per_seq_N
-            self.num_of_det_transmissions_per_seq = self.num_of_det_transmissions_per_seq_S \
-                                                  + self.num_of_det_transmissions_per_seq_N
+            self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S + self.num_of_det_reflections_per_seq_N
+            self.num_of_det_transmissions_per_seq = self.num_of_det_transmissions_per_seq_S + self.num_of_det_transmissions_per_seq_N
             # self.num_of_SPRINT_reflections_per_seq = self.num_of_SPRINT_reflections_per_seq_N \
             #                                          + self.num_of_SPRINT_reflections_per_seq_S
             # self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_N \
@@ -2775,55 +2777,47 @@ class OPX:
             self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(reflection_threshold_time//len(Config.QRAM_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
 
             # fold reflections and transmission
-            self.single_det_folded = np.zeros((len(Num_Of_dets), self.QRAM_sequence_len))
+            # Sets the following:
+            # - folded_tt_S
+            # - folded_tt_N
+            # - folded_tt_BP
+            # - folded_tt_DP
+            # - folded_tt_FS
+            # - folded_tt_N_directional
+            # - folded_tt_S_directional
+            # - folded_tt_BP_timebins
+            # - folded_tt_DP_timebins
             self.fold_tt_histogram(exp_sequence_len=self.QRAM_sequence_len)
 
-            # get the average number of photons in detection pulse
-            self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(
-                self.folded_tt_S_directional, self.pulses_location_in_seq_S, self.tt_FS_measure)
-            self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(
-                self.folded_tt_N_directional, self.pulses_location_in_seq_N, self.tt_BP_measure + self.tt_DP_measure)
-            self.avg_num_of_photons_per_pulse_A_live = self.get_avg_num_of_photons_in_seq_pulses(
-                (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins)
-                 + np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A,
-                self.tt_BP_measure + self.tt_DP_measure)
-            self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(
-                self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:], self.tt_BP_measure)
-            self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(
-                self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:], self.tt_DP_measure)
-            self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + \
-                                                     self.avg_num_of_photons_per_pulse_N_live + \
-                                                     self.avg_num_of_photons_per_pulse_A_live
-            self.avg_num_of_photons_per_pulse_live_MZ = [[x] + [y] for x, y in
-                                                         zip(self.avg_num_of_photons_per_pulse_BP_live,
-                                                             self.avg_num_of_photons_per_pulse_DP_live)]
+            # fold data from different detectors:
+            self.single_det_folded = np.zeros((len(Num_Of_dets), self.QRAM_sequence_len))
 
-            # self.avg_num_of_photons_per_pulse_live_MZ = self.avg_num_of_photons_per_pulse_BP_live + \
-            #                                             self.avg_num_of_photons_per_pulse_DP_live
+            # get the average number of photons in detection pulse
+            self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S_directional, self.pulses_location_in_seq_S, self.tt_FS_measure)
+            self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N_directional, self.pulses_location_in_seq_N, self.tt_BP_measure + self.tt_DP_measure)
+            self.avg_num_of_photons_per_pulse_A_live = self.get_avg_num_of_photons_in_seq_pulses((np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins) + np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A, self.tt_BP_measure + self.tt_DP_measure)
+            self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:], self.tt_BP_measure)
+            self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:], self.tt_DP_measure)
+            self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + self.avg_num_of_photons_per_pulse_N_live + self.avg_num_of_photons_per_pulse_A_live
+            self.avg_num_of_photons_per_pulse_live_MZ = [[x] + [y] for x, y in zip(self.avg_num_of_photons_per_pulse_BP_live, self.avg_num_of_photons_per_pulse_DP_live)]
+
 
             # get box location on the y-axis:
-            self.max_value_per_pulse_S_live = self.get_max_value_in_seq_pulses(self.folded_tt_S_directional,
-                                                                               self.pulses_location_in_seq_S)
-            self.max_value_per_pulse_N_live = self.get_max_value_in_seq_pulses(self.folded_tt_N_directional,
-                                                                               self.pulses_location_in_seq_N)
-            self.max_value_per_pulse_A_live = self.get_max_value_in_seq_pulses(
-                (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins) +
-                 np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A)
-            self.max_value_per_pulse_BP_live = self.get_max_value_in_seq_pulses(
-                self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:])
-            self.max_value_per_pulse_DP_live = self.get_max_value_in_seq_pulses(
-                self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:])
-            self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + \
-                                                     self.max_value_per_pulse_N_live + \
-                                                     self.max_value_per_pulse_A_live
-            self.Num_of_photons_txt_box_y_loc_live_MZ = [[x] + [y] for x, y in zip(self.max_value_per_pulse_BP_live,
-                                                                                   self.max_value_per_pulse_DP_live)]
+            self.max_value_per_pulse_S_live = self.get_max_value_in_seq_pulses(self.folded_tt_S_directional, self.pulses_location_in_seq_S)
+            self.max_value_per_pulse_N_live = self.get_max_value_in_seq_pulses(self.folded_tt_N_directional, self.pulses_location_in_seq_N)
+            self.max_value_per_pulse_A_live = self.get_max_value_in_seq_pulses((np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins) + np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A)
+            self.max_value_per_pulse_BP_live = self.get_max_value_in_seq_pulses(self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:])
+            self.max_value_per_pulse_DP_live = self.get_max_value_in_seq_pulses(self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:])
+
+            self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + self.max_value_per_pulse_N_live + self.max_value_per_pulse_A_live
+            self.Num_of_photons_txt_box_y_loc_live_MZ = [[x] + [y] for x, y in zip(self.max_value_per_pulse_BP_live, self.max_value_per_pulse_DP_live)]
             # self.Num_of_photons_txt_box_y_loc_live_MZ = self.max_value_per_pulse_BP_live + self.max_value_per_pulse_DP_live
 
             avg_BP_before = np.average(self.MZ_BP_counts_res['value_1'][:self.rep_MZ_check])
             avg_BP_after = np.average(self.MZ_BP_counts_res['value_1'][self.rep_MZ_check:])
             avg_DP_before = np.average(self.MZ_DP_counts_res['value_1'][:self.rep_MZ_check])
             avg_DP_after = np.average(self.MZ_DP_counts_res['value_1'][self.rep_MZ_check:])
+
             self.Infidelity_before = avg_DP_before / (avg_DP_before + avg_BP_before)
             self.Infidelity_after = avg_DP_after / (avg_DP_after + avg_BP_after)
 
@@ -3234,13 +3228,8 @@ class OPX:
                 break
 
     # @Values_Factor hold factoring for values - each key has an array:
-    # It can be used in two manners:
-    # 1) If there are 2 values in the array - it's a multiplication and casting
-    # 2) If there are 3 values in the array - it's calling the function
-    #
-    # E.g. for Prep_duration - it is given in ms, we have to factor it into an int value, but in 4ns, for the OPX.
-    #
-    # The conversions below are only factored in function "updateValue" in OPX control
+    # So, as Prep_duration is written in ms, we have to factor it into an int value, but in 4ns, for the OPX.
+    # These are only factored in function "updateValue" in OPX control
     Values_Factor = {
         'Transit_Exp_switch': [bool, None, Transit_Exp_switch],
         'Spectrum_Exp_switch': [bool, None, Spectrum_Exp_switch],
