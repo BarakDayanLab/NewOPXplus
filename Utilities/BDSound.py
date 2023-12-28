@@ -1,14 +1,14 @@
 import os
 from enum import Enum, auto
-import playsound
+from playsound import playsound
 
 
 class SOUNDS(Enum):
-    DEFAULT: auto()
-    INDICATOR_1: auto()
-    INDICATOR_2: auto()
-    WARN: auto()
-    FATAL: auto()
+    DEFAULT = 0  # auto()
+    INDICATOR_1 = 1  # auto()
+    INDICATOR_2 = 2  # auto()
+    WARN = 3  # auto()
+    FATAL = 4  # auto()
 
 
 class BDSound:
@@ -37,3 +37,4 @@ class BDSound:
 
         sound_file = os.path.join(self.media_folder, name + '.wav')
         playsound(sound_file)
+        pass

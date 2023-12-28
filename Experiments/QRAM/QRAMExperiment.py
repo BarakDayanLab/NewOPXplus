@@ -1092,6 +1092,7 @@ class QRAMExperiment(BaseExperiment):
         }
         self.number_of_SPRINT_pulses_per_seq = len(Config.sprint_pulse_amp_S)
 
+        # TODO: @@@ Remove these
         # self.folded_tt_S_batch = None
         # self.folded_tt_N_batch = None
         # self.folded_tt_BP_batch = None
@@ -1104,6 +1105,8 @@ class QRAMExperiment(BaseExperiment):
 
         self.tt_measure = []
         self.tt_S_measure = []
+
+        # TODO: @@@ Remove these
         self.tt_measure_batch = [[]] * len(Num_Of_dets)
         self.tt_S_measure_batch = []
         self.tt_N_measure_batch = []
@@ -1293,6 +1296,9 @@ class QRAMExperiment(BaseExperiment):
         avg_DP_after = np.average(self.MZ_DP_counts_res_value_1[self.rep_MZ_check:])
         self.Infidelity_before = avg_DP_before / (avg_DP_before + avg_BP_before)
         self.Infidelity_after = avg_DP_after / (avg_DP_after + avg_BP_after)
+
+        # TODO: @@@ should make this happen here?
+        #self.folded_tt_N_directional_batch = self.folded_tt_N_directional
 
         pass
 
@@ -1915,7 +1921,7 @@ class QRAMExperiment(BaseExperiment):
             return False
 
         # TODO: should be self.avg... What does the below do?
-        if np.average(experiment.avg_num_of_photons_per_pulse_live) > self.photons_per_det_pulse_threshold:
+        if len(experiment.avg_num_of_photons_per_pulse_live) == 0 or np.average(experiment.avg_num_of_photons_per_pulse_live) > self.photons_per_det_pulse_threshold:
             return False
 
         # Are any of the detectors latched?
@@ -1949,7 +1955,7 @@ class QRAMExperiment(BaseExperiment):
             return True
 
         # We stay in warm-up if we're not within threshold
-        if self.exp_flag and self.sum_for_threshold >= self.reflection_threshold:
+        if self.exp_flag and self.sum_for_threshold > self.reflection_threshold:
             return True
 
         return False
@@ -2037,7 +2043,7 @@ if __name__ == "__main__":
         'FLR_threshold': 0.08,
         'MZ_infidelity_threshold': 1.12,
         'photons_per_det_pulse_threshold': 12,
-        'Exp_flag': False,
+        'Exp_flag': True,
         'with_atoms': True
     }
     sequence_definitions = {
