@@ -347,7 +347,6 @@ class QRAMExperiment(BaseExperiment):
 
         return tt_histogram_transmission, tt_histogram_reflection
 
-    # TODO: Q: the below function does not use the parameters it gets...
     def divide_tt_to_reflection_trans(self):
         '''
         A function designed to count the number of photons reflected or transmitted for each sequence, such that,
@@ -1098,8 +1097,6 @@ class QRAMExperiment(BaseExperiment):
         self.seq_transit_events_batched = np.zeros(self.number_of_QRAM_sequences)
         self.tt_S_SPRINT_events = np.zeros(self.QRAM_sequence_len)
         self.tt_S_SPRINT_events_batch = np.zeros(self.QRAM_sequence_len)
-        self.single_det_folded = np.zeros((len(self.Num_Of_dets), self.QRAM_sequence_len))
-        self.single_det_folded_accumulated = np.zeros((len(self.Num_Of_dets), self.QRAM_sequence_len))
         self.num_of_det_reflections_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
         self.num_of_det_transmissions_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
 
@@ -1211,7 +1208,6 @@ class QRAMExperiment(BaseExperiment):
             Config.QRAM_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
 
         # fold reflections and transmission
-        self.single_det_folded = np.zeros((len(self.Num_Of_dets), self.QRAM_sequence_len))
         self.fold_tt_histogram(exp_sequence_len=self.QRAM_sequence_len)
 
         # get the average number of photons in detection pulse
@@ -1333,8 +1329,6 @@ class QRAMExperiment(BaseExperiment):
         self.warm_up_cycles = 3  # Should also come as params, with some default. E.g. self.warm_up_cycles = 10 if 'warm_up_cycles' not in params else params['warm_up_cycles']
 
         # initialize parameters - set zeros vectors and empty lists
-        # TODO: Q: why is this called "sprint" ?
-        # TODO: Do we need Num_Of_dets ?
         self.init_params_for_experiment()
 
         # ----------------------------------------------------------
@@ -1624,12 +1618,6 @@ class QRAMExperiment(BaseExperiment):
                                                                                   self.max_value_per_pulse_DP)]
                 # self.Num_of_photons_txt_box_y_loc_MZ = self.max_value_per_pulse_BP + self.max_value_per_pulse_DP
 
-                # fold for different detectors: # TODO: delete after everything works
-                for i in range(len(self.Num_Of_dets)):
-                    for x in [elem for elem in self.tt_measure[i]]:
-                        self.single_det_folded[i][x % self.QRAM_sequence_len] += 1
-                        self.single_det_folded_accumulated[i][x % self.QRAM_sequence_len] += 1
-
                 # Batch all data samples
                 self.batcher.batch_all(self)
 
@@ -1838,13 +1826,6 @@ class QRAMExperiment(BaseExperiment):
         self.folded_tt_N_directional_cumulative_avg = self.folded_tt_N_directional
         self.folded_tt_BP_timebins_cumulative_avg = self.folded_tt_BP_timebins
         self.folded_tt_DP_timebins_cumulative_avg = self.folded_tt_DP_timebins
-
-        # Fold data from different detectors:
-        for i in range(len(self.Num_Of_dets)):
-            # for x in [elem for elem in self.tt_S_measure if elem < self.M_window]: - for debugging assaf
-            for x in [elem for elem in self.tt_measure[i]]:
-                self.single_det_folded[i][x % self.QRAM_sequence_len] += 1
-                self.single_det_folded_accumulated[i][x % self.QRAM_sequence_len] += 1
 
         # Get the average number of photons in detection pulse
         self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S_directional, self.pulses_location_in_seq_S, self.tt_FS_measure)
