@@ -372,7 +372,7 @@ class QRAMExperiment(BaseExperiment):
 
         # tt_small_perturb = []
         for element in self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure:
-            # TODO: Q: I assume this is a time-window to ignore some time on start/end, how did we decide on this time?
+            # TODO: Q: I assume this is a time-window to ignore some time on start/end, how did we decide on this time?  TODO: Q: what us the meaning of this specific time-window?
             if (element > int(0.6e6)) and (element < int(9.6e6)):
                 tt_inseq = element % self.QRAM_sequence_len
                 if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
@@ -820,35 +820,63 @@ class QRAMExperiment(BaseExperiment):
 
     def experiment_mainloop_delay(self):
         if self.playback['active']:
-            time.sleep(self.playback['delay'])
+            if self.playback['delay'] != -1:
+                time.sleep(self.playback['delay'])
         else:
             time.sleep(0.01)  # TODO: do we need this delay?
 
     def prepare_figures(self):
-        fig = plt.figure()
-        subplots = []
-        subplots.append(plt.subplot2grid((3, 4), (0, 0), colspan=2, rowspan=1))
-        subplots.append(plt.subplot2grid((3, 4), (0, 2), colspan=2, rowspan=1))
-        subplots.append(plt.subplot2grid((3, 4), (1, 0), colspan=2, rowspan=1))
-        subplots.append(plt.subplot2grid((3, 4), (1, 2), colspan=2, rowspan=1))
-        subplots.append(plt.subplot2grid((3, 4), (2, 0), colspan=1, rowspan=1))
-        subplots.append(plt.subplot2grid((3, 4), (2, 2), colspan=2, rowspan=1))
-        subplots.append(subplots[3].twinx())
-        subplots.append(plt.subplot2grid((3, 4), (2, 1), colspan=1, rowspan=1))
+        self.fig = plt.figure()
+        self.subplots = []
+        self.plot_shown = False
+
+        # Figure 0 - Top Left - Binned Time-Tags from All Detectors
+        self.subplots.append(plt.subplot2grid((3, 4), (0, 0), colspan=2, rowspan=1))
+
+        # Figure 1 - Top Right - Binned Time-Tags from All Detectors Folded - Averaged
+        self.subplots.append(plt.subplot2grid((3, 4), (0, 2), colspan=2, rowspan=1))
+
+        # Figure 2 - Middle Left - MZ outputs while locking + Detectors Circles
+        self.subplots.append(plt.subplot2grid((3, 4), (1, 0), colspan=2, rowspan=1))
+
+        # Figure 3 - Num of reflections per sequence
+        self.subplots.append(plt.subplot2grid((3, 4), (1, 2), colspan=2, rowspan=1))
+
+        # Figure 4 - Bottom Left (left) - MZ outputs around experiment
+        self.subplots.append(plt.subplot2grid((3, 4), (2, 0), colspan=1, rowspan=1))
+
+        # Figure 5 - Bottom Right - Transits per sequence
+        self.subplots.append(plt.subplot2grid((3, 4), (2, 2), colspan=2, rowspan=1))
+
+        # Figure 6 - Middle Left - PLACED on top of Graph 2 - same X, different Y -
+        self.subplots.append(self.subplots[2].twinx())
+
+        # Figure 7 - Bottom Left (right) - MZ outputs during experiment
+        self.subplots.append(plt.subplot2grid((3, 4), (2, 1), colspan=1, rowspan=1))
 
         #self.maximize_figure()  # TODO: uncomment
 
-        return fig, subplots
+        return
 
-    def plot_figures(self, fig, subplots):
+    def plot_figures(self):
         try:
-            self._plot_figures(fig, subplots)
+            self._plot_figures()
         except Exception as err:
             tb = traceback.format_exc()
             self.warn(f'Failed on plot_figures: {err}')
         pass
 
-    def _plot_figures(self, fig, ax):
+    def _plot_figures(self):
+
+        if self.playback['active']:
+            if self.playback['plot'] == 'NONE':
+                return
+            if self.playback['plot'] == 'LAST' and self.counter < (self.N - 10):
+                return
+
+        if not self.plot_shown:
+            plt.show(block=False)
+            self.plot_shown = True
 
         plot_switches = {
             "playsound": True,
@@ -866,6 +894,9 @@ class QRAMExperiment(BaseExperiment):
 
         # Take time
         start_plot_time = time.time()
+
+        # Used mainly as a shortcut for shorter lines
+        ax = self.subplots
 
         ax[0].clear()
         ax[1].clear()
@@ -975,6 +1006,10 @@ class QRAMExperiment(BaseExperiment):
             ax[2].plot(self.MZ_DP_counts_res_value_0, label='MZ Dark port')
             ax[2].plot(self.MZ_BP_counts_res_value_0 - self.MZ_DP_counts_res_value_0, label='Dif ports')
 
+            ax[6].tick_params(axis="y", labelcolor='#8c564b')
+            ax[6].plot(self.Phase_Correction_vec, label='Phase correction values', color='#8c564b')
+            ax[6].plot(self.Phase_Correction_min_vec, label='Phase correction values', color='#9467bd')
+
             ax[2].set_ylim(0, 1.1 * np.max([self.MZ_BP_counts_res_value_0, self.MZ_DP_counts_res_value_0]))
             ax[2].set_title('MZ outputs while locking', fontweight="bold")
             ax[2].legend(loc='upper right')
@@ -1026,14 +1061,6 @@ class QRAMExperiment(BaseExperiment):
             # ax[4].legend(loc='upper right')
             ax[4].text(0.05, 0.6, textstr_BP_DP_BA, transform=ax[4].transAxes, fontsize=14, verticalalignment='top', bbox=props)
 
-        # TODO: Do we need this? Does not plot itself, does not set title, a stealth graph....
-        if plot_switches['graph-6']:
-            ax[6].tick_params(axis="y", labelcolor='#8c564b')
-            ax[6].plot(self.Phase_Correction_vec, label='Phase correction values', color='#8c564b')
-            ax[6].plot(self.Phase_Correction_min_vec, label='Phase correction values', color='#9467bd')
-            # ax[6].plot(self.Phase_Correction_min_diff, label='Phase correction values', color='red')
-            # ax[6].legend(loc='upper left')
-
         # MZ outputs during experiment
         if plot_switches['graph-7']:
             ax[7].plot(self.num_of_BP_counts_per_n_sequences, label='MZ BP counts per %d seq' % 50)
@@ -1070,8 +1097,7 @@ class QRAMExperiment(BaseExperiment):
         total_prep_time = time.time() - start_plot_time
 
         # plt.tight_layout()
-        plt.show(block=False)
-        plt.pause(0.5)
+        plt.pause(0.2)
 
     def init_params_for_experiment(self):
         # define empty variables
@@ -1314,6 +1340,7 @@ class QRAMExperiment(BaseExperiment):
 
         # TODO: These come as parameters for the experiment run - we may want to have them all under "self.params[..]" so we can
         # TODO: (a) group logically (b) pass to other functions, instead of passing them one by one or relying on them being on self
+        self.N = N
         self.QRAM_sequence_len = qram_sequence_len
         self.with_atoms = with_atoms
         self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
@@ -1498,7 +1525,7 @@ class QRAMExperiment(BaseExperiment):
         self.Phase_Correction_min_diff = []
 
         # Prepare the sub figures needed for the plotting phase
-        fig, subplots = self.prepare_figures()
+        self.prepare_figures()
 
         ############################################ START WHILE LOOP #################################################
 
@@ -1553,7 +1580,7 @@ class QRAMExperiment(BaseExperiment):
             self.experiment_calculations()
 
             # Plot figures
-            self.plot_figures(fig, subplots)
+            self.plot_figures()
 
             # Determine if we're "acquired" - e.g., worthy to save data :-)
             self.acquisition_flag = self.is_acquired()
@@ -1624,8 +1651,8 @@ class QRAMExperiment(BaseExperiment):
             # Did user request we change with/without atoms state?
             self.handle_user_atoms_on_off_switch()
 
-            # Did we complete N successful iterations?
-            if self.counter == N:
+            # Did we complete N successful iterations? (we check for N+1 because we started with 1)
+            if self.counter == N+1:
                 break
 
             # We completed another repetition.
@@ -1729,8 +1756,8 @@ class QRAMExperiment(BaseExperiment):
            return False
 
         threshold_flag = (self.sum_for_threshold < self.reflection_threshold) and \
-                              (self.Infidelity_before <= self.MZ_inidelity_threshold) and \
-                              (self.Infidelity_after <= self.MZ_inidelity_threshold)
+                              (self.Infidelity_before <= self.MZ_infidelity_threshold) and \
+                              (self.Infidelity_after <= self.MZ_infidelity_threshold)
         if threshold_flag or not self.exp_flag:
             return True
 
@@ -1930,7 +1957,7 @@ class QRAMExperiment(BaseExperiment):
                                                   transit_condition=rp['transit_condition'],
                                                   max_probe_counts=max_probe_counts,
                                                   filter_delay=rp['filter_delay'],
-                                                  reflection_threshold=rp['lock_err_threshold'],
+                                                  reflection_threshold=rp['reflection_threshold'],
                                                   reflection_threshold_time=rp['reflection_threshold_time'],
                                                   photons_per_det_pulse_threshold=rp['photons_per_det_pulse_threshold'],
                                                   FLR_threshold=rp['FLR_threshold'],
@@ -1945,10 +1972,15 @@ class QRAMExperiment(BaseExperiment):
 
 if __name__ == "__main__":
 
+    matplotlib_version = matplotlib.get_backend()
+    print(f"In use: {matplotlib_version}")
+    matplotlib.use("Qt5Agg")
+    #plt.ion()
+
     run_parameters = {
-        'N': 50,
+        'N': 370,  # 50,
         'transit_condition': [2, 1, 2],
-        'pre_comment': '"N-N-N-N-N-N-N-N experiment"',
+        'pre_comment': '"N-S-N-S-N-S-N-S experiment"',
         'lock_err_threshold': 0.005,
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,

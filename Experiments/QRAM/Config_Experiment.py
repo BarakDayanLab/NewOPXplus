@@ -2,6 +2,7 @@ import numpy as np
 from scipy import signal
 import json
 import math
+import matplotlib.pyplot as plt
 from Utilities.Utils import Utils
 
 
@@ -196,14 +197,14 @@ sprint_pulse_amp_General = [1, 1, 1, 1]
 num_init_zeros_S = 10  # For only det pulses sequence
 num_mid_zeros_S = 10
 num_fin_zeros_S = 0  # For only det pulses sequence
-det_pulse_amp_S = [0, 0, 0, 0, 0, 0, 0, 0]
+#det_pulse_amp_S = [0, 0, 0, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_S = [0, 0.45, 0, 0.45]
 # For pulse sync
 # det_pulse_amp_S = [0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45]
 # sprint_pulse_amp_S = [0, 0, 0, 0]
 # sprint_pulse_amp_S = [1, 1, 1, 1]
 # For Bell |(0 + 1)c, 1t>
-# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
+det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
 # sprint_pulse_amp_S = [0.075, 0, 0, 0]
 # |0c, (0 + 1)t>
 # det_pulse_amp_S = [0, 0, 0.45, 0, 0.45, 0, 0.45, 0]
@@ -235,7 +236,7 @@ num_fin_zeros_N = 0  # For only det pulses sequence
 # sprint_pulse_amp_N = [0, 0.105, 0, 0.105]
 # sprint_pulse_amp_N = [0, 0.25, 0, 0.25]
 # For pulse sync
-det_pulse_amp_N = [0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45]
+#det_pulse_amp_N = [0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45]
 # det_pulse_amp_N = [0, 0, 0, 0, 0, 0, 0, 0]
 # det_pulse_amp_N = [1, 1, 1, 1, 1, 1, 1, 1]
 # sprint_pulse_amp_N = [0.45, 0.45, 0.45, 0]
@@ -245,7 +246,7 @@ det_pulse_amp_N = [0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45]
 # det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
 # sprint_pulse_amp_N = [0, 0, 0, 0.085]
 # |0c, (0 + 1)t>
-# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
+det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0.45]
 # det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
 # det_pulse_amp_N = [0, 0.155, 0, 0.155, 0, 0.155, 0, 0.155]
 # sprint_pulse_amp_N = [0, 0.078, 0, 0.078]
@@ -452,12 +453,12 @@ QRAM_MZ_balance_pulse_Late = ([0] * MZ_delay + [Pulses_Amp_Late] * (MZ_delay)) *
 QRAM_MZ_balance_pulse_Late_delayed = np.roll(QRAM_MZ_balance_pulse_Late, AOM_Late_delay-10)
 # QRAM_MZ_balance_pulse_Late_delayed = np.roll(QRAM_MZ_balance_pulse_Late, AOM_Late_delay-10+AOM_S_to_N_delay)
 
-QRAM_Exp_Gaussian_samples_N = ([0] * (MZ_delay - AOM_risetime_pulsers) + [0] * (AOM_risetime_pulsers - 20) + [0] * 20
-                               + [0] * (MZ_delay - AOM_risetime_pulsers) + [0] * (AOM_risetime_pulsers - 20) + [0] * 20) * 2
+# QRAM_Exp_Gaussian_samples_N = ([0] * (MZ_delay - AOM_risetime_pulsers) + [0] * (AOM_risetime_pulsers - 20) + [0] * 20
+#                                + [0] * (MZ_delay - AOM_risetime_pulsers) + [0] * (AOM_risetime_pulsers - 20) + [0] * 20) * 2
 # QRAM_Exp_Gaussian_samples_N = ([0] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp_balance] * (AOM_risetime_pulsers - 20) + [0] * 20
 #                                + [0] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp_balance] * (AOM_risetime_pulsers - 20) + [0] * 20) * 2
-QRAM_Exp_Gaussian_samples_S = ([Pulses_Amp_balance] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp_balance] * (AOM_risetime_pulsers - 20) + [Pulses_Amp_balance] * 20
-                               + [Pulses_Amp_balance] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp_balance] * (AOM_risetime_pulsers - 20) + [Pulses_Amp_balance] * 20) * 2
+# QRAM_Exp_Gaussian_samples_S = ([Pulses_Amp_balance] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp_balance] * (AOM_risetime_pulsers - 20) + [Pulses_Amp_balance] * 20
+#                                + [Pulses_Amp_balance] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp_balance] * (AOM_risetime_pulsers - 20) + [Pulses_Amp_balance] * 20) * 2
 # QRAM_Exp_Gaussian_samples_S = ([0] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp_balance] * (AOM_risetime_pulsers - 20) + [0] * 20
 #                                + [0] * (MZ_delay - AOM_risetime_pulsers) + [Pulses_Amp_balance] * (AOM_risetime_pulsers - 20) + [0] * 20) * 2
 QRAM_Exp_Square_samples_Late = ([Pulses_Amp_Late] * MZ_delay + [Pulses_Amp_Late] * MZ_delay) * 2

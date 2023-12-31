@@ -10,14 +10,21 @@
 	"root": "C:\\temp\\refactor_debug\\Experiment_results\\QRAM\\{current_date}\\{current_time}_Photon_TimeTags",
 
 	"locking_error_root_weizmann": "U:\\Lab_2023\\Experiment_results\\QRAM\\Locking_PID_Error",
-	"locking_error_root": "F:\\temp\\Weizmann\\Experiments\\Locking_PID_Error",
+	"locking_error_root_home": "F:\\temp\\Weizmann\\Experiments\\Locking_PID_Error",
+
+	"locking_error_root": "U:\\Lab_2023\\Experiment_results\\QRAM\\Locking_PID_Error",
 
 	"calibration_folder__DO_WE_NEED__": "U:\\Lab_2023\\Experiment_results\\QRAM\\20231116\\133237_Photon_TimeTags",
 
 	"playback_data_0": "U:\\Lab_2023\\Experiment_results\\Spectrum\\20231213\\134648_Photon_TimeTags",
 	"playback_data_2": "C:\\temp\\playback_data\\QRAM\\131634_Photon_TimeTags-SPRINT",
-	"playback_data": "F:\\temp\\Weizmann\\Experiments\\20231213\\181814_Photon_TimeTags",
-	"playback_data_BAD": "F:\\temp\\Weizmann\\Experiments\\20231213\\180446_Photon_TimeTags",
+
+	"playback_data_FILE": "F:\\<Whatever>\\Weizmann\\Experiments\\20231213\\181814_Photon_TimeTags",
+
+	"playback_data_HOME": "F:\\temp\\Weizmann\\Experiments\\20231213\\181814_Photon_TimeTags",
+	"playback_data_113": "C:\\temp\\playback_data\\QRAM\\20231213\\181814_Photon_TimeTags",
+
+	"playback_data": "C:\\temp\\playback_data\\QRAM\\20231225\\165550_Photon_TimeTags",
 
 	"files": [
 

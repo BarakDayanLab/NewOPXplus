@@ -91,8 +91,8 @@ class BaseExperiment:
             "active": False,
             "data_loaded": False,
             "save_results": False,
-            "plot_figures": False,
-            "delay": 0.5,  # sec
+            "plot": "LAST",  # "LIVE", "LAST", "NONE"
+            "delay": -1,  # 0.5,  # sec
             "row_count": 0,
             "streams": {}
         }
