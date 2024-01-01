@@ -692,7 +692,7 @@ class BaseExperiment:
                 stream['results'] = None
 
         # Save streams to file
-        self.bdstreams.save_streams()
+        #self.bdstreams.save_streams()
 
         pass
 
