@@ -1540,7 +1540,6 @@ class QRAMExperiment(BaseExperiment):
         self.repetitions = 1  # Total number of cycles
         self.acquisition_flag = True
         self.warm_up = True
-        # TODO: Change this to Experiment Phase - with enum
         self.post_warm_up_completed = False  # Did we finish the post warm-up process
 
         self.pause_flag = False

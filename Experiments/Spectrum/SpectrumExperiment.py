@@ -561,7 +561,8 @@ class SpectrumExperiment(BaseExperiment):
 
     def experiment_mainloop_delay(self):
         if self.playback['active']:
-            time.sleep(self.playback['delay'])
+            if self.playback['delay'] != -1:
+                time.sleep(self.playback['delay'])
         else:
             time.sleep(0.01)  # TODO: do we need this delay?
 
@@ -596,6 +597,7 @@ class SpectrumExperiment(BaseExperiment):
             if self.playback['plot'] == 'LAST' and self.counter < (self.N - 10):
                 return
 
+        # If it is the first time, plot.
         if not self.plot_shown:
             plt.show(block=False)
             self.plot_shown = True
@@ -653,15 +655,7 @@ class SpectrumExperiment(BaseExperiment):
                             / (self.M_time / 2),) + '[MPhotons/sec]'
         textstr_no_transits = 'NO TRANSITS YET!!!'
 
-        # Special handling for the warm-up case (there is still no calculated data to show in graphs)
-        if self.warm_up:
-            props_thresholds = dict(boxstyle='round', edgecolor='green', linewidth=2, facecolor='green', alpha=0.5)
-            ax[0].text(0.05, 1.4, header_text, transform=ax[0].transAxes, fontsize=26, verticalalignment='top', bbox=props_thresholds)
-            plt.show(block=False)
-            plt.pause(0.5)
-            return
-
-        elif plot_switches['graph-0']:
+        if plot_switches['graph-0']:
             flag_color = 'green' if self.acquisition_flag else 'red'
             props_thresholds = dict(boxstyle='round', edgecolor=flag_color, linewidth=2, facecolor=flag_color, alpha=0.5)
             ax[0].plot(self.time_bins[::2], self.S_bins_res_acc, label='Counts histogram', color='b')
@@ -740,7 +734,6 @@ class SpectrumExperiment(BaseExperiment):
         total_prep_time = time.time() - start_plot_time
 
         # plt.tight_layout()
-        plt.show(block=False)
         plt.pause(0.5)
 
     # TODO: Document this method
@@ -954,6 +947,8 @@ class SpectrumExperiment(BaseExperiment):
         self.repetitions = 1  # Total number of cycles
         self.acquisition_flag = True
         self.warm_up = True
+        self.post_warm_up_completed = False  # Did we finish the post warm-up process
+
         self.pause_flag = False
         self.runs_status = TerminationReason.SUCCESS  # default status of the run is Success
 
