@@ -3,7 +3,7 @@
 	"version": "0.1",
 	"strict": false,
 
-	"temp_root_LAB": "C:\\temp\\streams_raw_data",
+	"temp_root": "C:\\temp\\streams_raw_data",
 	"temp_root_LAB": "C:\\temp\\streams_raw_data",
 	"temp_root_113": "C:\\temp\\streams_raw_data",
 	"temp_root_HOME": "C:\\temp\\streams_raw_data",

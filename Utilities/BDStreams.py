@@ -183,24 +183,31 @@ class BDStreams:
 
         start_save_time = time.time()
 
-        # Start packing the data with 'B'=1-byte for number of streams
-        bytes_array = struct.pack('>b', len(self.streams_defs))
-        all_data = []
-        for stream in self.streams_defs.values():
-            data = [] if stream['handler'] is None else stream['results']
-            # TODO: when we save the data correctly, we should not need this, as everything will be arrays
-            # TODO: unlike now where FLR is saved as a single float value
-            if type(data) != list:
-                data = [data]
+        try:
 
-            # Pack the data with: (a) 'H'=2-bytes-Unsigned Short for stream size (b) 'I'=4-bytes-Unsigned int for stream data
-            data = [len(data)] + data
-            data_packed = struct.pack(f'>H{len(data) - 1}{stream["binary"]}', *data)
-            bytes_array = bytes_array + data_packed
+            # Start packing the data with 'B'=1-byte for number of streams
+            bytes_array = struct.pack('>b', len(self.streams_defs))
+            all_data = []
+            for stream in self.streams_defs.values():
+                data = [] if stream['handler'] is None else stream['results']
+                # TODO: when we save the data correctly, we should not need this, as everything will be arrays
+                # TODO: unlike now where FLR is saved as a single float value
+                if type(data) is np.ndarray:
+                    data = data.tolist()
+                elif type(data) != list:
+                    data = [data]
 
-            all_data = all_data + [len(data)] + data
-        # Write number of streams in "line" of data and then the stream data itself
-        all_data = [len(self.streams_defs)] + all_data
+                # Pack the data with: (a) 'H'=2-bytes-Unsigned Short for stream size (b) 'I'=4-bytes-Unsigned int for stream data
+                data = [len(data)] + data
+                data_packed = struct.pack(f'>H{len(data) - 1}{stream["binary"]}', *data)
+                bytes_array = bytes_array + data_packed
+
+                all_data = all_data + [len(data)] + data
+            # Write number of streams in "line" of data and then the stream data itself
+            all_data = [len(self.streams_defs)] + all_data
+
+        except Exception as err:
+            print(f'Failed to save raw data: {err}')
 
         time_formatted = time.strftime("%Y%m%d_%H%M%S")
         save_name = os.path.join(self.save_path, f'{time_formatted}_streams.dat')

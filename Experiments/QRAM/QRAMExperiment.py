@@ -284,9 +284,9 @@ class QRAMExperiment(BaseExperiment):
     # TODO: Q: this currently does nothing. What was the intention and why isn't it in use?
     def latched_detectors(self):
         latched_detectors = []
-        # for indx, det_tt_vec in enumerate(self.tt_measure):  # for different detectors
-        #     if not det_tt_vec:
-        #         latched_detectors.append(indx)
+        for indx, det_tt_vec in enumerate(self.tt_measure):  # for different detectors
+            if not det_tt_vec:
+                latched_detectors.append(indx)
         return latched_detectors
 
     def get_pulses_bins(self, sprint_pulse_len, num_of_det_pulses, num_of_sprint_pulses,
@@ -1016,12 +1016,13 @@ class QRAMExperiment(BaseExperiment):
 
             # Detectors status:
             if plot_switches['detectors']:
+                latched_detectors = self.latched_detectors()
                 for i, det in enumerate(self.Num_Of_dets):
                     x = -0.15
                     y = 1.9 - i * 0.4
                     pad = 1
                     text = 'Det %d' % det
-                    det_color = 'red' if self.latched_detectors() else 'green'
+                    det_color = 'red' if i in latched_detectors else 'green'
                     ax[2].text(x, y, text, ha="center", va="center", transform=ax[2].transAxes,
                              bbox=dict(boxstyle=f"circle,pad={pad}", edgecolor=det_color, linewidth=2, facecolor=det_color, alpha=0.5))
 
@@ -1151,6 +1152,10 @@ class QRAMExperiment(BaseExperiment):
         # Take the last sample from batch of previous measurements
         prev_measure = prev_measures[-1]
 
+        # If last measure was empty and this one is not,clearly it's new data
+        if len(prev_measure) == 0 and len(curr_measure) > 0:
+            return True
+
         # Get the minimum value between new measure (tt_S_no_gaps) and last old measure
         min_len = min(len(prev_measure), len(curr_measure))
 
@@ -1159,8 +1164,8 @@ class QRAMExperiment(BaseExperiment):
 
         # TODO: replace the line below with the one in comment:
         #new_timetags = np.sum(compare_values) < min_len / 2
-        new_timetags = sum(compare_values) < min_len / 2
-        return new_timetags
+        new_timetags_found = sum(compare_values) < min_len / 2
+        return new_timetags_found
 
     def await_for_values(self):
         """
@@ -1209,6 +1214,7 @@ class QRAMExperiment(BaseExperiment):
                 self.runs_status = TerminationReason.ERROR
                 break
 
+            self.info(f'Warm-up: {count}. No new data coming from detectors (exp_flag = {self.exp_flag})')
             time.sleep(WAIT_TIME)
 
         # We return the timestamp - this is when we declare we got the measurement
@@ -1988,7 +1994,7 @@ if __name__ == "__main__":
         'FLR_threshold': 0.08,
         'MZ_infidelity_threshold': 1.12,
         'photons_per_det_pulse_threshold': 12,
-        'Exp_flag': True,
+        'Exp_flag': False,
         'with_atoms': True
     }
     sequence_definitions = {
