@@ -1799,9 +1799,9 @@ class OPX:
 
     def latched_detectors(self):
         latched_detectors = []
-        # for indx, det_tt_vec in enumerate(self.tt_measure):  # for different detectors
-        #     if not det_tt_vec:
-        #         latched_detectors.append(indx)
+        for indx, det_tt_vec in enumerate(self.tt_measure):  # for different detectors
+            if not det_tt_vec:
+                latched_detectors.append(indx)
         return latched_detectors
 
     def get_pulses_bins(self,det_pulse_len,sprint_pulse_len,num_of_det_pulses,num_of_sprint_pulses,
@@ -3297,7 +3297,7 @@ if __name__ == "__main__":
     print('you are running QRAM Experiment')
     if not experiment.Exp_Values['Operation_Mode']== 'QRAM_Exp':
         raise ValueError("at Config table - operation mode should be changed to QRAM_Exp")
-    experiment.run_daily_experiment([500], transit_condition=[2, 1, 2], preComment='"N-N-N-N-N-N-N-N experiment"', lock_err_threshold=0.005,
+    experiment.run_daily_experiment([500], transit_condition=[1, 1, 1], preComment='"8S experiment"', lock_err_threshold=0.005,
                                     filter_delay=[0, 0, 0], reflection_threshold=2550, reflection_threshold_time=9e6,
                                     FLR_threshold=0.08, MZ_inidelity_threshold=1.12, with_atoms_bool=True, Exp_flag=True)
 

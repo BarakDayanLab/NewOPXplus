@@ -27,7 +27,7 @@ class CoolingSequenceOptimizer(OPX):
         super().__init__(config = config)
         # self.SPRINT_Exp_switch(False) # To enable trigger to camera in OPX_control_with_QuadRF_Sprint_Exp
         self.camera = camera
-        self.NAvg = 1
+        self.NAvg = 3
         self.NThrow = 3
         self.imgBounds = (580, 200, 1600, 1450) # bounds to crop out of the taken pictures
         # self.mm_to_pxl = 8.5/(830-56) # measured using ruler in focus 13/11/2022

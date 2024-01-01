@@ -544,6 +544,10 @@ Super_Sprint_Config = {
     },
 }
 
+print('please switch SRS South and North dirrectional detectors shutters to manual and then press enter /n '
+      'This is important so the continouos laser beam wont be degraded by the shutters. ')
+input()
+
 qm_ss = QMm.open_qm(Super_Sprint_Config)
 QMm.clear_all_job_results()
 
@@ -594,16 +598,19 @@ with program() as dig:
     with infinite_loop_():
         with for_(n, 0, n < rep, n+1):
 
-            # play("Const_open_triggered", "PULSER_N")
+            play("Const_open_triggered", "PULSER_N")
             # play("Const_open", "PULSER_N")
             # play("Const_open", "PULSER_S")
             play("Const_open_triggered", "PULSER_S")
-            # play("Const_open", "PULSER_L")
-            play("Const_high_open", "PULSER_E")
+
+            # playing early and late AOM's
+            play("Const_open", "PULSER_L")
+            # play("Const_high_open", "PULSER_E")
+
             # play("Square_Pulse", "PULSER_LO")
             # play("Const_open"*amp(0.7), "PULSER_LO")
             play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
-            play("Spectrum_pulse", "AOM_Spectrum")
+            # play("Spectrum_pulse", "AOM_Spectrum")
             # play("CRUS_pulse", "Pulser_CRUS")
 
             # measure("OD_measure", "digital_detectors_S", None,
