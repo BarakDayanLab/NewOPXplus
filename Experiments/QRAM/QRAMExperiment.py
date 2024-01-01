@@ -1702,11 +1702,11 @@ class QRAMExperiment(BaseExperiment):
 
         # Save all other files
         results = {
-            "early_sequence": Config.QRAM_Exp_Gaussian_samples_Early,
-            "late_sequence": Config.QRAM_Exp_Gaussian_samples_Late,
+            "early_sequence": Config.QRAM_Exp_Square_samples_Early,  #Config.QRAM_Exp_Gaussian_samples_Early,
+            "late_sequence": Config.QRAM_Exp_Square_samples_Late,  #Config.QRAM_Exp_Gaussian_samples_Late,
             "north_sequence": Config.QRAM_Exp_Gaussian_samples_N,
             "south_sequence": Config.QRAM_Exp_Gaussian_samples_S,
-            "fs_sequence": Config.QRAM_Exp_Square_samples_FS,
+            "fs_sequence": (1-np.array(Config.QRAM_Exp_Square_samples_FS)).tolist(),  #Config.QRAM_Exp_Square_samples_FS,
 
             "tt_measure_batch": self.batcher['tt_measure_batch'],
             "tt_N_measure_batch": self.batcher['tt_N_measure_batch'],

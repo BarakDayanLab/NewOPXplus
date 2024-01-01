@@ -174,6 +174,22 @@ class BDResults:
         """
         return not isinstance(obj, str) and isinstance(obj, (collections.abc.Sequence, np.ndarray))
 
+    def _resolve_env(self, root_name):
+        """
+        Given a specific root name, this method first looks for such a root with the current ENV
+        If not found, it fetches the root without the ENV
+        """
+        env = self.results_map['env']
+        root_name_with_env = f'{root_name}_{env}'
+        if root_name_with_env in self.results_map:
+            return self.results_map[root_name_with_env]
+
+        if root_name not in self.results_map:
+            self.logger.error(f'Missing root {root_name} in results_map.json. Please check.')
+
+        return self.results_map[root_name]
+
+
     def _resolve_parameterized(self, root_pattern):
         current_date_time = time.strftime("%Y%m%d_%H%M%S")
         current_date = time.strftime("%Y%m%d")
@@ -200,19 +216,23 @@ class BDResults:
             raise Exception(f'Result saving failed. Aborting.')
 
     def get_root(self):
-        resolved_path = self._resolve_parameterized(self.results_map['root'])
+        resolved_env = self._resolve_env('root')
+        resolved_path = self._resolve_parameterized(resolved_env)
         return resolved_path
 
     def get_experiment_root(self):
-        resolved_path = self._resolve_parameterized(self.results_map['experiment_root'])
+        resolved_env = self._resolve_env('experiment_root')
+        resolved_path = self._resolve_parameterized(resolved_env)
         return resolved_path
 
     def get_all_experiments_root(self):
-        resolved_path = self._resolve_parameterized(self.results_map['all_experiments_root'])
+        resolved_env = self._resolve_env('all_experiments_root')
+        resolved_path = self._resolve_parameterized(resolved_env)
         return resolved_path
 
     def get_custom_root(self, custom_root):
-        resolved_path = self._resolve_parameterized(self.results_map[custom_root])
+        resolved_env = self._resolve_env(custom_root)
+        resolved_path = self._resolve_parameterized(resolved_env)
         return resolved_path
 
     def get_folder_path(self, name):
