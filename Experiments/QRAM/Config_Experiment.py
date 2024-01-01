@@ -81,7 +81,6 @@ controller = 'con1'
 
 # Parameters:
 # delays [ns]:
-#detector_delays = [26, 30, 33, 27, 8, 8, 8, 0]  # For detectors [1,2,3,9,15,6,7,8]
 detector_delays = [26, 30, 33, 27, 32, 32, 32, 0]  # For detectors [1,2,3,9,15,6,7,8] - updated @ 13.12.23
 AOM_Late_delay = 670
 AOM_Early_delay = 525

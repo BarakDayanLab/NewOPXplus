@@ -1152,7 +1152,7 @@ class QRAMExperiment(BaseExperiment):
         # Take the last sample from batch of previous measurements
         prev_measure = prev_measures[-1]
 
-        # If last measure was empty and this one is not,clearly it's new data
+        # If last measure was empty and this one is not ,clearly it's new data
         if len(prev_measure) == 0 and len(curr_measure) > 0:
             return True
 
@@ -1163,7 +1163,7 @@ class QRAMExperiment(BaseExperiment):
         compare_values = np.array(prev_measure[:min_len]) == np.array(curr_measure[:min_len])
 
         # TODO: replace the line below with the one in comment:
-        #new_timetags = np.sum(compare_values) < min_len / 2
+        #new_timetags_found = np.sum(compare_values) < min_len / 2
         new_timetags_found = sum(compare_values) < min_len / 2
         return new_timetags_found
 
@@ -1214,7 +1214,7 @@ class QRAMExperiment(BaseExperiment):
                 self.runs_status = TerminationReason.ERROR
                 break
 
-            self.info(f'Warm-up: {count}. No new data coming from detectors (exp_flag = {self.exp_flag})')
+            self.info(f'Waiting for values from stream (count: {count}). No new data coming from detectors (exp_flag = {self.exp_flag})')
             time.sleep(WAIT_TIME)
 
         # We return the timestamp - this is when we declare we got the measurement
@@ -1577,11 +1577,6 @@ class QRAMExperiment(BaseExperiment):
             # Informational printing
             self.print_experiment_information()
 
-            # If we are still in warm-up phase, we do not continue further and go back to beginning of loop
-            # self.warm_up = self.is_warm_up_phase()
-            # if self.warm_up:
-            #     continue
-
             # Perform all analytics and calculations needed for display
             self.experiment_calculations()
 
@@ -1789,7 +1784,7 @@ class QRAMExperiment(BaseExperiment):
         # Summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
         self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(self.reflection_threshold_time // len(Config.QRAM_Exp_Gaussian_samples_S)):])
 
-        # Check if conditions have been met for the completeion of the warm-up phase
+        # Check if conditions have been met for the completion of the warm-up phase
         warm_up_phase_complete = self.is_warm_up_phase_complete()
 
         # This is the first time we realize we are no loger in warm-up - so run post stage

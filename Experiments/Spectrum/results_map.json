@@ -1,4 +1,5 @@
 {
+	"env": "LAB",
 	"version": "0.1",
 	"strict": false,
 
@@ -9,16 +10,17 @@
 	"all_experiments_root_local": "C:\\temp\\refactor_debug\\Experiment_results",
 
 	"experiment_root": "U:\\Lab_2023\\Experiment_results\\Spectrum",
-	"experiment_root_local": "C:\\temp\\refactor_debug\\Experiment_results\\Spectrum",
+	"experiment_root_113": "C:\\temp\\refactor_debug\\Experiment_results\\Spectrum",
 
 	"root": "U:\\Lab_2023\\Experiment_results\\Spectrum\\{current_date}\\{current_time}_Photon_TimeTags",
 	"root_local": "C:\\temp\\refactor_debug\\Experiment_results\\Spectrum\\{current_date}\\{current_time}_Photon_TimeTags",
 
 	"locking_error_root": "U:\\Lab_2023\\Experiment_results\\QRAM\\Locking_PID_Error",
+
 	"calibration_folder": "U:\\Lab_2023\\Experiment_results\\QRAM\\20231116\\133237_Photon_TimeTags",
 
-	"playback_data_0": "U:\\Lab_2023\\Experiment_results\\Spectrum\\20231213\\134648_Photon_TimeTags",
-	"playback_data": "C:\\temp\\playback_data\\Spectrum\\134648_Photon_TimeTags",
+	"playback_data_LAB": "U:\\Lab_2023\\Experiment_results\\Spectrum\\20231213\\134648_Photon_TimeTags",
+	"playback_data_113": "C:\\temp\\playback_data\\Spectrum\\134648_Photon_TimeTags",
 
 	"files": [
 

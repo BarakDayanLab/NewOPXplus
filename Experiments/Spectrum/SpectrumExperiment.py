@@ -690,12 +690,13 @@ class SpectrumExperiment(BaseExperiment):
 
             # Detectors status:
             if plot_switches['detectors']:
+                latched_detectors = self.latched_detectors()
                 for i, det in enumerate(self.Num_Of_dets):
                     x = -0.15
                     y = 1.9 - i * 0.4
                     pad = 1
                     text = 'Det %d' % det
-                    det_color = 'red' if self.latched_detectors() else 'green'
+                    det_color = 'red' if latched_detectors else 'green'
                     ax[2].text(x, y, text, ha="center", va="center", transform=ax[2].transAxes,
                              bbox=dict(boxstyle=f"circle,pad={pad}", edgecolor=det_color, linewidth=2, facecolor=det_color, alpha=0.5))
             ax[2].legend(loc='upper right')
@@ -766,6 +767,10 @@ class SpectrumExperiment(BaseExperiment):
         # Take the last sample from batch of previous measurements
         prev_measure = prev_measures[-1]
 
+        # If last measure was empty and this one is not, clearly it's new data
+        if len(prev_measure) == 0 and len(curr_measure) > 0:
+            return True
+
         # Get the minimum value between new measure (tt_S_no_gaps) and last old measure (tt_S_measure_batch)
         min_len = min(len(prev_measure), len(curr_measure))
 
@@ -773,9 +778,9 @@ class SpectrumExperiment(BaseExperiment):
         compare_values = np.array(prev_measure[:min_len]) == np.array(curr_measure[:min_len])
 
         # TODO: replace the line below with the one in comment:
-        #new_timetags = np.sum(compare_values) < min_len / 2
-        new_timetags = sum(compare_values) < min_len / 2
-        return new_timetags
+        #new_timetags_found = np.sum(compare_values) < min_len / 2
+        new_timetags_found = sum(compare_values) < min_len / 2
+        return new_timetags_found
 
     def await_for_values(self):
         """
@@ -825,11 +830,37 @@ class SpectrumExperiment(BaseExperiment):
                 self.runs_status = TerminationReason.ERROR
                 break
 
+            self.info(f'Waiting for values from stream (count: {count}). No new data coming from detectors (exp_flag = {self.exp_flag})')
             time.sleep(WAIT_TIME)
 
         # We return the timestamp - this is when we declare we got the measurement
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         return timestamp
+
+    def experiment_calculations(self):
+
+        self.tt_N_binning_avg = self.tt_N_binning
+        self.tt_S_binning_avg = self.tt_S_binning
+
+        # Prepare folded arrays for display
+        for x in self.tt_S_no_gaps:
+            # if x < (2e6 + 6400):
+            self.folded_tt_S_acc_1[(x - 1) % self.histogram_bin_size] += 1
+            # if (2e6 + 6400 + 120) < x < (4e6 + 6400*2 + 120):
+            if 6e6 < x < 8e6:
+                self.folded_tt_S_acc_2[(x - 1) % self.histogram_bin_size] += 1
+            # if (8e6 + 6400*4 + 120*4) < x < (10e6):
+            if 8e6 < x < 10e6:
+                self.folded_tt_S_acc_3[(x - 1) % self.histogram_bin_size] += 1
+
+        # Split the binning vector to even and odd - Off/On resonance pulses
+        self.tt_N_binning_resonance, self.tt_N_binning_detuned = Utils.split_to_even_odd_elements(self.tt_N_binning)
+        self.tt_S_binning_resonance, self.tt_S_binning_detuned = Utils.split_to_even_odd_elements(self.tt_S_binning)
+
+        # Calculate threshold for experiment
+        self.sum_for_threshold = (np.sum(self.tt_S_binning_resonance) * 1000) / (self.M_time / 2)
+
+        pass
 
     # TODO: There's no need in Spectrum experiment for transit_counts_threshold ?
     def Save_SNSPDs_Spectrum_Measurement_with_tt(self, N, transit_profile_bin_size, pre_comment, transit_cond,
@@ -938,51 +969,33 @@ class SpectrumExperiment(BaseExperiment):
             if self.runs_status == TerminationReason.USER:
                 break
 
+            # Get locking error
+            self.lock_err = self._read_locking_error()
+
+            # Experiment delay
+            self.experiment_mainloop_delay()
+
+            # Handle warm-up phase
+            self.warm_up = self.handle_warm_up_phase()
+            if self.warm_up:
+                continue
+
             # Await for values from OPX
             self.sampling_timestamp = self.await_for_values()
             if self.runs_status != TerminationReason.SUCCESS:
                 break
 
-            # Get locking error
-            self.lock_err = self._read_locking_error()
-
             # Bin North time-tags (South time-tags were binned in await_for_values
-            self.tt_N_binning = Utils.bin_values(values=self.tt_N_directional_measure,bin_size=Config.frequency_sweep_duration, num_of_bins=self.histogram_bin_number*2)
-
-            self.tt_N_binning_avg = self.tt_N_binning
-            self.tt_S_binning_avg = self.tt_S_binning
-
-            # Prepare folded arrays for display
-            for x in self.tt_S_no_gaps:
-                # if x < (2e6 + 6400):
-                self.folded_tt_S_acc_1[(x - 1) % self.histogram_bin_size] += 1
-                # if (2e6 + 6400 + 120) < x < (4e6 + 6400*2 + 120):
-                if 6e6 < x < 8e6:
-                    self.folded_tt_S_acc_2[(x - 1) % self.histogram_bin_size] += 1
-                # if (8e6 + 6400*4 + 120*4) < x < (10e6):
-                if 8e6 < x < 10e6:
-                    self.folded_tt_S_acc_3[(x - 1) % self.histogram_bin_size] += 1
-
-            # Split the binning vector to even and odd - Off/On resonance pulses
-            self.tt_N_binning_resonance, self.tt_N_binning_detuned = Utils.split_to_even_odd_elements(self.tt_N_binning)
-            self.tt_S_binning_resonance, self.tt_S_binning_detuned = Utils.split_to_even_odd_elements(self.tt_S_binning)
-
-            # Calculate threshold for experiment
-            self.sum_for_threshold = (np.sum(self.tt_S_binning_resonance) * 1000) / (self.M_time / 2)
+            self.tt_N_binning = Utils.bin_values(values=self.tt_N_directional_measure, bin_size=Config.frequency_sweep_duration, num_of_bins=self.histogram_bin_number*2)
 
             # Informational printing
             self.print_experiment_information()
 
+            # Perform all analytics and calculations needed for display
+            self.experiment_calculations()
+
             # Plot figures
             self.plot_figures()
-
-            # Experiment delay
-            self.experiment_mainloop_delay()
-
-            # If we are still in warm-up phase, we do not continue further and go back to beginning of loop
-            self.warm_up = self.is_warm_up_phase()
-            if self.warm_up:
-                continue
 
             # Determine if we're "acquired" - e.g., worthy to save data :-)
             self.acquisition_flag = self.is_acquired()
@@ -1133,8 +1146,39 @@ class SpectrumExperiment(BaseExperiment):
         # All is well!
         return True
 
+    def handle_warm_up_phase(self):
+
+        if self.post_warm_up_completed:
+            return False
+
+        # Get data from OPX streams
+        self.get_results_from_streams()
+
+        # Make something out of the data we received on the streams
+        self.ingest_time_tags()
+
+        self.tt_S_binning = np.zeros(self.histogram_bin_number * 2)
+
+        for x in self.tt_S_no_gaps:
+            self.tt_S_binning[(x - 1) // Config.frequency_sweep_duration] += 1
+        self.tt_S_binning_resonance = [self.tt_S_binning[x] for x in range(len(self.tt_S_binning)) if
+                                       not x % 2]  # even
+
+        # TODO: we may want to conditon this with the exp_flag (like in original code)
+        self.sum_for_threshold = (np.sum(self.tt_S_binning_resonance) * 1000) / self.M_time
+
+        # Check if conditions have been met for the completion of the warm-up phase
+        warm_up_phase_complete = self.is_warm_up_phase_complete()
+
+        # This is the first time we realize we are no loger in warm-up - so run post stage
+        if warm_up_phase_complete:
+            self.post_warm_up()
+            self.post_warm_up_completed = True  # Mark the fact we are done
+
+        return not warm_up_phase_complete
+
     # TODO: make generic in superclass
-    def is_warm_up_phase(self):
+    def is_warm_up_phase_complete(self):
         """
         We are in warm-up if these conditions are met:
         - We haven't yet completed WARMUP_CYCLES
@@ -1145,17 +1189,41 @@ class SpectrumExperiment(BaseExperiment):
         # Did we finish going through all warm-up cycles? If not, we're still in warm-up -> return True
         if self.warm_up_cycles > 0:
             self.warm_up_cycles -= 1
-            return True
+            return False
 
         # We stay in warm-up while we're not locked
-        # if self.lock_err > self.lock_err_threshold:
-        #     return True
+        if self.lock_err > self.lock_err_threshold:
+            return False
 
         # We stay in warm-up if we're not within threshold
         if self.exp_flag and self.sum_for_threshold >= self.total_counts_threshold:
-            return True
+            return False
 
-        return False
+        return True
+
+    def post_warm_up(self):
+
+        # initilaization
+        self.tt_N_binning = np.zeros(self.histogram_bin_number * 2)
+        self.tt_N_transit_events = np.zeros(self.histogram_bin_number)
+        self.tt_S_transit_events = np.zeros(self.histogram_bin_number)
+        self.tt_S_transit_events_accumulated = np.zeros(self.histogram_bin_number)
+        self.all_transits_accumulated = np.zeros(self.histogram_bin_number)
+        self.folded_tt_S_acc = np.zeros(self.histogram_bin_size, dtype=int)
+        self.folded_tt_S_acc_2 = np.zeros(self.histogram_bin_size, dtype=int)
+        self.folded_tt_S_acc_3 = np.zeros(self.histogram_bin_size, dtype=int)
+
+
+        self.Cavity_atom_spectrum = np.zeros(self.spectrum_bin_number)
+        self.Transits_per_freuency = np.zeros(self.spectrum_bin_number)
+        self.Cavity_atom_spectrum_normalized = np.zeros(self.spectrum_bin_number)
+        self.Cavity_spectrum = np.zeros(self.spectrum_bin_number)
+        self.Cavity_spectrum_normalized = np.zeros(self.spectrum_bin_number)
+
+        # TODO: Complete the stuff in OPX_control_with_QuadRF_Transit_Exp_QRAMconfig.py
+        # TODO: from lines 2715 and probably to 2753
+        # TODO: until this line: "find_transits_events_spectrum_exp(...)"
+        pass
 
     def maximize_figure(self):
         """
