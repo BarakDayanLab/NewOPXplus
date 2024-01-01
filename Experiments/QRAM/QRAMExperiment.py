@@ -1586,7 +1586,7 @@ class QRAMExperiment(BaseExperiment):
             self.acquisition_flag = self.is_acquired()
             if self.acquisition_flag and not self.pause_flag:
 
-                if self.counter < N:
+                if self.counter < self.N:
                     self.counter += 1
 
                 self.logger.info('Sum of reflections: %d' % self.sum_for_threshold)

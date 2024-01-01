@@ -236,7 +236,7 @@ class SpectrumExperiment(BaseExperiment):
         return [(np.average(Probe_counts_North) * 1000) / self.M_time,
                 (np.average(Probe_counts_South) * 1000) / self.M_time]
 
-    def get_handles_from_OPX_Server(self, Num_Of_dets):
+    def get_handles_from_OPX_Server(self):
         """
          Gets handles of time-tags and counts from OPX
         :return:
@@ -244,13 +244,13 @@ class SpectrumExperiment(BaseExperiment):
         Counts_handle = []
         tt_handle = []
 
-        for i in Num_Of_dets:
+        for i in self.Num_Of_dets:
             Counts_handle.append(self.job.result_handles.get("Det" + str(i) + "_Counts"))
             tt_handle.append(self.job.result_handles.get("Det" + str(i) + "_Probe_TT"))
         FLR_handle = self.job.result_handles.get("FLR_measure")
         return Counts_handle, tt_handle, FLR_handle
 
-    def ingest_time_tags(self, Num_Of_dets):
+    def ingest_time_tags(self):
         """
         Takes all the raw results we got from the streams and does some processing on them - preparing "measures"
         """
@@ -262,7 +262,7 @@ class SpectrumExperiment(BaseExperiment):
         self.tt_measure = []
 
         # Normalize the data coming from the detectors
-        for detector_index in range(len(Num_Of_dets)):  # for different detectors
+        for detector_index in range(len(self.Num_Of_dets)):  # for different detectors
             tt_res = self.streams[f'Detector_{detector_index + 1}_Timetags']['results']
             normalized_stream = self.bdstreams.normalize_stream(tt_res, detector_index, Config.detector_delays, self.M_window)
             self.tt_measure.append(normalized_stream)
@@ -566,27 +566,39 @@ class SpectrumExperiment(BaseExperiment):
             time.sleep(0.01)  # TODO: do we need this delay?
 
     def prepare_figures(self):
-        fig = plt.figure()
-        subplots = []
-        subplots.append(plt.subplot2grid((6, 2), (0, 0), colspan=1, rowspan=2))
-        subplots.append(plt.subplot2grid((6, 2), (0, 1), colspan=1, rowspan=2))
-        subplots.append(plt.subplot2grid((6, 2), (2, 0), colspan=1, rowspan=2))
-        subplots.append(plt.subplot2grid((6, 2), (2, 1), colspan=1, rowspan=2))
-        subplots.append(plt.subplot2grid((6, 2), (4, 0), colspan=1, rowspan=2))
-        subplots.append(plt.subplot2grid((6, 2), (4, 1), colspan=1, rowspan=2))
+        self.fig = plt.figure()
+        self.subplots = []
+        self.plot_shown = False
+
+        self.subplots.append(plt.subplot2grid((6, 2), (0, 0), colspan=1, rowspan=2))
+        self.subplots.append(plt.subplot2grid((6, 2), (0, 1), colspan=1, rowspan=2))
+        self.subplots.append(plt.subplot2grid((6, 2), (2, 0), colspan=1, rowspan=2))
+        self.subplots.append(plt.subplot2grid((6, 2), (2, 1), colspan=1, rowspan=2))
+        self.subplots.append(plt.subplot2grid((6, 2), (4, 0), colspan=1, rowspan=2))
+        self.subplots.append(plt.subplot2grid((6, 2), (4, 1), colspan=1, rowspan=2))
 
         #self.maximize_figure()  # TODO: uncomment
 
-        return fig, subplots
+        return
 
-    def plot_figures(self, fig, subplots, Num_Of_dets):
+    def plot_figures(self):
         try:
-            self._plot_figures(fig, subplots, Num_Of_dets)
+            self._plot_figures()
         except Exception as err:
             self.warn(f'Failed on plot_figures: {err}')
         pass
 
-    def _plot_figures(self, fig, ax, Num_Of_dets):
+    def _plot_figures(self):
+
+        if self.playback['active']:
+            if self.playback['plot'] == 'NONE':
+                return
+            if self.playback['plot'] == 'LAST' and self.counter < (self.N - 10):
+                return
+
+        if not self.plot_shown:
+            plt.show(block=False)
+            self.plot_shown = True
 
         plot_switches = {
             "playsound": True,
@@ -602,6 +614,9 @@ class SpectrumExperiment(BaseExperiment):
 
         # Take time
         start_plot_time = time.time()
+
+        # Used mainly as a shortcut for shorter lines
+        ax = self.subplots
 
         ax[0].clear()
         ax[1].clear()
@@ -675,7 +690,7 @@ class SpectrumExperiment(BaseExperiment):
 
             # Detectors status:
             if plot_switches['detectors']:
-                for i, det in enumerate(Num_Of_dets):
+                for i, det in enumerate(self.Num_Of_dets):
                     x = -0.15
                     y = 1.9 - i * 0.4
                     pad = 1
@@ -762,7 +777,7 @@ class SpectrumExperiment(BaseExperiment):
         new_timetags = sum(compare_values) < min_len / 2
         return new_timetags
 
-    def await_for_values(self, Num_Of_dets):
+    def await_for_values(self):
         """
         Awaits for values to come from OPX streams. Returns the timestamp of the incoming data.
         Returns the status of the operation (enumeration). It can be either:
@@ -786,7 +801,7 @@ class SpectrumExperiment(BaseExperiment):
             if self.runs_status != TerminationReason.SUCCESS:
                 break
 
-            self.ingest_time_tags(Num_Of_dets)
+            self.ingest_time_tags()
 
             is_new_tts_S = True  # We'll assume it's new data. Especially true in the first run, where there's no previous data to compare
             curr_measure = self.tt_S_no_gaps
@@ -840,7 +855,7 @@ class SpectrumExperiment(BaseExperiment):
         """
 
         # set constant parameters for the function
-        Num_Of_dets = [1, 2, 3, 4, 5, 6, 7, 8]
+        self.Num_Of_dets = [1, 2, 3, 4, 5, 6, 7, 8]
         self.histogram_bin_size = Config.frequency_sweep_duration * 2
         self.sequence_duration = Config.frequency_sweep_duration * 2
         self.histogram_bin_number = self.M_time // self.histogram_bin_size # num of bins in cycle of frequency sweep
@@ -854,6 +869,7 @@ class SpectrumExperiment(BaseExperiment):
 
         # TODO: These come as parameters for the experiment run - we may want to have them all under "self.params[..]" so we can
         # TODO: (a) group logically (b) pass to other functions, instead of passing them one by one or relying on them being on self
+        self.N = N
         self.with_atoms = with_atoms
         self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
         self.lock_err_threshold = lock_err_threshold
@@ -898,7 +914,7 @@ class SpectrumExperiment(BaseExperiment):
         self.power_per_freq_weight = self.AOM_power_per_freq_calibration(calibration_file)
 
         # Prepare the sub figures needed for the plotting phase
-        fig, subplots = self.prepare_figures()
+        self.prepare_figures()
 
         ############################################ START MAIN LOOP #################################################
 
@@ -923,7 +939,7 @@ class SpectrumExperiment(BaseExperiment):
                 break
 
             # Await for values from OPX
-            self.sampling_timestamp = self.await_for_values(Num_Of_dets)
+            self.sampling_timestamp = self.await_for_values()
             if self.runs_status != TerminationReason.SUCCESS:
                 break
 
@@ -958,7 +974,7 @@ class SpectrumExperiment(BaseExperiment):
             self.print_experiment_information()
 
             # Plot figures
-            self.plot_figures(fig, subplots, Num_Of_dets)
+            self.plot_figures()
 
             # Experiment delay
             self.experiment_mainloop_delay()
@@ -972,7 +988,7 @@ class SpectrumExperiment(BaseExperiment):
             self.acquisition_flag = self.is_acquired()
             if self.acquisition_flag and not self.pause_flag:
 
-                if self.counter < N:
+                if self.counter < self.N:
                     self.counter += 1
 
                 self.tt_N_binning = np.zeros(self.histogram_bin_number*2)
@@ -999,7 +1015,7 @@ class SpectrumExperiment(BaseExperiment):
             self.handle_user_atoms_on_off_switch()
 
             # Did we complete N successful iterations?
-            if self.counter == N:
+            if self.counter == N+1:
                 break
 
             # We completed another repetition.
