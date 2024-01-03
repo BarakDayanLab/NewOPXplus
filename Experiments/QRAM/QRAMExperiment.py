@@ -1021,9 +1021,10 @@ class QRAMExperiment(BaseExperiment):
                     x = -0.15
                     y = 1.9 - i * 0.4
                     pad = 1
-                    text = 'Det %d' % det
+                    num_clicks = len(self.streams[f'Detector_{det}_Timetags']['results'])
+                    text = f'{self.detectors_names[i]}-{det}\n({num_clicks-1})'
                     det_color = 'red' if i in latched_detectors else 'green'
-                    ax[2].text(x, y, text, ha="center", va="center", transform=ax[2].transAxes,
+                    ax[2].text(x, y, text, ha="center", va="center", transform=ax[2].transAxes, fontsize=8,
                              bbox=dict(boxstyle=f"circle,pad={pad}", edgecolor=det_color, linewidth=2, facecolor=det_color, alpha=0.5))
 
         # Num of reflections per sequence
@@ -1336,6 +1337,7 @@ class QRAMExperiment(BaseExperiment):
 
         # TODO: Q: Are these just detector "names"/"Symbols"? And also used to define the number of detectors (e.g. 8)?
         self.Num_Of_dets = [1, 2, 3, 4, 5, 6, 7, 8]
+        self.detectors_names = ['BP', 'BP', 'DP', 'DP', 'S', 'FS', 'FS', 'N']
 
         self.delay_in_detection_N = 30  # choose the correct delay in samples to the first detection pulse # TODO: 40?
         self.delay_in_detection_S = 20  # choose the correct delay in samples to the first detection pulse # TODO: 40?
