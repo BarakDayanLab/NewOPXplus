@@ -96,6 +96,7 @@ class BDStreams:
         # Open the binary file
         with open(data_file, 'rb') as file:
 
+            current_time = int(struct.unpack('>i'), file.read(4)[0])
             number_of_streams = int(struct.unpack('>b', file.read(1))[0])
             for i in range(0, number_of_streams):
                 stream = self.streams_defs[stream_names[i]]
@@ -119,6 +120,7 @@ class BDStreams:
 
                 # Append it to all rows
                 stream['all_rows'].append(results)
+                stream['timestamp'] = current_time
         pass
 
     def load_streams_from_a_single_file(self):
@@ -173,20 +175,20 @@ class BDStreams:
         - The stream data
 
         The reasonable time for a single file save is 1-2 ms.
-        +-------------+--------------+---------------+-------+--------------+---------------+
-        + Num Streams | Stream-1 Len | Stream 1 Data | ..... | Stream-N Len | Stream-N Data |
-        +-------------+--------------+---------------+-------+--------------+---------------+
+        +-----------+-------------+--------------+---------------+-------+--------------+---------------+
+        + Timestamp + Num Streams | Stream-1 Len | Stream 1 Data | ..... | Stream-N Len | Stream-N Data |
+        +-----------+-------------+--------------+---------------+-------+--------------+---------------+
         """
         if self.streams_defs is None:
             print('No streams defined - nothing to save! Ignoring')
             return
 
-        start_save_time = time.time()
+        current_time = time.time()
 
         try:
 
             # Start packing the data with 'B'=1-byte for number of streams
-            bytes_array = struct.pack('>b', len(self.streams_defs))
+            bytes_array = struct.pack('>ib', [int(current_time), len(self.streams_defs)])
             all_data = []
             for stream in self.streams_defs.values():
                 data = [] if stream['handler'] is None else stream['results']
@@ -217,7 +219,7 @@ class BDStreams:
 
         self.number_of_rows_saved += 1
 
-        total_prep_time = time.time() - start_save_time
+        total_prep_time = time.time() - current_time
 
         pass
 
