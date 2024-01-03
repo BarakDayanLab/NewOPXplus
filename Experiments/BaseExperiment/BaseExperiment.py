@@ -88,7 +88,7 @@ class BaseExperiment:
 
         # Playback definitions
         self.playback = {
-            "active": True,
+            "active": False,
             "data_loaded": False,
             "save_results": False,
             "plot": "LIVE",  # "LIVE", "LAST", "NONE"
@@ -692,7 +692,7 @@ class BaseExperiment:
                 stream['results'] = None
 
         # Save streams to file
-        self.bdstreams.save_streams()
+        #self.bdstreams.save_streams()
 
         pass
 
