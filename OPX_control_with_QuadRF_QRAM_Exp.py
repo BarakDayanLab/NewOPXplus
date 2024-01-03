@@ -1289,7 +1289,7 @@ class OPX:
         # we hold this connection until update is finished, the we close the connection.
         # we do still hold the QuadRFController objects, for access to the table (read only!) when the experiment is running.
         qrfContr = QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 2, 4), topticaLockWhenUpdating=False,
-                                       debugging=False, continuous=False)
+                                       debugging=True, continuous=False)
         self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
         self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev, initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
                                                           updateChannels=[3], debugging=False, continuous=False))  # updates values on QuadRF (uploads table)
@@ -2073,7 +2073,8 @@ class OPX:
             real_number_of_seq = self.number_of_QRAM_sequences
             # print('Max number of seq')
         for t in pulse_loc:
-            avg_num_of_photons_in_seq_pulses.append((sum(seq[t[0]:t[1]]) + seq[t[1]]) / (real_number_of_seq * 0.167))  # Sagnac configuiration efficiency 16.7%
+            # avg_num_of_photons_in_seq_pulses.append((sum(seq[t[0]:t[1]]) + seq[t[1]]) / (real_number_of_seq * 0.167))  # Sagnac configuiration efficiency 16.7%
+            avg_num_of_photons_in_seq_pulses.append((sum(seq[t[0]:t[1]]) + seq[t[1]]) / (real_number_of_seq * 0.3))  # efficiency 30%
         return avg_num_of_photons_in_seq_pulses
 
     def get_max_value_in_seq_pulses(self, seq, pulse_loc):
