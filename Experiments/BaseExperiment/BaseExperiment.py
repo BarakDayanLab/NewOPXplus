@@ -64,7 +64,7 @@ class BaseExperiment:
         - Updating IO Parameters
     """
 
-    def __init__(self):
+    def __init__(self, playback=False, save_raw_data=False):
 
         # Setup console logger. We do this first, so rest of code can use logging functions.
         self.logger = BDLogger()
@@ -81,6 +81,9 @@ class BaseExperiment:
         # Debugging plot
         self.dbg_plot = None
 
+        # Should we keep the detectors raw data
+        self.save_raw_data = save_raw_data
+
         self.transformer = ValuesTransformer()
 
         self._opx_skip = False
@@ -88,7 +91,7 @@ class BaseExperiment:
 
         # Playback definitions
         self.playback = {
-            "active": False,
+            "active": playback,
             "data_loaded": False,
             "save_results": False,
             "plot": "LIVE",  # "LIVE", "LAST", "NONE"
@@ -692,7 +695,8 @@ class BaseExperiment:
                 stream['results'] = None
 
         # Save streams to file
-        #self.bdstreams.save_streams()
+        if self.save_raw_data:
+            self.bdstreams.save_streams()
 
         pass
 

@@ -186,11 +186,13 @@ class BDStreams:
         current_time = time.time()
 
         try:
+            # Get only those streams that their configuration indicates they need to be saved
+            streams_to_save = [s for s in self.streams_defs.values() if 'save_raw' in s and s['save_raw']]
 
             # Start packing the data with 'B'=1-byte for number of streams
-            bytes_array = struct.pack('>ib', [int(current_time), len(self.streams_defs)])
-            all_data = []
-            for stream in self.streams_defs.values():
+            bytes_array = struct.pack('>ib', int(current_time), len(streams_to_save))
+            for stream in streams_to_save:
+
                 data = [] if stream['handler'] is None else stream['results']
                 # TODO: when we save the data correctly, we should not need this, as everything will be arrays
                 # TODO: unlike now where FLR is saved as a single float value
@@ -203,10 +205,6 @@ class BDStreams:
                 data = [len(data)] + data
                 data_packed = struct.pack(f'>H{len(data) - 1}{stream["binary"]}', *data)
                 bytes_array = bytes_array + data_packed
-
-                all_data = all_data + [len(data)] + data
-            # Write number of streams in "line" of data and then the stream data itself
-            all_data = [len(self.streams_defs)] + all_data
 
         except Exception as err:
             print(f'Failed to save raw data: {err}')

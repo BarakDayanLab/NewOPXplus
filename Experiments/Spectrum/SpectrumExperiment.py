@@ -14,9 +14,9 @@ from Utilities.Utils import Utils
 
 class SpectrumExperiment(BaseExperiment):
 
-    def __init__(self):
+    def __init__(self, playback=False, save_raw_data=False):
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
-        super().__init__()
+        super().__init__(playback, save_raw_data)
         pass
 
     def __del__(self):
@@ -1310,7 +1310,7 @@ if __name__ == "__main__":
         ]
     }
 
-    experiment = SpectrumExperiment()
+    experiment = SpectrumExperiment(playback=False, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
     sequence_definitions = None

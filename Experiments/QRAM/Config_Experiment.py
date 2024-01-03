@@ -1585,95 +1585,70 @@ config = {
     # }
 }
 
-# TODO: looks like we have TOO many streams... Need to revisit OPX code to check what is used
 streams = {
-    # "Detector_1_Counts": {
-    #     "number": 1,
-    #     "name": "Detector_1_Counts"
-    # },
-    # "Detector_2_Counts": {
-    #     "number": 2,
-    #     "name": "Detector_2_Counts"
-    # },
-    # "Detector_3_Counts": {
-    #     "number": 3,
-    #     "name": "Detector_3_Counts"
-    # },
-    # "Detector_4_Counts": {
-    #     "number": 4,
-    #     "name": "Detector_4_Counts"
-    # },
-    # "Detector_5_Counts": {
-    #     "number": 5,
-    #     "name": "Detector_5_Counts"
-    # },
-    # "Detector_6_Counts": {
-    #     "number": 6,
-    #     "name": "Detector_6_Counts"
-    # },
-    # "Detector_7_Counts": {
-    #     "number": 7,
-    #     "name": "Detector_7_Counts"
-    # },
-    # "Detector_8_Counts": {
-    #     "number": 8,
-    #     "name": "Detector_8_Counts"
-    # },
     "Detector_1_Timetags": {
         "number": 1,
         "name": "Detector_1_Timetags",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det1_timetags.npz"
+        "playback": "Det1_timetags.npz",
+        "save_raw": True
     },
     "Detector_2_Timetags": {
         "number": 2,
         "name": "Detector_2_Timetags",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det2_timetags.npz"
+        "playback": "Det2_timetags.npz",
+        "save_raw": True
     },
     "Detector_3_Timetags": {
         "number": 3,
         "name": "Detector_3_Timetags",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det3_timetags.npz"
+        "playback": "Det3_timetags.npz",
+        "save_raw": True
     },
     "Detector_4_Timetags": {
         "number": 4,
         "name": "Detector_4_Timetags",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det4_timetags.npz"
+        "playback": "Det4_timetags.npz",
+        "save_raw": True
     },
     "Detector_5_Timetags": {
         "number": 5,
         "name": "Detector_5_Timetags",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det5_timetags.npz"
+        "playback": "Det5_timetags.npz",
+        "save_raw": True
     },
     "Detector_6_Timetags": {
         "number": 6,
         "name": "Detector_6_Timetags",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det6_timetags.npz"
+        "playback": "Det6_timetags.npz",
+        "save_raw": True
     },
     "Detector_7_Timetags": {
         "number": 7,
         "name": "Detector_7_Timetags",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det7_timetags.npz"
+        "playback": "Det7_timetags.npz",
+        "save_raw": True
     },
     "Detector_8_Timetags": {
         "number": 8,
         "name": "Detector_8_Timetags",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det8_timetags.npz"
+        "playback": "Det8_timetags.npz",
+        "save_raw": True
     },
     "Bright_Port_Counts": {
         "name": "Bright_Port_Counts",
@@ -1703,7 +1678,8 @@ streams = {
         "name": "FLR_measure",
         "type": "float",
         "binary": "d",  # double
-        "playback": "Flouresence.npz"
+        "playback": "Flouresence.npz",
+        "save_raw": True
     },
     "antihelmholtz_on": {
         "name": "antihelmholtz_on",

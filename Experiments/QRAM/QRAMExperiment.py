@@ -16,9 +16,9 @@ from Utilities.Utils import Utils
 
 
 class QRAMExperiment(BaseExperiment):
-    def __init__(self):
+    def __init__(self, playback=False, save_raw_data=False):
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
-        super().__init__()
+        super().__init__(playback, save_raw_data)
         pass
 
     def __del__(self):
@@ -1975,9 +1975,8 @@ class QRAMExperiment(BaseExperiment):
 if __name__ == "__main__":
 
     matplotlib_version = matplotlib.get_backend()
-    print(f"In use: {matplotlib_version}")
+    print(f'In use: {matplotlib_version}')
     matplotlib.use("Qt5Agg")
-    #plt.ion()
 
     run_parameters = {
         'N': 370,  # 50,
@@ -2012,7 +2011,7 @@ if __name__ == "__main__":
         ]
     }
 
-    experiment = QRAMExperiment()
+    experiment = QRAMExperiment(playback=False, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
     sequence_definitions = None

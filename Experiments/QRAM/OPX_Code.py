@@ -804,7 +804,7 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
         play("QRAM_experiment_pulses_Late", "AOM_Late")
 
     # wait(298, "Dig_detectors")
-    wait(300, "Dig_detectors")
+    wait(300-12, "Dig_detectors")
     # with for_(n, 0, n < m_time * 4, n + m_window):
     measure("readout_QRAM", "Dig_detectors", None,
             time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
