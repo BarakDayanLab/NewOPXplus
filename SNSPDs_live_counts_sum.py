@@ -1,4 +1,4 @@
-                                                                                                                     # %%
+# %%
 from quadRFMOTController import QuadRFMOTController
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
@@ -15,6 +15,7 @@ import math
 import json
 import csv
 
+
 def find_nearest(array, value):
     array = np.asarray(array)
     idx = (np.abs(np.abs(array) - value)).argmin()
@@ -28,6 +29,7 @@ def r_squared(y, vec, apd):
     sstot = np.sum((apd - ybar) ** 2)  # total sum of squares
     r_squared = ssreg / sstot
     return r_squared
+
 
 def calc_cmat(correction_vars):
     """
@@ -58,14 +60,13 @@ south_const_pulse_len = 500
 analyzer_const_pulse_len = 500
 MOT_pulse_len = int(50 * 1e3)
 PGC_pulse_len = 500
-Probe_pulse_len =500
+Probe_pulse_len = 500
 Fountain_pulse_len = 500
 Depump_pulse_len = 500
 OD_pulse_len = int(50 * 1e3)
 Repump_pulse_len = 500
 Trigger_pulse_len = 1
 AntiHelmholtz_pulse_len = 60
-
 
 # Intermediate frequencies
 IF_TOP1_MOT = 113e6
@@ -84,11 +85,11 @@ IF_AOM_S = 129.2368e6
 IF_AOM_LO = 129.2368e6
 IF_AOMs_MZ = 110e6
 IF_AOM_Anc = 184e6
-IF_AOM_Spectrum = 133.325e6/2
+IF_AOM_Spectrum = 133.325e6 / 2
 
 IF_Divert = 20e6
-#IF_AOM_N = 127.1e6
-#IF_AOM_S = 90e6
+# IF_AOM_N = 127.1e6
+# IF_AOM_S = 90e6
 IF_AOM_SigmaPlus = 114.58e6
 IF_AOM_SigmaMinus = 114.58e6
 IF_AOM_Pi = 75.34e6
@@ -113,13 +114,12 @@ Super_Sprint_Config = {
                 6: {'offset': +0.0},  # AOM 1-2' - Repump
                 7: {'offset': 0.0},  # MW_I
 
-
                 # changed for MW_SPEC
                 # 7: {'offset': +0.0},  # Pulse_EOM
                 8: {'offset': +0.0},  # AOM_N
 
                 9: {'offset': +0.0},  # AOM_S
-                10: {'offset': +0.0}, # AOM_Analyzer
+                10: {'offset': +0.0},  # AOM_Analyzer
             },
             'digital_outputs': {
                 1: {},  # Switch AOM + / AOM 2-2'
@@ -409,7 +409,7 @@ Super_Sprint_Config = {
             'length': 100,
             'operation': 'control',
             'waveforms': {
-                'single':  'zero_wf'
+                'single': 'zero_wf'
             },
             'digital_marker': 'ON'
         },
@@ -535,7 +535,7 @@ Super_Sprint_Config = {
             "samples": [(1, 20), (0, 0)]
         },
         "Trig_EOM_MZ": {
-            "samples": [(0, 250), (1, 250)] * int(MOT_pulse_len/500) + [(0, 0)]
+            "samples": [(0, 250), (1, 250)] * int(MOT_pulse_len / 500) + [(0, 0)]
             # "samples": [(0, 270), (1, 230)] * MZ_balancing_seq_rep + [(0, 0)]
         },
         "trig_wf0": {
@@ -543,6 +543,10 @@ Super_Sprint_Config = {
         }
     },
 }
+
+print('please switch SRS South and North dirrectional detectors shutters to manual and then press enter /n '
+      'This is important so the continouos laser beam wont be degraded by the shutters. ')
+input()
 
 qm_ss = QMm.open_qm(Super_Sprint_Config)
 QMm.clear_all_job_results()
@@ -552,7 +556,8 @@ with program() as dig:
     # QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH1_freq': '113MHz', 'CH1_amp': '16.95dbm'},
     #                     updateChannels=[1], debugging=False, continuous=False)  # updates values on QuadRF (uploads table) #
     QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
-                        updateChannels=[3], debugging=False, continuous=False)  # updates values on QuadRF (uploads table) #
+                        updateChannels=[3], debugging=False,
+                        continuous=False)  # updates values on QuadRF (uploads table) #
 
     counts1 = declare(int)
     counts2 = declare(int)
@@ -589,21 +594,23 @@ with program() as dig:
     rep = int(Measuring_time / m_window)
     # with infinite_loop_():
     #     play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
-        # play("Depump", "AOM_2-2'")
-        # play("MOT", "AOM_TOP_1")
+    # play("Depump", "AOM_2-2'")
+    # play("MOT", "AOM_TOP_1")
     with infinite_loop_():
-        with for_(n, 0, n < rep, n+1):
-
-            # play("Const_open_triggered", "PULSER_N")
+        with for_(n, 0, n < rep, n + 1):
+            play("Const_open_triggered", "PULSER_N")
             # play("Const_open", "PULSER_N")
-            # # play("Const_open", "PULSER_S")
-            # play("Const_open_triggered", "PULSER_S")
-            # play("Const_open", "PULSER_L")
+            # play("Const_open", "PULSER_S")
+            play("Const_open_triggered", "PULSER_S")
+
+            # playing early and late AOM's
+            play("Const_open", "PULSER_L")
             # play("Const_high_open", "PULSER_E")
+
             # play("Square_Pulse", "PULSER_LO")
             # play("Const_open"*amp(0.7), "PULSER_LO")
             play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
-            play("Spectrum_pulse", "AOM_Spectrum")
+            # play("Spectrum_pulse", "AOM_Spectrum")
             # play("CRUS_pulse", "Pulser_CRUS")
 
             # measure("OD_measure", "digital_detectors_S", None,
@@ -644,7 +651,6 @@ with program() as dig:
         counts_st9.buffer(rep).save("avg_counts_9")
         counts_st10.buffer(rep).save("avg_counts_10")
 
-
 job = qm_ss.execute(dig)
 avg_count1_handle = job.result_handles.get('avg_counts_1')
 avg_count2_handle = job.result_handles.get('avg_counts_2')
@@ -676,7 +682,6 @@ fig = plt.figure()
 font = font_manager.FontProperties(family='Comic Sans MS', weight='bold', style='normal', size=16)
 
 while avg_count1_handle.is_processing():
-
     avg_counts_res1 = avg_count1_handle.fetch_all()
     avg_counts_res2 = avg_count2_handle.fetch_all()
     avg_counts_res3 = avg_count3_handle.fetch_all()
@@ -688,19 +693,21 @@ while avg_count1_handle.is_processing():
     avg_counts_res9 = avg_count9_handle.fetch_all()
     avg_counts_res10 = avg_count10_handle.fetch_all()
 
-    print(str(sum(avg_counts_res1 + avg_counts_res2 + avg_counts_res3 + avg_counts_res4 + avg_counts_res8)) + ' , ' + str(sum(avg_counts_res6 + avg_counts_res7 + avg_counts_res5)))
+    print(
+        str(sum(avg_counts_res1 + avg_counts_res2 + avg_counts_res3 + avg_counts_res4 + avg_counts_res8)) + ' , ' + str(
+            sum(avg_counts_res6 + avg_counts_res7 + avg_counts_res5)))
 
     # plot:
     # north_vals.append(sum(avg_counts_res1 + avg_counts_res2 + avg_counts_res3 + avg_counts_res4))
     # south_vals.append(sum(avg_counts_res5 + avg_counts_res6 + avg_counts_res7 + avg_counts_res8))
-    #Ziv
+    # Ziv
     south_vals.append(sum(avg_counts_res6 + avg_counts_res7 + avg_counts_res5))
     north_vals.append(sum(avg_counts_res1 + avg_counts_res2 + avg_counts_res3 + avg_counts_res4 + avg_counts_res8))
     SPCMs_vals.append(sum(avg_counts_res9 + avg_counts_res10))
     ##
-    N_counts = "{:,}".format(north_vals[-1]*2)
-    S_counts = "{:,}".format(south_vals[-1]*2)
-    SPCMs_counts = "{:,}".format(SPCMs_vals[-1]*2)
+    N_counts = "{:,}".format(north_vals[-1] * 2)
+    S_counts = "{:,}".format(south_vals[-1] * 2)
+    SPCMs_counts = "{:,}".format(SPCMs_vals[-1] * 2)
 
     plt.clf()
     plt.plot(north_vals[-100:], label='North Counts: ' + N_counts + ' Hz')
@@ -711,6 +718,5 @@ while avg_count1_handle.is_processing():
     plt.show()
 
     plt.pause(0.1)
-
 
 print('finished')
