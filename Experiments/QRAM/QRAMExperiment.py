@@ -638,7 +638,7 @@ class QRAMExperiment(BaseExperiment):
             # self.logger.debug('Max number of seq')
         for t in pulse_loc:
             avg_num_of_photons_in_seq_pulses.append((sum(seq[t[0]:t[1]]) + seq[t[1]]) / (
-                        real_number_of_seq * 0.167))  # Sagnac configuration efficiency 16.7%
+                        real_number_of_seq * Config.Eff_from_taper))  # Sagnac configuration efficiency 16.7%
         return avg_num_of_photons_in_seq_pulses
 
     def get_max_value_in_seq_pulses(self, seq, pulse_loc):
