@@ -688,8 +688,9 @@ class QRAMExperiment(BaseExperiment):
 
         self.folded_tt_S_directional = (np.array(self.folded_tt_S) + np.array(self.folded_tt_FS))
         # self.folded_tt_N_directional = self.folded_tt_N
+        # TODO: ask dor -  switched folded_tt_N with folded_tt_N_directional
         self.folded_tt_N_directional[:self.end_of_det_pulse_in_seq] = \
-            np.array(self.folded_tt_N_directional[:self.end_of_det_pulse_in_seq]) \
+            np.array(self.folded_tt_N[:self.end_of_det_pulse_in_seq]) \
             + np.array(self.folded_tt_BP[:self.end_of_det_pulse_in_seq]) \
             + np.array(self.folded_tt_DP[:self.end_of_det_pulse_in_seq])
 
@@ -1021,7 +1022,8 @@ class QRAMExperiment(BaseExperiment):
                     x = -0.15
                     y = 1.9 - i * 0.4
                     pad = 1
-                    num_clicks = len(self.streams[f'Detector_{det}_Timetags']['results'])
+                    num_clicks = len(self.tt_measure[i])
+                    # num_clicks = len(self.streams[f'Detector_{det}_Timetags']['results'][0])
                     text = f'{self.detectors_names[i]}-{det}\n({num_clicks-1})'
                     det_color = 'red' if i in latched_detectors else 'green'
                     ax[2].text(x, y, text, ha="center", va="center", transform=ax[2].transAxes, fontsize=8,

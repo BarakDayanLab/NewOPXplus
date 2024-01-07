@@ -511,6 +511,7 @@ Gaussian_pulse_samples2 = (signal.gaussian(500, std=(150 / 2.355)) * 0.2).tolist
 # Factor 0.0-1.0
 AOM_0_Attenuation = 1 # 0.85 seems to be about right, for 0.8 the slopes are exactly the same
 AOM_Plus_Attenuation = 0.42
+AOM_Late_Attenuation_From_Const = 0.35/0.45 # attenuate the const_wf to 0.35 instead of 0.45, as usually sent to aom late
 # AOM_Plus_Attenuation = 0.38
 AOM_Minus_Attenuation = 1 # 0.85 seems to be about right, for 0.8 the slopes are exactly the same
 
