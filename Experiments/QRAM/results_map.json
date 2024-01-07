@@ -110,68 +110,6 @@
 			"type": "npz"
 		},
 
-
-		{
-			"# OUTPUT FILES - DETECTORS": "-----------------------------------"
-		},
-
-  		{
-			"data": "tt_measure_batch_1",
-			"name": "detector 1 timetags",
-			"file_name": "Det1_timetags",
-			"folder": "output\\AllDetectors",
-			"type": "npz"
-		},
-  		{
-			"data": "tt_measure_batch_2",
-			"name": "detector 2 timetags",
-			"file_name": "Det2_timetags",
-			"folder": "output\\AllDetectors",
-			"type": "npz"
-		},
-  		{
-			"data": "tt_measure_batch_3",
-			"name": "detector 3 timetags",
-			"file_name": "Det3_timetags",
-			"folder": "output\\AllDetectors",
-			"type": "npz"
-		},
-  		{
-			"data": "tt_measure_batch_4",
-			"name": "detector 4 timetags",
-			"file_name": "Det4_timetags",
-			"folder": "output\\AllDetectors",
-			"type": "npz"
-		},
-  		{
-			"data": "tt_measure_batch_5",
-			"name": "detector 5 timetags",
-			"file_name": "Det5_timetags",
-			"folder": "output\\AllDetectors",
-			"type": "npz"
-		},
-  		{
-			"data": "tt_measure_batch_6",
-			"name": "detector 6 timetags",
-			"file_name": "Det6_timetags",
-			"folder": "output\\AllDetectors",
-			"type": "npz"
-		},
-  		{
-			"data": "tt_measure_batch_7",
-			"name": "detector 7 timetags",
-			"file_name": "Det7_timetags",
-			"folder": "output\\AllDetectors",
-			"type": "npz"
-		},
-  		{
-			"data": "tt_measure_batch_8",
-			"name": "detector 8 timetags",
-			"file_name": "Det8_timetags",
-			"folder": "output\\AllDetectors",
-			"type": "npz"
-		},
-
 		{
 			"# OUTPUT FILES - TIMETAGS": "-----------------------------------"
 		},

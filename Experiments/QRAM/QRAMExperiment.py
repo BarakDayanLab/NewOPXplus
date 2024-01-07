@@ -1406,7 +1406,10 @@ class QRAMExperiment(BaseExperiment):
         self.num_of_detection_pulses = len(Config.det_pulse_amp_N)
 
         # Take the 2nd number in the last tuple (which is the time of the last pulse)
-        self.end_of_det_pulse_in_seq = self.pulses_location_in_seq[self.num_of_detection_pulses - 1][1]
+        # TODO: uncomment this for QRAM
+        # self.end_of_det_pulse_in_seq = self.pulses_location_in_seq[self.num_of_detection_pulses - 1][1]
+        # TODO: give dor box babeten - and then go back to the commented line
+        self.end_of_det_pulse_in_seq = self.pulses_location_in_seq[self.num_of_detection_pulses - 1][1]+6 # 6 only relevant for sprint - not QRAM!
 
         # Start experiment flag and set MOT according to flag
         self.updateValue("Experiment_Switch", True)
@@ -1452,7 +1455,7 @@ class QRAMExperiment(BaseExperiment):
                 window_size=self.experiment["sequence_length"],  # [ns]
                 buckets_number=self.experiment["number_of_sequences"],
                 start_time=int(0.6e6),
-                end_time=int(9.6e6),
+                end_time=int(self.experiment["measurement_window"] - 0.4e6),
                 filters=[{"name": "reflections_south", "filter": self.filter_S},
                          {"name": "transmissions_north", "filter": self.filter_N}])
 
@@ -1464,7 +1467,7 @@ class QRAMExperiment(BaseExperiment):
                 window_size=self.experiment["sequence_length"],  # [ns]
                 buckets_number=self.experiment["number_of_sequences"],
                 start_time=int(0.6e6),
-                end_time=int(9.6e6),
+                end_time=int(self.experiment["measurement_window"] - 0.4e6),
                 filters=[{"name": "reflections_north", "filter": self.filter_N},
                          {"name": "transmissions_south", "filter": self.filter_S}])
 
@@ -1718,6 +1721,8 @@ class QRAMExperiment(BaseExperiment):
             "tt_FS_measure_batch": self.batcher['tt_FS_measure_batch'],
             "tt_BP_measure_batch": self.batcher['tt_BP_measure_batch'],
             "tt_DP_measure_batch": self.batcher['tt_DP_measure_batch'],
+
+
 
             "MZ_BP_counts_balancing_batch": self.batcher['MZ_BP_counts_balancing_batch'],
             "MZ_BP_counts_balancing_check_batch": self.batcher['MZ_BP_counts_balancing_check_batch'],

@@ -472,9 +472,9 @@ QRAM_Exp_Square_samples_Early_delayed = np.roll(QRAM_Exp_Square_samples_Early, A
 
 
 # readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/1.5)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
-readout_pulse_sprint_len_N = 10*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
+readout_pulse_sprint_len_N = 8*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
 # readout_pulse_sprint_len_S = math.ceil(((opx_max_per_window/1.5)/(efficiency*1e6*num_of_photons_per_sequence_S))*len(Sprint_Exp_Gaussian_samples_S))*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
-readout_pulse_sprint_len_S = 10*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
+readout_pulse_sprint_len_S = 8*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
 
 SPRINT_Exp_TOP2_samples = [0.45]*int(max(readout_pulse_sprint_len_N, readout_pulse_sprint_len_S))
 QRAM_Exp_TOP2_samples = QRAM_Exp_samples(delta=240, pulse_len=24000)
@@ -832,6 +832,7 @@ config = {
             },
             'operations': {
                 'Const_open': "MOT_lock",
+                'Const_open_triggered': "MOT_lock_ON",
                 'MZ_balancing_pulses': "MZ_balance_pulses_Early",
                 'QRAM_experiment_pulses_Early': "Square_pulse_seq_MZ_Early",
             },
