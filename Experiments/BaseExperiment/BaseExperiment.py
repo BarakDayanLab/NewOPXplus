@@ -444,6 +444,7 @@ class BaseExperiment:
             self.MOT_switch(True)
             self.update_parameters()
             self.runs_status = TerminationReason.USER
+            self.keyPress = None
         elif self.keyPress == 'ALT_SPACE' and not self.pause_flag:
             self.logger.blue('SPACE pressed. Pausing measurement.')
             self.pause_flag = True
