@@ -5,6 +5,9 @@ import math
 import matplotlib.pyplot as plt
 from Utilities.Utils import Utils
 
+# route efficiency after tapered fiber - including 50% of overcoupling transmission loss
+Eff_from_taper = 0.5*np.sqrt(0.8)*0.9*0.85*0.75 # over coupling - ~0.5, taper eff - ~0.8, table eff(launcher to lancher) - ~0.9
+                                                # fiber route eff to detectors - ~0.85, detectors efficiency - ~0.75
 
 def QRAM_Exp_Gaussian_samples(sprint_pulse_len=110, det_pulse_len=30, det_pulses_amp=[0.4]*6, sprint_pulses_amp=[0.4]*4,
                               num_between_zeros=10, num_init_zeros=12, num_mid_zeros=12, num_fin_zeros=0):
@@ -469,9 +472,9 @@ QRAM_Exp_Square_samples_Early_delayed = np.roll(QRAM_Exp_Square_samples_Early, A
 
 
 # readout_pulse_sprint_len_N = math.ceil(((opx_max_per_window/1.5)/(efficiency*1e6*num_of_photons_per_sequence_N))*len(Sprint_Exp_Gaussian_samples_N))*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
-readout_pulse_sprint_len_N = 10*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
+readout_pulse_sprint_len_N = 8*1e6# [ns] length of the measurment window for North, the 4's are for division in 4
 # readout_pulse_sprint_len_S = math.ceil(((opx_max_per_window/1.5)/(efficiency*1e6*num_of_photons_per_sequence_S))*len(Sprint_Exp_Gaussian_samples_S))*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
-readout_pulse_sprint_len_S = 10*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
+readout_pulse_sprint_len_S = 8*1e6# [ns] length of the measurment window for South, the 4's are for division in 4
 
 SPRINT_Exp_TOP2_samples = [0.45]*int(max(readout_pulse_sprint_len_N, readout_pulse_sprint_len_S))
 QRAM_Exp_TOP2_samples = QRAM_Exp_samples(delta=240, pulse_len=24000)
@@ -508,6 +511,7 @@ Gaussian_pulse_samples2 = (signal.gaussian(500, std=(150 / 2.355)) * 0.2).tolist
 # Factor 0.0-1.0
 AOM_0_Attenuation = 1 # 0.85 seems to be about right, for 0.8 the slopes are exactly the same
 AOM_Plus_Attenuation = 0.42
+AOM_Late_Attenuation_From_Const = 0.35/0.45 # attenuate the const_wf to 0.35 instead of 0.45, as usually sent to aom late
 # AOM_Plus_Attenuation = 0.38
 AOM_Minus_Attenuation = 1 # 0.85 seems to be about right, for 0.8 the slopes are exactly the same
 
@@ -828,6 +832,7 @@ config = {
             },
             'operations': {
                 'Const_open': "MOT_lock",
+                'Const_open_triggered': "MOT_lock_ON",
                 'MZ_balancing_pulses': "MZ_balance_pulses_Early",
                 'QRAM_experiment_pulses_Early': "Square_pulse_seq_MZ_Early",
             },

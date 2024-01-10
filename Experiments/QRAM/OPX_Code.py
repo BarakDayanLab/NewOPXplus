@@ -29,6 +29,8 @@ def MOT(mot_repetitions):
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
         # play("Const_open", "PULSER_N")
         # play("OD_FS" * amp(0.5), "AOM_2-2/3'")
+        # play("Const_open" * amp(Config.AOM_Late_Attenuation_From_Const), "AOM_Late")
+
         play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
     with for_(m, 1, m <= (mot_repetitions - 1), m + 1):
         measure("Detection", "FLR_detection", None, integration.full("Detection_opt", FLR, "out1"))
@@ -314,6 +316,7 @@ def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
             frame_rotation_2pi(phase_correction_per_scan, "AOM_Early")
 
     return phase_correction_min, tot_counts_MZ_S
+
 
 def MZ_balancing_2(m_time, m_window, shutter_open_time, phase_rep_fast, phase_rep_slow, points_for_sum_fast,
                    points_for_sum_slow, counts_st_B, counts_st_D, phase_correction_st, phase_for_min_st,
@@ -710,7 +713,6 @@ def MZ_balancing_2(m_time, m_window, shutter_open_time, phase_rep_fast, phase_re
 #     # frame_rotation_2pi(0.25, "PULSER_S")
 #     return phase_correction_min
 
-
 def MZ_balancing_check(m_time, m_window, rep,
                        counts_st_B_balanced, counts_st_D_balanced):
 
@@ -730,7 +732,6 @@ def MZ_balancing_check(m_time, m_window, rep,
                 counting.digital(counts_D, m_window, element_outputs="OutDark2"))
         save(counts_B, counts_st_B_balanced)
         save(counts_D, counts_st_D_balanced)
-
 
 def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
              ON_counts_st1, ON_counts_st2, ON_counts_st3,
@@ -790,6 +791,7 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "PULSER_ANCILLA", "Dig_detectors")
     play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
     play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
+    play("Const_open_triggered" * amp(0), "AOM_Early", duration=shutter_open_time)
     # play("Const_open_triggered" * amp(0), "PULSER_ANCILLA", duration=shutter_open_time)
 
     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "PULSER_ANCILLA", "Dig_detectors")
