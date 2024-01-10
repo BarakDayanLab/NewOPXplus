@@ -30,6 +30,8 @@ def MOT(mot_repetitions):
         # play("Const_open", "PULSER_N")
         # play("OD_FS" * amp(0.5), "AOM_2-2/3'")
         # play("Const_open" * amp(Config.AOM_Late_Attenuation_From_Const), "AOM_Late")
+        # play("Const_open","PULSER_N")
+        # play("Const_open","PULSER_S")
 
         play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
     with for_(m, 1, m <= (mot_repetitions - 1), m + 1):

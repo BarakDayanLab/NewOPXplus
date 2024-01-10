@@ -258,7 +258,14 @@ class BaseExperiment:
         # qrfContr3 = QuadRFFrequencyScannerController(MOGdevice=qrfContr.device,
         #                                              channel=2,
         #                                              debugging=False)  # updates values on QuadRF (uploads table)
-        #self.QuadRFControllers.append(qrfContr3)  # updates values on QuadRF (uploads table)
+        # self.QuadRFControllers.append(qrfContr3)  # updates values on QuadRF (uploads table)
+        ##### For continues Depump!!! (please remove channel 2 from qrfContr) #####
+        # qrfContr3 = QuadRFMOTController(MOGdevice=qrfContr.device,
+        #                                 initialValues={'CH2_freq': '133.325MHz', 'CH2_amp': '31dbm'},
+        #                                 updateChannels=[2],
+        #                                 debugging=True,
+        #                                 continuous=True)  # updates values on QuadRF (uploads table)
+        # self.QuadRFControllers.append(qrfContr3)  # updates values on QuadRF (uploads table)
 
         self.Update_QuadRF_channels = set({})  # Only update these channels on QuadRF when UpdateParameters method is called [note: this is a python set]
 
@@ -444,16 +451,17 @@ class BaseExperiment:
             self.MOT_switch(True)
             self.update_parameters()
             self.runs_status = TerminationReason.USER
+            self.keyPress = None
         elif self.keyPress == 'ALT_SPACE' and not self.pause_flag:
-            self.logger.blue('SPACE pressed. Pausing measurement.')
+            self.logger.blue('ALT SPACE pressed. Pausing measurement.')
             self.pause_flag = True
             self.keyPress = None
         elif self.keyPress == 'ALT_SPACE' and self.pause_flag:
-            self.logger.blue('SPACE pressed. Continuing measurement.')
+            self.logger.blue('ALT SPACE pressed. Continuing measurement.')
             self.pause_flag = False
             self.keyPress = None
-        elif self.keyPress == 'A':
-            self.logger.blue('A pressed. Switching atoms/no-atoms.')
+        elif self.keyPress == 'ALT_A':
+            self.logger.blue('ALT A pressed. Switching atoms/no-atoms.')
             # Turn on the "switch" indication, but putting an "_" as a prefix
             # Note: user may have pressed A fast multiple times, so no need to add multiple "_" prefixes until the switch is handled
             if self.switch_atom_no_atoms[0] != '_':
@@ -527,13 +535,13 @@ class BaseExperiment:
     def _on_release(self, key):
         self.ignore_data = False
 
-        if str(key) == "'q'" or str(key) == "'Q'":
+        if str(key) == "'q'" or str(key) == "'Q'" :
             self.keyPress = 'Q'
 
-        if str(key) == "'A'":
-            self.keyPress = 'A'
+        if str(key) == "'A'" and self.alt_modifier == 'ALT':
+            self.keyPress = 'ALT_A'
 
-        if key == keyboard.Key.esc:
+        if key == keyboard.Key.esc :
             self.keyPress = 'ESC'
 
         # TODO: Generalize it to be in the form of "ALT-SPACE" or "CTRL-SPACE" or "SHIFT-ESC"

@@ -373,7 +373,7 @@ class QRAMExperiment(BaseExperiment):
         # tt_small_perturb = []
         for element in self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure:
             # TODO: Q: I assume this is a time-window to ignore some time on start/end, how did we decide on this time?  TODO: Q: what us the meaning of this specific time-window?
-            if (element > int(0.6e6)) and (element < int(9.6e6)):
+            if (element > int(0.6e6)) and (element < int(self.M_time - 0.4e6)):
                 tt_inseq = element % self.QRAM_sequence_len
                 if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
                     seq_num = (element - 1) // self.QRAM_sequence_len
@@ -387,7 +387,7 @@ class QRAMExperiment(BaseExperiment):
             #         tt_small_perturb+=[element]
 
         for element in self.tt_S_measure + self.tt_FS_measure:
-            if (element > int(0.6e6)) and (element < int(9.6e6)):
+            if (element > int(0.6e6)) and (element < int(self.M_time - 0.4e6)):
                 tt_inseq = element % self.QRAM_sequence_len
                 if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
                     seq_num = (element - 1) // self.QRAM_sequence_len
@@ -422,13 +422,14 @@ class QRAMExperiment(BaseExperiment):
 
         # self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences)
         # self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences // num_of_seq_per_count)
-        self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences // num_of_seq_per_count)
-        self.num_of_S_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences // num_of_seq_per_count)
+        self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences // num_of_seq_per_count + 1)
+        self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences // num_of_seq_per_count + 1)
+        self.num_of_S_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences // num_of_seq_per_count + 1)
 
         for element in self.tt_BP_measure:
             tt_inseq = element % self.QRAM_sequence_len
             if tt_inseq > self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
+                # print(element, (element - 1) // (self.QRAM_sequence_len * num_of_seq_per_count))
                 self.num_of_BP_counts_per_n_sequences[
                     (element - 1) // (self.QRAM_sequence_len * num_of_seq_per_count)] += \
                     np.ceil(Config.QRAM_Exp_Square_samples_Late[tt_inseq])
@@ -436,6 +437,7 @@ class QRAMExperiment(BaseExperiment):
         for element in self.tt_DP_measure:
             tt_inseq = element % self.QRAM_sequence_len
             if tt_inseq > self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
+                # print(element, (element - 1) // (self.QRAM_sequence_len * num_of_seq_per_count))
                 try:
                     self.num_of_DP_counts_per_n_sequences[
                         (element - 1) // (self.QRAM_sequence_len * num_of_seq_per_count)] += \
@@ -446,6 +448,7 @@ class QRAMExperiment(BaseExperiment):
         for element in self.tt_FS_measure + self.tt_S_measure:
             tt_inseq = element % self.QRAM_sequence_len
             if tt_inseq > self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
+                # print(element, (element - 1) // (self.QRAM_sequence_len * num_of_seq_per_count))
                 try:
                     # lll = (element - 1) // (self.QRAM_sequence_len * num_of_seq_per_count)
                     # if (element - 1) // (self.QRAM_sequence_len * num_of_seq_per_count) > 385:
@@ -527,6 +530,11 @@ class QRAMExperiment(BaseExperiment):
         for i in range(len(self.num_of_det_reflections_per_seq[:]) - len(cond) + 1):
             cond_check = (self.num_of_det_reflections_per_seq[i:(i + len(cond))] >= cond).astype(int)
             if sum(cond_check) >= minimum_number_of_seq_detected:
+                # TODO: ask dor (08.01.24) - what happens at [0,4,0]? and why including the middle at [2,0,2]?
+                # adding to current transit the indices from first element satisfing the condition to the last element checked.
+                # for example:
+                # if the condition is [1,1,1] and for i=7000 the reflections were [0(i=7000),1 (i=7001),1 (i=7002)]
+                # than current transit would add [7001,7002]
                 current_transit = np.unique(
                     current_transit + [*range(i + np.where(cond_check != 0)[0][0], (i + len(cond)))]).tolist()
             elif len(current_transit) > 1:
@@ -696,7 +704,7 @@ class QRAMExperiment(BaseExperiment):
 
         self.folded_tt_BP_timebins[self.end_of_det_pulse_in_seq:] = self.folded_tt_BP[self.end_of_det_pulse_in_seq:]
         self.folded_tt_DP_timebins[self.end_of_det_pulse_in_seq:] = self.folded_tt_DP[self.end_of_det_pulse_in_seq:]
-        if self.pulses_location_in_seq_A or (Config.sprint_pulse_amp_N[0] > 0):
+        if self.pulses_location_in_seq_A or ((Config.sprint_pulse_amp_N[0] > 0) & (len(Config.sprint_pulse_amp_N) > 1)):
             self.folded_tt_N_directional[self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]] = \
                 (np.array(
                     self.folded_tt_N_directional[self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]])
@@ -1593,7 +1601,7 @@ class QRAMExperiment(BaseExperiment):
             self.acquisition_flag = self.is_acquired()
             if self.acquisition_flag and not self.pause_flag:
 
-                if self.counter < self.N:
+                if self.counter < self.N+1:
                     self.counter += 1
 
                 self.logger.info('Sum of reflections: %d' % self.sum_for_threshold)
@@ -1659,7 +1667,7 @@ class QRAMExperiment(BaseExperiment):
             self.handle_user_atoms_on_off_switch()
 
             # Did we complete N successful iterations? (we check for N+1 because we started with 1)
-            if self.counter == N+1:
+            if self.counter == self.N+1:
                 break
 
             # We completed another repetition.
@@ -1722,6 +1730,9 @@ class QRAMExperiment(BaseExperiment):
             "tt_BP_measure_batch": self.batcher['tt_BP_measure_batch'],
             "tt_DP_measure_batch": self.batcher['tt_DP_measure_batch'],
 
+            "folded_tt_S"
+            
+
 
 
             "MZ_BP_counts_balancing_batch": self.batcher['MZ_BP_counts_balancing_batch'],
@@ -1749,6 +1760,10 @@ class QRAMExperiment(BaseExperiment):
             return True
 
         # Are we properly locked on resonance?
+        # TODO: (Dor) is it ok to do so?
+        if self.lock_err == None:
+            return False
+
         if self.lock_err > self.lock_err_threshold:
             return False
 
@@ -1986,42 +2001,44 @@ if __name__ == "__main__":
     matplotlib.use("Qt5Agg")
 
     run_parameters = {
-        'N': 370,  # 50,
+        'N': 10000,  # 50,
         'transit_condition': [2, 1, 2],
         'pre_comment': '"N-S-N-S-N-S-N-S experiment"',
-        'lock_err_threshold': 0.005,
+        'lock_err_threshold': 0.001,
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,
         'reflection_threshold_time': 9e6,
-        'FLR_threshold': 0.08,
+        'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 1.12,
         'photons_per_det_pulse_threshold': 12,
-        'Exp_flag': False,
+        'Exp_flag': True,
         'with_atoms': True
     }
+    # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
+    # The sequence_definitions params would replace parameters from run_parameters('N','with_atoms')
     sequence_definitions = {
         'total_cycles': 2,
         'delay_between_cycles': None,  # seconds
         'sequence': [
             {
                 'parameters': {
-                    'N': 500,
-                    'with_atoms': True
+                    'N': 50,
+                    'with_atoms': False
                 }
             },
             {
                 'parameters': {
-                    'N': 50,
-                    'with_atoms': False
+                    'N': 500,
+                    'with_atoms': True
                 }
-            }
+            },
         ]
     }
 
     experiment = QRAMExperiment(playback=False, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
-    sequence_definitions = None
+    # sequence_definitions = None
 
     if sequence_definitions is None:
         experiment.run(run_parameters)

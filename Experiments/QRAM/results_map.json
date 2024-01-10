@@ -22,7 +22,7 @@
 	"playback_data_0": "U:\\Lab_2023\\Experiment_results\\Spectrum\\20231213\\134648_Photon_TimeTags",
 	"playback_data_2": "C:\\temp\\playback_data\\QRAM\\131634_Photon_TimeTags-SPRINT",
 
-	"playback_data_LAB": "F:\\temp\\Weizmann\\Experiments\\20231213\\181814_Photon_TimeTags",
+	"playback_data_LAB": "C:\\temp\\refactor_debug\\Experiment_results\\QRAM\\20240107\\183329_Photon_TimeTags\\output",
 	"playback_data_HOME": "F:\\temp\\Weizmann\\Experiments\\20231213\\181814_Photon_TimeTags",
 	"playback_data_113": "C:\\temp\\playback_data\\QRAM\\20231225\\165550_Photon_TimeTags",
 
@@ -150,92 +150,6 @@
 			"type": "npz"
 		},
 
-		{
-			"# OUTPUT FILES - FOLDED TIMETAGS": "-----------------------------------"
-		},
-
-  		{
-			"data": "folded_tt_N_batch",
-			"name": "folded north timetags",
-			"file_name": "North_timetags_folded_to_seq",
-			"folder": "output\\folded",
-			"type": "npz"
-		},
-  		{
-			"data": "folded_tt_S_batch",
-			"name": "folded south timetags",
-			"file_name": "South_timetags_folded_to_seq",
-			"folder": "output\\folded",
-			"type": "npz"
-		},
-  		{
-			"data": "folded_tt_FS_batch",
-			"name": "folded fast switch",
-			"file_name": "FS_timetags_folded_to_seq",
-			"folder": "output\\folded",
-			"type": "npz"
-		},
-   		{
-			"data": "folded_tt_BP_batch",
-			"name": "folded bright timetags",
-			"file_name": "Bright_timetags_folded_to_seq",
-			"folder": "output\\folded",
-			"type": "npz"
-		},
-		{
-			"data": "folded_tt_DP_batch",
-			"name": "folded dark timetags",
-			"file_name": "Dark_timetags_folded_to_seq",
-			"folder": "output\\folded",
-			"type": "npz"
-		},
-
-		{
-			"# OUTPUT FILES - MACH-ZENDER": "-----------------------------------"
-		},
-
-		{
-			"data": "MZ_BP_counts_balancing_batch",
-			"name": "MZ BP counts balancing batch",
-			"file_name": "MZ_BrightPort_counts_balancing_batch",
-			"folder": "Output\\BalancingRes",
-			"type": "npz"
-		},
-		{
-			"data": "MZ_BP_counts_balancing_check_batch",
-			"name": "MZ BP counts balancing check batch",
-			"file_name": "MZ_BrightPort_counts_balancing_check_batch",
-			"folder": "Output\\BalancingRes",
-			"type": "npz"
-		},
-		{
-			"data": "MZ_DP_counts_balancing_batch",
-			"name": "MZ DP counts balancing batch",
-			"file_name": "MZ_DarkPort_counts_balancing_batch",
-			"folder": "Output\\BalancingRes",
-			"type": "npz"
-		},
-		{
-			"data": "MZ_DP_counts_balancing_check_batch",
-			"name": "MZ DP counts balancing check_batch",
-			"file_name": "MZ_DarkPort_counts_balancing_check_batch",
-			"folder": "Output\\BalancingRes",
-			"type": "npz"
-		},
-		{
-			"data": "Phase_Correction_vec_batch",
-			"name": "Phase Correction vec batch",
-			"file_name": "MZ_balancing_Phase_Correction_vec_batch",
-			"folder": "Output\\BalancingRes",
-			"type": "npz"
-		},
-		{
-			"data": "Phase_Correction_min_vec_batch",
-			"name": "Phase Correction min vec batch",
-			"file_name": "MZ_balancing_Phase_Correction_min_vec_batch",
-			"folder": "Output\\BalancingRes",
-			"type": "npz"
-		},
 
 		{
 			"# OUTPUT FILES - FLOURESENCE/LOCK-ERROR": "-----------------------------------"
