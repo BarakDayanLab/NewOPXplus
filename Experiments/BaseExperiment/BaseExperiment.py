@@ -29,11 +29,14 @@ from Experiments.Enums.ValuesTransformer import ValuesTransformer
 
 from Experiments.QuadRF.quadRFMOTController import QuadRFMOTController
 
+from analysis.resonance_fit import ResonanceFit
+
 from logging import StreamHandler, Formatter, INFO
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
 import pymsgbox
 from pynput import keyboard
+from threading import Thread
 
 
 class BaseExperiment:
@@ -187,7 +190,7 @@ class BaseExperiment:
         # (a) Initialize QuadRF (b) Set experiment related variables (c) Initialize OPX
         self.initialize_experiment()
 
-        pass
+        self.initialize_resonance_monitor()
 
     def __del__(self):
         print('**** BaseExperiment Destructor ****')
@@ -222,7 +225,12 @@ class BaseExperiment:
         # Initialize the OPX
         self.initialize_OPX()
 
-        pass
+    @staticmethod
+    def initialize_resonance_monitor():
+        channels_dict = {"transmission": 2, "rubidium": 3}
+        res_fit = ResonanceFit(channels_dict=channels_dict, k_i=3.9, h=0.6)
+        thread = Thread(target=res_fit.monitor_spectrum)
+        thread.start()
 
     # Initialize the QuadRF
     def initiliaze_QuadRF(self):
