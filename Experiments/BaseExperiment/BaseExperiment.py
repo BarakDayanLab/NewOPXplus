@@ -227,10 +227,11 @@ class BaseExperiment:
 
     @staticmethod
     def initialize_resonance_monitor():
-        channels_dict = {"transmission": 2, "rubidium": 3}
+        channels_dict = {"transmission": 1, "rubidium": 3}
         res_fit = ResonanceFit(channels_dict=channels_dict, k_i=3.9, h=0.6)
-        thread = Thread(target=res_fit.monitor_spectrum)
-        thread.start()
+        # res_fit.monitor_spectrum()
+        # thread = Thread(target=res_fit.monitor_spectrum)
+        # thread.start()
 
     # Initialize the QuadRF
     def initiliaze_QuadRF(self):
