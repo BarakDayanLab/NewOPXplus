@@ -139,7 +139,7 @@ class QuadRFMOTController(QuadRFController):
         Pulse_1_delta_amp_f = float(Utils.amplitudeMultiplierToDBm(values['Pulse_1_amp_f']))
         Pulse_1_delta_amp_Repump = float(Utils.amplitudeMultiplierToDBm(values['Pulse_1_Repump_amp']))
         self.Pulse_1 = QuadRFPhase(duration=values['Pulse_1_duration'] + values['M_off_time'] - values['Pulse_1_decay_duration'],
-                                   initial_values=((values['Pulse_1_CH1_Freq_f'], self.Amp_Ch1 + Pulse_1_delta_amp_f), (AOMOffFreq, self.zeroAmp),
+                                   initial_values=((values['Pulse_1_CH1_Freq_f'], self.Amp_Ch1 + Pulse_1_delta_amp_f), (values['PrePulse_CH2_freq'], self.Amp_Ch2),  # (AOMOffFreq, self.zeroAmp),
                                                    (values['Pulse_1_CH_2_3_Freq'], self.Amp_Ch3 + Pulse_1_delta_amp_f), (values['Pulse_1_CH4_Freq'], self.Amp_Ch4 + Pulse_1_delta_amp_Repump)))
 
         self.Pulse_1_decay = QuadRFPhase(duration=values['Pulse_1_decay_duration'],
