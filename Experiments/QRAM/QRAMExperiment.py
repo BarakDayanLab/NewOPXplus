@@ -238,6 +238,7 @@ class QRAMExperiment(BaseExperiment):
         # Normalize the data coming from the detectors
         for detector_index in range(len(self.Num_Of_dets)):  # for different detectors
             tt_res = self.streams[f'Detector_{detector_index + 1}_Timetags']['results']
+            tt_res=tt_res.astype(np.int32) # changing type from int64 to int32
             normalized_stream = self.bdstreams.normalize_stream(tt_res, detector_index, Config.detector_delays, self.M_window)
             self.tt_measure.append(normalized_stream)
 
@@ -257,12 +258,10 @@ class QRAMExperiment(BaseExperiment):
         self.tt_DP_measure = sorted(sum(self.tt_measure[2:4], []))
         # Take detector 8
         self.tt_N_measure = sorted(sum(self.tt_measure[7:], []))
-        # Detector 4
+        # Detector 5
         self.tt_S_measure = sorted(sum(self.tt_measure[4:5], []))
         # Unify detectors 6 & 7
         self.tt_FS_measure = sorted(sum(self.tt_measure[5:7], []))
-
-        # plt.plot(self.tt_S_measure)
 
         # Phase Correction is a result of ZIP action in opx_control, thus we have "value_0" and "value_1" for the tupples
         self.Phase_Correction_vec = self.streams['Phase_Correction_array']['results']['value_0']
@@ -1371,7 +1370,7 @@ class QRAMExperiment(BaseExperiment):
         self.FLR_threshold = FLR_threshold
         self.exp_flag = exp_flag
 
-        self.warm_up_cycles = 3  # Should also come as params, with some default. E.g. self.warm_up_cycles = 10 if 'warm_up_cycles' not in params else params['warm_up_cycles']
+        self.warm_up_cycles = 15  # Should also come as params, with some default. E.g. self.warm_up_cycles = 10 if 'warm_up_cycles' not in params else params['warm_up_cycles']
 
         # initialize parameters - set zeros vectors and empty lists
         self.init_params_for_experiment()
@@ -1832,7 +1831,7 @@ class QRAMExperiment(BaseExperiment):
             return False
 
         # We stay in warm-up while we're not locked
-        if self.lock_err > self.lock_err_threshold:
+        if self.exp_flag and self.lock_err > self.lock_err_threshold:
             return False
 
         # We stay in warm-up if we're not within threshold
@@ -2011,7 +2010,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 1.12,
         'photons_per_det_pulse_threshold': 12,
-        'Exp_flag': True,
+        'Exp_flag': False,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2023,7 +2022,7 @@ if __name__ == "__main__":
             {
                 'parameters': {
                     'N': 50,
-                    'with_atoms': False
+                    'with_atoms': True
                 }
             },
             {
@@ -2038,7 +2037,7 @@ if __name__ == "__main__":
     experiment = QRAMExperiment(playback=False, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
-    # sequence_definitions = None
+    sequence_definitions = None
 
     if sequence_definitions is None:
         experiment.run(run_parameters)
