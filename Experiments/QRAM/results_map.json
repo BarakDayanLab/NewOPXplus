@@ -109,6 +109,13 @@
 			"folder": "input\\sequences",
 			"type": "npz"
 		},
+		{
+			"data": "pulses_location",
+			"name": "pulses location",
+			"file_name": "Pulses_location_in_seq",
+			"folder": "input\\sequences",
+			"type": "npz"
+		},
 
 		{
 			"# OUTPUT FILES - TIMETAGS": "-----------------------------------"

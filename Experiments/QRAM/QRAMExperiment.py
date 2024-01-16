@@ -1400,16 +1400,16 @@ class QRAMExperiment(BaseExperiment):
         self.pulses_location_in_seq_A, self.filter_A = self.get_pulses_location_in_seq(filter_delay[2],
                                                                                        Config.QRAM_Exp_Gaussian_samples_Ancilla,
                                                                                        smearing=5)  # smearing=int(Config.num_between_zeros/2))
-        # Get experiment type:
+        # Get experiment type: (Added by Dor, Sorry for the mess)
         self.sorted_pulses = sorted([tup + ('N',) for tup in experiment.pulses_location_in_seq_N if
-                                (tup[1] - tup[0]) < Config.sprint_pulse_len] +
-                               [tup + ('n',) for tup in experiment.pulses_location_in_seq_N if
-                                (tup[1] - tup[0]) >= Config.sprint_pulse_len] +
-                               [tup + ('S',) for tup in experiment.pulses_location_in_seq_S if
-                                (tup[1] - tup[0]) < Config.sprint_pulse_len] +
-                               [tup + ('s',) for tup in experiment.pulses_location_in_seq_S if
-                                (tup[1] - tup[0]) >= Config.sprint_pulse_len],
-                               key=lambda tup: tup[1])
+                                     (tup[1] - tup[0]) < Config.sprint_pulse_len] +
+                                    [tup + ('n',) for tup in experiment.pulses_location_in_seq_N if
+                                     (tup[1] - tup[0]) >= Config.sprint_pulse_len] +
+                                    [tup + ('S',) for tup in experiment.pulses_location_in_seq_S if
+                                     (tup[1] - tup[0]) < Config.sprint_pulse_len] +
+                                    [tup + ('s',) for tup in experiment.pulses_location_in_seq_S if
+                                     (tup[1] - tup[0]) >= Config.sprint_pulse_len],
+                                    key=lambda tup: tup[1])
         self.experiment_type = '-'.join(tup[2] for tup in self.sorted_pulses)
         # Find the center indices of the pulses and concatenate them to one list - to be used to put text boxes in figures
         # TODO: this can be moved/calculated later when we're doing the figure work...
@@ -1731,6 +1731,7 @@ class QRAMExperiment(BaseExperiment):
             "north_sequence": Config.QRAM_Exp_Gaussian_samples_N,
             "south_sequence": Config.QRAM_Exp_Gaussian_samples_S,
             "fs_sequence": (1-np.array(Config.QRAM_Exp_Square_samples_FS)).tolist(),  #Config.QRAM_Exp_Square_samples_FS,
+            "pulses_location": self.sorted_pulses,
 
             "tt_measure_batch": self.batcher['tt_measure_batch'],
             "tt_N_measure_batch": self.batcher['tt_N_measure_batch'],
@@ -1741,8 +1742,6 @@ class QRAMExperiment(BaseExperiment):
 
             "folded_tt_S"
             
-
-
 
             "MZ_BP_counts_balancing_batch": self.batcher['MZ_BP_counts_balancing_batch'],
             "MZ_BP_counts_balancing_check_batch": self.batcher['MZ_BP_counts_balancing_check_batch'],
