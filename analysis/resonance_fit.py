@@ -46,10 +46,6 @@ class BaseResonanceFit:
         _, rubidium_lines = self.read_scope_data("rubidium")
         rubidium_peaks, _ = find_peaks(rubidium_lines, prominence=0.03, wlen=2300, distance=500)
 
-        plt.plot(rubidium_lines)
-        plt.scatter(rubidium_peaks, rubidium_lines[rubidium_peaks], color='red')
-        plt.show()
-
         if len(rubidium_peaks) != 6:
             self.logger.error("Could not find 6 peaks in the rubidium spectrum")
             time.sleep(self.wait_time)
@@ -128,7 +124,7 @@ class LiveResonanceFit(BaseResonanceFit):
         return self.transmission_spectrum(x_detuning, k_ex, self.k_i, self.h, self.current_x_0, self.y_0)
 
     def calculate_relevant_area(self):
-        self.current_relevant_area = (self.x_0 - 100 < self.x_axis) * (self.x_axis < self.x_0 + 100)
+        self.current_relevant_area = (self.x_0 - 150 < self.x_axis) * (self.x_axis < self.x_0 + 150)
         self.relevant_x_axis = self.x_axis[self.current_relevant_area]
 
     def initialize_default_parameters(self):

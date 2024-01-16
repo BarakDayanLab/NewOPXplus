@@ -19,5 +19,6 @@ Experiment_Values = {
     'PrePulse_duration': 1,  # [msec]
     'Pulse_1_duration': 0.2,  # [msec]
 
-    'OPX_Quad_Misalignment_Delay': 4000  # = 4us [ns]
+    # 'OPX_Quad_Misalignment_Delay': 4000  # = 4us [ns]
+    'OPX_Quad_Misalignment_Delay': 4000 - 140000  # = 4us [ns]
 }

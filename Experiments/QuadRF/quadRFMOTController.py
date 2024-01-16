@@ -130,6 +130,7 @@ class QuadRFMOTController(QuadRFController):
         PrePulse_delta_amp_Repump = float(Utils.amplitudeMultiplierToDBm(values['PrePulse_Repump_amp']))
         self.Free_Fall = QuadRFPhase(duration=values['PrePulse_duration'],
                                      initial_values=((values['PrePulse_CH1_freq'], self.Amp_Ch1),
+                                     # initial_values=((values['PGC_final_freq'], self.Amp_Ch1 + PGC_final_amp_delta),
                                                      (values['PrePulse_CH2_freq'], self.Amp_Ch2),
                                                      (AOMOffFreq, self.Amp_Ch3),
                                                      (values['Pulse_1_CH4_Freq'], self.Amp_Ch4 + PrePulse_delta_amp_Repump)))

@@ -190,7 +190,7 @@ class BaseExperiment:
         # (a) Initialize QuadRF (b) Set experiment related variables (c) Initialize OPX
         self.initialize_experiment()
 
-        self.initialize_resonance_monitor()
+        # self.initialize_resonance_monitor()
 
     def __del__(self):
         print('**** BaseExperiment Destructor ****')

@@ -19,9 +19,9 @@ _m = 1.443e-25  #[Kg] of Rb87
 
 class CoolingSequenceOptimizer(BaseExperiment):
 
-    def __init__(self):
+    def __init__(self,playback=False, save_raw_data=False):
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
-        super().__init__()
+        super().__init__(playback, save_raw_data)
         pass
 
     def initialize_experiment_variables(self):
@@ -34,7 +34,8 @@ class CoolingSequenceOptimizer(BaseExperiment):
         self.NAvg = 1  # Number of photos captured to create an average image
         self.NThrow = 3  # Number of throws we're "skipping" until capturing an image
         self.imgBounds = (580, 200, 1600, 1450)  # bounds to crop out of the taken pictures
-        self.mm_to_pxl = 8.5/(830-56)  # measured using ruler in focus 13/11/2022
+        # self.mm_to_pxl = 8.5/(830-56)  # measured using ruler in focus 13/11/2022
+        self.mm_to_pxl = 11/(1228-232)  # measured using ruler in focus 15/01/2024
         self.sigma_bounds = (15, 100)  # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
 
     def connect_disconnect_camera(self):
@@ -469,5 +470,5 @@ if __name__ == "__main__":
     #selection = BDMenu(experiment, r'./menu.json', None).display()
 
     # TODO: insert this into the cycles/runs schema
-    #experiment.measureTemperature()
+    # experiment.measureTemperature()
     #experiment.optimizePGC()

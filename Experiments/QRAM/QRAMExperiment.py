@@ -824,7 +824,7 @@ class QRAMExperiment(BaseExperiment):
         status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
         photons_str = '' if self.warm_up else f', #Photons/[us]: {self.sum_for_threshold}'
 
-        self.logger.info(f'{time_formatted}: {status_str}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}{photons_str}')
+        self.logger.info(f'{time_formatted}: {self.experiment_type} {status_str}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}{photons_str}')
 
     def experiment_mainloop_delay(self):
         if self.playback['active']:
@@ -1400,7 +1400,17 @@ class QRAMExperiment(BaseExperiment):
         self.pulses_location_in_seq_A, self.filter_A = self.get_pulses_location_in_seq(filter_delay[2],
                                                                                        Config.QRAM_Exp_Gaussian_samples_Ancilla,
                                                                                        smearing=5)  # smearing=int(Config.num_between_zeros/2))
-
+        # Get experiment type:
+        self.sorted_pulses = sorted([tup + ('N',) for tup in experiment.pulses_location_in_seq_N if
+                                (tup[1] - tup[0]) < Config.sprint_pulse_len] +
+                               [tup + ('n',) for tup in experiment.pulses_location_in_seq_N if
+                                (tup[1] - tup[0]) >= Config.sprint_pulse_len] +
+                               [tup + ('S',) for tup in experiment.pulses_location_in_seq_S if
+                                (tup[1] - tup[0]) < Config.sprint_pulse_len] +
+                               [tup + ('s',) for tup in experiment.pulses_location_in_seq_S if
+                                (tup[1] - tup[0]) >= Config.sprint_pulse_len],
+                               key=lambda tup: tup[1])
+        self.experiment_type = '-'.join(tup[2] for tup in self.sorted_pulses)
         # Find the center indices of the pulses and concatenate them to one list - to be used to put text boxes in figures
         # TODO: this can be moved/calculated later when we're doing the figure work...
         self.Num_of_photons_txt_box_x_loc = np.concatenate(
@@ -1941,14 +1951,21 @@ class QRAMExperiment(BaseExperiment):
     def generate_experiment_summary_line(self, pre_comment, aftComment, with_atoms, counter):
         time_str = time.strftime("%H%M%S")
         date_str = time.strftime("%Y%m%d")
-        cmnt = None
+        # cmnt = None
+        # if pre_comment is not None:
+        #     cmnt = pre_comment + '; '
+        # if aftComment is not None:
+        #     cmnt = pre_comment + ' After comment: ' + aftComment
+        # if pre_comment is None and aftComment is None:
+        #     cmnt = 'No comment.'
+        cmnt = self.experiment_type
         if pre_comment is not None:
-            cmnt = pre_comment + '; '
+            cmnt = cmnt + '; ' + pre_comment + '; '
         if aftComment is not None:
-            cmnt = pre_comment + ' After comment: ' + aftComment
-        if pre_comment is None and aftComment is None:
-            cmnt = 'No comment.'
-        experiment_success = 'ignore' if 'ignore' in cmnt else 'valid'
+            cmnt = cmnt + '; ' + pre_comment + ' After comment: ' + aftComment
+        # if pre_comment is None and aftComment is None:
+        #     cmnt = 'No comment.'
+        experiment_success = 'ignore' if 'ignore' in cmnt or not self.exp_flag else 'valid'
         full_line = f'{date_str},{time_str},{experiment_success},{with_atoms},{counter},{cmnt}'
         return full_line
 
@@ -2010,7 +2027,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 1.12,
         'photons_per_det_pulse_threshold': 12,
-        'Exp_flag': False,
+        'Exp_flag': True,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2022,7 +2039,7 @@ if __name__ == "__main__":
             {
                 'parameters': {
                     'N': 50,
-                    'with_atoms': True
+                    'with_atoms': False
                 }
             },
             {
@@ -2037,7 +2054,7 @@ if __name__ == "__main__":
     experiment = QRAMExperiment(playback=False, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
-    sequence_definitions = None
+    # sequence_definitions = None
 
     if sequence_definitions is None:
         experiment.run(run_parameters)

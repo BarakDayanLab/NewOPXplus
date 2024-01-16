@@ -1,9 +1,23 @@
 {
+	"env": "LAB",
 	"version": "0.1",
 	"strict": false,
+
+	"temp_root": "C:\\temp\\streams_raw_data",
+	"temp_root_LAB": "C:\\temp\\streams_raw_data",
+	"temp_root_113": "C:\\temp\\streams_raw_data",
+	"temp_root_HOME": "C:\\temp\\streams_raw_data",
+
 	"all_experiments_root": "C:\\temp\\refactor_debug\\Experiment_results",
 	"experiment_root": "C:\\temp\\refactor_debug\\Experiment_results\\Temperature",
 	"root": "C:\\temp\\refactor_debug\\Experiment_results\\Temperature\\{current_date}_{current_time}",
+
+	"locking_error_root": "U:\\Lab_2023\\Experiment_results\\QRAM\\Locking_PID_Error",
+	"locking_error_root_LAB": "U:\\Lab_2023\\Experiment_results\\QRAM\\Locking_PID_Error",
+	"locking_error_root_113": "U:\\Lab_2023\\Experiment_results\\QRAM\\Locking_PID_Error",
+	"locking_error_root_HOME": "F:\\temp\\Weizmann\\Experiments\\Locking_PID_Error",
+
+
 	"files": [
 
 		{
