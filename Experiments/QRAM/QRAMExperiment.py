@@ -77,7 +77,7 @@ class QRAMExperiment(BaseExperiment):
         # -----------------------------------------------------------
         # Handle Fountain Variables
         # -----------------------------------------------------------
-        
+
         self.fountain_duration = int(self.Exp_Values['Fountain_duration'] * 1e6 / 4)
         self.fountain_prep_duration = int(self.Exp_Values['Fountain_prep_duration'] * 1e6 / 4)
         if self.Exp_Values['Fountain_initial_amp_0'] == self.Exp_Values['Fountain_final_amp_0']:
@@ -409,6 +409,105 @@ class QRAMExperiment(BaseExperiment):
         <- 520 [ns] -> <- 520 [ns] -> <- 520 [ns] -> <- 520 [ns] -> <-510-><-10->     
     """
 
+    def divide_tt_to_reflection_trans_extended(self):
+        '''
+        A function designed to count the number of photons reflected or transmitted for each sequence, such that,
+        for the detection pulses the number of photons will be accumulated for each sequence and for the SPRINT
+        pulses there will be number of reflected or transmitted photons for each SPRINT pulse.
+        :param sprint_pulse_len: the length in [ns] of the SPRINT pulses in the sequence.
+        :param num_of_det_pulses: the number of detection pulses in the sequence.
+        :return:
+        '''
+
+        self.num_of_det_reflections_per_seq_S = np.zeros(self.number_of_QRAM_sequences)
+        self.num_of_det_reflections_per_seq_N = np.zeros(self.number_of_QRAM_sequences)
+        self.num_of_det_transmissions_per_seq_S = np.zeros(self.number_of_QRAM_sequences)
+        self.num_of_det_transmissions_per_seq_N = np.zeros(self.number_of_QRAM_sequences)
+
+        self.num_of_det_reflections_per_seq_S_,\
+        self.num_of_det_reflections_per_seq_N_, \
+        self.num_of_det_transmissions_per_seq_S_, \
+        self.num_of_det_transmissions_per_seq_N_ = [
+            [
+                [
+                    [] for _ in range(self.number_of_detection_pulses_per_seq)
+                ]
+                for _ in range(self.number_of_QRAM_sequences)
+            ] for _ in range(4)
+        ]
+
+        self.num_of_SPRINT_reflections_per_seq_S_, \
+        self.num_of_SPRINT_reflections_per_seq_N_, \
+        self.num_of_SPRINT_transmissions_per_seq_S_, \
+        self.num_of_SPRINT_transmissions_per_seq_N_ = [
+            [
+                [
+                    [] for _ in range(self.number_of_SPRINT_pulses_per_seq)
+                ]
+                for _ in range(self.number_of_QRAM_sequences)
+            ] for _ in range(4)
+        ]
+
+        # tt_small_perturb = []
+        self.N_tt = np.array(self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure)
+        tt_inseq_ = self.N_tt % self.QRAM_sequence_len
+        seq_num_ = self.N_tt // self.QRAM_sequence_len
+        for (element, tt_inseq, seq_num) in zip(self.N_tt, tt_inseq_, seq_num_):
+            # TODO: Q: I assume this is a time-window to ignore some time on start/end, how did we decide on this time?  TODO: Q: what us the meaning of this specific time-window?
+            if (element > int(0.6e6)) and (element < int(self.M_time - 0.4e6)):
+                for indx, tup in enumerate(self.sorted_pulses):
+                    if (tt_inseq >= tup[0]) and (tt_inseq <= tup[1]):
+                        if indx < self.number_of_detection_pulses_per_seq:
+                            if tup[2] == 'N':
+                                self.num_of_det_transmissions_per_seq_N_[seq_num][indx].append(element)
+                            if tup[2] == 'S':
+                                self.num_of_det_reflections_per_seq_S_[seq_num][indx].append(element)
+                        else:
+                            ind = indx - self.number_of_detection_pulses_per_seq
+                            if tup[2] == 'n':
+                                self.num_of_SPRINT_transmissions_per_seq_N_[seq_num][ind].append(element)
+                            if tup[2] == 's':
+                                self.num_of_SPRINT_reflections_per_seq_S_[seq_num][ind].append(element)
+
+                if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
+                    self.num_of_det_reflections_per_seq_S[seq_num] += self.filter_S[tt_inseq]
+                    self.num_of_det_transmissions_per_seq_N[seq_num] += self.filter_N[tt_inseq]
+
+        self.S_tt = np.array(self.tt_S_measure + self.tt_FS_measure)
+        tt_inseq_ = self.S_tt % self.QRAM_sequence_len
+        seq_num_ = self.S_tt // self.QRAM_sequence_len
+        for (element, tt_inseq, seq_num) in zip(self.S_tt, tt_inseq_, seq_num_):
+            if (element > int(0.6e6)) and (element < int(self.M_time - 0.4e6)):
+                for indx, tup in enumerate(self.sorted_pulses):
+                    if (tt_inseq >= tup[0]) and (tt_inseq <= tup[1]):
+                        if indx < self.number_of_detection_pulses_per_seq:
+                            if tup[2] == 'N':
+                                self.num_of_det_reflections_per_seq_N_[seq_num][indx].append(element)
+                            if tup[2] == 'S':
+                                self.num_of_det_transmissions_per_seq_S_[seq_num][indx].append(element)
+                        else:
+                            ind = indx - self.number_of_detection_pulses_per_seq
+                            if tup[2] == 'n':
+                                self.num_of_SPRINT_reflections_per_seq_N_[seq_num][ind].append(element)
+                            if tup[2] == 's':
+                                self.num_of_SPRINT_transmissions_per_seq_S_[seq_num][ind].append(element)
+
+                if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
+                    seq_num = (element - 1) // self.QRAM_sequence_len
+                    self.num_of_det_reflections_per_seq_N[seq_num] += self.filter_N[tt_inseq]
+                    self.num_of_det_transmissions_per_seq_S[seq_num] += self.filter_S[tt_inseq]
+
+    """
+        Dor: "Method was built so we can debug coherence"
+        In this method we count the clicks on the Dark-Port and Bright-Port after the detection pulses
+
+        Sequences:19231, Sequence-Len:520, End-of-detection-Pulse:510
+        +-------------+--------------+--------------+--------------+--------+---+
+        +      0      |      19      |      211     |      23      |    54  |   | ...  +
+        +-------------+--------------+--------------+--------------+--------+---+
+        <- 520 [ns] -> <- 520 [ns] -> <- 520 [ns] -> <- 520 [ns] -> <-510-><-10->     
+    """
+
     def divide_BP_and_DP_counts(self, num_of_seq_per_count=50):
         '''
         A function designed to count the number of photons reflected or transmitted for each sequence, such that,
@@ -566,6 +665,92 @@ class QRAMExperiment(BaseExperiment):
             #                                                 for elem in current_transit[:-1]])
             # self.transmission_SPRINT_data_per_transit.append([self.num_of_SPRINT_transmissions_per_seq[elem].tolist()
             #                                                   for elem in current_transit[:-1]])
+
+    def find_transit_events(self, cond=None, minimum_number_of_seq_detected=2):
+        '''
+        Find transits of atoms by searching events that satisfy the number of reflected photons per sequence required at
+        each cond place with minimum number of conditions needed to be satisfied, defined by the minimum_number_of_seq_detected.
+        For example:
+        given cond=[2,1,2] and minimum_number_of_seq_detected=2, if in 3 consecutive sequences we get either 2-1-0 or
+        0-2-1 or 2-0-2, the condition is satisfied and it is defined as a transit.
+        :param cond: The condition that need to be met for number of reflections per detection pulses in sequence.
+        :param minimum_number_of_seq_detected: The number of terms needed to be satisfied per cond vector.
+        :return:
+        '''
+
+        if cond is None:
+            cond = [2, 2, 2]
+
+        current_transit = []
+        self.all_transits_seq_indx = []  # Array of the sequence indexes of all recognized transits per cycle. The length of it will be the number of all transits at the current cycle.
+        self.reflection_SPRINT_data= []  # Array of vectors with data on the number of reflections per SPRINT pulse in sequence.
+        self.transmission_SPRINT_data = []  # Array of vectors with data on the number of transmissions per SPRINT pulse in sequence.
+
+        for i in range(self.number_of_QRAM_sequences - len(cond) + 1):
+            cond_check = (self.num_of_det_reflections_per_seq[i:(i + len(cond))] >= cond).astype(int)
+            if sum(cond_check) >= minimum_number_of_seq_detected:
+                # TODO: ask dor (08.01.24) - what happens at [0,4,0]? and why including the middle at [2,0,2]?
+                # adding to current transit the indices from first element satisfing the condition to the last element checked.
+                # for example:
+                # if the condition is [1,1,1] and for i=7000 the reflections were [0(i=7000),1 (i=7001),1 (i=7002)]
+                # than current transit would add [7001,7002]
+                current_transit = np.unique(
+                    current_transit + [*range(i + np.where(cond_check != 0)[0][0], (i + len(cond)))]).tolist()
+            elif len(current_transit) > 1:
+                current_transit = current_transit[
+                                  :np.where(self.num_of_det_reflections_per_seq[current_transit] >= min(cond))[0][
+                                       -1] + 1]
+                if self.all_transits_seq_indx:
+                    if bool(set(current_transit) & set(self.all_transits_seq_indx[-1])):
+                        current_transit = self.all_transits_seq_indx[-1] + current_transit[1:]
+                        self.all_transits_seq_indx = self.all_transits_seq_indx[:-1]
+                self.all_transits_seq_indx.append(current_transit)
+                current_transit = []
+        if len(current_transit) > 1:
+            current_transit = current_transit[
+                              :np.where(self.num_of_det_reflections_per_seq[current_transit] >= min(cond))[0][-1] + 1]
+            if self.all_transits_seq_indx:
+                if bool(set(current_transit) & set(self.all_transits_seq_indx[-1])):
+                    current_transit = self.all_transits_seq_indx[-1] + current_transit[1:]
+                    self.all_transits_seq_indx = self.all_transits_seq_indx[:-1]
+            self.all_transits_seq_indx.append(current_transit)
+
+    def analyze_SPRINT_data_points(self, SPRINT_pulse_number=1):
+        '''
+        Find the relevent data points for SPRINT pulse and analyze results.
+        :param SPRINT_pulse_number: The SPRINT pulse number for which we want to check the results
+        '''
+        self.reflection_SPRINT_data = []  # Array of vectors with data on the number of reflections per SPRINT pulse in sequence.
+        self.transmission_SPRINT_data = []  # Array of vectors with data on the number of transmissions per SPRINT pulse in sequence.
+        self.seq_with_data_points = []
+        for transit in all_transits_seq_indx:
+            for seq_indx in transit[:-1]:
+                # Checking potential for data point by looking for a single photon at the reflection of the last
+                # detection pulse:
+                potential_data = False
+                if self.sorted_pulses[self.number_of_detection_pulses_per_seq-1][2] == 'N' and \
+                   self.num_of_det_reflections_per_seq_N_[seq_indx][-1] == 1:
+                    potential_data = True
+                elif self.sorted_pulses[self.number_of_detection_pulses_per_seq-1][2] == 'S' and \
+                        self.num_of_det_reflections_per_seq_S_[seq_indx][-1] == 1:
+                    potential_data = True
+                # Getting SPRINT data if the SPRINT pulse has one photon in the reflection or transmission
+                if potential_data:
+                    if self.sorted_pulses[self.number_of_detection_pulses_per_seq-1+SPRINT_pulse_number][2] == 'n':
+                        transmissions = len(self.num_of_SPRINT_transmissions_per_seq_N_[seq_indx][SPRINT_pulse_number])
+                        reflections = len(self.num_of_SPRINT_reflections_per_seq_S_[seq_indx][SPRINT_pulse_numberSPRINT_pulse_number])
+                        if (transmissions + reflections) == 1:
+                            self.seq_with_data_points.append(seq_indx)
+                            self.reflection_SPRINT_data.append(reflections)
+                            self.transmission_SPRINT_data.append(transmissions)
+                    elif self.sorted_pulses[self.number_of_detection_pulses_per_seq-1+SPRINT_pulse_number][2] == 's':
+                        transmissions = len(self.num_of_SPRINT_transmissions_per_seq_S_[seq_indx][SPRINT_pulse_number])
+                        reflections = len(self.num_of_SPRINT_reflections_per_seq_N_[seq_indx][SPRINT_pulse_number])
+                        if (transmissions + reflections) == 1:
+                            self.seq_with_data_points.append(seq_indx)
+                            self.reflection_SPRINT_data.append(reflections)
+                            self.transmission_SPRINT_data.append(transmissions)
+
 
     def get_pulses_location_in_seq(self, delay, seq, smearing):
         '''
@@ -926,9 +1111,13 @@ class QRAMExperiment(BaseExperiment):
         flr_str = '%.2f' % self.fluorescence_average
         eff_str = '%.2f' % (self.counter / self.repetitions)
         lck_str = '%.3f' % self.lock_err
+        SPRINT_reflections = '%d' % sum(self.reflection_SPRINT_data)
+        SPRINT_transmissions = '%d' % sum(self.transmission_SPRINT_data)
         status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
         playback_str = 'PLAYBACK: ' if self.playback['active'] else ''
-        header_text = f'{playback_str} {status_str} - Reflections: {ref_str}, Eff: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str} {pause_str}'
+        header_text = f'{playback_str} {status_str} - Reflections: {ref_str}, Eff: {eff_str}, Flr: {flr_str}, ' \
+                      f'SPRINT Reflections/Transmissions: {SPRINT_reflections}/{SPRINT_transmissions}, ' \
+                      f'Lock Error: {lck_str}, transmissions {pause_str}'
 
         # Threshold Box:
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -1120,7 +1309,10 @@ class QRAMExperiment(BaseExperiment):
             "measurement_window": self.M_window,  # [ns]
             "number_of_sequences": math.ceil(self.M_window / self.QRAM_sequence_len)
         }
-        self.number_of_SPRINT_pulses_per_seq = len(Config.sprint_pulse_amp_S)
+        self.number_of_detection_pulses_per_seq = sum((np.array(Config.det_pulse_amp_S) != 0) |
+                                                      (np.array(Config.det_pulse_amp_N) != 0))
+        self.number_of_SPRINT_pulses_per_seq = sum((np.array(Config.sprint_pulse_amp_S) != 0) |
+                                                   (np.array(Config.sprint_pulse_amp_N) != 0))
 
         # TODO: Do we need these?
         self.tt_measure = []
@@ -1622,7 +1814,8 @@ class QRAMExperiment(BaseExperiment):
                 self.seq_transit_events_live = np.zeros(self.number_of_QRAM_sequences)
 
                 ### Find transits and build histogram:  ###
-                self.find_transits_and_sprint_events_changed(cond=self.transit_condition, minimum_number_of_seq_detected=2)
+                # self.find_transits_and_sprint_events_changed(cond=self.transit_condition, minimum_number_of_seq_detected=2)
+                self.find_transit_events(cond=self.transit_condition, minimum_number_of_seq_detected=2)
                 self.seq_transit_events_live[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
                 self.seq_transit_events_batched[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
 
@@ -1630,6 +1823,8 @@ class QRAMExperiment(BaseExperiment):
                 self.number_of_transits_total = len([vec for lst in self.batcher['all_transits_seq_indx_batch'] for vec in lst])
 
                 self.calculate_running_averages()
+
+                self.analyze_SPRINT_data_points(SPRINT_pulse_number=1)  # Enter the index of the SPRINT pulse for which the data should be analyzed
 
                 # get the average number of photons in detection pulse
                 self.avg_num_of_photons_per_pulse_S = self.get_avg_num_of_photons_in_seq_pulses(
@@ -1742,13 +1937,16 @@ class QRAMExperiment(BaseExperiment):
 
             "folded_tt_S"
             
-
             "MZ_BP_counts_balancing_batch": self.batcher['MZ_BP_counts_balancing_batch'],
             "MZ_BP_counts_balancing_check_batch": self.batcher['MZ_BP_counts_balancing_check_batch'],
             "MZ_DP_counts_balancing_batch": self.batcher['MZ_DP_counts_balancing_batch'],
             "MZ_DP_counts_balancing_check_batch": self.batcher['MZ_DP_counts_balancing_check_batch'],
             "Phase_Correction_vec_batch": self.batcher['Phase_Correction_vec_batch'],
             "Phase_Correction_min_vec_batch": self.batcher['Phase_Correction_min_vec_batch'],
+
+            "Index_of_Sequences_with_data_points": self.seq_with_data_points,
+            "Reflections_per_data_point": self.reflection_SPRINT_data,
+            "Transmissions_per_data_point": self.transmission_SPRINT_data,
 
             "FLR_measurement": self.batcher['flr_batch'],
             "lock_error": self.batcher['lock_err_batch'],
@@ -1920,12 +2118,15 @@ class QRAMExperiment(BaseExperiment):
         self.Infidelity_before = avg_DP_before / (avg_DP_before + avg_BP_before)
         self.Infidelity_after = avg_DP_after / (avg_DP_after + avg_BP_after)
 
-        self.find_transits_and_sprint_events_changed(cond=self.transit_condition, minimum_number_of_seq_detected=2)
+        # self.find_transits_and_sprint_events_changed(cond=self.transit_condition, minimum_number_of_seq_detected=2)
+        self.find_transit_events(cond=self.transit_condition, minimum_number_of_seq_detected=2)
 
         self.seq_transit_events_live[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
         self.seq_transit_events_batched[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
 
         self.number_of_transits_live = len(self.all_transits_seq_indx)
+
+        self.analyze_SPRINT_data_points(SPRINT_pulse_number=1)  # Enter the SPRINT pulse number in the sequence
 
         self.batcher.batch_all(self)
 

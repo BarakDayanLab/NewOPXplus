@@ -157,6 +157,31 @@
 			"type": "npz"
 		},
 
+		{
+			"# OUTPUT FILES - SPRINT ANALYSIS": "-----------------------------------"
+		},
+
+		{
+			"data": "Index_of_Sequences_with_data_points",
+			"name": "Array of indices of sequences with data points",
+			"file_name": "Index_of_Sequences_with_data_points",
+			"folder": "output\\SPRINT_results",
+			"type": "npz"
+		},
+		{
+			"data": "Reflections_per_data_point",
+			"name": "Array of number of clicks from reflection in sequences with data points",
+			"file_name": "Reflections_per_data_point",
+			"folder": "output\\SPRINT_results",
+			"type": "npz"
+		},
+		{
+			"data": "Transmissions_per_data_point",
+			"name": "Array of number of clicks from Transmission in sequences with data points",
+			"file_name": "Transmissions_per_data_point",
+			"folder": "output\\SPRINT_results",
+			"type": "npz"
+		},
 
 		{
 			"# OUTPUT FILES - FLOURESENCE/LOCK-ERROR": "-----------------------------------"
