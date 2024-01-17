@@ -2026,7 +2026,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 1.12,
         'photons_per_det_pulse_threshold': 12,
-        'Exp_flag': False,
+        'Exp_flag': True,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2055,7 +2055,7 @@ if __name__ == "__main__":
     # TODO: REMOVE, for debug only
     # sequence_definitions = None
 
-    if sequence_definitions is None:
-        experiment.run(run_parameters)
-    else:
-        experiment.run_sequence(sequence_definitions, run_parameters)
+    # if sequence_definitions is None:
+    #     experiment.run(run_parameters)
+    # else:
+    #     experiment.run_sequence(sequence_definitions, run_parameters)

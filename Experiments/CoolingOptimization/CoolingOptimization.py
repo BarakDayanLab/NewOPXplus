@@ -200,7 +200,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
 
         pass
 
-    def optimizePGC(self, PrePulseDurations=np.arange(1,7)):
+    def optimizePGC(self, PrePulseDurations=np.arange(1,7),PGC_final_freq_params = np.linspace(97e6, 90e6, 7),PGC_final_amp_params = np.linspace(0.3, 0.05, 7)):
         """
         This is used to run with different parameters. They are defined within the function
 
@@ -212,13 +212,13 @@ class CoolingSequenceOptimizer(BaseExperiment):
         # ---- Take background picture ----
         self.updateValue("PrePulse_duration", float(50),
                          update_parameters=True)  # Presumably, after 20ms there's no visible cloud.
-        self.camera.saveAverageImage(os.path.join(extraFilesPath, 'background.bmp'), NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+        self.camera.saveAverageImage(os.path.join(extraFilesPath, 'background.bmp'), NAvg=self.NAvg, NThrow=self.NThrow,NThrow_end=self.NThrow_end, RGB=False)
 
         # ---- Define parameters space ------
         xs_key = "PGC_final_freq"
-        xs = np.linspace(97e6, 90e6, 7)  # e.g., PGCFinalFreq
+        xs = PGC_final_freq_params  # e.g., PGCFinalFreq
         ys_key = "PGC_final_amp"
-        ys = np.linspace(0.3, 0.05, 7)  # e.g., PGCFinalAmp
+        ys = PGC_final_amp_params  # e.g., PGCFinalAmp
 
         # --- Begin measurement -----
         for ppd in PrePulseDurations:
