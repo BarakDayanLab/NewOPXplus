@@ -113,6 +113,10 @@ class LiveResonanceFit(BaseResonanceFit):
 
         self.fig, self.ax = plt.subplots()
 
+        #Assaf ruined your code
+        self.k_ex_error_path = r'C:\temp\refactor_debug\Experiment_results\QRAM\k_ex\k_ex'
+        self.k_ex_last_save_time = time.time()
+
     def start(self):
         self.fig.show()
         self.monitor_spectrum()
@@ -124,7 +128,7 @@ class LiveResonanceFit(BaseResonanceFit):
         return self.transmission_spectrum(x_detuning, k_ex, self.k_i, self.h, self.current_x_0, self.y_0)
 
     def calculate_relevant_area(self):
-        self.current_relevant_area = (self.x_0 - 150 < self.x_axis) * (self.x_axis < self.x_0 + 150)
+        self.current_relevant_area = (self.x_0 - 200 < self.x_axis) * (self.x_axis < self.x_0 + 200)
         self.relevant_x_axis = self.x_axis[self.current_relevant_area]
 
     def initialize_default_parameters(self):
@@ -194,6 +198,19 @@ class LiveResonanceFit(BaseResonanceFit):
                 self.initialize_default_parameters()
                 num_x_0_changed = 0
 
+            now = round(time.time())
+            time_passed = now - self.k_ex_last_save_time
+            # print('%.3f' %time_passed)
+            if time_passed > 10:  # 2 seconds (or more) passed since last write?
+                self.k_ex_last_save_time = now
+                # try:
+                # Save the current error in a file - for the Control code to take
+                np.save(self.k_ex_error_path, self.current_k_ex)
+                # # Save the current error in a dated file
+                # file_name = self.prepare_file_name('Locking_PID_Error', 'locking_err_log', 'txt', True)
+                # with open(file_name, 'a') as f:
+                #     f.write("%s: %s\n" % (time.strftime("%H:%M:%S"), str(errorSignal)))
+
             time.sleep(self.wait_time)
 
     def plot_transmission_fit(self, transmission_spectrum):
@@ -203,6 +220,7 @@ class LiveResonanceFit(BaseResonanceFit):
         self.ax.plot(self.relevant_x_axis, self.transmission_spectrum(self.relevant_x_axis, self.current_k_ex,
                                                                       self.k_i, self.h, self.current_x_0, self.y_0))
         plt.pause(0.05)
+
 
 
 if __name__ == '__main__':

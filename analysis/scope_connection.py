@@ -33,38 +33,41 @@ class Scope(Instrument):
         self.num_data_points = 0
 
     def get_data(self, channel: int):
-        self.write(f'DATA:SOURCE CH{channel}')
-        source = self.ask('DATA:SOURCE?')
+        try:
+            self.write(f'DATA:SOURCE CH{channel}')
+            source = self.ask('DATA:SOURCE?')
 
-        # First we get back a few acquisition parameters
-        acq_params = self.ask('WFMOutpre?').split(';')
-        # make sure we are working with seconds and volts scale;
-        # if this line raises an error, scope must be returning other units
-        if acq_params[8] != '"s"' or acq_params[-5] != '"V"':
-            logging.error('Error reading from scope. make sure all the required channels are on.')
+            # First we get back a few acquisition parameters
+            acq_params = self.ask('WFMOutpre?').split(';')
+            # make sure we are working with seconds and volts scale;
+            # if this line raises an error, scope must be returning other units
+            if acq_params[8] != '"s"' or acq_params[-5] != '"V"':
+                logging.error('Error reading from scope. make sure all the required channels are on.')
 
-        # number of points in data; Time scale multiplier
-        self.num_data_points, time_multiplier = int(acq_params[6]), float(acq_params[9])
+            # number of points in data; Time scale multiplier
+            self.num_data_points, time_multiplier = int(acq_params[6]), float(acq_params[9])
 
-        # Digital (arbitrary) scale to volts. multiplier, arbitrary offset, offset in volts
-        y_multiplier, y_digital_off, y_offset = float(acq_params[-4]), float(acq_params[-3]), float(acq_params[-2])
+            # Digital (arbitrary) scale to volts. multiplier, arbitrary offset, offset in volts
+            y_multiplier, y_digital_off, y_offset = float(acq_params[-4]), float(acq_params[-3]), float(acq_params[-2])
 
-        # make sure we bring back entire data
-        self.write(f'DATA:STOP {self.num_data_points * 2}')
+            # make sure we bring back entire data
+            self.write(f'DATA:STOP {self.num_data_points * 2}')
 
-        # acquire data
-        data_string = self.ask('CURVE?')
-        # create timescale
-        time_data = np.linspace(0, self.num_data_points * time_multiplier, self.num_data_points)
-        # data string to numpy array
-        data = np.fromstring(data_string, dtype=int, sep=',')
-        # convert to volts
-        # TODO: check about the offset
-        waveform = (data - y_digital_off) * y_multiplier
-        if self.ask('*ESR?') != '0':
-            logging.error(f'Error reading from scope. Acquisition from {source} failed')
+            # acquire data
+            data_string = self.ask('CURVE?')
+            # create timescale
+            time_data = np.linspace(0, self.num_data_points * time_multiplier, self.num_data_points)
+            # data string to numpy array
+            data = np.fromstring(data_string, dtype=int, sep=',')
+            # convert to volts
+            # TODO: check about the offset
+            waveform = (data - y_digital_off) * y_multiplier
+            if self.ask('*ESR?') != '0':
+                logging.error(f'Error reading from scope. Acquisition from {source} failed')
 
-        return time_data, waveform
+            return time_data, waveform
+        except:
+            return self.get_data(channel)
 
 
 class FakeScope:
