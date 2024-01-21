@@ -2256,7 +2256,7 @@ if __name__ == "__main__":
     # TODO: REMOVE, for debug only
     # sequence_definitions = None
 
-    if sequence_definitions is None:
-        experiment.run(run_parameters)
-    else:
-        experiment.run_sequence(sequence_definitions, run_parameters)
+    # if sequence_definitions is None:
+    #     experiment.run(run_parameters)
+    # else:
+    #     experiment.run_sequence(sequence_definitions, run_parameters)

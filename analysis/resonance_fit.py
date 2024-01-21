@@ -67,6 +67,10 @@ class BaseResonanceFit:
         k_with_detuning = k_total + 1j * (x_detuning - x_0)
         return np.abs(2 * k_ex * h / (k_with_detuning ** 2 + h ** 2)) ** 2 + y_0
 
+    @staticmethod
+    def lorentzian(x, amp, fwhm, x_0, y_0):
+        return (0.5*fwhm*amp) / (np.pi * ((x - x_0)**2 + (0.5*fwhm) ** 2)) + y_0
+
 
 class ResonanceFit(BaseResonanceFit):
     def __init__(self, channels_dict: dict, scope_ip='132.77.54.241', rolling_avg=50, wait_time=0.5):
@@ -96,8 +100,9 @@ class ResonanceFit(BaseResonanceFit):
 
 
 class LiveResonanceFit(BaseResonanceFit):
-    def __init__(self, channels_dict: dict, k_i: float, h: float, scope_ip='132.77.54.241'):
+    def __init__(self, channels_dict: dict, k_i: float, h: float, scope_ip='132.77.54.241', save_data=False):
         super().__init__(channels_dict, scope_ip)
+        self.save_data = save_data
         self.k_i = k_i
         self.h = h
 
@@ -113,6 +118,10 @@ class LiveResonanceFit(BaseResonanceFit):
 
         self.fig, self.ax = plt.subplots()
 
+        #Assaf ruined your code
+        self.k_ex_error_path = r'C:\temp\refactor_debug\Experiment_results\QRAM\k_ex\k_ex'
+        self.k_ex_last_save_time = time.time()
+
     def start(self):
         self.fig.show()
         self.monitor_spectrum()
@@ -124,7 +133,7 @@ class LiveResonanceFit(BaseResonanceFit):
         return self.transmission_spectrum(x_detuning, k_ex, self.k_i, self.h, self.current_x_0, self.y_0)
 
     def calculate_relevant_area(self):
-        self.current_relevant_area = (self.x_0 - 150 < self.x_axis) * (self.x_axis < self.x_0 + 150)
+        self.current_relevant_area = (self.x_0 - 200 < self.x_axis) * (self.x_axis < self.x_0 + 200)
         self.relevant_x_axis = self.x_axis[self.current_relevant_area]
 
     def initialize_default_parameters(self):
@@ -166,6 +175,24 @@ class LiveResonanceFit(BaseResonanceFit):
             return 1
         return 0
 
+    def save_k_ex(self):
+        if not self.save_data:
+            return
+
+        now = round(time.time())
+        time_since_last_save = now - self.k_ex_last_save_time
+        if time_since_last_save > 10:
+            self.k_ex_last_save_time = now
+            np.save(self.k_ex_error_path, self.current_k_ex)
+
+    def plot_transmission_fit(self, transmission_spectrum):
+        self.ax.clear()
+        self.ax.set_title(f"k_ex: {self.current_k_ex:.2f}")
+        self.ax.plot(self.relevant_x_axis, transmission_spectrum)
+        self.ax.plot(self.relevant_x_axis, self.transmission_spectrum(self.relevant_x_axis, self.current_k_ex,
+                                                                      self.k_i, self.h, self.current_x_0, self.y_0))
+        plt.pause(0.05)
+
     def monitor_spectrum(self):
         self.initialize_default_parameters()
         logging.warning(f"Initialized k_ex: {self.k_ex}")
@@ -194,21 +221,88 @@ class LiveResonanceFit(BaseResonanceFit):
                 self.initialize_default_parameters()
                 num_x_0_changed = 0
 
+            self.save_k_ex()
             time.sleep(self.wait_time)
+
+
+class LiveResonanceFitFwhm(BaseResonanceFit):
+    def __init__(self, channels_dict: dict, scope_ip='132.77.54.241', save_data=False):
+        super().__init__(channels_dict, scope_ip)
+        self.save_data = save_data
+
+        self.amp = 0
+        self.fwhm = 0
+        self.x_0 = 0
+        self.y_0 = 0
+        self.bounds = [(-np.inf, 0, 0), (np.inf, np.inf, 1)]
+
+        self.current_relevant_area = None
+        self.relevant_x_axis = None
+
+        self.fig, self.ax = plt.subplots()
+
+        # Assaf ruined your code
+        self.fwhm_error_path = r'C:\temp\refactor_debug\Experiment_results\QRAM\k_ex\k_ex'
+        self.fwhm_last_save_time = time.time()
+
+    def start(self):
+        self.fig.show()
+        self.monitor_spectrum()
+
+    def transmission_spectrum_without_x_0(self, x_detuning, amp, fwhm, y_0):
+        return self.lorentzian(x_detuning, amp, fwhm, self.x_0, y_0)
+
+    def calculate_relevant_area(self):
+        self.current_relevant_area = (self.x_0 - 200 < self.x_axis) * (self.x_axis < self.x_0 + 200)
+        self.relevant_x_axis = self.x_axis[self.current_relevant_area]
+
+    def fit_transmission_spectrum(self):
+        _, transmission_spectrum = self.read_scope_data("transmission")
+        self.x_0 = self.x_axis[transmission_spectrum.argmin()]
+        self.calculate_relevant_area()
+        transmission_spectrum = transmission_spectrum[self.current_relevant_area]
+
+        # noinspection PyTupleAssignmentBalance
+        optimal_parameters, _ = curve_fit(self.transmission_spectrum_without_x_0,
+                                          self.relevant_x_axis,
+                                          transmission_spectrum,
+                                          p0=[1, 30, 1],
+                                          bounds=self.bounds)
+
+        self.amp, self.fwhm, self.y_0 = optimal_parameters
+        return transmission_spectrum
+
+    def save_fwhm(self):
+        if not self.save_data:
+            return
+
+        now = round(time.time())
+        time_since_last_save = now - self.fwhm_last_save_time
+        if time_since_last_save > 10:
+            self.fwhm_last_save_time = now
+            np.save(self.fwhm_error_path, self.fwhm)
 
     def plot_transmission_fit(self, transmission_spectrum):
         self.ax.clear()
-        self.ax.set_title(f"k_ex: {self.current_k_ex:.2f}")
+        self.ax.set_title(f"fwhm: {self.fwhm:.2f}")
         self.ax.plot(self.relevant_x_axis, transmission_spectrum)
-        self.ax.plot(self.relevant_x_axis, self.transmission_spectrum(self.relevant_x_axis, self.current_k_ex,
-                                                                      self.k_i, self.h, self.current_x_0, self.y_0))
+        self.ax.plot(self.relevant_x_axis, self.lorentzian(self.relevant_x_axis, self.amp, self.fwhm, self.x_0, self.y_0))
         plt.pause(0.05)
+
+    def monitor_spectrum(self):
+        self.calibrate_x_axis()
+        while True:
+            transmission_spectrum = self.fit_transmission_spectrum()
+            self.plot_transmission_fit(transmission_spectrum)
+            self.save_fwhm()
+            time.sleep(self.wait_time)
 
 
 if __name__ == '__main__':
     channels = {"transmission": 1, "rubidium": 3}
-    res_fit = LiveResonanceFit(channels_dict=channels, k_i=3.9, h=0.6)
+    res_fit = LiveResonanceFitFwhm(channels_dict=channels)
     res_fit.start()
+
     # _, transmission_spectrum = res_fit.read_scope_data("transmission")
     #
     # transmission = np.zeros((100, transmission_spectrum.shape[0]))

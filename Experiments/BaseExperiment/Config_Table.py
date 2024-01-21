@@ -32,12 +32,12 @@ Initial_Values = {
     'Post_MOT_delay': 1,  # [msec] All lights are off (except depump) between MOT and PGC prep stages
 
     # PGC parameters:
-    'PGC_final_freq': 91e6, #98e6 - until 13.11,
+    'PGC_final_freq': 93e6, #91e6 - until 15.01.23,
     'PGC_initial_freq': -1,  # By default, taken from previous phase (see @Operation_Modes['DefaulValues'])
-    'PGC_duration': 2.5,# 4 until 30.10.22
-    # 'PGC_prep_duration': 4,        # [msec]
-    'PGC_prep_duration': 2.5,  # 4 until 30.10.22        # [msec]
-    'PGC_final_amp': 0.05, # 0.244 - till 13.11,         # Relative AOM amplitude between 0 to 1 - (0.12 yields 3.5 mW)
+    'PGC_duration': 2,# 4 until 15.01.22
+    # 'PGC_prep_duration': 2.5,        # [msec]
+    'PGC_prep_duration': 2,  # 2.5 until 15.01.22        # [msec]
+    'PGC_final_amp': 0.07, #0.05 - till 15.01.23,         # Relative AOM amplitude between 0 to 1 - (0.12 yields 3.5 mW)
     'PGC_final_amp_0': 1,         # Relative AOM amplitude between 0 to 1 - (0.12 yields 3.5 mW)
     'PGC_final_amp_minus': 1,         # Relative AOM amplitude between 0 to 1 - (0.12 yields 3.5 mW)
     'PGC_final_amp_plus': 1,         # Relative AOM amplitude between 0 to 1 - (0.26 yields 3.6 mW)

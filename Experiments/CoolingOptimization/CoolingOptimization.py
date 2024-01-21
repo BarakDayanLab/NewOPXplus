@@ -32,7 +32,8 @@ class CoolingSequenceOptimizer(BaseExperiment):
         # self.SPRINT_Exp_switch(False) # To enable trigger to camera in OPX_control_with_QuadRF_Sprint_Exp
         self.camera = None
         self.NAvg = 1  # Number of photos captured to create an average image
-        self.NThrow = 3  # Number of throws we're "skipping" until capturing an image
+        self.NThrow = 3  # Number of image throwed to garbage we're "skipping" at the begging of each capturing time
+        self.NThrow_end = 1 # Number of image throwed to garbage we're "skipping" at the end of each capturing time
         self.imgBounds = (580, 200, 1600, 1450)  # bounds to crop out of the taken pictures
         # self.mm_to_pxl = 8.5/(830-56)  # measured using ruler in focus 13/11/2022
         self.mm_to_pxl = 11/(1228-232)  # measured using ruler in focus 15/01/2024
@@ -180,7 +181,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
                 # Capture and average images
                 image_name = 'PrePulse_duration={:04.1f}.bmp'.format(ppd)
                 image_full_path = os.path.join(path, image_name)
-                self.camera.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+                self.camera.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, NThrow_end=self.NThrow_end, RGB=False)
         except Exception as err:
             self.warn(f'Failed to get images - {err}')
 
@@ -199,7 +200,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
 
         pass
 
-    def optimizePGC(self, PrePulseDurations=np.arange(1,7)):
+    def optimizePGC(self, PrePulseDurations=np.arange(1,7),PGC_final_freq_params = np.linspace(97e6, 90e6, 7),PGC_final_amp_params = np.linspace(0.3, 0.05, 7)):
         """
         This is used to run with different parameters. They are defined within the function
 
@@ -211,13 +212,13 @@ class CoolingSequenceOptimizer(BaseExperiment):
         # ---- Take background picture ----
         self.updateValue("PrePulse_duration", float(50),
                          update_parameters=True)  # Presumably, after 20ms there's no visible cloud.
-        self.camera.saveAverageImage(os.path.join(extraFilesPath, 'background.bmp'), NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+        self.camera.saveAverageImage(os.path.join(extraFilesPath, 'background.bmp'), NAvg=self.NAvg, NThrow=self.NThrow,NThrow_end=self.NThrow_end, RGB=False)
 
         # ---- Define parameters space ------
         xs_key = "PGC_final_freq"
-        xs = np.linspace(97e6, 90e6, 7)  # e.g., PGCFinalFreq
+        xs = PGC_final_freq_params  # e.g., PGCFinalFreq
         ys_key = "PGC_final_amp"
-        ys = np.linspace(0.3, 0.05, 7)  # e.g., PGCFinalAmp
+        ys = PGC_final_amp_params  # e.g., PGCFinalAmp
 
         # --- Begin measurement -----
         for ppd in PrePulseDurations:

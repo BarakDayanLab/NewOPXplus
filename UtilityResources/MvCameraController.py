@@ -56,13 +56,16 @@ class MvCameraController:
         else:
             return np.array(self.captureGrayscaleImage())
 
-    def saveAverageImage(self, path, NAvg=3, NThrow=2, RGB=False):
+    def saveAverageImage(self, path, NAvg=3, NThrow=2, NThrow_end=1, RGB=False):
         for i in range(NThrow):
             self.captureGrayscaleImage()  # Throw images till MOT is stable
         photos = []
         for i in range(NAvg):
             photos.append(np.array(self.captureImageAsArray(RGB=RGB)))
         avgPhoto = np.average(np.array(photos), axis=0)
+        for i in range(NThrow_end):
+            self.captureGrayscaleImage()  # Throw images till MOT is stable
+        photos = []
         img = Image.fromarray(avgPhoto)
 
         img.convert("L").save(path)
