@@ -926,9 +926,10 @@ class QRAMExperiment(BaseExperiment):
         flr_str = '%.2f' % self.fluorescence_average
         eff_str = '%.2f' % (self.counter / self.repetitions)
         lck_str = '%.3f' % self.lock_err
+        k_ex_str = '%.2f' % self.k_ex
         status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
         playback_str = 'PLAYBACK: ' if self.playback['active'] else ''
-        header_text = f'{playback_str} {status_str} - Reflections: {ref_str}, Eff: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str} {pause_str}'
+        header_text = f'{playback_str} {status_str} - Reflections: {ref_str}, Eff: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str} ,k_ex: {k_ex_str} {pause_str}'
 
         # Threshold Box:
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -1316,7 +1317,7 @@ class QRAMExperiment(BaseExperiment):
         pass
 
     # TODO: Refactor/Rename (this method analyzes the results)
-    def Save_SNSPDs_QRAM_Measurement_with_tt(self, N, qram_sequence_len, pre_comment, lock_err_threshold,
+    def Save_SNSPDs_QRAM_Measurement_with_tt(self, N, qram_sequence_len, pre_comment, lock_err_threshold,desired_k_ex,
                                              transit_condition,
                                              max_probe_counts, filter_delay, reflection_threshold,
                                              reflection_threshold_time,
@@ -1331,6 +1332,7 @@ class QRAMExperiment(BaseExperiment):
                            parameters.
         :param transit_condition:
         :param lock_err_threshold: The maximal error in locking resonator to rb line (in ms, depends on the scan width/vpp)
+        :param desired_k_ex: The desired resonance width (in MHz)
         :param max_probe_counts: The maximum counts probe counts at each direction measured when cavity isn't locked.
         :param filter_delay: Delay of the filter window compared to original location (can be taken by comparing the
                              time of the 1st detection pulse pick location to the original sequence)
@@ -1362,6 +1364,7 @@ class QRAMExperiment(BaseExperiment):
         self.with_atoms = with_atoms
         self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
         self.lock_err_threshold = lock_err_threshold
+        self.desired_k_ex = desired_k_ex
         self.transit_condition = transit_condition
         self.reflection_threshold = reflection_threshold
         self.reflection_threshold_time = reflection_threshold_time
@@ -1539,10 +1542,12 @@ class QRAMExperiment(BaseExperiment):
 
             # Check locking error, break if we are above threshold
             self.lock_err = (lock_err_threshold / 2) if exp_flag else self._read_locking_error()
+            # self.k_ex = (lock_err_threshold / 2) if exp_flag else self._read_k_ex()
             self.logger.debug(f'{self.lock_err}, {self.lock_err > lock_err_threshold}, {self.sum_for_threshold}')
+
+            #TODO: is this bug? should be oppoisite? @dror
             if self.lock_err > lock_err_threshold:
                 break
-
             cycle += 1
 
         ############################# WHILE 1 - END #############################
@@ -1583,6 +1588,9 @@ class QRAMExperiment(BaseExperiment):
 
             # Get locking error
             self.lock_err = self._read_locking_error()
+
+            # Get k_ex
+            self.k_ex = self._read_k_ex()
 
             # Experiment delay
             self.experiment_mainloop_delay()
@@ -1774,6 +1782,11 @@ class QRAMExperiment(BaseExperiment):
 
         if self.lock_err > self.lock_err_threshold:
             return False
+
+        # Are we on the right width ?
+        if not 0.85*self.desired_k_ex<self.k_ex<1.15*self.desired_k_ex:
+            return False
+
 
         # Is fluorescence strong enough? (assuming we're running with atoms)
         if self.fluorescence_average < self.FLR_threshold and self.with_atoms:
@@ -1993,6 +2006,7 @@ class QRAMExperiment(BaseExperiment):
                                                   qram_sequence_len=len(Config.QRAM_Exp_Square_samples_Late),
                                                   pre_comment=rp['pre_comment'],
                                                   lock_err_threshold=rp['lock_err_threshold'],
+                                                  desired_k_ex=rp['desired_k_ex'],
                                                   transit_condition=rp['transit_condition'],
                                                   max_probe_counts=max_probe_counts,
                                                   filter_delay=rp['filter_delay'],
@@ -2018,8 +2032,9 @@ if __name__ == "__main__":
     run_parameters = {
         'N': 10000,  # 50,
         'transit_condition': [2, 1, 2],
-        'pre_comment': '"N-S-N-S-N-S-N-S experiment"',
-        'lock_err_threshold': 0.001,
+        'pre_comment': '',
+        'lock_err_threshold': 0.0005,
+        'desired_k_ex': 18,
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,
         'reflection_threshold_time': 9e6,
@@ -2032,7 +2047,7 @@ if __name__ == "__main__":
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
     # The sequence_definitions params would replace parameters from run_parameters('N','with_atoms')
     sequence_definitions = {
-        'total_cycles': 2,
+        'total_cycles': 1,
         'delay_between_cycles': None,  # seconds
         'sequence': [
             {
@@ -2055,7 +2070,7 @@ if __name__ == "__main__":
     # TODO: REMOVE, for debug only
     # sequence_definitions = None
 
-    # if sequence_definitions is None:
-    #     experiment.run(run_parameters)
-    # else:
-    #     experiment.run_sequence(sequence_definitions, run_parameters)
+    if sequence_definitions is None:
+        experiment.run(run_parameters)
+    else:
+        experiment.run_sequence(sequence_definitions, run_parameters)

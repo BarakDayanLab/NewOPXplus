@@ -13,11 +13,11 @@ def QRAM_Exp_Gaussian_samples(sprint_pulse_len=110, det_pulse_len=30, det_pulses
                               num_between_zeros=10, num_init_zeros=12, num_mid_zeros=12, num_fin_zeros=0):
 
     # TODO: Dor - wtf are all of this numbers?
-    qram_exp_gaussian_samples = [0] * (num_init_zeros - 2 + 42 + 16 - 1)  # -2 for echos from south
+    qram_exp_gaussian_samples = [0] * (num_init_zeros - 2 + 18 + 16 - 1)  # -2 for echos from south
     for n in det_pulses_amp:
-        qram_exp_gaussian_samples += (signal.gaussian(det_pulse_len, std=(det_pulse_len * 0.5 / 2.355)) * n).tolist() + [0] * (num_between_zeros - 3) # -3 for echos from south
+        qram_exp_gaussian_samples += (signal.gaussian(det_pulse_len, std=(det_pulse_len * 0.5 / 2.355)) * n).tolist() + [0] * (num_between_zeros) # -3 for echos from south
     # qram_exp_gaussian_samples += [0] * (num_mid_zeros - 10) # due to unresolved reflections +40 for S echos
-    qram_exp_gaussian_samples = qram_exp_gaussian_samples[:-(num_between_zeros - 3)] + [0] * (num_between_zeros - 3 + num_mid_zeros - 16) # due to unresolved reflections +40 for S echos
+    qram_exp_gaussian_samples = qram_exp_gaussian_samples[:-(num_between_zeros)] + [0] * (num_between_zeros + num_mid_zeros - 16) # due to unresolved reflections +40 for S echos
     for m in sprint_pulses_amp:
         qram_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len-4), std=((sprint_pulse_len-4) / 2.355)) * m).tolist() + [0] * (num_between_zeros + 4)
     # qram_exp_gaussian_samples += [0] * num_fin_zeros
@@ -234,17 +234,17 @@ num_fin_zeros_S = 0  # For only det pulses sequence
 
 # For SPRINT experiment:
 # Transmission N:
-#det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0]
-#sprint_pulse_amp_S = [0]
+# det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0]
+# sprint_pulse_amp_S = [0]
 # Reflection N:
 # det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0]
 # sprint_pulse_amp_S = [0.105]
 # Transmission S:
-# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
-# sprint_pulse_amp_S = [0.105]
-# Reflection S:
 det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
-sprint_pulse_amp_S = [0]
+sprint_pulse_amp_S = [0.105]
+# Reflection S:
+# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
+# sprint_pulse_amp_S = [0]
 
 # Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
 #                                                             det_pulse_len=det_pulse_len,
@@ -295,11 +295,11 @@ num_fin_zeros_N = 0  # For only det pulses sequence
 # det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
 # sprint_pulse_amp_N = [0]
 # Transmission S:
-# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0]
-# sprint_pulse_amp_N = [0]
-# Reflection S:
 det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0]
-sprint_pulse_amp_N = [0.095]
+sprint_pulse_amp_N = [0]
+# Reflection S:
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0]
+# sprint_pulse_amp_N = [0.095]
 
 
 # Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,

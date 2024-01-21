@@ -127,6 +127,7 @@ class BaseExperiment:
         # Set the location of the locking error file - this is a generic file that serves as communication between
         # the locking application that runs on a different computer. The file contains the current PID error value.
         self.lock_error_file = os.path.join(self.bd_results.get_custom_root('locking_error_root'), 'locking_err.npy')
+        self.k_ex_file = os.path.join(self.bd_results.get_custom_root('k_ex_root'), 'k_ex.npy')
 
         # Load Initial Values and Default Values - merge them together (Default Values prevails!)
         # These will be the experiment values
@@ -477,6 +478,33 @@ class BaseExperiment:
                 self.switch_atom_no_atoms = '_' + self.switch_atom_no_atoms
             self.keyPress = None
         pass
+
+    def _read_k_ex(self):
+        if self.k_ex_file is None:
+            self.logger.warn('k_ex file not defined. Not reading k_ex values.')
+            return None
+
+        max_time = 10  # We will wait 0.1 sec for the file
+        k_ex = None
+        ticks = 0
+        while k_ex is None:
+            try:
+                data = np.load(self.k_ex_file, allow_pickle=True)
+                k_ex = np.abs(data)
+                break
+            except FileNotFoundError as err:
+                pass  # We need to wait, the file may appear... (being written by another computer on a shared file-system)
+            except Exception as err:
+                self.logger.error(f'Error in loading k_ex file. {err}')
+                break
+            time.sleep(0.01)  # in seconds
+            ticks = ticks + 1
+            if ticks > max_time:
+                break
+        if k_ex is None:
+            self.logger.error(f'Unable to find/load k_ex file.')
+
+        return k_ex
 
     # Returns the error of the locking mechanism of the resonator to Rb line
     def _read_locking_error(self):

@@ -21,7 +21,7 @@ Experiment_Values = {
     'Imaging_Phase': Phases.PULSE_1,
     # 'PrePulse_duration': 4,  # [msec]
     # 'PrePulse_duration': 14,  # [msec]
-    'PrePulse_duration': 9,  # [msec]
+    'PrePulse_duration': 10,  # [msec]
     'Shutter_open_time': 1,  # [msec]
     'Pulse_1_duration': int(max(Config.readout_pulse_sprint_len_N, Config.readout_pulse_sprint_len_S)) / 1e6,  # [msec]
     ## If with fountain:
