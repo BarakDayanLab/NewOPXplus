@@ -6,8 +6,12 @@ import matplotlib.pyplot as plt
 from Utilities.Utils import Utils
 
 # route efficiency after tapered fiber - including 50% of overcoupling transmission loss
-Eff_from_taper = 0.5*np.sqrt(0.8)*0.9*0.85*0.75 # over coupling - ~0.5, taper eff - ~0.8, table eff(launcher to lancher) - ~0.9
-                                                # fiber route eff to detectors - ~0.85, detectors efficiency - ~0.75
+Eff_from_taper_S = 0.5*np.sqrt(0.8)*0.9*0.85*0.75 # over coupling - ~0.5, taper eff - ~0.8, table eff(launcher to lancher) - ~0.9
+                                                  # fiber route eff to detectors - ~0.85, detectors efficiency - ~0.75
+Eff_from_taper_N = 0.5*np.sqrt(0.8)*0.9*0.85*0.75*0.9 # over coupling - ~0.5, taper eff - ~0.8, table eff(launcher to lancher) - ~0.9
+                                                      # fiber route eff to detectors - ~0.85, detectors efficiency - ~0.75, 0.9 total efficiency difference from south
+
+
 
 def QRAM_Exp_Gaussian_samples(sprint_pulse_len=110, det_pulse_len=30, det_pulses_amp=[0.4]*6, sprint_pulses_amp=[0.4]*4,
                               num_between_zeros=10, num_init_zeros=12, num_mid_zeros=12, num_fin_zeros=0):

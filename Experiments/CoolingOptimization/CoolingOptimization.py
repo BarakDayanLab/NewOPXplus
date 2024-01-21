@@ -200,7 +200,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
 
         pass
 
-    def optimizePGC(self, PrePulseDurations=np.arange(1,7),PGC_final_freq_params = np.linspace(97e6, 90e6, 7),PGC_final_amp_params = np.linspace(0.3, 0.05, 7)):
+    def optimizePGC(self, PrePulseDurations=np.arange(0.5,5,0.5),PGC_final_freq_params = np.linspace(97e6, 90e6, 7),PGC_final_amp_params = np.linspace(0.3, 0.05, 7)):
         """
         This is used to run with different parameters. They are defined within the function
 
