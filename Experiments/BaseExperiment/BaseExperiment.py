@@ -245,6 +245,7 @@ class BaseExperiment:
         # we do still hold the QuadRFController objects, for access to the table (read only!) when the experiment is running.
         qrfContr = QuadRFMOTController(initialValues=self.Exp_Values,
                                        updateChannels=(1, 2, 4),
+                                       # updateChannels=(1, 4),  # For constant Depump
                                        topticaLockWhenUpdating=False,
                                        debugging=True,
                                        continuous=False)

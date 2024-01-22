@@ -1963,7 +1963,6 @@ class QRAMExperiment(BaseExperiment):
 
             "folded_tt_S"
             
-
             "MZ_BP_counts_balancing_batch": self.batcher['MZ_BP_counts_balancing_batch'],
             "MZ_BP_counts_balancing_check_batch": self.batcher['MZ_BP_counts_balancing_check_batch'],
             "MZ_DP_counts_balancing_batch": self.batcher['MZ_DP_counts_balancing_batch'],
