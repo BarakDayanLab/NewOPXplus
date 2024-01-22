@@ -70,7 +70,7 @@
 			"file_name": "{current_time}_Experiment_Figure",
 			"folder": "{current_date}\\Experiment_figures",
 			"type": "plt",
-			"skip": true
+			"skip": false
 		},
 
 		{
