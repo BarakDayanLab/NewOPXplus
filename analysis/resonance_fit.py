@@ -1,306 +1,197 @@
-import sys
 import time
-import logging
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import find_peaks, convolve, find_peaks_cwt
+from scipy.signal import find_peaks
 from scipy.optimize import curve_fit
 from analysis.scope_connection import Scope, FakeScope
+from resonance_data import RubidiumLines, CavityFwhm, CavityKex
 
-plt.ion()
+
+class ResonanceFit:
+    def __init__(self, calc_k_ex=False, lock_idx=2):
+        self.cavity = CavityKex(k_i=3.9, h=0.6) if calc_k_ex else CavityFwhm()
+        self.lock_idx = lock_idx
+        self.rubidium_lines = RubidiumLines()
+        self.x_axis = None
+
+        self.current_relevant_area = None
+        self.relevant_x_axis = None
+
+        plt.ion()
+        self.fig, self.axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
+        self.axes[0].set_ylabel("Transmission")
+        self.axes[1].set_ylabel("Rubidium")
+        self.axes[1].set_xlabel("Frequency [MHz]")
+
+        self.prominence = 0.03
+        self.rolling_avg = 100
+        self.w_len = 2300
+        self.distance = 100
+        self.width = 1000
+
+    @property
+    def lock_error(self):
+        return self.cavity.x_0 - self.x_axis[self.rubidium_lines.peaks_idx[self.lock_idx]]
+
+    def calibrate_peaks_params(self, num_idx_in_peak):
+        self.w_len = num_idx_in_peak * 1.1
+        self.width = self.w_len // 5
+        self.distance = int(num_idx_in_peak // 10)
+        self.rolling_avg = int(num_idx_in_peak // 5)
+
+    def calibrate_peaks_params_gui(self, rubidium_lines):
+        self.x_axis = np.arange(len(rubidium_lines))
+        fig, ax = plt.subplots(figsize=(10, 3))
+        ax.plot(self.x_axis, rubidium_lines)
+        points = fig.ginput(2, timeout=0, show_clicks=True)
+        plt.close(fig)
+
+        num_idx_in_peak = np.round(np.abs(points[0][0] - points[1][0]))
+        self.calibrate_peaks_params(num_idx_in_peak)
+
+    def preprocess_data(self, data):
+        data -= data.min()
+        data /= data.max()
+        data = np.convolve(data, np.ones(self.rolling_avg) / self.rolling_avg, mode='valid')
+        return data
+
+    def update_rubidium_lines(self, rubidium_lines):
+        self.rubidium_lines.data = self.preprocess_data(rubidium_lines)
+
+    def update_transmission_spectrum(self, transmission_spectrum):
+        self.cavity.transmission_spectrum = self.preprocess_data(transmission_spectrum)
+
+    def calibrate_x_axis(self) -> bool:
+        self.rubidium_lines.peaks_idx, _ = find_peaks(self.rubidium_lines.data, prominence=self.prominence,
+                                                      wlen=self.w_len, distance=self.distance, width=self.width)
+        if self.rubidium_lines.num_peaks != 6:
+            return False
+        self.x_axis = np.arange(self.rubidium_lines.num_points) * self.rubidium_lines.idx_to_freq_factor()
+        return True
+
+    def calculate_relevant_area(self):
+        self.current_relevant_area = (self.cavity.x_0 - 100 < self.x_axis) * (self.x_axis < self.cavity.x_0 + 100)
+        self.relevant_x_axis = self.x_axis[self.current_relevant_area]
+
+    def fit_transmission_spectrum(self) -> bool:
+        self.cavity.x_0 = self.x_axis[self.cavity.transmission_spectrum.argmin()]
+        self.calculate_relevant_area()
+
+        try:
+            # noinspection PyTupleAssignmentBalance
+            optimal_parameters, covariance = curve_fit(self.cavity.fit,
+                                                       self.relevant_x_axis,
+                                                       self.cavity.transmission_spectrum[self.current_relevant_area],
+                                                       p0=self.cavity.get_fit_parameters(),
+                                                       bounds=self.cavity.bounds)
+        except Exception as err:
+            print(err)
+            return False
+
+        self.cavity.set_fit_parameters(*optimal_parameters)
+        score = self.r2_score(self.cavity.transmission_spectrum[self.current_relevant_area],
+                              self.cavity.transmission_spectrum_func(self.relevant_x_axis))
+        if score < 0.6:
+            return False
+        return True
+
+    @staticmethod
+    def r2_score(y, f):
+        y_bar = y.mean()
+        ss_res = ((y - f) ** 2).sum()
+        ss_tot = ((y - y_bar) ** 2).sum()
+        return 1 - (ss_res / ss_tot)
+
+    def plot_fit(self, title=None):
+        title = title or f"{self.cavity.main_parameter}: {self.cavity.value:.2f}, lock error: {self.lock_error:.2f}"
+        self.fig.suptitle(title)
+        self.plot_transmission_fit(self.axes[0])
+        self.plot_rubidium_lines(self.axes[1])
+
+    def plot_transmission_fit(self, ax):
+        ax.clear()
+        ax.plot(self.x_axis, self.cavity.transmission_spectrum)
+        if self.current_relevant_area is not None:
+            ax.plot(self.relevant_x_axis, self.cavity.transmission_spectrum_func(self.relevant_x_axis))
+        plt.pause(0.05)
+
+    def plot_rubidium_lines(self, ax):
+        ax.clear()
+        ax.plot(self.x_axis, self.rubidium_lines.data)
+        ax.scatter(self.x_axis[self.rubidium_lines.peaks_idx],
+                   self.rubidium_lines.data[self.rubidium_lines.peaks_idx], c='r')
+        plt.pause(0.05)
 
 
-class BaseResonanceFit:
-    def __init__(self, channels_dict: dict, scope_ip='132.77.54.241', rolling_avg=100, wait_time=0.5):
+class ScopeResonanceFit(ResonanceFit):
+    def __init__(self, channels_dict: dict, scope_ip='132.77.54.241', calc_k_ex=False):
+        super().__init__(calc_k_ex)
+
         if scope_ip is None:
             self.scope = FakeScope(channels_dict)
         else:
             self.scope = Scope(ip=scope_ip)
+
         self.channels_dict = channels_dict
-        self.rolling_avg = rolling_avg
-        self.wait_time = wait_time
 
-        self.x_axis = None
-
-        format = logging.Formatter('%(levelname)s - %(asctime)s - %(message)s')
-        handler = logging.FileHandler("resonance_fit.log")
-        handler.setLevel(logging.WARNING)
-        handler.setFormatter(format)
-        self.logger = logging.getLogger("resonance_fit_logger")
-        self.logger.addHandler(handler)
+        rubidium_lines = self.read_scope_data("rubidium")[1]
+        self.calibrate_peaks_params_gui(rubidium_lines)
 
     def read_scope_data(self, channel):
         channel_number = self.channels_dict[channel]
         time_axis, data = self.scope.get_data(channel_number)
-        data = self.normalize_data(data)
+        data = self.preprocess_data(data)
         return time_axis, data
 
-    def normalize_data(self, data):
-        data -= data.min()
-        data /= data.max()
-
-        data = np.convolve(data, np.ones(self.rolling_avg) / self.rolling_avg, mode='valid')
-        return data
-
-    def calibrate_x_axis(self):
-        _, rubidium_lines = self.read_scope_data("rubidium")
-        rubidium_peaks, _ = find_peaks(rubidium_lines, prominence=0.03, wlen=2300, distance=500)
-
-        if len(rubidium_peaks) != 6:
-            self.logger.error("Could not find 6 peaks in the rubidium spectrum")
-            time.sleep(self.wait_time)
-            return self.calibrate_x_axis()
-
-        idx_to_freq = (156.947 / 2) / (rubidium_peaks[-1] - rubidium_peaks[-2])
-        x_axis = np.arange(len(rubidium_lines)) * idx_to_freq  # Calibration
-        self.x_axis = x_axis
-
-    @staticmethod
-    def transmission_spectrum(x_detuning, k_ex, k_i, h, x_0, y_0):
-        k_total = k_ex + k_i
-        k_with_detuning = k_total + 1j * (x_detuning - x_0)
-        return np.abs(1 - 2 * k_ex * k_with_detuning / (k_with_detuning ** 2 + h ** 2)) ** 2 + y_0
-
-    @staticmethod
-    def reflection_spectrum(x_detuning, k_ex, k_i, h, x_0, y_0):
-        k_total = k_ex + k_i
-        k_with_detuning = k_total + 1j * (x_detuning - x_0)
-        return np.abs(2 * k_ex * h / (k_with_detuning ** 2 + h ** 2)) ** 2 + y_0
-
-    @staticmethod
-    def lorentzian(x, amp, fwhm, x_0, y_0):
-        return (0.5*fwhm*amp) / (np.pi * ((x - x_0)**2 + (0.5*fwhm) ** 2)) + y_0
+    # def update_rubidium_lines(self):
+    #     _, self.rubidium_lines.data = self.read_scope_data("rubidium")
+    #     self.calibrate_x_axis()
 
 
-class ResonanceFit(BaseResonanceFit):
-    def __init__(self, channels_dict: dict, scope_ip='132.77.54.241', rolling_avg=50, wait_time=0.5):
-        super().__init__(channels_dict, scope_ip)
-
-    def set_transmission_0(self):
-        self.transmission_0 = self.read_scope_data("transmission")
-
-    def set_transmission_100(self):
-        self.transmission_100 = self.read_scope_data("transmission")
-
-    def stacked_spectrum(self, x_detuning, k_ex, k_i, h, x_0, y_0):
-        return np.hstack((self.transmission_spectrum(x_detuning, k_ex, k_i, h, x_0, y_0),
-                          self.reflection_spectrum(x_detuning, k_ex, k_i, h, x_0, y_0)))
-
-    def read_reflection_spectrum(self):
-        current_reflection = self.read_scope_data("reflection")
-        reflection_norm_factor = 1 / (self.transmission_100 - self.transmission_0)
-        reflection_spectrum = reflection_norm_factor * (current_reflection - self.transmission_0)
-        return reflection_spectrum
-
-    def fit_current_spectrum(self, transmission_spectrum, reflection_spectrum):
-        y_data = np.hstack((transmission_spectrum, reflection_spectrum))
-        # noinspection PyTupleAssignmentBalance
-        optimal_parameters, _ = curve_fit(self.stacked_spectrum, self.x_axis, y_data)
-        return optimal_parameters
-
-
-class LiveResonanceFit(BaseResonanceFit):
-    def __init__(self, channels_dict: dict, k_i: float, h: float, scope_ip='132.77.54.241', save_data=False):
-        super().__init__(channels_dict, scope_ip)
+class LiveResonanceFit(ScopeResonanceFit):
+    def __init__(self, channels_dict: dict, scope_ip='132.77.54.241', wait_time=0.5, save_data=False, calc_k_ex=False):
+        super().__init__(channels_dict, scope_ip, calc_k_ex)
+        self.wait_time = wait_time
         self.save_data = save_data
-        self.k_i = k_i
-        self.h = h
-
-        self.x_0 = 0
-        self.y_0 = 0
-        self.k_ex = 0
-
-        self.current_k_ex = 0
-        self.current_x_0 = 0
-
-        self.current_relevant_area = None
-        self.relevant_x_axis = None
-
-        self.fig, self.ax = plt.subplots()
-
-        #Assaf ruined your code
-        self.k_ex_error_path = r'C:\temp\refactor_debug\Experiment_results\QRAM\k_ex\k_ex'
-        self.k_ex_last_save_time = time.time()
-
-    def start(self):
-        self.fig.show()
-        self.monitor_spectrum()
-
-    def transmission_spectrum_without_cavity_params(self, x_detuning, k_ex, y_0):
-        return self.transmission_spectrum(x_detuning, k_ex, self.k_i, self.h, self.x_0, y_0)
-
-    def transmission_spectrum_k_ex(self, x_detuning, k_ex):
-        return self.transmission_spectrum(x_detuning, k_ex, self.k_i, self.h, self.current_x_0, self.y_0)
-
-    def calculate_relevant_area(self):
-        self.current_relevant_area = (self.x_0 - 200 < self.x_axis) * (self.x_axis < self.x_0 + 200)
-        self.relevant_x_axis = self.x_axis[self.current_relevant_area]
-
-    def initialize_default_parameters(self):
-        self.calibrate_x_axis()
-        _, transmission_spectrum = self.read_scope_data("transmission")
-        self.x_0 = self.x_axis[transmission_spectrum.argmin()]
-
-        self.calculate_relevant_area()
-        transmission_spectrum = transmission_spectrum[self.current_relevant_area]
-
-        # noinspection PyTupleAssignmentBalance
-        optimal_parameters, _ = curve_fit(self.transmission_spectrum_without_cavity_params,
-                                          self.relevant_x_axis,
-                                          transmission_spectrum,
-                                          p0=[30, 1])
-
-        self.k_ex, self.y_0 = optimal_parameters
-
-    def fit_transmission_spectrum(self, transmission_spectrum):
-        # noinspection PyTupleAssignmentBalance
-        optimal_parameters, _ = curve_fit(self.transmission_spectrum_k_ex,
-                                          self.relevant_x_axis,
-                                          transmission_spectrum,
-                                          p0=[self.k_ex])
-
-        return optimal_parameters[0]
-
-    def test_x_0(self, transmission_spectrum):
-        self.current_x_0 = self.x_axis[transmission_spectrum.argmin()]
-        if np.abs(self.current_x_0 - self.x_0) > 5:
-            self.logger.warning(f"Measured different x_0, new: {self.current_x_0}, current: {self.x_0}")
-            return 1
-        return 0
-
-    def test_k_ex(self, transmission_spectrum):
-        self.current_k_ex = self.fit_transmission_spectrum(transmission_spectrum)
-        if np.abs(self.current_k_ex - self.k_ex) > 5:
-            self.logger.warning(f"Measured different k_ex, new: {self.current_k_ex}, current: {self.k_ex}")
-            return 1
-        return 0
-
-    def save_k_ex(self):
-        if not self.save_data:
-            return
-
-        now = round(time.time())
-        time_since_last_save = now - self.k_ex_last_save_time
-        if time_since_last_save > 10:
-            self.k_ex_last_save_time = now
-            np.save(self.k_ex_error_path, self.current_k_ex)
-
-    def plot_transmission_fit(self, transmission_spectrum):
-        self.ax.clear()
-        self.ax.set_title(f"k_ex: {self.current_k_ex:.2f}")
-        self.ax.plot(self.relevant_x_axis, transmission_spectrum)
-        self.ax.plot(self.relevant_x_axis, self.transmission_spectrum(self.relevant_x_axis, self.current_k_ex,
-                                                                      self.k_i, self.h, self.current_x_0, self.y_0))
-        plt.pause(0.05)
-
-    def monitor_spectrum(self):
-        self.initialize_default_parameters()
-        logging.warning(f"Initialized k_ex: {self.k_ex}")
-
-        num_k_ex_changed = 0
-        num_x_0_changed = 0
-        while True:
-            _, transmission_spectrum = self.read_scope_data("transmission")
-
-            num_x_0_changed += self.test_x_0(transmission_spectrum)
-
-            self.calculate_relevant_area()
-            transmission_spectrum = transmission_spectrum[self.current_relevant_area]
-
-            num_k_ex_changed += self.test_k_ex(transmission_spectrum)
-
-            self.plot_transmission_fit(transmission_spectrum)
-
-            if num_k_ex_changed > 5:
-                self.logger.error("k_ex changed too many times, reinitializing")
-                self.initialize_default_parameters()
-                num_k_ex_changed = 0
-
-            elif num_x_0_changed > 5:
-                self.logger.error("x_0 changed too many times, reinitializing")
-                self.initialize_default_parameters()
-                num_x_0_changed = 0
-
-            self.save_k_ex()
-            time.sleep(self.wait_time)
-
-
-class LiveResonanceFitFwhm(BaseResonanceFit):
-    def __init__(self, channels_dict: dict, scope_ip='132.77.54.241', save_data=False):
-        super().__init__(channels_dict, scope_ip)
-        self.save_data = save_data
-
-        self.amp = 0
-        self.fwhm = 0
-        self.x_0 = 0
-        self.y_0 = 0
-        self.bounds = [(-np.inf, 0, 0), (np.inf, np.inf, 1)]
-
-        self.current_relevant_area = None
-        self.relevant_x_axis = None
-
-        self.fig, self.ax = plt.subplots()
 
         # Assaf ruined your code
-        self.fwhm_error_path = r'C:\temp\refactor_debug\Experiment_results\QRAM\k_ex\k_ex'
-        self.fwhm_last_save_time = time.time()
+        self.save_path = r'C:\temp\refactor_debug\Experiment_results\QRAM\k_ex\k_ex'
+        self.last_save_time = time.time()
 
-    def start(self):
-        self.fig.show()
-        self.monitor_spectrum()
-
-    def transmission_spectrum_without_x_0(self, x_detuning, amp, fwhm, y_0):
-        return self.lorentzian(x_detuning, amp, fwhm, self.x_0, y_0)
-
-    def calculate_relevant_area(self):
-        self.current_relevant_area = (self.x_0 - 200 < self.x_axis) * (self.x_axis < self.x_0 + 200)
-        self.relevant_x_axis = self.x_axis[self.current_relevant_area]
-
-    def fit_transmission_spectrum(self):
-        _, transmission_spectrum = self.read_scope_data("transmission")
-        self.x_0 = self.x_axis[transmission_spectrum.argmin()]
-        self.calculate_relevant_area()
-        transmission_spectrum = transmission_spectrum[self.current_relevant_area]
-
-        # noinspection PyTupleAssignmentBalance
-        optimal_parameters, _ = curve_fit(self.transmission_spectrum_without_x_0,
-                                          self.relevant_x_axis,
-                                          transmission_spectrum,
-                                          p0=[1, 30, 1],
-                                          bounds=self.bounds)
-
-        self.amp, self.fwhm, self.y_0 = optimal_parameters
-        return transmission_spectrum
-
-    def save_fwhm(self):
+    def save_parameter(self):
         if not self.save_data:
             return
 
         now = round(time.time())
-        time_since_last_save = now - self.fwhm_last_save_time
+        time_since_last_save = now - self.last_save_time
         if time_since_last_save > 10:
-            self.fwhm_last_save_time = now
-            np.save(self.fwhm_error_path, self.fwhm)
-
-    def plot_transmission_fit(self, transmission_spectrum):
-        self.ax.clear()
-        self.ax.set_title(f"fwhm: {self.fwhm:.2f}")
-        self.ax.plot(self.relevant_x_axis, transmission_spectrum)
-        self.ax.plot(self.relevant_x_axis, self.lorentzian(self.relevant_x_axis, self.amp, self.fwhm, self.x_0, self.y_0))
-        plt.pause(0.05)
+            self.last_save_time = now
+            np.save(self.save_path, self.cavity.value)
 
     def monitor_spectrum(self):
-        self.calibrate_x_axis()
         while True:
-            transmission_spectrum = self.fit_transmission_spectrum()
-            self.plot_transmission_fit(transmission_spectrum)
-            self.save_fwhm()
+            transmission_spectrum = self.read_scope_data("transmission")[1]
+            rubidium_lines = self.read_scope_data("rubidium")[1]
+
+            self.update_transmission_spectrum(transmission_spectrum)
+            self.update_rubidium_lines(rubidium_lines)
+
+            if not self.calibrate_x_axis():
+                continue
+            if not self.fit_transmission_spectrum():
+                continue
+
+            self.plot_fit()
             time.sleep(self.wait_time)
+
+    def start(self):
+        self.fig.show()
+        self.monitor_spectrum()
 
 
 if __name__ == '__main__':
     channels = {"transmission": 1, "rubidium": 3}
-    res_fit = LiveResonanceFitFwhm(channels_dict=channels)
+    res_fit = LiveResonanceFit(channels_dict=channels, scope_ip=None)
     res_fit.start()
 
     # _, transmission_spectrum = res_fit.read_scope_data("transmission")
@@ -316,33 +207,3 @@ if __name__ == '__main__':
     #
     # np.save("transmission.npy", transmission)
     # np.save("rubidium.npy", rubidium)
-
-
-    # res_fit.monitor_spectrum()
-    # transmission_channel = input("Enter the transmission signal channel: ")
-    # reflection_channel = input("Enter the reflection signal channel: ")
-    # rubidium_channel = input("Enter the rubidium channel: ")
-    # resonance_fit = ResonanceFit({"transmission": transmission_channel,
-    #                               "reflection": reflection_channel,
-    #                               "rubidium": rubidium_channel})
-    #
-    # input("Scan to find the rubidium lines, then press Enter")
-    # resonance_fit.calibrate_x_axis()
-    #
-    # plt.figure()
-    # plt.plot(resonance_fit.rubidium_lines)
-    # plt.plot(resonance_fit.rubidium_peaks, resonance_fit.rubidium_lines[resonance_fit.rubidium_peaks], "x")
-    # plt.show()
-    #
-    # input("Set reflection and transmission signal to 0, then press Enter")
-    # resonance_fit.set_transmission_0()
-    # input("Turn on the transmission signal (without the resonance), then press Enter")
-    # resonance_fit.set_transmission_100()
-    # input("Bring the resonance back")
-    # resonance_fit.read_transmission_spectrum()
-    #
-    # input("Turn the transmission off, and the reflection on, then press Enter")
-    # resonance_fit.read_reflection_spectrum()
-    #
-    # resonance_fit.fit_current_spectrum()
-    # resonance_fit.plot_spectrum_fit()
