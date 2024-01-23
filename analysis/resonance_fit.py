@@ -1,3 +1,4 @@
+import os
 import time
 import numpy as np
 import matplotlib.pyplot as plt
@@ -5,23 +6,24 @@ from scipy.signal import find_peaks
 from scipy.optimize import curve_fit
 from analysis.scope_connection import Scope, FakeScope
 from resonance_data import RubidiumLines, CavityFwhm, CavityKex
+import pynput.keyboard as keyboard
 
 
 class ResonanceFit:
-    def __init__(self, calc_k_ex=False, lock_idx=2):
-        self.cavity = CavityKex(k_i=3.9, h=0.6) if calc_k_ex else CavityFwhm()
+    def __init__(self, calc_k_ex=False, lock_idx=2, save_path=None, save_time=60):
+        self.cavity = CavityKex(k_i=8, h=0.6) if calc_k_ex else CavityFwhm()
         self.lock_idx = lock_idx
+        self.save_folder = save_path
+        self.save_time = save_time
+        self.last_save_time = time.time()
+
         self.rubidium_lines = RubidiumLines()
         self.x_axis = None
 
         self.current_relevant_area = None
         self.relevant_x_axis = None
 
-        plt.ion()
-        self.fig, self.axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
-        self.axes[0].set_ylabel("Transmission")
-        self.axes[1].set_ylabel("Rubidium")
-        self.axes[1].set_xlabel("Frequency [MHz]")
+        self.fig, self.axes = None, None
 
         self.prominence = 0.03
         self.rolling_avg = 100
@@ -37,7 +39,7 @@ class ResonanceFit:
         self.w_len = num_idx_in_peak * 1.1
         self.width = self.w_len // 5
         self.distance = int(num_idx_in_peak // 10)
-        self.rolling_avg = int(num_idx_in_peak // 5)
+        self.rolling_avg = int(num_idx_in_peak // 20)
 
     def calibrate_peaks_params_gui(self, rubidium_lines):
         self.x_axis = np.arange(len(rubidium_lines))
@@ -70,7 +72,7 @@ class ResonanceFit:
         return True
 
     def calculate_relevant_area(self):
-        self.current_relevant_area = (self.cavity.x_0 - 100 < self.x_axis) * (self.x_axis < self.cavity.x_0 + 100)
+        self.current_relevant_area = (self.cavity.x_0 - 90 < self.x_axis) * (self.x_axis < self.cavity.x_0 + 90)
         self.relevant_x_axis = self.x_axis[self.current_relevant_area]
 
     def fit_transmission_spectrum(self) -> bool:
@@ -102,30 +104,117 @@ class ResonanceFit:
         ss_tot = ((y - y_bar) ** 2).sum()
         return 1 - (ss_res / ss_tot)
 
+    def initialize_figure(self):
+        plt.ion()
+        self.fig, self.axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
+        self.axes[0].set_ylabel("Transmission")
+        self.axes[1].set_ylabel("Rubidium")
+        self.axes[1].set_xlabel("Frequency [MHz]")
+
     def plot_fit(self, title=None):
-        title = title or f"{self.cavity.main_parameter}: {self.cavity.value:.2f}, lock error: {self.lock_error:.2f}"
+        if self.fig is None:
+            self.initialize_figure()
+        title = title or f"{self.cavity.main_parameter}: {self.cavity.value:.2f}, lock error: {self.lock_error:.2f}, $\Delta$x: {self.cavity.x_0 - self.cavity.minimum_of_fit:.2f}"
         self.fig.suptitle(title)
         self.plot_transmission_fit(self.axes[0])
         self.plot_rubidium_lines(self.axes[1])
 
     def plot_transmission_fit(self, ax):
         ax.clear()
+        ax.scatter(self.cavity.x_0, self.cavity.transmission_spectrum_func(self.cavity.x_0), c='g')
         ax.plot(self.x_axis, self.cavity.transmission_spectrum)
-        if self.current_relevant_area is not None:
-            ax.plot(self.relevant_x_axis, self.cavity.transmission_spectrum_func(self.relevant_x_axis))
+        ax.plot(self.relevant_x_axis, self.cavity.transmission_spectrum_func(self.relevant_x_axis))
         plt.pause(0.05)
 
     def plot_rubidium_lines(self, ax):
         ax.clear()
-        ax.plot(self.x_axis, self.rubidium_lines.data)
         ax.scatter(self.x_axis[self.rubidium_lines.peaks_idx],
                    self.rubidium_lines.data[self.rubidium_lines.peaks_idx], c='r')
+        ax.scatter(self.x_axis[self.rubidium_lines.peaks_idx[self.lock_idx]],
+                   self.rubidium_lines.data[self.rubidium_lines.peaks_idx[self.lock_idx]], c='g')
+        ax.plot(self.x_axis, self.rubidium_lines.data)
         plt.pause(0.05)
 
+    def get_save_paths(self):
+        date = time.strftime("%Y%m%d")
+        hours = time.strftime("%H%M%S")
 
-class ScopeResonanceFit(ResonanceFit):
-    def __init__(self, channels_dict: dict, scope_ip='132.77.54.241', calc_k_ex=False):
-        super().__init__(calc_k_ex)
+        transmission_filename = f"{date}-{hours}_cavity_spectrum.npy"
+        transmission_path = os.path.join(self.save_folder, date, transmission_filename)
+
+        rubidium_filename = f"{date}-{hours}_rubidium_spectrum.npy"
+        rubidium_path = os.path.join(self.save_folder, date, rubidium_filename)
+        return transmission_path, rubidium_path
+
+    def save_spectrum(self):
+        if self.save_folder is None:
+            return
+
+        now = time.time()
+        time_since_last_save = now - self.last_save_time
+        if time_since_last_save >= self.save_time:
+            transmission_path, rubidium_path = self.get_save_paths()
+            np.save(transmission_path, self.cavity.transmission_spectrum)
+            np.save(rubidium_path, self.rubidium_lines.data)
+            self.last_save_time = now
+
+
+class LiveResonanceFit(ResonanceFit):
+    def __init__(self, wait_time=0.5, calc_k_ex=False, save_path=None, save_time=60, plot=True):
+        super().__init__(calc_k_ex=calc_k_ex, save_path=save_path, save_time=save_time)
+        self.wait_time = wait_time
+        self.plot = plot
+
+        self.pause = False
+        self.keyboard_listener = keyboard.Listener(on_press=self.keyboard_on_press)
+        self.keyboard_listener.start()
+
+        self.stop_condition = False
+
+    def keyboard_on_press(self, key):
+        if key == keyboard.Key.space:
+            self.pause = not self.pause
+
+    def wait(self):
+        while self.pause:
+            plt.pause(0.1)
+
+    def read_transmission_spectrum(self):
+        raise Exception("read_transmission_spectrum not implemented")
+
+    def read_rubidium_lines(self):
+        raise Exception("read_rubidium_lines not implemented")
+
+    def main_loop_callback(self):
+        pass
+
+    def start(self):
+        while not self.stop_condition:
+            self.wait()
+            transmission_spectrum = self.read_transmission_spectrum()
+            rubidium_lines = self.read_rubidium_lines()
+            if transmission_spectrum is None or rubidium_lines is None:
+                continue
+
+            self.update_transmission_spectrum(transmission_spectrum)
+            self.update_rubidium_lines(rubidium_lines)
+
+            if not self.calibrate_x_axis():
+                continue
+            if not self.fit_transmission_spectrum():
+                continue
+
+            self.main_loop_callback()
+
+            if self.plot:
+                self.plot_fit()
+                time.sleep(self.wait_time)
+
+
+class ScopeResonanceFit(LiveResonanceFit):
+    def __init__(self, channels_dict: dict, scope_ip='132.77.54.241', calc_k_ex=False, save_data=False, wait_time=0.5):
+        super().__init__(wait_time, calc_k_ex)
+        self.save_data = save_data
 
         if scope_ip is None:
             self.scope = FakeScope(channels_dict)
@@ -137,61 +226,36 @@ class ScopeResonanceFit(ResonanceFit):
         rubidium_lines = self.read_scope_data("rubidium")[1]
         self.calibrate_peaks_params_gui(rubidium_lines)
 
+        # Assaf ruined your code
+        self.save_path = r'C:\temp\refactor_debug\Experiment_results\QRAM\k_ex\k_ex'
+        self.last_save_time_k_ex = time.time()
+
     def read_scope_data(self, channel):
         channel_number = self.channels_dict[channel]
         time_axis, data = self.scope.get_data(channel_number)
         data = self.preprocess_data(data)
         return time_axis, data
 
-    # def update_rubidium_lines(self):
-    #     _, self.rubidium_lines.data = self.read_scope_data("rubidium")
-    #     self.calibrate_x_axis()
+    def read_transmission_spectrum(self):
+        return self.read_scope_data("transmission")[1]
 
-
-class LiveResonanceFit(ScopeResonanceFit):
-    def __init__(self, channels_dict: dict, scope_ip='132.77.54.241', wait_time=0.5, save_data=False, calc_k_ex=False):
-        super().__init__(channels_dict, scope_ip, calc_k_ex)
-        self.wait_time = wait_time
-        self.save_data = save_data
-
-        # Assaf ruined your code
-        self.save_path = r'C:\temp\refactor_debug\Experiment_results\QRAM\k_ex\k_ex'
-        self.last_save_time = time.time()
+    def read_rubidium_lines(self):
+        return self.read_scope_data("rubidium")[1]
 
     def save_parameter(self):
         if not self.save_data:
             return
 
         now = round(time.time())
-        time_since_last_save = now - self.last_save_time
+        time_since_last_save = now - self.last_save_time_k_ex
         if time_since_last_save > 10:
-            self.last_save_time = now
+            self.last_save_time_k_ex = now
             np.save(self.save_path, self.cavity.value)
-
-    def monitor_spectrum(self):
-        while True:
-            transmission_spectrum = self.read_scope_data("transmission")[1]
-            rubidium_lines = self.read_scope_data("rubidium")[1]
-
-            self.update_transmission_spectrum(transmission_spectrum)
-            self.update_rubidium_lines(rubidium_lines)
-
-            if not self.calibrate_x_axis():
-                continue
-            if not self.fit_transmission_spectrum():
-                continue
-
-            self.plot_fit()
-            time.sleep(self.wait_time)
-
-    def start(self):
-        self.fig.show()
-        self.monitor_spectrum()
 
 
 if __name__ == '__main__':
     channels = {"transmission": 1, "rubidium": 3}
-    res_fit = LiveResonanceFit(channels_dict=channels, scope_ip=None)
+    res_fit = ScopeResonanceFit(channels_dict=channels, scope_ip=None)
     res_fit.start()
 
     # _, transmission_spectrum = res_fit.read_scope_data("transmission")
