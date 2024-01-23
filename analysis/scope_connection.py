@@ -66,8 +66,10 @@ class Scope(Instrument):
                 logging.error(f'Error reading from scope. Acquisition from {source} failed')
 
             return time_data, waveform
-        except:
-            return None
+
+        except Exception as e:
+            print(e)
+            return None, None
 
 
 class FakeScope:

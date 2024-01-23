@@ -40,7 +40,7 @@ class Cavity:
         self.bounds: list = []
 
     @property
-    def value(self):
+    def current_fit_value(self):
         return getattr(self, self.main_parameter)
 
     @property
