@@ -33,7 +33,7 @@ class ResonanceFit:
 
     @property
     def lock_error(self):
-        return self.cavity.x_0 - self.x_axis[self.rubidium_lines.peaks_idx[self.lock_idx]]
+        return self.cavity.x_0 - self.x_axis[self.rubidium_lines.peaks_idx[self.lock_idx]] + 80
 
     # ------------------ CALIBRATIONS ------------------ #
 
@@ -268,7 +268,7 @@ class ScopeResonanceFit(LiveResonanceFit):
             print(self.cavity.current_fit_value)
             np.save(fwhm_path, self.cavity.current_fit_value)
             print(self.lock_error)
-            np.save(lock_path, self.lock_error+80)
+            np.save(lock_path, self.lock_error)
 
     def main_loop_callback(self):
         self.save_parameter()
