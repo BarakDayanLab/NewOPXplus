@@ -67,7 +67,7 @@ class Scope(Instrument):
 
             return time_data, waveform
         except:
-            return self.get_data(channel)
+            return None
 
 
 class FakeScope:

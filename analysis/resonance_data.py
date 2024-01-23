@@ -25,7 +25,7 @@ class RubidiumLines:
 
 
 class Cavity:
-    def __init__(self, main_parameter: str, fit_parameters: list[str]):
+    def __init__(self, main_parameter: str, fit_parameters: list):
         self.main_parameter = main_parameter
         self.fit_parameters = fit_parameters
 

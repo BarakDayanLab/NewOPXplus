@@ -194,6 +194,7 @@ class LiveResonanceFit(ResonanceFit):
             transmission_spectrum = self.read_transmission_spectrum()
             rubidium_lines = self.read_rubidium_lines()
             if transmission_spectrum is None or rubidium_lines is None:
+                time.sleep(self.wait_time)
                 continue
 
             self.update_transmission_spectrum(transmission_spectrum)
@@ -227,13 +228,12 @@ class ScopeResonanceFit(LiveResonanceFit):
         self.calibrate_peaks_params_gui(rubidium_lines)
 
         # Assaf ruined your code
-        self.save_path = r'C:\temp\refactor_debug\Experiment_results\QRAM\k_ex\k_ex'
+        self.save_path = r'C:\temp\refactor_debug\Experiment_results\QRAM\resonance_params'
         self.last_save_time_k_ex = time.time()
 
     def read_scope_data(self, channel):
         channel_number = self.channels_dict[channel]
         time_axis, data = self.scope.get_data(channel_number)
-        data = self.preprocess_data(data)
         return time_axis, data
 
     def read_transmission_spectrum(self):
@@ -248,14 +248,22 @@ class ScopeResonanceFit(LiveResonanceFit):
 
         now = round(time.time())
         time_since_last_save = now - self.last_save_time_k_ex
-        if time_since_last_save > 10:
+        if time_since_last_save > 3:
             self.last_save_time_k_ex = now
-            np.save(self.save_path, self.cavity.value)
+            fwhm_path = os.path.join(self.save_path, "k_ex")
+            lock_path = os.path.join(self.save_path, "locking_err")
+            print(self.cavity.value)
+            np.save(fwhm_path, self.cavity.value)
+            print(self.lock_error)
+            np.save(lock_path, self.lock_error)
+
+    def main_loop_callback(self):
+        self.save_parameter()
 
 
 if __name__ == '__main__':
     channels = {"transmission": 1, "rubidium": 3}
-    res_fit = ScopeResonanceFit(channels_dict=channels, scope_ip=None)
+    res_fit = ScopeResonanceFit(channels_dict=channels, save_data=True)
     res_fit.start()
 
     # _, transmission_spectrum = res_fit.read_scope_data("transmission")
