@@ -2,6 +2,7 @@ import os
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import gridspec
 from scipy.signal import find_peaks
 from scipy.optimize import curve_fit
 from analysis.scope_connection import Scope, FakeScope
@@ -10,7 +11,7 @@ from pynput.keyboard import GlobalHotKeys, Key
 
 
 class ResonanceFit:
-    def __init__(self, calc_k_ex=False, save_folder=None, save_time=60, show_buttons=True):
+    def __init__(self, calc_k_ex=False, save_folder=None, save_time=60):
         self.cavity = CavityKex(k_i=3.9, h=0.6) if calc_k_ex else CavityFwhm()
         self.lock_idx = 4
         self.save_folder = save_folder
@@ -23,10 +24,7 @@ class ResonanceFit:
         self.current_relevant_area = None
         self.relevant_x_axis = None
 
-        self.fig, self.axes = None, None
-        self.show_buttons = show_buttons
-        self.buttons = {}
-        self.current_active_button = None
+        self.fit_params_history = None
 
         self.prominence = 0.03
         self.rolling_avg = 100
@@ -44,6 +42,10 @@ class ResonanceFit:
         y_vals = self.rubidium_lines.data[self.rubidium_lines.peaks_idx]
         peaks = np.vstack([x_vals, y_vals]).T
         return peaks
+
+    @property
+    def lorentzian_center(self):
+        return np.array([self.cavity.x_0, self.cavity.transmission_spectrum_func(self.cavity.x_0)])
 
     # ------------------ CALIBRATIONS ------------------ #
 
@@ -117,71 +119,8 @@ class ResonanceFit:
                               self.cavity.transmission_spectrum_func(self.relevant_x_axis))
         if score < 0.6:
             return False
+
         return True
-
-    # ------------------ UI ------------------ #
-    def update_active_button(self, button_name):
-        self.current_active_button = button_name
-
-    def activate_button(self):
-        if self.current_active_button == "":
-            return
-
-        if self.current_active_button == "choose_line_button":
-            self.choose_line()
-            self.current_active_button = ""
-
-    def choose_line(self):
-        prev_title = self.fig.texts[0].get_text()
-        self.fig.suptitle("Choose line")
-
-        point = plt.ginput(1, timeout=0, show_clicks=True)[0]
-        distances = np.sum((self.rubidium_peaks - point) ** 2, axis=1)
-        self.lock_idx = np.argmin(distances)
-
-        self.fig.suptitle(prev_title)
-
-    # ------------------ PLOT FIT ------------------ #
-    def initialize_figure(self):
-        plt.ion()
-        self.fig, self.axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
-        self.axes[0].set_ylabel("Transmission")
-        self.axes[1].set_ylabel("Rubidium")
-        self.axes[1].set_xlabel("Frequency [MHz]")
-        if self.show_buttons:
-            self.buttons_axis()
-
-    def buttons_axis(self):
-        self.fig.add_axes([0.01, 0.01, 0.1, 0.05])
-        self.axes = self.fig.axes
-
-        choose_line_button = plt.Button(self.axes[-1], 'choose line')
-        self.buttons.update({"choose_line_button": choose_line_button})
-        choose_line_button.on_clicked(lambda _: self.update_active_button("choose_line_button"))
-
-    def plot_fit(self, title=None):
-        if self.fig is None:
-            self.initialize_figure()
-        title = title or f"{self.cavity.main_parameter}: {self.cavity.current_fit_value:.2f}, lock error: {self.lock_error:.2f}, $\Delta$x: {self.cavity.x_0 - self.cavity.minimum_of_fit:.2f}"
-        self.fig.suptitle(title)
-        self.plot_transmission_fit(self.axes[0])
-        self.plot_rubidium_lines(self.axes[1])
-
-    def plot_transmission_fit(self, ax):
-        ax.clear()
-        ax.scatter(self.cavity.x_0, self.cavity.transmission_spectrum_func(self.cavity.x_0), c='g')
-        ax.plot(self.x_axis, self.cavity.transmission_spectrum)
-        ax.plot(self.relevant_x_axis, self.cavity.transmission_spectrum_func(self.relevant_x_axis))
-        plt.pause(0.05)
-
-    def plot_rubidium_lines(self, ax):
-        ax.clear()
-        ax.scatter(self.x_axis[self.rubidium_lines.peaks_idx],
-                   self.rubidium_lines.data[self.rubidium_lines.peaks_idx], c='r')
-        ax.scatter(self.x_axis[self.rubidium_lines.peaks_idx[self.lock_idx]],
-                   self.rubidium_lines.data[self.rubidium_lines.peaks_idx[self.lock_idx]], c='g')
-        ax.plot(self.x_axis, self.rubidium_lines.data)
-        plt.pause(0.05)
 
     # ------------------ SAVE DATA ------------------ #
     def get_save_paths(self):
@@ -208,19 +147,143 @@ class ResonanceFit:
             self.last_save_time = now
 
 
-class LiveResonanceFit(ResonanceFit):
-    def __init__(self, wait_time=0.1, calc_k_ex=False, save_folder=None, save_time=60, plot=True):
-        super().__init__(calc_k_ex=calc_k_ex, save_folder=save_folder, save_time=save_time, show_buttons=False)
-        self.wait_time = wait_time
-        self.plot = plot
+class ResonanceFitGraphics:
+    def __init__(self, resonance_fit: ResonanceFit, show_buttons=True):
+        self.fig, self.plot_subfigure, self.buttons_subfigure = None, None, None
+        self.show_buttons = show_buttons
+        self.buttons = {}
+        self.current_active_button = None
 
-        hotkeys = {"<ctrl>+p": self.toggle_pause,
-                   }
+        self.resonance_fit = resonance_fit
+
+        self.show_3rd_axis = False
+        self.function_3rd_axis = None
+
+    # ------------------ UI ------------------ #
+    def update_active_button(self, button_name):
+        self.current_active_button = button_name
+
+    def activate_button(self):
+        if self.current_active_button == "":
+            return
+
+        if self.current_active_button == "choose_line_button":
+            self.choose_line()
+        elif self.current_active_button == "show_lock_error_button":
+            self.toggle_lock_error()
+        self.current_active_button = ""
+
+    def choose_line(self):
+        prev_title = self.fig.texts[0].get_text()
+        self.fig.suptitle("Choose line")
+
+        point = plt.ginput(1, timeout=0, show_clicks=True)[0]
+        distances = np.sum((self.resonance_fit.rubidium_peaks - point) ** 2, axis=1)
+        self.resonance_fit.lock_idx = np.argmin(distances)
+
+        self.fig.suptitle(prev_title)
+
+    def toggle_lock_error(self):
+        if not self.show_3rd_axis:
+            self.initialize_plots()
+            self.function_3rd_axis = None
+        else:
+            self.initialize_plots(plot_3rd_axis=("Lock error", "MHz"))
+            self.function_3rd_axis = self.plot_lock_error
+
+        self.show_3rd_axis = not self.show_3rd_axis
+
+    # ------------------ PLOT FIT ------------------ #
+    def initialize_figure(self):
+        plt.ion()
+        self.fig = plt.figure(figsize=(16, 9), constrained_layout=True)
+        if self.show_buttons:
+            self.plot_subfigure, self.buttons_subfigure = self.fig.subfigures(2, 1, height_ratios=[94, 6])
+        else:
+            self.plot_subfigure = self.fig
+
+        self.initialize_plots()
+        if self.show_buttons:
+            self.buttons_axis()
+
+    def initialize_plots(self, plot_3rd_axis=None):
+        n_rows = 2 if plot_3rd_axis is None else 3
+        self.plot_subfigure.clear()
+        self.plot_subfigure.add_subplot(n_rows, 1, 1)
+        self.plot_subfigure.add_subplot(n_rows, 1, 2, sharex=self.plot_subfigure.axes[0])
+        self.plot_subfigure.axes[0].set_ylabel("Transmission")
+        self.plot_subfigure.axes[1].set_ylabel("Rubidium")
+        self.plot_subfigure.axes[1].set_xlabel("Frequency [MHz]")
+
+        if plot_3rd_axis is not None:
+            self.plot_subfigure.add_subplot(3, 1, 3)
+            self.plot_subfigure.axes[2].set_title(plot_3rd_axis[0])
+            self.plot_subfigure.axes[2].set_ylabel(plot_3rd_axis[1])
+
+    def buttons_axis(self):
+        self.buttons_subfigure.subplots(1, 2)
+
+        choose_line_button = plt.Button(self.buttons_subfigure.axes[0], 'choose line')
+        self.buttons.update({"choose_line_button": choose_line_button})
+        choose_line_button.on_clicked(lambda _: self.update_active_button("choose_line_button"))
+
+        show_lock_error_button = plt.Button(self.buttons_subfigure.axes[1], 'lock error')
+        self.buttons.update({"show_lock_error_button": show_lock_error_button})
+        show_lock_error_button.on_clicked(lambda _: self.update_active_button("show_lock_error_button"))
+
+    def plot_fit(self, title=None):
+        if self.fig is None:
+            self.initialize_figure()
+
+        default_title = (f"{self.resonance_fit.cavity.main_parameter}: {self.resonance_fit.cavity.current_fit_value:.2f}, "
+                         f"lock error: {self.resonance_fit.lock_error:.2f}, "
+                         f"$\Delta$x: {self.resonance_fit.cavity.x_0 - self.resonance_fit.cavity.minimum_of_fit:.2f}")
+
+        title = title or default_title
+        self.fig.suptitle(title)
+        self.plot_transmission_fit(self.plot_subfigure.axes[0])
+        plt.pause(0.05)
+        self.plot_rubidium_lines(self.plot_subfigure.axes[1])
+        plt.pause(0.05)
+        self.show_3rd_axis and self.plot_lock_error(self.plot_subfigure.axes[2])
+        plt.pause(0.05)
+
+    def plot_transmission_fit(self, ax):
+        ax.clear()
+
+        spectrum = self.resonance_fit.cavity.transmission_spectrum
+        fit = self.resonance_fit.cavity.transmission_spectrum_func(self.resonance_fit.relevant_x_axis)
+        ax.scatter(*self.resonance_fit.lorentzian_center, c='g')
+        ax.plot(self.resonance_fit.x_axis, spectrum)
+        ax.plot(self.resonance_fit.relevant_x_axis, fit)
+        plt.pause(0.05)
+
+    def plot_rubidium_lines(self, ax):
+        ax.clear()
+        rubidium_peaks = self.resonance_fit.rubidium_peaks
+        ax.scatter(*rubidium_peaks.T, c='r')
+        ax.scatter(*rubidium_peaks[self.resonance_fit.lock_idx], c='g')
+        ax.plot(self.resonance_fit.x_axis, self.resonance_fit.rubidium_lines.data)
+
+    def plot_lock_error(self, ax):
+        ax.clear()
+        ax.plot(self.resonance_fit.fit_params_history[-20:, -1])
+
+
+class LiveResonanceFit(ResonanceFit):
+    def __init__(self, wait_time=0.1, calc_k_ex=False, save_folder=None, save_time=60, show_buttons=False):
+        super().__init__(calc_k_ex=calc_k_ex, save_folder=save_folder, save_time=save_time)
+        self.wait_time = wait_time
+        self.fit_params_history = np.empty((0, len(self.cavity.fit_parameters)+1))
+
+        hotkeys = {"<ctrl>+p": self.toggle_pause}
         self.keyboard_listener = GlobalHotKeys(hotkeys)
         self.keyboard_listener.start()
         self.pause = False
 
         self.stop_condition = False
+
+        self.graphics = ResonanceFitGraphics(self, show_buttons=show_buttons)
 
     # ------------------ KEYBOARD INTERRUPTS ------------------ #
     def toggle_pause(self):
@@ -258,19 +321,21 @@ class LiveResonanceFit(ResonanceFit):
             if not self.fit_transmission_spectrum():
                 continue
 
+            params = self.cavity.get_fit_parameters() + [self.lock_error]
+            self.fit_params_history = np.vstack([self.fit_params_history, params])
+
             self.main_loop_callback()
 
-            if self.plot:
-                self.plot_fit()
-                if self.show_buttons:
-                    self.activate_button()
+            if hasattr(self, "graphics"):
+                self.graphics.plot_fit()
+                self.graphics.activate_button()
                 time.sleep(self.wait_time)
 
 
 class ScopeResonanceFit(LiveResonanceFit):
     def __init__(self, channels_dict: dict, scope_ip='132.77.54.241', save_data=False):
         save_folder = r'C:\temp\refactor_debug\Experiment_results\QRAM\resonance_params' if save_data else None
-        super().__init__(wait_time=0.5, calc_k_ex=False, save_folder=save_folder, save_time=15)
+        super().__init__(wait_time=0.1, calc_k_ex=False, save_folder=save_folder, save_time=15, show_buttons=True)
         self.save_data = save_data
 
         if scope_ip is None:

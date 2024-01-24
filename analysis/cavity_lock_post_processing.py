@@ -10,7 +10,7 @@ class FolderResonanceFit(LiveResonanceFit):
     rubidium_lines_regex = re.compile(r"[0-9]+-([0-9]+)_rb_lines_spectrum.npy")
 
     def __init__(self, folder_path, start_time=140000, end_time=180000):
-        super().__init__(wait_time=1, plot=True, calc_k_ex=True)
+        super().__init__(wait_time=1, calc_k_ex=True, show_buttons=False)
         self.folder_path = folder_path
         self.start_time = start_time
         self.end_time = end_time
@@ -20,10 +20,6 @@ class FolderResonanceFit(LiveResonanceFit):
 
         self.transmission_generator = self.transmission_spectrum_generator()
         self.rubidium_lines_generator = self.rubidium_lines_generator()
-
-        self.main_parameter_history = []
-        self.lock_error_history = []
-        self.diff_history = []
 
     def transmission_spectrum_generator(self):
         cavity_spectrum_files = [m for f in os.listdir(self.folder_path)
@@ -57,19 +53,8 @@ class FolderResonanceFit(LiveResonanceFit):
         self.stop_condition = rubidium_spectrum is None
         return rubidium_spectrum
 
-    def main_loop_callback(self):
-        self.main_parameter_history.append(self.cavity.current_fit_value)
-        self.lock_error_history.append(self.lock_error)
-        self.diff_history.append(self.cavity.x_0 - self.cavity.minimum_of_fit)
-
     def start(self):
         super().start()
-        plt.plot(self.main_parameter_history)
-        plt.show()
-        plt.plot(self.lock_error_history)
-        plt.show()
-        plt.plot(self.diff_history)
-        plt.show()
 
 
 if __name__ == '__main__':
