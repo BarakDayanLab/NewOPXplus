@@ -6,12 +6,12 @@ from scipy.signal import find_peaks
 from scipy.optimize import curve_fit
 from analysis.scope_connection import Scope, FakeScope
 from cavity import RubidiumLines, CavityFwhm, CavityKex
-import pynput.keyboard as keyboard
+from pynput.keyboard import GlobalHotKeys, Key
 
 
 class ResonanceFit:
-    def __init__(self, calc_k_ex=False, save_folder=None, save_time=60):
-        self.cavity = CavityKex(k_i=8, h=0.6) if calc_k_ex else CavityFwhm()
+    def __init__(self, calc_k_ex=False, save_folder=None, save_time=60, show_buttons=True):
+        self.cavity = CavityKex(k_i=3.9, h=0.6) if calc_k_ex else CavityFwhm()
         self.lock_idx = 4
         self.save_folder = save_folder
         self.save_time = save_time
@@ -24,6 +24,9 @@ class ResonanceFit:
         self.relevant_x_axis = None
 
         self.fig, self.axes = None, None
+        self.show_buttons = show_buttons
+        self.buttons = {}
+        self.current_active_button = None
 
         self.prominence = 0.03
         self.rolling_avg = 100
@@ -34,6 +37,13 @@ class ResonanceFit:
     @property
     def lock_error(self):
         return self.cavity.x_0 - self.x_axis[self.rubidium_lines.peaks_idx[self.lock_idx]] + 80
+
+    @property
+    def rubidium_peaks(self):
+        x_vals = self.x_axis[self.rubidium_lines.peaks_idx]
+        y_vals = self.rubidium_lines.data[self.rubidium_lines.peaks_idx]
+        peaks = np.vstack([x_vals, y_vals]).T
+        return peaks
 
     # ------------------ CALIBRATIONS ------------------ #
 
@@ -109,6 +119,28 @@ class ResonanceFit:
             return False
         return True
 
+    # ------------------ UI ------------------ #
+    def update_active_button(self, button_name):
+        self.current_active_button = button_name
+
+    def activate_button(self):
+        if self.current_active_button == "":
+            return
+
+        if self.current_active_button == "choose_line_button":
+            self.choose_line()
+            self.current_active_button = ""
+
+    def choose_line(self):
+        prev_title = self.fig.texts[0].get_text()
+        self.fig.suptitle("Choose line")
+
+        point = plt.ginput(1, timeout=0, show_clicks=True)[0]
+        distances = np.sum((self.rubidium_peaks - point) ** 2, axis=1)
+        self.lock_idx = np.argmin(distances)
+
+        self.fig.suptitle(prev_title)
+
     # ------------------ PLOT FIT ------------------ #
     def initialize_figure(self):
         plt.ion()
@@ -116,6 +148,16 @@ class ResonanceFit:
         self.axes[0].set_ylabel("Transmission")
         self.axes[1].set_ylabel("Rubidium")
         self.axes[1].set_xlabel("Frequency [MHz]")
+        if self.show_buttons:
+            self.buttons_axis()
+
+    def buttons_axis(self):
+        self.fig.add_axes([0.01, 0.01, 0.1, 0.05])
+        self.axes = self.fig.axes
+
+        choose_line_button = plt.Button(self.axes[-1], 'choose line')
+        self.buttons.update({"choose_line_button": choose_line_button})
+        choose_line_button.on_clicked(lambda _: self.update_active_button("choose_line_button"))
 
     def plot_fit(self, title=None):
         if self.fig is None:
@@ -167,21 +209,22 @@ class ResonanceFit:
 
 
 class LiveResonanceFit(ResonanceFit):
-    def __init__(self, wait_time=0.5, calc_k_ex=False, save_folder=None, save_time=60, plot=True):
-        super().__init__(calc_k_ex=calc_k_ex, save_folder=save_folder, save_time=save_time)
+    def __init__(self, wait_time=0.1, calc_k_ex=False, save_folder=None, save_time=60, plot=True):
+        super().__init__(calc_k_ex=calc_k_ex, save_folder=save_folder, save_time=save_time, show_buttons=False)
         self.wait_time = wait_time
         self.plot = plot
 
-        self.pause = False
-        self.keyboard_listener = keyboard.Listener(on_press=self.keyboard_on_press)
+        hotkeys = {"<ctrl>+p": self.toggle_pause,
+                   }
+        self.keyboard_listener = GlobalHotKeys(hotkeys)
         self.keyboard_listener.start()
+        self.pause = False
 
         self.stop_condition = False
 
     # ------------------ KEYBOARD INTERRUPTS ------------------ #
-    def keyboard_on_press(self, key):
-        if key == keyboard.Key.space:
-            self.pause = not self.pause
+    def toggle_pause(self):
+        self.pause = not self.pause
 
     def wait(self):
         while self.pause:
@@ -219,6 +262,8 @@ class LiveResonanceFit(ResonanceFit):
 
             if self.plot:
                 self.plot_fit()
+                if self.show_buttons:
+                    self.activate_button()
                 time.sleep(self.wait_time)
 
 

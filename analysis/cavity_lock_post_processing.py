@@ -10,7 +10,7 @@ class FolderResonanceFit(LiveResonanceFit):
     rubidium_lines_regex = re.compile(r"[0-9]+-([0-9]+)_rb_lines_spectrum.npy")
 
     def __init__(self, folder_path, start_time=140000, end_time=180000):
-        super().__init__(wait_time=1, plot=True)
+        super().__init__(wait_time=1, plot=True, calc_k_ex=True)
         self.folder_path = folder_path
         self.start_time = start_time
         self.end_time = end_time
@@ -58,7 +58,7 @@ class FolderResonanceFit(LiveResonanceFit):
         return rubidium_spectrum
 
     def main_loop_callback(self):
-        self.main_parameter_history.append(self.cavity.value)
+        self.main_parameter_history.append(self.cavity.current_fit_value)
         self.lock_error_history.append(self.lock_error)
         self.diff_history.append(self.cavity.x_0 - self.cavity.minimum_of_fit)
 
