@@ -29,14 +29,11 @@ from Experiments.Enums.ValuesTransformer import ValuesTransformer
 
 from Experiments.QuadRF.quadRFMOTController import QuadRFMOTController
 
-from analysis.resonance_fit import ResonanceFit
-
 from logging import StreamHandler, Formatter, INFO
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
 import pymsgbox
 from pynput import keyboard
-from threading import Thread
 
 
 class BaseExperiment:
@@ -105,7 +102,7 @@ class BaseExperiment:
 
         # Insert a prompt to check we're not running on live lab devices (OPX, QuadRF)
         if not self.playback["active"] and self.login == 'drorg':
-            what_say_thou = pymsgbox.prompt('You are about to run LIVE from your workstation. Continue? (type YES)', default='', timeout=int(30e3))
+            what_say_thou = self.prompt(title='LIVE run on local', msg='You are about to run LIVE from your workstation. Continue? (type YES)', default='', timeout=int(30e3))
             if what_say_thou.lower() != 'yes':
                 sys.exit('Aborting. Do not want to run from private state on lab live.')
 
@@ -191,8 +188,6 @@ class BaseExperiment:
         # (a) Initialize QuadRF (b) Set experiment related variables (c) Initialize OPX
         self.initialize_experiment()
 
-        # self.initialize_resonance_monitor()
-
     def __del__(self):
         print('**** BaseExperiment Destructor ****')
 
@@ -225,14 +220,6 @@ class BaseExperiment:
 
         # Initialize the OPX
         self.initialize_OPX()
-
-    @staticmethod
-    def initialize_resonance_monitor():
-        channels_dict = {"transmission": 1, "rubidium": 3}
-        res_fit = ResonanceFit(channels_dict=channels_dict, k_i=3.9, h=0.6)
-        # res_fit.monitor_spectrum()
-        # thread = Thread(target=res_fit.monitor_spectrum)
-        # thread.start()
 
     # Initialize the QuadRF
     def initiliaze_QuadRF(self):
@@ -610,8 +597,15 @@ class BaseExperiment:
     def debug(self, msg):
         self.logger.debug(msg)
 
-    def prompt(self, msg, default='', timeout=30000):
-        res = pymsgbox.prompt(msg, default=default, timeout=timeout)
+    def prompt(self, msg, default='', timeout=30000, title='', buttons=None):
+        """
+        Raise a prompt. If buttons are defined, it will raise a confirmation box with just buttons and no text.
+        Returns: the text in case of prompt -or- the selected buttons in case of confirmation dialog
+        """
+        if buttons:
+            res = pymsgbox.confirm(text=msg, title=title, buttons=buttons)
+        else:
+            res = pymsgbox.prompt(text=msg, title=title, default=default, timeout=timeout)
         return res
 
     # -------------------------------------------------------
@@ -816,7 +810,11 @@ class BaseExperiment:
     #------------------------------------------------------------------------
     def updateValue(self, key, value, update_parameters=False):
 
+        updated_at = []
+
         if key in self.Exp_Values:
+            updated_at.append('Exp Values')
+
             self.Exp_Values[key] = value
             # ------------------------------------------------------------
             # Special cases - these happen ON-TOP of the regular update
@@ -853,11 +851,11 @@ class BaseExperiment:
 
             # QuadRF - Keep track of which channels are updated
             if key in K2C:
+                updated_at.append('QuadRF')
                 for ch in K2C[key]:
                     self.Update_QuadRF_channels.add(ch)
             else:
-                self.logger.warn(f'{key} is not in KeyToChannel. What channel does this key belong to? [change in Config_Table.py]')
-                # TODO: raise an exception here
+                self.logger.warn(f'{key} is not in KeyToChannel. No QuadRF channel updated.')
 
         # -------------------------------------------------------
         # Now we check if this is a param we need to update OPX
@@ -865,6 +863,7 @@ class BaseExperiment:
         if IOP.has(key):
             io1 = IOP.value_from_string(key)  # Get the Enum value from the string
             if self.transformer.knows(key):
+                updated_at.append('OPX')
                 mode = self.transformer.mode(key)
                 if mode == 'SET_VALUE':
                     self.update_io_parameter(io1, value)
@@ -882,6 +881,12 @@ class BaseExperiment:
                 msg = f'"{key}" is not in Values_Factor map!'
                 self.logger.error(msg)
                 raise Exception(msg)
+
+        if len(updated_at) == 0:
+            logger.warn(f'Cannot update {key}. Not supported in your IOP or K2C tables.')
+            return
+
+        logger.info(f'updateValue: updated {key} to {value} at {"and ".join(updated_at)}')
 
         if update_parameters:
             self.update_parameters()

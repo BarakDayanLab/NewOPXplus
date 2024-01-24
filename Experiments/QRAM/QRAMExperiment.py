@@ -1523,7 +1523,7 @@ class QRAMExperiment(BaseExperiment):
         pass
 
     # TODO: Refactor/Rename (this method analyzes the results)
-    def Save_SNSPDs_QRAM_Measurement_with_tt(self, N, qram_sequence_len, pre_comment, lock_err_threshold,desired_k_ex,
+    def Save_SNSPDs_QRAM_Measurement_with_tt(self, N, qram_sequence_len, pre_experiment_comment, lock_err_threshold, desired_k_ex,
                                              transit_condition,
                                              max_probe_counts, filter_delay, reflection_threshold,
                                              reflection_threshold_time,
@@ -1534,7 +1534,7 @@ class QRAMExperiment(BaseExperiment):
         :param N: Number of maximum experiments (free throws) saved and displayed.
                  program we are looking for transits of atoms next to the toroid and record them.
         :param qram_sequence_len: the number of sprint sequences (detection and sprint pulses combination)
-        :param pre_comment: The comment added at the start of the experiment, usually consisting of unique experiment
+        :param pre_experiment_comment: The comment added at the start of the experiment, usually consisting of unique experiment
                            parameters.
         :param transit_condition:
         :param lock_err_threshold: The maximal error in locking resonator to rb line (in ms, depends on the scan width/vpp)
@@ -1546,8 +1546,8 @@ class QRAMExperiment(BaseExperiment):
         :return:
         """
 
-        if not pre_comment:
-            pre_comment = self.prompt('Add comment to measurement: ')
+        if not pre_experiment_comment:
+            pre_experiment_comment = self.prompt(title='Pre Experiment Comment', msg='Add a Pre-Comment text (or Cancel to leave empty):')
 
         # set constant parameters for the function
 
@@ -1905,24 +1905,27 @@ class QRAMExperiment(BaseExperiment):
 
         ############################################## END WHILE-LOOP #################################################
 
+        termination_str = 'successful'
         if self.runs_status == TerminationReason.SUCCESS:
-            self.logger.info(f'Finished {N} Runs, {"with" if self.with_atoms else "without"} atoms')
+            self.logger.info(f'Finished {self.N} Runs, {"with" if self.with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.USER:
+            termination_str = 'user terminated'
             self.logger.info(f'User Terminated the measurements after {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.ERROR:
+            termination_str = 'erroneous'
             self.logger.info(f'Error Terminated the measurements after {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
 
         # Adding comment to measurement [prompt whether stopped or finished regularly]
         if exp_flag:
-            if self.counter < N:
-                aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
+            if self.counter < self.N:
+                post_experiment_comment = self.prompt(title=f'Experiment Done ({termination_str})', msg='Add comment to measurement:', default='', timeout=int(30e3))
             else:
-                aftComment = ''
+                post_experiment_comment = ''
         else:
-            aftComment = 'ignore'
+            post_experiment_comment = 'ignore'
 
         experiment_comment = f'Transit condition: {self.transit_condition}\nReflection threshold {self.reflection_threshold} @ {int(self.reflection_threshold_time/1e6)} ms'
-        daily_experiment_comments = self.generate_experiment_summary_line(pre_comment, aftComment, self.with_atoms, self.counter)
+        daily_experiment_comments = self.generate_experiment_summary_line(pre_experiment_comment, post_experiment_comment, self.with_atoms, self.counter)
 
         # Save all results of experiment
         self.save_experiment_results(experiment_comment, daily_experiment_comments)
@@ -2176,23 +2179,16 @@ class QRAMExperiment(BaseExperiment):
             figure_manager.frame.Maximize(True)
         else:
             self.logger.warn(f'Unknown matplotlib backend ({backend_name}). Cannot maximize figure')
-    def generate_experiment_summary_line(self, pre_comment, aftComment, with_atoms, counter):
+    def generate_experiment_summary_line(self, pre_comment, post_comment, with_atoms, counter):
         time_str = time.strftime("%H%M%S")
         date_str = time.strftime("%Y%m%d")
-        # cmnt = None
-        # if pre_comment is not None:
-        #     cmnt = pre_comment + '; '
-        # if aftComment is not None:
-        #     cmnt = pre_comment + ' After comment: ' + aftComment
-        # if pre_comment is None and aftComment is None:
-        #     cmnt = 'No comment.'
+
         cmnt = self.experiment_type
         if pre_comment is not None:
             cmnt = cmnt + '; ' + pre_comment + '; '
-        if aftComment is not None:
-            cmnt = cmnt + '; ' + pre_comment + ' After comment: ' + aftComment
-        # if pre_comment is None and aftComment is None:
-        #     cmnt = 'No comment.'
+        if post_comment is not None:
+            cmnt = cmnt + '; ' + pre_comment + ' After comment: ' + post_comment
+
         experiment_success = 'ignore' if 'ignore' in cmnt or not self.exp_flag else 'valid'
         full_line = f'{date_str},{time_str},{experiment_success},{with_atoms},{counter},{cmnt}'
         return full_line
@@ -2218,21 +2214,21 @@ class QRAMExperiment(BaseExperiment):
         # TODO: Q: Config.QRAM_Exp_Gaussian_samples_S is constructed in a function, using the parameter "sprint_pulse_len" - so why not use it here?
         # TODO: Q: (a) we don't want to use duplicate variables holding the same value, (b) it mentions "samples_S" - but it's the same for "N" as well...
         run_status = self.Save_SNSPDs_QRAM_Measurement_with_tt(N=rp['N'],
-                                                  #qram_sequence_len=len(Config.QRAM_Exp_Gaussian_samples_S),  # TODO: Which one of these should it be?
-                                                  qram_sequence_len=len(Config.QRAM_Exp_Square_samples_Late),
-                                                  pre_comment=rp['pre_comment'],
-                                                  lock_err_threshold=rp['lock_err_threshold'],
-                                                  desired_k_ex=rp['desired_k_ex'],
-                                                  transit_condition=rp['transit_condition'],
-                                                  max_probe_counts=max_probe_counts,
-                                                  filter_delay=rp['filter_delay'],
-                                                  reflection_threshold=rp['reflection_threshold'],
-                                                  reflection_threshold_time=rp['reflection_threshold_time'],
-                                                  photons_per_det_pulse_threshold=rp['photons_per_det_pulse_threshold'],
-                                                  FLR_threshold=rp['FLR_threshold'],
-                                                  exp_flag=rp['Exp_flag'],
-                                                  with_atoms=rp['with_atoms'],
-                                                  MZ_infidelity_threshold=rp['MZ_infidelity_threshold'])
+                                                               #qram_sequence_len=len(Config.QRAM_Exp_Gaussian_samples_S),  # TODO: Which one of these should it be?
+                                                               qram_sequence_len=len(Config.QRAM_Exp_Square_samples_Late),
+                                                               pre_experiment_comment=rp['pre_experiment_comment'],
+                                                               lock_err_threshold=rp['lock_err_threshold'],
+                                                               desired_k_ex=rp['desired_k_ex'],
+                                                               transit_condition=rp['transit_condition'],
+                                                               max_probe_counts=max_probe_counts,
+                                                               filter_delay=rp['filter_delay'],
+                                                               reflection_threshold=rp['reflection_threshold'],
+                                                               reflection_threshold_time=rp['reflection_threshold_time'],
+                                                               photons_per_det_pulse_threshold=rp['photons_per_det_pulse_threshold'],
+                                                               FLR_threshold=rp['FLR_threshold'],
+                                                               exp_flag=rp['Exp_flag'],
+                                                               with_atoms=rp['with_atoms'],
+                                                               MZ_infidelity_threshold=rp['MZ_infidelity_threshold'])
         return run_status
 
     def post_run(self, run_parameters):
@@ -2248,7 +2244,7 @@ if __name__ == "__main__":
     run_parameters = {
         'N': 10000,  # 50,
         'transit_condition': [2, 1, 2],
-        'pre_comment': '',
+        'pre_experiment_comment': '',
         'lock_err_threshold': 0.0005,
         'desired_k_ex': 18,
         'filter_delay': [0, 0, 0],
