@@ -241,7 +241,7 @@ class QRAMExperiment(BaseExperiment):
         # Normalize the data coming from the detectors
         for detector_index in range(len(self.Num_Of_dets)):  # for different detectors
             tt_res = self.streams[f'Detector_{detector_index + 1}_Timetags']['results']
-            tt_res=tt_res.astype(np.int32) # changing type from int64 to int32
+            tt_res = tt_res.astype(np.int32) # changing type from int64 to int32
             normalized_stream = self.bdstreams.normalize_stream(tt_res, detector_index, Config.detector_delays, self.M_window)
             self.tt_measure.append(normalized_stream)
 
@@ -686,8 +686,6 @@ class QRAMExperiment(BaseExperiment):
 
         current_transit = []
         self.all_transits_seq_indx = []  # Array of the sequence indexes of all recognized transits per cycle. The length of it will be the number of all transits at the current cycle.
-        self.reflection_SPRINT_data= []  # Array of vectors with data on the number of reflections per SPRINT pulse in sequence.
-        self.transmission_SPRINT_data = []  # Array of vectors with data on the number of transmissions per SPRINT pulse in sequence.
 
         for i in range(self.number_of_QRAM_sequences - len(cond) + 1):
             cond_check = (self.num_of_det_reflections_per_seq[i:(i + len(cond))] >= cond).astype(int)
@@ -718,15 +716,15 @@ class QRAMExperiment(BaseExperiment):
                     self.all_transits_seq_indx = self.all_transits_seq_indx[:-1]
             self.all_transits_seq_indx.append(current_transit)
 
-    def analyze_SPRINT_data_points(self, SPRINT_pulse_number=1):
+    def analyze_SPRINT_data_points(self, all_transits_seq_indx, SPRINT_pulse_number=1):
         '''
         Find the relevent data points for SPRINT pulse and analyze results.
         :param SPRINT_pulse_number: The SPRINT pulse number for which we want to check the results
         '''
-        self.reflection_SPRINT_data = []  # Array of vectors with data on the number of reflections per SPRINT pulse in sequence.
-        self.transmission_SPRINT_data = []  # Array of vectors with data on the number of transmissions per SPRINT pulse in sequence.
-        self.seq_with_data_points = []
-        for transit in self.all_transits_seq_indx:
+        reflection_SPRINT_data = []  # Array of vectors with data on the number of reflections per SPRINT pulse in sequence.
+        transmission_SPRINT_data = []  # Array of vectors with data on the number of transmissions per SPRINT pulse in sequence.
+        seq_with_data_points = []
+        for transit in all_transits_seq_indx:
             for seq_indx in transit[:-1]:
                 # Checking potential for data point by looking for a single photon at the reflection of the last
                 # detection pulse:
@@ -741,18 +739,19 @@ class QRAMExperiment(BaseExperiment):
                 if potential_data:
                     if self.sorted_pulses[self.number_of_detection_pulses_per_seq-1+SPRINT_pulse_number][2] == 'n':
                         transmissions = len(self.num_of_SPRINT_transmissions_per_seq_N_[seq_indx][SPRINT_pulse_number-1])
-                        reflections = len(self.num_of_SPRINT_reflections_per_seq_S_[seq_indx][SPRINT_pulse_number-1])
-                        if (transmissions + reflections) == 1:
-                            self.seq_with_data_points.append(seq_indx)
-                            self.reflection_SPRINT_data.append(reflections)
-                            self.transmission_SPRINT_data.append(transmissions)
-                    elif self.sorted_pulses[self.number_of_detection_pulses_per_seq-1+SPRINT_pulse_number][2] == 's':
-                        transmissions = len(self.num_of_SPRINT_transmissions_per_seq_S_[seq_indx][SPRINT_pulse_number-1])
                         reflections = len(self.num_of_SPRINT_reflections_per_seq_N_[seq_indx][SPRINT_pulse_number-1])
                         if (transmissions + reflections) == 1:
-                            self.seq_with_data_points.append(seq_indx)
-                            self.reflection_SPRINT_data.append(reflections)
-                            self.transmission_SPRINT_data.append(transmissions)
+                            seq_with_data_points.append(seq_indx)
+                            reflection_SPRINT_data.append(reflections)
+                            transmission_SPRINT_data.append(transmissions)
+                    elif self.sorted_pulses[self.number_of_detection_pulses_per_seq-1+SPRINT_pulse_number][2] == 's':
+                        transmissions = len(self.num_of_SPRINT_transmissions_per_seq_S_[seq_indx][SPRINT_pulse_number-1])
+                        reflections = len(self.num_of_SPRINT_reflections_per_seq_S_[seq_indx][SPRINT_pulse_number-1])
+                        if (transmissions + reflections) == 1:
+                            seq_with_data_points.append(seq_indx)
+                            reflection_SPRINT_data.append(reflections)
+                            transmission_SPRINT_data.append(transmissions)
+        return seq_with_data_points, reflection_SPRINT_data, transmission_SPRINT_data
 
 
     def get_pulses_location_in_seq(self, delay, seq, smearing):
@@ -1121,9 +1120,13 @@ class QRAMExperiment(BaseExperiment):
         header_text = f'{playback_str} {status_str} - Eff: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str}, {k_ex_str} {pause_str}'
 
         # SPRINT results box
-        SPRINT_reflections = '%d' % sum(self.reflection_SPRINT_data)
-        SPRINT_reflections_text = '$S_{SPRINT}$'
-        SPRINT_transmissions = '%d' % sum(self.transmission_SPRINT_data)
+        SPRINT_reflections_without_transits = '%d' % self.num_of_total_SPRINT_reflections
+        SPRINT_reflections_with_transits = '%d' % sum(sum(self.batcher['reflection_SPRINT_data_batch'], []))
+        SPRINT_reflections = f'${SPRINT_reflections_with_transits}_{{({SPRINT_reflections_without_transits})}}$'
+        SPRINT_reflections_text = '$R_{SPRINT}$'
+        SPRINT_transmissions_without_transits = '%d' % self.num_of_total_SPRINT_transmission
+        SPRINT_transmissions_with_transits = '%d' % sum(sum(self.batcher['transmission_SPRINT_data_batch'], []))
+        SPRINT_transmissions = f'${SPRINT_transmissions_with_transits}_{{({SPRINT_transmissions_without_transits})}}$'
         SPRINT_transmissions_text = '$T_{SPRINT}$'
         SPRINT_Score = f'{SPRINT_reflections} - {SPRINT_transmissions}'
         table_vals = [SPRINT_reflections_text, SPRINT_Score, SPRINT_transmissions_text]
@@ -1204,7 +1207,8 @@ class QRAMExperiment(BaseExperiment):
                            horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
                            color='#d62728')
             # ax[1].set_ylim(0, 0.3)
-            ax[1].text(0.6, 1.4, SPRINT_text, transform=ax[1].transAxes, fontsize=26, verticalalignment='top', bbox=props_SPRINT)
+            ax[1].text(1, 1.4, SPRINT_text, transform=ax[1].transAxes, fontsize=26, verticalalignment='top',
+                       horizontalalignment='right', bbox=props_SPRINT)
             # ax[1].table(cellText=table_vals)
             ax[1].set_title('binned time-tags from all detectors folded (Averaged)', fontweight="bold")
             ax[1].legend(loc='upper right')
@@ -1352,6 +1356,12 @@ class QRAMExperiment(BaseExperiment):
         self.num_of_det_transmissions_per_seq_S = np.zeros(self.number_of_QRAM_sequences)
         self.num_of_det_transmissions_per_seq_N = np.zeros(self.number_of_QRAM_sequences)
 
+        self.seq_with_data_points = []
+        self.reflection_SPRINT_data = []  # Array of vectors with data on the number of reflections per SPRINT pulse in sequence.
+        self.transmission_SPRINT_data = []  # Array of vectors with data on the number of transmissions per SPRINT pulse in sequence.
+
+        self.reflection_SPRINT_data_without_transits = []  # Array of vectors with data on the number of reflections per SPRINT pulse in sequence.
+        self.transmission_SPRINT_data_without_transits = []  # Array of vectors with data on the number of transmissions per SPRINT pulse in sequence.
 
     def new_timetags_detected(self, prev_measures, curr_measure):
         """
@@ -1524,6 +1534,7 @@ class QRAMExperiment(BaseExperiment):
 
     # TODO: Refactor/Rename (this method analyzes the results)
     def Save_SNSPDs_QRAM_Measurement_with_tt(self, N, qram_sequence_len, pre_comment, lock_err_threshold,desired_k_ex,
+                                             k_ex_err,
                                              transit_condition,
                                              max_probe_counts, filter_delay, reflection_threshold,
                                              reflection_threshold_time,
@@ -1570,6 +1581,7 @@ class QRAMExperiment(BaseExperiment):
         self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
         self.lock_err_threshold = lock_err_threshold
         self.desired_k_ex = desired_k_ex
+        self.k_ex_err = k_ex_err
         self.transit_condition = transit_condition
         self.reflection_threshold = reflection_threshold
         self.reflection_threshold_time = reflection_threshold_time
@@ -1578,7 +1590,7 @@ class QRAMExperiment(BaseExperiment):
         self.FLR_threshold = FLR_threshold
         self.exp_flag = exp_flag
 
-        self.warm_up_cycles = 15  # Should also come as params, with some default. E.g. self.warm_up_cycles = 10 if 'warm_up_cycles' not in params else params['warm_up_cycles']
+        self.warm_up_cycles = 5  # Should also come as params, with some default. E.g. self.warm_up_cycles = 10 if 'warm_up_cycles' not in params else params['warm_up_cycles']
 
         # initialize parameters - set zeros vectors and empty lists
         self.init_params_for_experiment()
@@ -1843,9 +1855,21 @@ class QRAMExperiment(BaseExperiment):
                 self.number_of_transits_live = len(self.all_transits_seq_indx)
                 self.number_of_transits_total = len([vec for lst in self.batcher['all_transits_seq_indx_batch'] for vec in lst])
 
-                self.calculate_running_averages()
+                # Analyze SPRINT data during transits:
+                self.seq_with_data_points, self.reflection_SPRINT_data, self.transmission_SPRINT_data = \
+                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=1)  # Enter the index of the SPRINT pulse for which the data should be analyzed
 
-                self.analyze_SPRINT_data_points(SPRINT_pulse_number=1)  # Enter the index of the SPRINT pulse for which the data should be analyzed
+                # Analyze SPRINT data when no transit occur:
+                self.all_seq_without_transits = [
+                    np.delete(np.arange(0, self.number_of_QRAM_sequences, 1, dtype='int'),
+                              sum(self.all_transits_seq_indx, [])).tolist()
+                ]
+                _, self.reflection_SPRINT_data_without_transits, self.transmission_SPRINT_data_without_transits = \
+                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=1)  # Enter the index of the SPRINT pulse for which the data should be analyzed
+                self.num_of_total_SPRINT_reflections = sum(self.reflection_SPRINT_data_without_transits)
+                self.num_of_total_SPRINT_transmission = sum(self.transmission_SPRINT_data_without_transits)
+
+                self.calculate_running_averages()
 
                 # get the average number of photons in detection pulse
                 self.avg_num_of_photons_per_pulse_S = self.get_avg_num_of_photons_in_seq_pulses(
@@ -1970,12 +1994,13 @@ class QRAMExperiment(BaseExperiment):
             "Phase_Correction_vec_batch": self.batcher['Phase_Correction_vec_batch'],
             "Phase_Correction_min_vec_batch": self.batcher['Phase_Correction_min_vec_batch'],
 
-            "Index_of_Sequences_with_data_points": self.seq_with_data_points,
-            "Reflections_per_data_point": self.reflection_SPRINT_data,
-            "Transmissions_per_data_point": self.transmission_SPRINT_data,
+            "Index_of_Sequences_with_data_points": self.batcher['seq_with_data_points_batch'],
+            "Reflections_per_data_point": self.batcher['reflection_SPRINT_data_batch'],
+            "Transmissions_per_data_point": self.batcher['transmission_SPRINT_data_batch'],
 
             "FLR_measurement": self.batcher['flr_batch'],
             "lock_error": self.batcher['lock_err_batch'],
+            "k_ex": self.batcher['k_ex_batch'],
             "exp_timestr": experiment_comment,
 
             "exp_comment": f'transit condition: {self.transit_condition}; reflection threshold: {self.reflection_threshold} @ {int(self.reflection_threshold_time / 1e6)} ms',
@@ -1996,11 +2021,14 @@ class QRAMExperiment(BaseExperiment):
         if self.lock_err == None:
             return False
 
-        if self.lock_err > self.lock_err_threshold:
+        if abs(self.lock_err) > self.lock_err_threshold:
+            return False
+
+        if self.k_ex == None:
             return False
 
         # Are we on the right width ?
-        if not 0.85*self.desired_k_ex<self.k_ex<1.15*self.desired_k_ex:
+        if not np.abs(self.k_ex-self.desired_k_ex)<self.k_ex_err:
             return False
 
 
@@ -2223,6 +2251,7 @@ class QRAMExperiment(BaseExperiment):
                                                   pre_comment=rp['pre_comment'],
                                                   lock_err_threshold=rp['lock_err_threshold'],
                                                   desired_k_ex=rp['desired_k_ex'],
+                                                  k_ex_err=rp['k_ex_err'],
                                                   transit_condition=rp['transit_condition'],
                                                   max_probe_counts=max_probe_counts,
                                                   filter_delay=rp['filter_delay'],
@@ -2249,8 +2278,9 @@ if __name__ == "__main__":
         'N': 10000,  # 50,
         'transit_condition': [2, 1, 2],
         'pre_comment': '',
-        'lock_err_threshold': 0.0005,
-        'desired_k_ex': 18,
+        'lock_err_threshold': 2, # [Mhz]
+        'desired_k_ex': 40,# [Mhz]
+        'k_ex_err': 6, # [Mhz]
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,
         'reflection_threshold_time': 9e6,
@@ -2263,18 +2293,18 @@ if __name__ == "__main__":
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
     # The sequence_definitions params would replace parameters from run_parameters('N','with_atoms')
     sequence_definitions = {
-        'total_cycles': 2,
+        'total_cycles': 1,
         'delay_between_cycles': None,  # seconds
         'sequence': [
             {
                 'parameters': {
-                    'N': 50,
+                    'N': 30,
                     'with_atoms': False
                 }
             },
             {
                 'parameters': {
-                    'N': 500,
+                    'N': 250,
                     'with_atoms': True
                 }
             },
@@ -2284,7 +2314,7 @@ if __name__ == "__main__":
     experiment = QRAMExperiment(playback=False, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
-    sequence_definitions = None
+    # sequence_definitions = None
 
     if sequence_definitions is None:
         experiment.run(run_parameters)
