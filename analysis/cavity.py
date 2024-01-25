@@ -40,7 +40,7 @@ class Cavity:
         self.m = 0
         self.b = 0
 
-        self.base_bounds = [(-np.inf, -np.inf, -1, -np.inf), (np.inf, np.inf, 1, np.inf)]
+        self.base_bounds = [(-np.inf, -np.inf, -np.inf, -np.inf), (np.inf, np.inf, np.inf, np.inf)]
         self.bounds = [bounds[0] + self.base_bounds[0], bounds[1] + self.base_bounds[1]]
 
     @property
