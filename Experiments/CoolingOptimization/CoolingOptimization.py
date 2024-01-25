@@ -42,8 +42,13 @@ class CoolingSequenceOptimizer(BaseExperiment):
     def connect_disconnect_camera(self):
         if self.camera:
             self.disconnect_camera()
+            self.info('Disconnected from MV camera.')
         else:
-            self.connect_camera()
+            success = self.connect_camera()
+            if success:
+                self.info('Connected to MV camera!')
+            else:
+                self.info('Attempted to connect to MV camera, but failed. Check if app is in use.')
 
     def createPathForTemperatureMeasurement(self, path=None, saveConfig=False):
         extraFilesPath = ''
@@ -468,7 +473,7 @@ if __name__ == "__main__":
     experiment = CoolingSequenceOptimizer()
 
     # Display menu to get action
-    #selection = BDMenu(experiment, r'./menu.json', None).display()
+    selection = BDMenu(experiment, r'./menu.json', None).display()
 
     # TODO: insert this into the cycles/runs schema
     # experiment.measureTemperature()
