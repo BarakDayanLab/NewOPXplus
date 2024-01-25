@@ -68,7 +68,7 @@
 		{
             "description": "The figures plotted (UI) - saved in a central place",
 			"file_name": "{current_time}_Experiment_Figure",
-			"folder": "{current_date}\\Experiment_figures",
+			"folder": "..\\{current_date}\\Experiment_figures",
 			"type": "plt",
 			"skip": false
 		},

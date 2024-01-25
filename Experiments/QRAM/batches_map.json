@@ -8,6 +8,9 @@
     "lock_err_batch": {
         "value_name": "lock_err"
     },
+    "k_ex_batch": {
+        "value_name": "k_ex"
+    },
     "tt_measure_batch": {
         "value_name": "tt_measure"
     },
@@ -50,7 +53,15 @@
     },
     "all_transits_seq_indx_batch": {
         "value_name": "all_transits_seq_indx"
+    },
+
+    "reflection_SPRINT_data_batch": {
+        "value_name": "reflection_SPRINT_data"
+    },
+    "transmission_SPRINT_data_batch": {
+        "value_name": "transmission_SPRINT_data"
+    },
+    "seq_with_data_points_batch": {
+        "value_name": "seq_with_data_points"
     }
-
-
 }

@@ -2277,7 +2277,7 @@ if __name__ == "__main__":
     run_parameters = {
         'N': 10000,  # 50,
         'transit_condition': [2, 1, 2],
-        'pre_comment': '',
+        'pre_comment': 'ignore',
         'lock_err_threshold': 2, # [Mhz]
         'desired_k_ex': 40,# [Mhz]
         'k_ex_err': 6, # [Mhz]
