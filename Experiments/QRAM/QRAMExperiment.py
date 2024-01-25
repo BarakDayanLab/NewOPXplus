@@ -1120,11 +1120,11 @@ class QRAMExperiment(BaseExperiment):
         header_text = f'{playback_str} {status_str} - Eff: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str}, {k_ex_str} {pause_str}'
 
         # SPRINT results box
-        SPRINT_reflections_without_transits = '%d' % self.num_of_total_SPRINT_reflections
+        SPRINT_reflections_without_transits = '%d' % sum(sum(self.batcher['num_of_total_SPRINT_reflections_batch'], []))
         SPRINT_reflections_with_transits = '%d' % sum(sum(self.batcher['reflection_SPRINT_data_batch'], []))
         SPRINT_reflections = f'${SPRINT_reflections_with_transits}_{{({SPRINT_reflections_without_transits})}}$'
         SPRINT_reflections_text = '$R_{SPRINT}$'
-        SPRINT_transmissions_without_transits = '%d' % self.num_of_total_SPRINT_transmission
+        SPRINT_transmissions_without_transits = '%d' % sum(sum(self.batcher['num_of_total_SPRINT_transmissions_batch'], []))
         SPRINT_transmissions_with_transits = '%d' % sum(sum(self.batcher['transmission_SPRINT_data_batch'], []))
         SPRINT_transmissions = f'${SPRINT_transmissions_with_transits}_{{({SPRINT_transmissions_without_transits})}}$'
         SPRINT_transmissions_text = '$T_{SPRINT}$'
@@ -1867,7 +1867,7 @@ class QRAMExperiment(BaseExperiment):
                 _, self.reflection_SPRINT_data_without_transits, self.transmission_SPRINT_data_without_transits = \
                     self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=1)  # Enter the index of the SPRINT pulse for which the data should be analyzed
                 self.num_of_total_SPRINT_reflections = sum(self.reflection_SPRINT_data_without_transits)
-                self.num_of_total_SPRINT_transmission = sum(self.transmission_SPRINT_data_without_transits)
+                self.num_of_total_SPRINT_transmissions = sum(self.transmission_SPRINT_data_without_transits)
 
                 self.calculate_running_averages()
 

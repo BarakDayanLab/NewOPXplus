@@ -63,5 +63,11 @@
     },
     "seq_with_data_points_batch": {
         "value_name": "seq_with_data_points"
+    },
+    "num_of_total_SPRINT_reflections_batch": {
+        "value_name": "num_of_total_SPRINT_reflections"
+    },
+    "num_of_total_SPRINT_transmissions_batch": {
+        "value_name": "num_of_total_SPRINT_transmissions"
     }
 }
