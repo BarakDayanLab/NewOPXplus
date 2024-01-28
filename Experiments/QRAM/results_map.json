@@ -204,7 +204,14 @@
 			"name": "Cavity Lock Error",
 			"file_name": "Cavity_Lock_Error",
 			"folder": "Output",
-			"type": "npz"
+			"type": ["mat", "npz"]
+		},
+		{
+			"data": "k_ex",
+			"name": "Kappa Ext",
+			"file_name": "Kappa_Ex",
+			"folder": "Output",
+			"type": ["mat", "npz"]
 		}
 
 	]

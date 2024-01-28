@@ -2361,16 +2361,16 @@ if __name__ == "__main__":
         'sequence': [
             {
                 'parameters': {
-                    'N': 5,
+                    'N': 50,
                     'with_atoms': False
                 }
             },
             {
                 'parameters': {
-                    'N': 50,
+                    'N': 500,
                     'with_atoms': True
                 }
-            },
+            }
         ]
     }
 

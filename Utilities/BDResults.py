@@ -282,6 +282,7 @@ class BDResults:
             if 'folder' in entity:
                 path = os.path.join(resolved_path, entity['folder'])
 
+
             # Create folder if it does not exist
             if not os.path.exists(path):
                 os.makedirs(path, exist_ok=True)
@@ -289,11 +290,16 @@ class BDResults:
             # Add the file name
             file_path = os.path.join(path, entity['file_name'])
 
+            print(f'Saving {file_path}...')
+
             # Save the file
             try:
                 self._save_file(entity, file_path, data_pool)
             except Exception as err:
                 self._handle_error(f'Failed to save file {file_path}. {err}')
+
+            print(f'Saving {file_path} - Done!')
+
         pass
 
     def create_folders(self):
