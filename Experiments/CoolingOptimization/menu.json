@@ -37,7 +37,7 @@
     },
     {
       "order": 5,
-      "display": "Perform Fit",
+      "display": "Perform Fit (from files in folder)",
       "action": "perform_fit",
       "args": [
         {

@@ -80,7 +80,7 @@ class BDMenu:
                 # Is there a default value suggested?
                 if arg['default']:
                     default_values_str = self._values_to_str(arg['default'])
-                    prompt = f'{prompt} ({default_values_str}) >>'
+                    prompt = f'{prompt} (Press <Enter> for Default: {default_values_str}) >>'
                 value_str = input(prompt)
                 # Should we be using default values? (if user just pressed <enter> w/o entering a value
                 if len(value_str) == 0:
