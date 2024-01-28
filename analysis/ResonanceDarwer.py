@@ -313,9 +313,13 @@ def evaluate(val):
     R0 = float(Reflection_textbox.text)
     T_FWHM = float(FWHM_textbox.text)
 
-    root = fsolve(set_of_eq, np.array([7, 7, 7]), args=(T0/100, R0/100, T_FWHM))
-    s_Ki.set_val(root[0])
-    s_Kex.set_val(root[1])
+    Kex = s_Kex.val
+    h = s_h.val
+    Ki = s_Ki.val
+
+    root = fsolve(set_of_eq, np.array([Kex, Ki, h]), args=(T0/100, R0/100, T_FWHM))
+    s_Kex.set_val(root[0])
+    s_Ki.set_val(root[1])
     s_h.set_val(root[2])
     print(root)
 
