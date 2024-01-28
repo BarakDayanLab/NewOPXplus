@@ -136,7 +136,7 @@ class BaseExperiment:
             ConfigTable = importlib.import_module(f'{self.experiment_name}_Config_Table')
             self.Exp_Values = Utils.merge_multiple_jsons([self.Exp_Values, ConfigTable.Experiment_Values])
         except Exception as err:
-            self.info(f'Unable to import Config file ({err}). Loading BaseExperiment config files.')
+            self.info(f'Unable to import Config file ({err}). Loading *BaseExperiment* config files instead.')
 
         # Get the opx-control method from the OPX-Code file in the BaseExperiment
         opx_control = OPX_Code.opx_control
@@ -146,7 +146,7 @@ class BaseExperiment:
             OPX_Code_Module = importlib.import_module("OPX_Code")
             opx_control = OPX_Code_Module.opx_control
         except Exception as err:
-            self.info(f'Unable to import OPX_Code file ({err}). Loading local opx code from BaseExperiment')
+            self.info(f'Unable to import OPX_Code file ({err}). Loading __**BaseExperiment**__ opx code instead.')
             # try:
             #     OPX_Code = importlib.import_module("Experiments.BaseExperiment.OPX_Code", "OPX_Code")
             # except Exception as err:
