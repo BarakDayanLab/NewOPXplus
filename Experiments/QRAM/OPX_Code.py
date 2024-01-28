@@ -1,5 +1,6 @@
 from Experiments.QRAM import Config_Experiment as Config
 from Experiments.Enums.Phases import Phases
+from Experiments.Enums.IOParameters import IOParameters as IOP
 from qm.qua import *
 from Utilities.OPX_Utils import OPX_Utils
 
@@ -1081,43 +1082,45 @@ def opx_control(obj, qm):
             ## PARAMETERS UPDATE ##
             with if_(i > 0):
                 pause()
+
+            # We will break the loop only when receiving a value of 0 - this marks the end of parameters to be updated
             with while_(i > 0):
                 ## Boolean variables control: ##
-                with if_(i == 1):
+                with if_(i == IOP.MOT_SWITCH_ON.value):
                     update_frequency("MOT_AOM_0", Config.IF_AOM_MOT)
-                with if_(i == 2):
+                with if_(i == IOP.MOT_SWITCH_OFF.value):
                     update_frequency("MOT_AOM_0", Config.IF_AOM_MOT_OFF)
-                with if_(i == 4):
+                with if_(i == IOP.EXPERIMENT_SWITCH.value):
                     assign(QRAM_Exp_ON, IO2)
                 # ## AntiHelmholtz control ##
-                # with if_(i == 10):
-                #     assign(antihelmholtz_delay, IO2)
+                with if_(i == IOP.ANTIHELMHOLTZ_DELAY.value):
+                    assign(antihelmholtz_delay, IO2)
                 # ## MOT variables control ##
                 # with if_(i == 11):  # Live control over the
                 #     assign(MOT_Repetitions, IO2)
-                # with if_(i == 12):  # Live control over the
-                #     assign(post_MOT_delay, IO2)
+                with if_(i == IOP.POST_MOT_DELAY.value):  # Live control over the
+                    assign(post_MOT_delay, IO2)
 
                 # ## PGC variables control ##
-                # with if_(i == 20):  # Live control over the PGC duration
-                #     assign(pgc_duration, IO2)
-                #
+                with if_(i == IOP.PGC_DURATION.value):  # Live control over the PGC duration
+                    assign(pgc_duration, IO2)
+
                 # ## Fountain variables control: ##
-                # with if_(i == 31):  # Live control over the fountain duration
-                #     assign(fountain_duration, IO2)
+                with if_(i == IOP.FOUNTAIN_DURATION.value):  # Live control over the fountain duration
+                    assign(fountain_duration, IO2)
                 # with if_(i == 36):  # Live control over the final amplitude of the fountain AOM 0
                 #     assign(fountain_pulse_duration_0, IO2)
                 # with if_(i == 37):  # Live control over the final amplitude of the fountain AOM -
                 #     assign(fountain_pulse_duration_minus, IO2)
                 # with if_(i == 38):  # Live control over the final amplitude of the fountain AOM +
                 #     assign(fountain_pulse_duration_plus, IO2)
-                # with if_(i == 39):  # Live control over the fountain final frequency of the MOT + and - AOMs
-                #     assign(fountain_aom_chirp_rate, IO2)
+                with if_(i == IOP.FOUNTAIN_FINAL_DELTA_FREQ.value):  # Live control over the fountain final frequency of the MOT + and - AOMs
+                    assign(fountain_aom_chirp_rate, IO2)
                 #
                 # ## Measurement variables control: ##
-                with if_(i == 42):
+                with if_(i == IOP.PREPULSE_DURATION.value):
                     assign(PrePulse_duration, IO2)
-                with if_(i == 43):
+                with if_(i == IOP.PULSE_1_DURATION.value):
                     assign(Pulse_1_duration, IO2)
                 # with if_(i == 44):
                 #     assign(Pulse_1_decay_time, IO2)

@@ -405,100 +405,97 @@ def opx_control(obj, qm):
                 pause()
             with while_(i > 0):
                 ## Boolean variables control: ##
-                with if_(i == 1):
-                    assign(MOT_ON, IO2)
-                with if_(i == 2):
-                    assign(Linear_PGC_ON, IO2)
+                with if_(i == IOP.MOT_SWITCH_ON.value):
+                    update_frequency("MOT_AOM_0", Config.IF_AOM_MOT)
+                with if_(i == IOP.MOT_SWITCH_OFF.value):
+                    update_frequency("MOT_AOM_0", Config.IF_AOM_MOT_OFF)
                 # with if_(i == 3):
                 #     assign(Transits_Exp_ON, IO2)  # TODO: uncomment this when we will make it generic
                 # with if_(i == 4):
                 #     assign(CRUS_Exp_ON, IO2)  # TODO: uncomment this when we will make it generic
-                with if_(i == 5):
-                    assign(AntiHelmholtz_delay_ON, IO2)
                 # with if_(i == 6):
                 #     assign(Probe_max_counts_Exp_ON, IO2)  # TODO: uncomment this when we will make it generic
-                with if_(i == 7):
-                    assign(filler, IO2)
                 ## AntiHelmholtz control ##
-                with if_(i == 10):
+                with if_(i == IOP.ANTIHELMHOLTZ_DELAY.value):
                     assign(antihelmholtz_delay, IO2)
                 ## MOT variables control ##
-                with if_(i == 11):  # Live control over the
+                with if_(i == IOP.MOT_DURATION.value):  # Live control over the
                     assign(MOT_Repetitions, IO2)
-                with if_(i == 12):  # Live control over the post MOT delay
+                with if_(i == IOP.POST_MOT_DELAY):  # Live control over the post MOT delay
                     assign(post_MOT_delay, IO2)
                     #assign(params[IOP.POST_MOT_DELAY], IO2)  # @@@ - 4  TODO: Generalize this! assign(p[i], IO2)
 
                 ## PGC variables control ##
-                with if_(i == 20):  # Live control over the PGC duration
+                with if_(i == IOP.PGC_DURATION.value):  # Live control over the PGC duration
                     assign(pgc_duration, IO2)
-                with if_(i == 21):  # Live control over the preparation time of the PGC
+                with if_(i == IOP.PGC_PREP_DURATION.value):  # Live control over the preparation time of the PGC
                     assign(pgc_prep_time, IO2)
-                with if_(i == 28):  # Live control over the final amplitude of the PGC AOM 0
+                with if_(i == IOP.PGC_PULSE_DURATION_0.value):  # Live control over the final amplitude of the PGC AOM 0
                     assign(pgc_pulse_duration_0, IO2)
-                with if_(i == 29):  # Live control over the final amplitude of the PGC AOM -
+                with if_(i == IOP.PGC_PULSE_DURATION_MINUS.value):  # Live control over the final amplitude of the PGC AOM -
                     assign(pgc_pulse_duration_minus, IO2)
-                with if_(i == 30):  # Live control over the final amplitude of the PGC AOM +
+                with if_(i == IOP.PGC_PULSE_DURATION_PLUS.value):  # Live control over the final amplitude of the PGC AOM +
                     assign(pgc_pulse_duration_plus, IO2)
 
                 ## Fountain variables control: ##
-                with if_(i == 31):  # Live control over the fountain duration
+                with if_(i == IOP.FOUNTAIN_DURATION.value):  # Live control over the fountain duration
                     assign(fountain_duration, IO2)
-                with if_(i == 32):  # Live control over the preparation time of the Fountain
+                with if_(i == IOP.FOUNTAIN_PREP_TIME.value):  # Live control over the preparation time of the Fountain
                     assign(fountain_prep_time, IO2)
-                with if_(i == 36):  # Live control over the final amplitude of the fountain AOM 0
+                with if_(i == IOP.FOUNTAIN_PULSE_DURATION_0.value):  # Live control over the final amplitude of the fountain AOM 0
                     assign(fountain_pulse_duration_0, IO2)
-                with if_(i == 37):  # Live control over the final amplitude of the fountain AOM -
+                with if_(i == IOP.FOUNTAIN_PULSE_DURATION_MINUS.value):  # Live control over the final amplitude of the fountain AOM -
                     assign(fountain_pulse_duration_minus, IO2)
-                with if_(i == 38):  # Live control over the final amplitude of the fountain AOM +
+                with if_(i == IOP.FOUNTAIN_PULSE_DURATION_PLUS.value):  # Live control over the final amplitude of the fountain AOM +
                     assign(fountain_pulse_duration_plus, IO2)
-                with if_(i == 39):  # Live control over the fountain final frequency of the MOT + and - AOMs
+                with if_(i == IOP.FOUNTAIN_FINAL_DELTA_FREQ.value):  # Live control over the fountain final frequency of the MOT + and - AOMs
                     assign(fountain_aom_chirp_rate, IO2)
 
                 ## Measurement variables control: ##
-                with if_(i == 41):
+                with if_(i == IOP.TRIGGER_DELAY.value):
                     assign(Trigger_delay, IO2)
-                with if_(i == 42):
+                with if_(i == IOP.PREPULSE_DURATION.value):
                     assign(PrePulse_duration, IO2)
-                with if_(i == 43):
+                with if_(i == IOP.PULSE_1_DURATION.value):
                     assign(Pulse_1_duration, IO2)
-                with if_(i == 44):
+                with if_(i == IOP.PULSE_1_DECAY_DURATION.value):
                     assign(Pulse_1_decay_time, IO2)
-                with if_(i == 45):  # The number of frames(snaps) to take for a video with growing snap time intervals
+                with if_(i == IOP.N_SNAPS.value):  # The number of frames(snaps) to take for a video with growing snap time intervals
                     assign(N_Snaps, IO2)
-                with if_(i == 46):
+                with if_(i == IOP.BUFFER_CYCLES.value):
                     assign(Buffer_Cycles, IO2)
 
                 ## OD and N_atoms measuring variable control ##
-                with if_(i == 51):  # Live control of the Free Space OD measurement start time
+                with if_(i == IOP.OD_FS_START.value):  # Live control of the Free Space OD measurement start time
                     assign(OD_FS_start, IO2)
-                with if_(i == 52):  # Live control of the Free Space OD measurement pulses duration
+                with if_(i == IOP.OD_FS_PULSE_DURATION.value):  # Live control of the Free Space OD measurement pulses duration
                     assign(OD_FS_pulse_duration, IO2)
-                with if_(i == 53):  # Live control of the Free Space OD measurement wait duration between the 2 pulses
+                with if_(i == IOP.OD_FS_PULSES_SPACING.value):  # Live control of the Free Space OD measurement wait duration between the 2 pulses
                     assign(OD_FS_pulses_spacing, IO2)
-                with if_(i == 54):  # Live control of the SNSPDs OD measurement start time
+                with if_(i == IOP.OD_DELAY.value):  # Live control of the SNSPDs OD measurement start time
                     assign(OD_Delay, IO2)
-                with if_(i == 55):  # Live control of the SNSPDs OD measurement duration
+                with if_(i == IOP.OD_SNSPDS_DURATION.value):  # Live control of the SNSPDs OD measurement duration
                     assign(Rep, IO2)
-                with if_(i == 56):  # Live control of the Depump measurement start time
+                with if_(i == IOP.DEPUMP_START.value):  # Live control of the Depump measurement start time
                     assign(Depump_start, IO2)
-                with if_(i == 57):  # Live control of the Depump measurement pulses duration
+                with if_(i == IOP.DEPUMP_PULSE_DURATION.value):  # Live control of the Depump measurement pulses duration
                     assign(Depump_pulse_duration, IO2)
-                with if_(i == 58):  # Live control of the Depump measurement wait duration between the 2 pulses
+                with if_(i == IOP.DEPUMP_PULSES_SPACING.value):  # Live control of the Depump measurement wait duration between the 2 pulses
                     assign(Depump_pulses_spacing, IO2)
-                with if_(i == 59):  # Live control of the delay due to shutter opening time.
+                with if_(i == IOP.SHUTTER_OPENING_TIME.value):  # Live control of the delay due to shutter opening time.
                     assign(shutter_open_time, IO2)
+
                 ## MW spectroscopy control ##
-                with if_(i == 61):  # Live control of the MW spectroscopy MW frequency
-                    assign(MW_freq, IO2)
-                with if_(i == 62):  # Live control of the MW spectroscopy MW pulse length
-                    assign(pulse_length_MW, IO2)
-                with if_(i == 63):  # Live control of the MW spectroscopy OD pulse length
-                    assign(pulse_length_OD, IO2)
-                with if_(i == 64):  # Live control of the MW spectroscopy MW pulse repetitions
-                    assign(Repetitions, IO2)
-                with if_(i == 65):  # Live control of the MW spectroscopy MW pulse frequency change
-                    assign(Delta_f, IO2)
+                # with if_(i == 61):  # Live control of the MW spectroscopy MW frequency
+                #     assign(MW_freq, IO2)
+                # with if_(i == 62):  # Live control of the MW spectroscopy MW pulse length
+                #     assign(pulse_length_MW, IO2)
+                # with if_(i == 63):  # Live control of the MW spectroscopy OD pulse length
+                #     assign(pulse_length_OD, IO2)
+                # with if_(i == 64):  # Live control of the MW spectroscopy MW pulse repetitions
+                #     assign(Repetitions, IO2)
+                # with if_(i == 65):  # Live control of the MW spectroscopy MW pulse frequency change
+                #     assign(Delta_f, IO2)
 
                 pause()
                 assign(i, IO1)

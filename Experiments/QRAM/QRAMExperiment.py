@@ -241,7 +241,8 @@ class QRAMExperiment(BaseExperiment):
         # Normalize the data coming from the detectors
         for detector_index in range(len(self.Num_Of_dets)):  # for different detectors
             tt_res = self.streams[f'Detector_{detector_index + 1}_Timetags']['results']
-            tt_res = tt_res.astype(np.int32) # changing type from int64 to int32
+            if isinstance(tt_res, np.ndarray):
+                tt_res = tt_res.astype(np.int32) # changing type from int64 to int32
             normalized_stream = self.bdstreams.normalize_stream(tt_res, detector_index, Config.detector_delays, self.M_window)
             self.tt_measure.append(normalized_stream)
 
@@ -1588,7 +1589,7 @@ class QRAMExperiment(BaseExperiment):
         """
 
         if not pre_comment:
-            pre_comment = self.prompt('Add comment to measurement: ')
+            pre_comment = self.prompt(title='Pre Experiment Run', msg='Add pre-run comment to measurement (or click Cancel to ignore):')
 
         # set constant parameters for the function
 
@@ -1979,7 +1980,7 @@ class QRAMExperiment(BaseExperiment):
         # Adding comment to measurement [prompt whether stopped or finished regularly]
         if exp_flag:
             if self.counter < N:
-                aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
+                aftComment = self.prompt(title='Post Experiment Run', msg='Add post-run comment to measurement (or click ignore): ', default='', timeout=int(30e3))
             else:
                 aftComment = ''
         else:
