@@ -14,7 +14,6 @@ from enum import Enum
 class IOParameters(Enum):
     MOT_SWITCH_ON = 1
     MOT_SWITCH_OFF = 2  # TODO: Do we want to leave this or make a change in OPX code?
-    #LINEAR_PGC_SWITCH = 2  # TODO: Do we need this? Did not see any OPX code that referes to it
     EXPERIMENT_SWITCH = 4  # Turn experiment on/off
     ANTIHELMHOLTZ_DELAY_SWITCH = 5
     MAX_PROBE_COUNTS_SWITCH = 6
@@ -36,6 +35,9 @@ class IOParameters(Enum):
     PGC_PULSE_DURATION_PLUS = 30
     FOUNTAIN_DURATION = 31
     FOUNTAIN_PREP_TIME = 32
+    FOUNTAIN_PULSE_DURATION_0 = 36
+    FOUNTAIN_PULSE_DURATION_MINUS = 37
+    FOUNTAIN_PULSE_DURATION_PLUS = 38
     FOUNTAIN_FINAL_DELTA_FREQ = 39
     TRIGGER_DELAY = 41
     PREPULSE_DURATION = 42
