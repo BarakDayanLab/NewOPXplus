@@ -1116,10 +1116,19 @@ class QRAMExperiment(BaseExperiment):
         # Prepare header text
         pause_str = ' , PAUSED!' if self.pause_flag else ''
         ref_str = '%.2f' % self.sum_for_threshold
-        flr_str = '%.2f' % self.fluorescence_average
         eff_str = '%.2f' % (self.counter / self.repetitions)
-        lck_str = '%.3f' % self.lock_err
-        k_ex_str = '$\kappa_{ex}$: %.2f' % self.k_ex
+        if self.fluorescence_flag:
+            flr_str = '%.2f' % self.fluorescence_average
+        else:
+            flr_str = Utils.bold_text('%.2f' % self.fluorescence_average)
+        if self.lock_err_flag:
+            lck_str = '%.3f' % self.lock_err
+        else:
+            lck_str = Utils.bold_text('%.3f' % self.lock_err)
+        if self.k_ex_flag:
+            k_ex_str = '$\kappa_{ex}$: %.2f' % self.k_ex
+        else:
+            k_ex_str =  Utils.bold_text('$\kappa_{ex}$: %.2f' % self.k_ex)
         # status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
         status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter}'
         playback_str = 'PLAYBACK: ' if self.playback['active'] else ''
@@ -2053,6 +2062,10 @@ class QRAMExperiment(BaseExperiment):
 
     def is_acquired(self):
 
+        self.lock_err_flag = True
+        self.k_ex_flag = True
+        self.fluorescence_flag = True
+
         # If we are not in experiment, we don't care about the rest - just say we're acquired.
         if not self.exp_flag:
             return True
@@ -2060,21 +2073,26 @@ class QRAMExperiment(BaseExperiment):
         # Are we properly locked on resonance?
         # TODO: (Dor) is it ok to do so?
         if self.lock_err == None:
+            self.lock_err_flag = False
             return False
 
         if abs(self.lock_err) > self.lock_err_threshold:
+            self.lock_err_flag = False
             return False
 
         if self.k_ex == None:
+            self.k_ex_flag = False
             return False
 
         # Are we on the right width ?
         if not np.abs(self.k_ex-self.desired_k_ex)<self.k_ex_err:
+            self.k_ex_flag = False
             return False
 
 
         # Is fluorescence strong enough? (assuming we're running with atoms)
         if self.fluorescence_average < self.FLR_threshold and self.with_atoms:
+            self.fluorescence_flag = False
             return False
 
         # TODO: should be self.avg... What does the below do?
@@ -2272,7 +2290,8 @@ class QRAMExperiment(BaseExperiment):
     def pre_run(self, run_parameters):
         # Change the pre comment based on the with_atoms parameter
         suffix = ' with atoms' if run_parameters['with_atoms'] else ' without atoms'
-        run_parameters['pre_comment'] += suffix
+        pre_comment = '' if 'pre_comment' not in run_parameters else run_parameters['pre_comment']
+        run_parameters['pre_comment'] = pre_comment + suffix
         pass
 
     def run(self, run_parameters):
@@ -2321,10 +2340,10 @@ if __name__ == "__main__":
     run_parameters = {
         'N': 1000,  # 50,
         'transit_condition': [2, 1, 2],
-        'pre_comment': '',
+        # 'pre_comment': '',
         'lock_err_threshold': 2, # [Mhz]
-        'desired_k_ex': 70,# [Mhz]
-        'k_ex_err': 5, # [Mhz]
+        'desired_k_ex': 30,# [Mhz]
+        'k_ex_err': 3, # [Mhz]
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,
         'reflection_threshold_time': 9e6,
@@ -2342,13 +2361,13 @@ if __name__ == "__main__":
         'sequence': [
             {
                 'parameters': {
-                    'N': 30,
+                    'N': 5,
                     'with_atoms': False
                 }
             },
             {
                 'parameters': {
-                    'N': 300,
+                    'N': 50,
                     'with_atoms': True
                 }
             },
@@ -2358,7 +2377,7 @@ if __name__ == "__main__":
     experiment = QRAMExperiment(playback=False, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
-    sequence_definitions = None
+    # sequence_definitions = None
 
     if sequence_definitions is None:
         experiment.run(run_parameters)

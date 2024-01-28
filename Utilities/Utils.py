@@ -434,12 +434,16 @@ class Utils:
 
     @staticmethod
     def cavity_transmission(f, k_ex, k_i, h):
-        T = np.power(np.abs(1 + 2 * 1j * k_ex * (f - 1j * (k_i + k_ex)) /
+        t = np.power(np.abs(1 + 2 * 1j * k_ex * (f - 1j * (k_i + k_ex)) /
                             (np.power((f - 1j * (k_i + k_ex)), 2) - np.power(h, 2))), 2)
-        return T
+        return t
 
     @staticmethod
     def cavity_reflection(f, k_ex, k_i, h):
-        R = np.power(np.abs(2 * k_ex * h /
+        r = np.power(np.abs(2 * k_ex * h /
                             (np.power((1j * f + (k_i + k_ex)), 2) + np.power(h, 2))), 2)
-        return R
+        return r
+
+    @staticmethod
+    def bold_text(text):
+        return "\033[1m" + text + "\033[0m"
