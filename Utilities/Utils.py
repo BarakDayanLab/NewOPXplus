@@ -290,7 +290,7 @@ class Utils:
     @staticmethod
     def bucket_timetags(timetags, window_size, buckets_number=1, filter=None, start_time=-math.inf, end_time=math.inf, filters=None):
         """
-        This function takes a sequence of time-tags and divides thjem into buckets.
+        This function takes a sequence of time-tags and divides them into buckets.
         It does so scanning all time-tags from start to end and placing each timetag into the relevant bin.
         Bins are opened dynamically (e.g. if all time tags fall into the same bin, only one will return.
         The function returns both the counts and the time-tags themselves.
@@ -313,7 +313,7 @@ class Utils:
                 # TODO: Pad it or raise an exception? Add "strict" mode
                 #raise Exception('Filter size must be equal or greater than window size!')
                 gap = window_size - len(s["filter"])
-                s["filter"] = np.pad(s["filter"], (0,gap))
+                s["filter"] = np.pad(s["filter"], (0, gap))
             if len(s["filter"]) > window_size:
                 print(f'Warning: filter size {len(s["filter"])} is larger than window size ({window_size})')
 
@@ -431,3 +431,15 @@ class Utils:
             modules.append(module_name)
 
         return modules
+
+    @staticmethod
+    def cavity_transmission(f, k_ex, k_i, h):
+        T = np.power(np.abs(1 + 2 * 1j * k_ex * (f - 1j * (k_i + k_ex)) /
+                            (np.power((f - 1j * (k_i + k_ex)), 2) - np.power(h, 2))), 2)
+        return T
+
+    @staticmethod
+    def cavity_reflection(f, k_ex, k_i, h):
+        R = np.power(np.abs(2 * k_ex * h /
+                            (np.power((1j * f + (k_i + k_ex)), 2) + np.power(h, 2))), 2)
+        return R

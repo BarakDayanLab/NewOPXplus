@@ -886,8 +886,8 @@ def QRAM_Exp(m_off_time, m_time, m_window, shutter_open_time,
         play("QRAM_experiment_pulses_Early", "AOM_Early")
         play("QRAM_experiment_pulses_Late", "AOM_Late")
 
-    # wait(298, "Dig_detectors")
-    wait(300, "Dig_detectors")
+    wait(289, "Dig_detectors")
+    # wait(300, "Dig_detectors")
     # with for_(n, 0, n < m_time * 4, n + m_window):
     measure("readout_QRAM", "Dig_detectors", None,
             time_tagging.digital(tt_vec1, m_window, element_output="out1", targetLen=counts1),
@@ -1289,7 +1289,7 @@ class OPX:
         # we hold this connection until update is finished, the we close the connection.
         # we do still hold the QuadRFController objects, for access to the table (read only!) when the experiment is running.
         qrfContr = QuadRFMOTController(initialValues=self.Exp_Values, updateChannels=(1, 2, 4), topticaLockWhenUpdating=False,
-                                       debugging=False, continuous=False)
+                                       debugging=True, continuous=False)
         self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
         self.QuadRFControllers.append(QuadRFMOTController(MOGdevice=qrfContr.dev, initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
                                                           updateChannels=[3], debugging=False, continuous=False))  # updates values on QuadRF (uploads table)
@@ -1799,9 +1799,9 @@ class OPX:
 
     def latched_detectors(self):
         latched_detectors = []
-        # for indx, det_tt_vec in enumerate(self.tt_measure):  # for different detectors
-        #     if not det_tt_vec:
-        #         latched_detectors.append(indx)
+        for indx, det_tt_vec in enumerate(self.tt_measure):  # for different detectors
+            if not det_tt_vec:
+                latched_detectors.append(indx)
         return latched_detectors
 
     def get_pulses_bins(self,det_pulse_len,sprint_pulse_len,num_of_det_pulses,num_of_sprint_pulses,
@@ -1917,9 +1917,9 @@ class OPX:
 
         # self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences)
         # self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences//num_of_seq_per_count)
-        self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences//num_of_seq_per_count)
-        self.num_of_S_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences//num_of_seq_per_count)
+        self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences//num_of_seq_per_count + 1)
+        self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences//num_of_seq_per_count + 1)
+        self.num_of_S_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences//num_of_seq_per_count + 1)
 
         for element in self.tt_BP_measure:
             tt_inseq = element % self.QRAM_sequence_len
@@ -2073,7 +2073,8 @@ class OPX:
             real_number_of_seq = self.number_of_QRAM_sequences
             # print('Max number of seq')
         for t in pulse_loc:
-            avg_num_of_photons_in_seq_pulses.append((sum(seq[t[0]:t[1]]) + seq[t[1]]) / (real_number_of_seq * 0.167))  # Sagnac configuiration efficiency 16.7%
+            # avg_num_of_photons_in_seq_pulses.append((sum(seq[t[0]:t[1]]) + seq[t[1]]) / (real_number_of_seq * 0.167))  # Sagnac configuiration efficiency 16.7%
+            avg_num_of_photons_in_seq_pulses.append((sum(seq[t[0]:t[1]]) + seq[t[1]]) / (real_number_of_seq * 0.3))  # efficiency 30%
         return avg_num_of_photons_in_seq_pulses
 
     def get_max_value_in_seq_pulses(self, seq, pulse_loc):
@@ -3209,8 +3210,7 @@ class OPX:
 
     def run_daily_experiment(self, day_experiment, transit_condition, preComment, lock_err_threshold, filter_delay,
                              reflection_threshold, reflection_threshold_time, FLR_threshold, MZ_inidelity_threshold,
-                             Exp_flag=True):
-        with_atoms_bool = False
+                             with_atoms_bool=False, Exp_flag=True):
         for i in range(len(day_experiment)):
             if with_atoms_bool:
                 Comment = preComment + ' with atoms'
@@ -3292,9 +3292,16 @@ if __name__ == "__main__":
     #                                   reflection_threshold=10000, reflection_threshold_time=1e6, FLR_threshold=-0.11)   # except KeyboardInterrupt:
     # experiment.run_daily_experiment([2000, 50] * 1, transit_condition=[2, 1, 2], preComment='"|1c, (0 + 1)t> experiment"', lock_err_threshold=0.004,
     # experiment.run_daily_experiment([50, 500], transit_condition=[2, 1, 2], preComment='"|0c, (0 + 1)t> experiment"', lock_err_threshold=0.005,
-    experiment.run_daily_experiment([50, 500], transit_condition=[2, 1, 2], preComment='"N-N-N-N-N-N-N-N experiment"', lock_err_threshold=0.005,
+    # experiment.run_daily_experiment([50, 500], transit_condition=[2, 1, 2], preComment='"N-N-N-N-N-N-N-N experiment"', lock_err_threshold=0.005,
+    #                                 filter_delay=[0, 0, 0], reflection_threshold=2550, reflection_threshold_time=9e6,
+    #                                 FLR_threshold=0.08, MZ_inidelity_threshold=1.12, Exp_flag=True)
+    print('you are running QRAM Experiment')
+    if not experiment.Exp_Values['Operation_Mode']== 'QRAM_Exp':
+        raise ValueError("at Config table - operation mode should be changed to QRAM_Exp")
+    experiment.run_daily_experiment([500], transit_condition=[1, 1, 1], preComment='"8S experiment"', lock_err_threshold=0.005,
                                     filter_delay=[0, 0, 0], reflection_threshold=2550, reflection_threshold_time=9e6,
-                                    FLR_threshold=0.08, MZ_inidelity_threshold=1.12, Exp_flag=True)
+                                    FLR_threshold=0.08, MZ_inidelity_threshold=1.12, with_atoms_bool=True, Exp_flag=True)
+
     # experiment.run_daily_experiment([20, 50] * 2, transit_condition=[2, 1, 2], preComment='"1c(0+1)t"', lock_err_threshold=0.1,
     #                                 filter_delay=[0, 0, 0], reflection_threshold=6000, reflection_threshold_time=9e6,
     #                                 FLR_threshold=-0.01, MZ_inidelity_threshold=1, Exp_flag=True)

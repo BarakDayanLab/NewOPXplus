@@ -10,7 +10,7 @@ Experiment_Values = {
     'Triggering_Phase': Phases.FREE_FALL,
     'Phases_Order': [Phases.MOT, Phases.FOUNTAIN, Phases.PGC, Phases.FREE_FALL, Phases.PULSE_1, Phases.INTER_PULSES, Phases.PULSE_2, Phases.POST_PULSE],
     'MOT_rep': int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config.MOT_pulse_len)),
-    'Fountain_final_Delta_freq': 0.45e6,  # 0.38e6 - until 30.10.22
+    'Fountain_final_Delta_freq': 0.37e6,  # 0.38e6 - until 30.10.22
     'PrePulse_Repump_amp': 0.000001,  # relative
     'PrePulse_CH2_freq': 133.325e6,  # Hz  (QuadRF - Depump)
     'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],  # (QuadRF - AOM - Top F2)
@@ -21,7 +21,7 @@ Experiment_Values = {
     'Imaging_Phase': Phases.PULSE_1,
     # 'PrePulse_duration': 4,  # [msec]
     # 'PrePulse_duration': 14,  # [msec]
-    'PrePulse_duration': 10,  # [msec]
+    'PrePulse_duration': 14,  # [msec]
     'Shutter_open_time': 1,  # [msec]
     'Pulse_1_duration': int(max(Config.readout_pulse_sprint_len_N, Config.readout_pulse_sprint_len_S)) / 1e6,  # [msec]
     ## If with fountain:

@@ -27,11 +27,12 @@ class CoolingSequenceOptimizer(OPX):
         super().__init__(config = config)
         # self.SPRINT_Exp_switch(False) # To enable trigger to camera in OPX_control_with_QuadRF_Sprint_Exp
         self.camera = camera
-        self.NAvg = 1
+        self.NAvg = 3
         self.NThrow = 3
-        self.imgBounds = (580,200,1600,1450) # bounds to crop out of the taken pictures
-        self.mm_to_pxl = 8.5/(830-56) # measured using ruler in focus 13/11/2022
-        self.sigma_bounds = (15,100) # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
+        self.imgBounds = (580, 200, 1600, 1450) # bounds to crop out of the taken pictures
+        # self.mm_to_pxl = 8/(809-71) # measured using ruler in focus 29/11/2023
+        self.mm_to_pxl = 11 / (1228 - 232) #measured using ruler in focus 15/01/2024
+        self.sigma_bounds = (15, 100) # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
 
     def connectCamera(self):
         try:
@@ -153,6 +154,92 @@ class CoolingSequenceOptimizer(OPX):
         plt.close('all')
         return d
 
+    def scanPushBeamParams(self, t_measure, push_beam_duration_list, push_beam_amp_list, push_beam_freq_list):
+        '''
+        This function scans the push beam params to maximize the atomic density inside the funnel -
+        it plots the average flourescence at upper and lower segments of the funnnel, for different params.
+        :param t_measure: prepulse duration = time of taking pictures after end of the pgc
+        :return:
+        '''
+        self.updateValue("PrePulse_duration", float(t_measure), update_parameters=True)
+        self.avgFunnelImage = self.camera.captureAverageImage(NAvg = 3, NThrow = 0)
+        self.lowerFunnelSegment,_ = self.get1DSegmentIn2DPlot(self.avgFunnelImage)
+        self.upperFunnelSegment,_ = self.get1DSegmentIn2DPlot(self.avgFunnelImage)
+
+        # initiate the input-output matrix
+        numOfIters = push_beam_duration_list * push_beam_amp_list * push_beam_freq_list
+        numOfParams = len([push_beam_duration_list, push_beam_amp_list, push_beam_freq_list])
+        self.pushBeamScan = np.zeros(len(numOfIters), len(numOfParams))
+        for duration_ind, duration in enumerate(push_beam_duration_list):
+            for amp_ind,amp in enumerate(push_beam_amp_list):
+                for freq_ind,freq in enumerate(push_beam_freq_list):
+                    # update push beam parameters
+                    self.update_PushBeam_duration(duration)
+                    self.update_PushBeam_amp(amp)
+                    self.experiment.updateValue("PrePulse_CH1_freq", experiment.Exp_Values['MOT_freq'] - freq, True)
+                    self.update_parameters()
+                    # take an image
+                    self.avgFunnelImage = self.camera.captureAverageImage(NAvg=3, NThrow=0)
+                    # get the mean intensity in upper and lower funnel
+                    self.lowerFunnelAvg = np.mean(self.avgFunnelImage[self.lowerFunnelSegment])
+                    self.upperFunnelAvg = np.mean(self.avgFunnelImage[self.upperFunnelSegment])
+                    # fill a matrix with the avg floursence and the input params
+                    self.pushBeamScan[duration_ind+amp_ind+freq_ind]\
+                        =[self.lowerFunnelAvg,self.upperFunnelAvg,duration,amp,freq]
+                plt.figure()
+                plt.plot(self.pushBeamScan[0],label = "lower funnel average flouresnce")
+                plt.plot(self.pushBeamScan[1],label = "upper funnel average flouresnce")
+                plt.legend()
+                plt.show()
+    def get1DSegmentIn2DPlot(self,img2D, input_segment=False):
+        # Create array used for the plot
+
+        # Function to give instructions in the plot
+        def tellme(s):
+            print(s)
+            a0.set_title(s, fontsize=16)
+            plt.draw()
+
+        if not input_segment:
+            # Create a figure with 2 subplots: the image, and the plot of the transect's values
+            f, (a0, a1) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [3, 1]}, layout='constrained')
+            a0.imshow(img2D, vmax=10)
+
+            # Allow 1 click-and-drag to zoom. If you don't want to zoom, simply click once
+            tellme('Zoom in an area if you want')
+            plt.waitforbuttonpress()
+
+            # Select two points that will be the extremities of the transect
+            tellme('Select two points that will be the extremities of a transect')
+            while True:
+                pts = []
+                if 'p' in locals():
+                    p.remove()
+                    plt.draw()
+                while len(pts) < 2:
+                    pts = np.asarray(plt.ginput(2, timeout=-1))
+                    if len(pts) < 2:
+                        tellme('Too few points, starting over')
+                        time.sleep(1)  # Wait a second
+
+                tellme('Happy? Key click for yes, mouse click for no')
+                p, = a0.plot(pts[:, 0], pts[:, 1], 'r+')
+
+                if plt.waitforbuttonpress():
+                    break
+
+            # Plot the transect
+            CS = a0.plot(pts[:, 0], pts[:, 1], color='red')
+
+            # Retrieve the coordinates of the transect's extremities
+            pts = pts.astype(int)
+            rr, cc = line(pts[0, 0], pts[0, 1], pts[1, 0], pts[1, 1])
+            output_segment = rr, cc
+
+        # Plot in the 2nd subplot the values of the cells crossed by the transect
+        a1.plot(img2D[output_segment])
+        a1.set_title('Values cells segment')
+        return output_segment, img2D[output_segment]
     '''optimizePGC is used to run over different parameters.
         Parameters are defined within function.
     '''
@@ -397,5 +484,8 @@ class CoolingSequenceOptimizer(OPX):
 #r = optimizePGC(c)
 if __name__ == "__main__":
     experiment = CoolingSequenceOptimizer(Config.config)
-    # experiment.measureTemperature()
+    # experiment.measureTemperature(PrePulseDurations=np.arange(0.5, 5, 0.5))
     #experiment.optimizePGC()
+    # experiment.GaussianFit(file_name_for_fit=r'U:\Lab_2021-2022\Experiment_results\Temperature\20231206_182041\PrePulse_duration=07.0.bmp', background_file = backgroundPath,saveFitsPath = saveFitsPath,imgBounds=imgBounds)
+    # experiment.scanPushBeamParams(t_measure=7, push_beam_duration_list=[1, 5, 10], push_beam_amp_list=[0.5, 0.7, 0.9],
+    #                               push_beam_freq_list=[1e6, 5e6, 10e6])

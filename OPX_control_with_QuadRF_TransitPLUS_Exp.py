@@ -474,6 +474,10 @@ def opx_control(obj, qm):
         # General measurements variables:
         Trigger_delay = declare(int, value=int(obj.Exp_Values['Trigger_delay'] * 1e6 / 4))
         PrePulse_duration = declare(int, value=int(obj.Exp_Values['PrePulse_duration'] * 1e6 / 4))
+        PushBeam_duration = declare(int, value=int(5000/4))
+        PushBeam_delay = declare(int, value=int(20000/4))
+        OD_freq = declare(int, value=int(Config.IF_AOM_OD))
+        PushBeam_Amp = declare(fixed, value=1)
 
         # Pulse_1_parameters:
         Pulse_1_duration = declare(int, value=int(obj.Exp_Values['Pulse_1_duration'] * 1e6 / 4))
@@ -564,9 +568,9 @@ def opx_control(obj, qm):
 
             # FreeFall sequence:
             with if_(Transits_Exp_ON):
-                assign(x, 766000 // 4)
+                assign(x, (766000 + 115000) // 4)
             with else_():
-                assign(x, 0)
+                assign(x, (0 + 115000) // 4)
             FreeFall(FreeFall_duration - x, coils_timing)
 
             ##########################
@@ -577,12 +581,16 @@ def opx_control(obj, qm):
                 ## Trigger QuadRF Sequence #####################
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
-
+            align(*all_elements, "AOM_2-2/3'")
             with if_(Transits_Exp_ON):
                 wait(PrePulse_duration - shutter_open_time, "Cooling_Sequence")
+                # for push beam
             with else_():
                 wait(PrePulse_duration, "Cooling_Sequence")
-            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "Dig_detectors") # , "Dig_detectors"
+                # for push beam
+            wait(PushBeam_delay, "AOM_2-2/3'")
+            play("OD_FS" * amp(PushBeam_Amp), "AOM_2-2/3'", duration=PushBeam_duration)
+            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "Dig_detectors")
 
             with if_(Trigger_Phase == 4):  # when trigger on pulse 1
                 ## Trigger QuadRF Sequence #####################
@@ -678,6 +686,14 @@ def opx_control(obj, qm):
                     assign(N_Snaps, IO2)
                 with if_(i == 46):
                     assign(Buffer_Cycles, IO2)
+                with if_(i == 47):
+                    assign(PushBeam_duration, IO2)
+                with if_(i == 48):
+                    assign(PushBeam_Amp, IO2)
+                with if_(i == 49):
+                    assign(OD_freq, IO2)
+                    update_frequency("AOM_2-2/3'", OD_freq)
+
 
                 ## OD and N_atoms measuring variable control ##
                 with if_(i == 51):  # Live control of the Free Space OD measurement start time
@@ -1113,6 +1129,15 @@ class OPX:
 
     def MeasureOD_SNSPDs_duration(self, duration):
         self.update_io_parameter(45, int(duration / self.M_window * 1e6 / 4))
+
+    #push beam params
+    def update_PushBeam_duration(self, duration):
+        self.update_io_parameter(47, int(duration * 1e3 / 4)) # In [us]
+    def update_PushBeam_amp(self, Amp):
+        self.update_io_parameter(48, float(Amp)) #
+    # def update_PushBeam_frequency(self, freq):
+    #     self.update_io_parameter(49, int(Config.IF_AOM_OD + freq))  # In [us]
+
 
     def Get_Max_Probe_counts(self, repetitions):
 
@@ -2118,6 +2143,7 @@ class OPX:
         "PGC_duration": [int, 1e6 / 4],  # [msec]
         "PGC_prep_duration": [int, None, update_PGC_prep_time],
 
+
         ## Fountain parameters ##
         "Pre_PGC_Fountain_duration": [int, 1e6 / 4],
         "Fountain_duration": [int, 1e6 / 4],
@@ -2138,6 +2164,8 @@ class OPX:
         'Pulse_1_decay_duration': [int, 1e6 / 4],  # [msec]
         'InterPulses_duration': [int, 1e6 / 4],
         'Pulse_2_duration': [int, 1e6 / 4],  # [msec]
+        # 'PrePulse_CH1_freq':[int,1],
+
         # OD parameters:
         'OD_FS_Start': [int, 1e6 / 4],  # [msec]
         'OD_FS_pulse_duration': [int, 1e6 / 4],  # [msec]
@@ -2155,6 +2183,7 @@ class OPX:
         'OD_sleep': [int, 1e6 / 4],  # [msec]
         'OD_duration_pulse2': [int, 1e6 / 4],  # [msec]
         'M_time': [int, 1e6 / 4]  # [msec]'
+
     }
 
 

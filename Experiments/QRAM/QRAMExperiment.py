@@ -282,14 +282,19 @@ class QRAMExperiment(BaseExperiment):
 
         pass
 
-
-    # TODO: Q: this currently does nothing. What was the intention and why isn't it in use?
     def latched_detectors(self):
         latched_detectors = []
         for indx, det_tt_vec in enumerate(self.tt_measure):  # for different detectors
             if not det_tt_vec:
                 latched_detectors.append(indx)
         return latched_detectors
+
+    def saturated_detectors(self):
+        saturated_detectors = []
+        for indx, det_tt_vec in enumerate(self.tt_measure):  # for different detectors
+            if len(det_tt_vec) >= (Config.vec_size * 0.99):
+                saturated_detectors.append(indx)
+        return saturated_detectors
 
     def get_pulses_bins(self, sprint_pulse_len, num_of_det_pulses, num_of_sprint_pulses,
                         sprint_sequence_delay, num_of_sprint_sequences, num_init_zeros, num_fin_zeros,
@@ -1114,17 +1119,18 @@ class QRAMExperiment(BaseExperiment):
         eff_str = '%.2f' % (self.counter / self.repetitions)
         lck_str = '%.3f' % self.lock_err
         k_ex_str = '$\kappa_{ex}$: %.2f' % self.k_ex
-        status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
+        # status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
+        status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter}'
         playback_str = 'PLAYBACK: ' if self.playback['active'] else ''
         # header_text = f'{playback_str} {status_str} - Reflections: {ref_str}, Eff: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str}, k_ex: {k_ex_str} {pause_str}'
         header_text = f'{playback_str} {status_str} - Eff: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str}, {k_ex_str} {pause_str}'
 
         # SPRINT results box
-        SPRINT_reflections_without_transits = '%d' % sum(sum(self.batcher['num_of_total_SPRINT_reflections_batch'], []))
+        SPRINT_reflections_without_transits = '%d' % sum(self.batcher['num_of_total_SPRINT_reflections_batch'])
         SPRINT_reflections_with_transits = '%d' % sum(sum(self.batcher['reflection_SPRINT_data_batch'], []))
         SPRINT_reflections = f'${SPRINT_reflections_with_transits}_{{({SPRINT_reflections_without_transits})}}$'
         SPRINT_reflections_text = '$R_{SPRINT}$'
-        SPRINT_transmissions_without_transits = '%d' % sum(sum(self.batcher['num_of_total_SPRINT_transmissions_batch'], []))
+        SPRINT_transmissions_without_transits = '%d' % sum(self.batcher['num_of_total_SPRINT_transmissions_batch'])
         SPRINT_transmissions_with_transits = '%d' % sum(sum(self.batcher['transmission_SPRINT_data_batch'], []))
         SPRINT_transmissions = f'${SPRINT_transmissions_with_transits}_{{({SPRINT_transmissions_without_transits})}}$'
         SPRINT_transmissions_text = '$T_{SPRINT}$'
@@ -1231,6 +1237,7 @@ class QRAMExperiment(BaseExperiment):
             # Detectors status:
             if plot_switches['detectors']:
                 latched_detectors = self.latched_detectors()
+                saturated_detectors = self.saturated_detectors()
                 for i, det in enumerate(self.Num_Of_dets):
                     x = -0.15
                     y = 1.9 - i * 0.4
@@ -1239,6 +1246,10 @@ class QRAMExperiment(BaseExperiment):
                     # num_clicks = len(self.streams[f'Detector_{det}_Timetags']['results'][0])
                     text = f'{self.detectors_names[i]}-{det}\n({num_clicks-1})'
                     det_color = 'red' if i in latched_detectors else 'green'
+                    if i in latched_detectors:
+                        det_color = 'red'
+                    elif i in saturated_detectors:
+                        det_color = '#ffc710'
                     ax[2].text(x, y, text, ha="center", va="center", transform=ax[2].transAxes, fontsize=8,
                              bbox=dict(boxstyle=f"circle,pad={pad}", edgecolor=det_color, linewidth=2, facecolor=det_color, alpha=0.5))
 
@@ -1247,18 +1258,37 @@ class QRAMExperiment(BaseExperiment):
             max_reflect_avg = max(self.num_of_det_reflections_per_seq_accumulated / self.counter)
             max_reflect = max(self.num_of_det_reflections_per_seq)
 
-            textstr_total_reflections = 'Total reflections per cycle "N" = %d \n' % (
-                sum(self.num_of_det_reflections_per_seq_N),) \
-                                        + 'Total reflections per cycle "S" = %d \n' % (
-                                            sum(self.num_of_det_reflections_per_seq_S),) \
-                                        + 'Average reflections per cycle = %.2f \n' % (
-                                            sum(self.num_of_det_reflections_per_seq_accumulated / self.counter),) \
-                                        + 'Average transmissions per cycle = %.2f \n' % (
-                                            sum(self.num_of_det_transmissions_per_seq_accumulated / self.counter),) \
-                                        + 'Average reflections precentage = %.2f' % (
-                                            sum(self.num_of_det_reflections_per_seq_accumulated) /
-                                            (sum(self.num_of_det_reflections_per_seq_accumulated) +
-                                             sum(self.num_of_det_transmissions_per_seq_accumulated)),)
+            textstr_total_reflections_N = 'Total reflections per cycle "N" = %d' % (
+                sum(self.num_of_det_reflections_per_seq_N),)
+
+            textstr_total_reflections_S = 'Total reflections per cycle "S" = %d' % (
+                sum(self.num_of_det_reflections_per_seq_S),)
+
+            textstr_total_reflections_avg = 'Average reflections per cycle = %.2f' % (
+                sum(self.num_of_det_reflections_per_seq_accumulated / self.counter),)
+
+            textstr_total_transmission_avg = 'Average transmissions per cycle = %.2f' % (
+                sum(self.num_of_det_transmissions_per_seq_accumulated / self.counter),)
+
+            textstr_total_reflections_percentage = 'Total reflections per cycle "S" = %d' % (
+                (sum(self.num_of_det_reflections_per_seq_accumulated) * 100) /
+                (sum(self.num_of_det_reflections_per_seq_accumulated) +
+                 (sum(self.num_of_det_transmissions_per_seq_accumulated) / self.Cavity_transmission)),)
+
+
+            textstr_total_reflections = f'{textstr_total_reflections_N} \n{textstr_total_reflections_S} \n' \
+                                        f'{textstr_total_reflections_avg} \n{textstr_total_transmission_avg} \n' \
+                                        f'{textstr_total_reflections_percentage}' \
+                                        # f'Total reflections per cycle "S" = %d \n' % (
+                                        #     sum(self.num_of_det_reflections_per_seq_S),) \
+                                        # + 'Average reflections per cycle = %.2f \n' % (
+                                        #     sum(self.num_of_det_reflections_per_seq_accumulated / self.counter),) \
+                                        # + 'Average transmissions per cycle = %.2f \n' % (
+                                        #     sum(self.num_of_det_transmissions_per_seq_accumulated / self.counter),) \
+                                        # + 'Average reflections percentage = %.1f%' % (
+                                        #     sum(self.num_of_det_reflections_per_seq_accumulated) * 100 /
+                                        #     (sum(self.num_of_det_reflections_per_seq_accumulated) +
+                                        #      sum(self.num_of_det_transmissions_per_seq_accumulated)),)
 
             ax[3].plot(self.num_of_det_reflections_per_seq_accumulated / self.counter, label='Num of reflections per sequence')
 
@@ -1267,7 +1297,7 @@ class QRAMExperiment(BaseExperiment):
                 ax[3].plot(self.num_of_det_reflections_per_seq * 0.5 * max_reflect_avg / max_reflect * 0.3, label='Num of reflections per sequence (Live)')
             ax[3].set_title('Num of reflections per sequence', fontweight="bold")
             ax[3].legend(loc='upper right')
-            ax[3].text(0.1, 0.9 * max_reflect_avg, textstr_total_reflections, fontsize=14, verticalalignment='top', bbox=props)
+            ax[3].text(0.01, 0.99 * max_reflect_avg, textstr_total_reflections, fontsize=14, verticalalignment='top', bbox=props)
 
         # MZ outputs around experiment
         if plot_switches['graph-4']:
@@ -1470,18 +1500,18 @@ class QRAMExperiment(BaseExperiment):
         # get the average number of photons in detection pulse
         self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(
             self.folded_tt_S_directional, self.pulses_location_in_seq_S, self.tt_FS_measure,
-            Config.Eff_from_taper_S)
+            self.Eff_from_taper_S)
         self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(
             self.folded_tt_N_directional, self.pulses_location_in_seq_N,
-            self.tt_BP_measure + self.tt_DP_measure, Config.Eff_from_taper_N)
+            self.tt_BP_measure + self.tt_DP_measure, self.Eff_from_taper_N)
         self.avg_num_of_photons_per_pulse_A_live = self.get_avg_num_of_photons_in_seq_pulses(
             (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins)
              + np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A,
-            self.tt_BP_measure + self.tt_DP_measure, Config.Eff_from_taper_N)
+            self.tt_BP_measure + self.tt_DP_measure, self.Eff_from_taper_N)
         self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(
-            self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:], self.tt_BP_measure, Config.Eff_from_taper_S)
+            self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:], self.tt_BP_measure, self.Eff_from_taper_S)
         self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(
-            self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:], self.tt_DP_measure, Config.Eff_from_taper_S)
+            self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:], self.tt_DP_measure, self.Eff_from_taper_S)
         self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + \
                                                  self.avg_num_of_photons_per_pulse_N_live + \
                                                  self.avg_num_of_photons_per_pulse_A_live
@@ -1807,7 +1837,17 @@ class QRAMExperiment(BaseExperiment):
             self.lock_err = self._read_locking_error()
 
             # Get k_ex
-            self.k_ex = self._read_k_ex()
+            self.k_i = 3.9  # [MHz]
+            self.k_ex = (self._read_k_ex() / 2) - self.k_i
+            # TODO: Now we get FWHM from NADAV. Change to commentout when it's real k_ex.
+            # self.k_ex = self._read_k_ex()
+
+            # Define efficiencies:
+            self.Cavity_transmission = Utils.cavity_transmission(0, self.k_ex, k_i=self.k_i, h=0.6)
+            self.Eff_from_taper_N = Config.Eff_from_taper_N * \
+                                    (self.Cavity_transmission / 0.5)
+            self.Eff_from_taper_S = Config.Eff_from_taper_S * \
+                                    (self.Cavity_transmission / 0.5)
 
             # Experiment delay
             self.experiment_mainloop_delay()
@@ -1874,20 +1914,20 @@ class QRAMExperiment(BaseExperiment):
                 # get the average number of photons in detection pulse
                 self.avg_num_of_photons_per_pulse_S = self.get_avg_num_of_photons_in_seq_pulses(
                     self.folded_tt_S_directional_cumulative_avg, self.pulses_location_in_seq_S, [],
-                    Config.Eff_from_taper_S)
+                    self.Eff_from_taper_S)
                 self.avg_num_of_photons_per_pulse_N = self.get_avg_num_of_photons_in_seq_pulses(
                     self.folded_tt_N_directional_cumulative_avg, self.pulses_location_in_seq_N,
-                    [], Config.Eff_from_taper_N)
+                    [], self.Eff_from_taper_N)
                 self.avg_num_of_photons_per_pulse_A = self.get_avg_num_of_photons_in_seq_pulses(
                     (np.array(self.folded_tt_S_directional_cumulative_avg) + np.array(self.folded_tt_BP_timebins_cumulative_avg)
                      + np.array(self.folded_tt_DP_timebins_cumulative_avg)).tolist(), self.pulses_location_in_seq_A,
-                    [], Config.Eff_from_taper_N)
+                    [], self.Eff_from_taper_N)
                 self.avg_num_of_photons_per_pulse_BP = self.get_avg_num_of_photons_in_seq_pulses(
                     self.folded_tt_BP_timebins_cumulative_avg, self.pulses_location_in_seq[-2:], [],
-                    Config.Eff_from_taper_S)
+                    self.Eff_from_taper_S)
                 self.avg_num_of_photons_per_pulse_DP = self.get_avg_num_of_photons_in_seq_pulses(
                     self.folded_tt_DP_timebins_cumulative_avg, self.pulses_location_in_seq[-2:], [],
-                    Config.Eff_from_taper_S)
+                    self.Eff_from_taper_S)
                 self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_S + \
                                                     self.avg_num_of_photons_per_pulse_N + \
                                                     self.avg_num_of_photons_per_pulse_A
@@ -2044,6 +2084,9 @@ class QRAMExperiment(BaseExperiment):
         if self.latched_detectors():
            return False
 
+        if self.saturated_detectors():
+            return False
+
         threshold_flag = (self.sum_for_threshold < self.reflection_threshold) and \
                               (self.Infidelity_before <= self.MZ_infidelity_threshold) and \
                               (self.Infidelity_after <= self.MZ_infidelity_threshold)
@@ -2144,11 +2187,11 @@ class QRAMExperiment(BaseExperiment):
         self.folded_tt_DP_timebins_cumulative_avg = self.folded_tt_DP_timebins
 
         # Get the average number of photons in detection pulse
-        self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S_directional, self.pulses_location_in_seq_S, self.tt_FS_measure, Config.Eff_from_taper_S)
-        self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N_directional, self.pulses_location_in_seq_N, self.tt_BP_measure + self.tt_DP_measure, Config.Eff_from_taper_N)
-        self.avg_num_of_photons_per_pulse_A_live = self.get_avg_num_of_photons_in_seq_pulses((np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins)+ np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A, self.tt_BP_measure + self.tt_DP_measure, Config.Eff_from_taper_N)
-        self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:], self.tt_BP_measure, Config.Eff_from_taper_S)
-        self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:], self.tt_DP_measure, Config.Eff_from_taper_S)
+        self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S_directional, self.pulses_location_in_seq_S, self.tt_FS_measure, self.Eff_from_taper_S)
+        self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N_directional, self.pulses_location_in_seq_N, self.tt_BP_measure + self.tt_DP_measure, self.Eff_from_taper_N)
+        self.avg_num_of_photons_per_pulse_A_live = self.get_avg_num_of_photons_in_seq_pulses((np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins)+ np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A, self.tt_BP_measure + self.tt_DP_measure, self.Eff_from_taper_N)
+        self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:], self.tt_BP_measure, self.Eff_from_taper_S)
+        self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:], self.tt_DP_measure, self.Eff_from_taper_S)
         self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + self.avg_num_of_photons_per_pulse_N_live + self.avg_num_of_photons_per_pulse_A_live
         self.avg_num_of_photons_per_pulse_live_MZ = [[x]+[y] for x, y in zip(self.avg_num_of_photons_per_pulse_BP_live, self.avg_num_of_photons_per_pulse_DP_live)]
 
@@ -2275,19 +2318,19 @@ if __name__ == "__main__":
     matplotlib.use("Qt5Agg")
 
     run_parameters = {
-        'N': 10000,  # 50,
+        'N': 1000,  # 50,
         'transit_condition': [2, 1, 2],
-        'pre_comment': 'ignore',
+        'pre_comment': '',
         'lock_err_threshold': 2, # [Mhz]
-        'desired_k_ex': 40,# [Mhz]
-        'k_ex_err': 6, # [Mhz]
+        'desired_k_ex': 70,# [Mhz]
+        'k_ex_err': 5, # [Mhz]
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,
         'reflection_threshold_time': 9e6,
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 1.12,
         'photons_per_det_pulse_threshold': 12,
-        'Exp_flag': False,
+        'Exp_flag': True,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2304,7 +2347,7 @@ if __name__ == "__main__":
             },
             {
                 'parameters': {
-                    'N': 250,
+                    'N': 300,
                     'with_atoms': True
                 }
             },
@@ -2314,7 +2357,7 @@ if __name__ == "__main__":
     experiment = QRAMExperiment(playback=False, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
-    # sequence_definitions = None
+    sequence_definitions = None
 
     if sequence_definitions is None:
         experiment.run(run_parameters)
