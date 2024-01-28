@@ -282,14 +282,19 @@ class QRAMExperiment(BaseExperiment):
 
         pass
 
-
-    # TODO: Q: this currently does nothing. What was the intention and why isn't it in use?
     def latched_detectors(self):
         latched_detectors = []
         for indx, det_tt_vec in enumerate(self.tt_measure):  # for different detectors
             if not det_tt_vec:
                 latched_detectors.append(indx)
         return latched_detectors
+
+    def saturated_detectors(self):
+        saturated_detectors = []
+        for indx, det_tt_vec in enumerate(self.tt_measure):  # for different detectors
+            if len(det_tt_vec) >= (Config.vec_size * 0.99):
+                saturated_detectors.append(indx)
+        return saturated_detectors
 
     def get_pulses_bins(self, sprint_pulse_len, num_of_det_pulses, num_of_sprint_pulses,
                         sprint_sequence_delay, num_of_sprint_sequences, num_init_zeros, num_fin_zeros,
@@ -1232,6 +1237,7 @@ class QRAMExperiment(BaseExperiment):
             # Detectors status:
             if plot_switches['detectors']:
                 latched_detectors = self.latched_detectors()
+                saturated_detectors = self.saturated_detectors()
                 for i, det in enumerate(self.Num_Of_dets):
                     x = -0.15
                     y = 1.9 - i * 0.4
@@ -1240,6 +1246,10 @@ class QRAMExperiment(BaseExperiment):
                     # num_clicks = len(self.streams[f'Detector_{det}_Timetags']['results'][0])
                     text = f'{self.detectors_names[i]}-{det}\n({num_clicks-1})'
                     det_color = 'red' if i in latched_detectors else 'green'
+                    if i in latched_detectors:
+                        det_color = 'red'
+                    elif i in saturated_detectors:
+                        det_color = '#ffc710'
                     ax[2].text(x, y, text, ha="center", va="center", transform=ax[2].transAxes, fontsize=8,
                              bbox=dict(boxstyle=f"circle,pad={pad}", edgecolor=det_color, linewidth=2, facecolor=det_color, alpha=0.5))
 
@@ -2073,6 +2083,9 @@ class QRAMExperiment(BaseExperiment):
         # Are any of the detectors latched?
         if self.latched_detectors():
            return False
+
+        if self.saturated_detectors():
+            return False
 
         threshold_flag = (self.sum_for_threshold < self.reflection_threshold) and \
                               (self.Infidelity_before <= self.MZ_infidelity_threshold) and \
