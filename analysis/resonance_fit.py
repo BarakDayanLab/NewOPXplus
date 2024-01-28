@@ -335,7 +335,7 @@ class LiveResonanceFit(ResonanceFit):
 class ScopeResonanceFit(LiveResonanceFit):
     def __init__(self, channels_dict: dict, scope_ip='132.77.54.241', save_data=False):
         save_folder = r'C:\temp\refactor_debug\Experiment_results\QRAM\resonance_params' if save_data else None
-        super().__init__(wait_time=0.1, calc_k_ex=False, save_folder=save_folder, save_time=15, show_buttons=True)
+        super().__init__(wait_time=0.1, calc_k_ex=False, save_folder=save_folder, save_time=15, show_buttons=False)
         self.save_data = save_data
 
         if scope_ip is None:
@@ -386,7 +386,7 @@ class ScopeResonanceFit(LiveResonanceFit):
 
 if __name__ == '__main__':
     channels = {"transmission": 1, "rubidium": 3}
-    res_fit = ScopeResonanceFit(channels_dict=channels, save_data=False)
+    res_fit = ScopeResonanceFit(channels_dict=channels, save_data=True)
     res_fit.start()
 
     # _, transmission_spectrum = res_fit.read_scope_data("transmission")

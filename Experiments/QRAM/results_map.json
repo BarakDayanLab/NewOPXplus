@@ -13,11 +13,11 @@
 	"root": "C:\\temp\\refactor_debug\\Experiment_results\\QRAM\\{current_date}\\{current_time}_Photon_TimeTags",
 
 	"locking_error_root": "U:\\Lab_2023\\Experiment_results\\QRAM\\Locking_PID_Error",
-	"locking_error_root_LAB": "U:\\Lab_2023\\Experiment_results\\QRAM\\Locking_PID_Error",
+	"locking_error_root_LAB": "C:\\temp\\refactor_debug\\Experiment_results\\QRAM\\resonance_params",
 	"locking_error_root_113": "U:\\Lab_2023\\Experiment_results\\QRAM\\Locking_PID_Error",
 	"locking_error_root_HOME": "F:\\temp\\Weizmann\\Experiments\\Locking_PID_Error",
 
-	"k_ex_root": "C:\\temp\\refactor_debug\\Experiment_results\\QRAM\\k_ex",
+	"k_ex_root": "C:\\temp\\refactor_debug\\Experiment_results\\QRAM\\resonance_params",
 
 
 	"calibration_folder__DO_WE_NEED__": "U:\\Lab_2023\\Experiment_results\\QRAM\\20231116\\133237_Photon_TimeTags",

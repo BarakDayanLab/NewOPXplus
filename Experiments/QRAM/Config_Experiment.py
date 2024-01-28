@@ -193,7 +193,8 @@ num_of_photons_per_sequence_S = num_of_photons_det_pulses * num_of_det_pulses_S 
 num_of_photons_per_sequence_N = num_of_photons_det_pulses * num_of_det_pulses_N + num_of_photons_sprint_pulses * num_of_sprint_pulses_N
 
 
-det_pulse_len = 40
+# det_pulse_len = 40
+det_pulse_len = 50
 sprint_pulse_len = 105
 num_between_zeros = 20
 
@@ -201,7 +202,8 @@ num_between_zeros = 20
 num_init_zeros = 10  # For only det pulses sequence
 num_mid_zeros = 10
 num_fin_zeros = 0  # For only det pulses sequence
-det_pulse_amp_General = [1, 1, 1, 1, 1, 1, 1, 1]
+# det_pulse_amp_General = [1, 1, 1, 1, 1, 1, 1, 1]
+det_pulse_amp_General = [1, 1, 1, 1, 1, 1, 1]
 # sprint_pulse_amp_General = [1, 1, 1, 1]
 sprint_pulse_amp_General = [1]
 
@@ -244,11 +246,11 @@ num_fin_zeros_S = 0  # For only det pulses sequence
 # det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0]
 # sprint_pulse_amp_S = [0.105]
 # Transmission S:
-det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
-sprint_pulse_amp_S = [0.105]
-# Reflection S:
 # det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
-# sprint_pulse_amp_S = [0]
+# sprint_pulse_amp_S = [0.105]
+# Reflection S:
+det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
+sprint_pulse_amp_S = [0]
 
 # Sprint_Exp_Gaussian_samples_S = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
 #                                                             det_pulse_len=det_pulse_len,
@@ -299,11 +301,11 @@ num_fin_zeros_N = 0  # For only det pulses sequence
 # det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0, 0.45, 0]
 # sprint_pulse_amp_N = [0]
 # Transmission S:
-det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0]
-sprint_pulse_amp_N = [0]
-# Reflection S:
 # det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0]
-# sprint_pulse_amp_N = [0.095]
+# sprint_pulse_amp_N = [0]
+# Reflection S:
+det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0, 0]
+sprint_pulse_amp_N = [0.095]
 
 
 # Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
