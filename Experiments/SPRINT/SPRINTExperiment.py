@@ -1,6 +1,6 @@
 from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
 from Experiments.BaseExperiment.BaseExperiment import TerminationReason
-from Experiments.QRAM import QRAM_Config_Experiment as Config
+from Experiments.SPRINT import SPRINT_Config_Experiment as Config
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -18,7 +18,7 @@ matplotlib.mathtext.SHRINK_FACTOR = 0.4
 matplotlib.mathtext.GROW_FACTOR = 1 / 0.4
 
 
-class QRAMExperiment(BaseExperiment):
+class SPRINTExperiment(BaseExperiment):
     def __init__(self, playback=False, save_raw_data=False):
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
         super().__init__(playback, save_raw_data)
@@ -364,19 +364,19 @@ class QRAMExperiment(BaseExperiment):
         :param num_of_det_pulses: the number of detection pulses in the sequence.
         :return:
         '''
-        self.num_of_det_reflections_per_seq_S = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_reflections_per_seq_N = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_transmissions_per_seq_S = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_transmissions_per_seq_N = np.zeros(self.number_of_QRAM_sequences)
+        self.num_of_det_reflections_per_seq_S = np.zeros(self.number_of_sequences)
+        self.num_of_det_reflections_per_seq_N = np.zeros(self.number_of_sequences)
+        self.num_of_det_transmissions_per_seq_S = np.zeros(self.number_of_sequences)
+        self.num_of_det_transmissions_per_seq_N = np.zeros(self.number_of_sequences)
 
         self.num_of_SPRINT_reflections_per_seq_S = np.zeros(
-            [self.number_of_QRAM_sequences, self.number_of_SPRINT_pulses_per_seq])
+            [self.number_of_sequences, self.number_of_SPRINT_pulses_per_seq])
         self.num_of_SPRINT_reflections_per_seq_N = np.zeros(
-            [self.number_of_QRAM_sequences, self.number_of_SPRINT_pulses_per_seq])
+            [self.number_of_sequences, self.number_of_SPRINT_pulses_per_seq])
         self.num_of_SPRINT_transmissions_per_seq_S = np.zeros(
-            [self.number_of_QRAM_sequences, self.number_of_SPRINT_pulses_per_seq])
+            [self.number_of_sequences, self.number_of_SPRINT_pulses_per_seq])
         self.num_of_SPRINT_transmissions_per_seq_N = np.zeros(
-            [self.number_of_QRAM_sequences, self.number_of_SPRINT_pulses_per_seq])
+            [self.number_of_sequences, self.number_of_SPRINT_pulses_per_seq])
 
         # tt_small_perturb = []
         for element in self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure:
@@ -428,10 +428,10 @@ class QRAMExperiment(BaseExperiment):
         :return:
         '''
 
-        self.num_of_det_reflections_per_seq_S = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_reflections_per_seq_N = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_transmissions_per_seq_S = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_transmissions_per_seq_N = np.zeros(self.number_of_QRAM_sequences)
+        self.num_of_det_reflections_per_seq_S = np.zeros(self.number_of_sequences)
+        self.num_of_det_reflections_per_seq_N = np.zeros(self.number_of_sequences)
+        self.num_of_det_transmissions_per_seq_S = np.zeros(self.number_of_sequences)
+        self.num_of_det_transmissions_per_seq_N = np.zeros(self.number_of_sequences)
 
         self.num_of_det_reflections_per_seq_S_,\
         self.num_of_det_reflections_per_seq_N_, \
@@ -441,7 +441,7 @@ class QRAMExperiment(BaseExperiment):
                 [
                     [] for _ in range(self.number_of_detection_pulses_per_seq)
                 ]
-                for _ in range(self.number_of_QRAM_sequences)
+                for _ in range(self.number_of_sequences)
             ] for _ in range(4)
         ]
 
@@ -453,7 +453,7 @@ class QRAMExperiment(BaseExperiment):
                 [
                     [] for _ in range(self.number_of_SPRINT_pulses_per_seq)
                 ]
-                for _ in range(self.number_of_QRAM_sequences)
+                for _ in range(self.number_of_sequences)
             ] for _ in range(4)
         ]
 
@@ -527,11 +527,11 @@ class QRAMExperiment(BaseExperiment):
         :return:
         '''
 
-        # self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences)
-        # self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences // num_of_seq_per_count + 1)
-        self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences // num_of_seq_per_count + 1)
-        self.num_of_S_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences // num_of_seq_per_count + 1)
+        # self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_sequences)
+        # self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_sequences)
+        self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_sequences // num_of_seq_per_count + 1)
+        self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_sequences // num_of_seq_per_count + 1)
+        self.num_of_S_counts_per_n_sequences = np.zeros(self.number_of_sequences // num_of_seq_per_count + 1)
 
         for element in self.tt_BP_measure:
             tt_inseq = element % self.sequence_len
@@ -589,11 +589,11 @@ class QRAMExperiment(BaseExperiment):
 
         num_of_detected_atom = 0
         num_of_sprints = 0
-        detection_pulse_range = np.zeros([self.number_of_QRAM_sequences, num_of_det_pulses], dtype=int)
-        sprint_pulse_range = np.zeros([self.number_of_QRAM_sequences, num_of_sprint_pulses], dtype=int)
+        detection_pulse_range = np.zeros([self.number_of_sequences, num_of_det_pulses], dtype=int)
+        sprint_pulse_range = np.zeros([self.number_of_sequences, num_of_sprint_pulses], dtype=int)
 
         # define ranges for tt_histogram (a vector that counts number of photons in each pulse)
-        for i in range(self.number_of_QRAM_sequences):
+        for i in range(self.number_of_sequences):
             detection_pulse_range[i] = \
                 list(range(i * num_of_pulses, i * num_of_pulses + num_of_det_pulses))
             # sprint pulse range starts from last detection pulse andfo num_of_sprint_pulses
@@ -601,7 +601,7 @@ class QRAMExperiment(BaseExperiment):
                 list(range(int(detection_pulse_range[i][-1]) + 1,
                            int(detection_pulse_range[i][-1]) + 1 + num_of_sprint_pulses))
         # find transits and sprint events
-        for j in range(self.number_of_QRAM_sequences - 2):
+        for j in range(self.number_of_sequences - 2):
             if \
                     sum(self.tt_histogram_reflection[detection_pulse_range[j]]) >= detection_condition[0] and \
                             sum(self.tt_histogram_reflection[detection_pulse_range[j + 1]]) >= detection_condition[1]:
@@ -693,7 +693,7 @@ class QRAMExperiment(BaseExperiment):
         current_transit = []
         self.all_transits_seq_indx = []  # Array of the sequence indexes of all recognized transits per cycle. The length of it will be the number of all transits at the current cycle.
 
-        for i in range(self.number_of_QRAM_sequences - len(cond) + 1):
+        for i in range(self.number_of_sequences - len(cond) + 1):
             cond_check = (self.num_of_det_reflections_per_seq[i:(i + len(cond))] >= cond).astype(int)
             if sum(cond_check) >= minimum_number_of_seq_detected:
                 # TODO: ask dor (08.01.24) - what happens at [0,4,0]? and why including the middle at [2,0,2]?
@@ -834,7 +834,7 @@ class QRAMExperiment(BaseExperiment):
             real_number_of_seq = math.ceil(max(tt_measure) / len(Config.QRAM_Exp_Gaussian_samples_S))
             # self.logger.debug('Real number of seq = %d' %real_number_of_seq)
         except:
-            real_number_of_seq = self.number_of_QRAM_sequences
+            real_number_of_seq = self.number_of_sequences
             # self.logger.debug('Max number of seq')
         for t in pulse_loc:
             avg_num_of_photons_in_seq_pulses.append((sum(seq[t[0]:t[1]]) + seq[t[1]]) / (
@@ -1116,19 +1116,10 @@ class QRAMExperiment(BaseExperiment):
         # Prepare header text
         pause_str = ' , PAUSED!' if self.pause_flag else ''
         ref_str = '%.2f' % self.sum_for_threshold
+        flr_str = '%.2f' % self.fluorescence_average
         eff_str = '%.2f' % (self.counter / self.repetitions)
-        if self.fluorescence_flag:
-            flr_str = '%.2f' % self.fluorescence_average
-        else:
-            flr_str = r'\textbf{%.2f}' % self.fluorescence_average
-        if self.lock_err_flag:
-            lck_str = '%.3f' % self.lock_err
-        else:
-            lck_str = r'\textbf{%.3f}' % self.lock_err
-        if self.k_ex_flag:
-            k_ex_str = '$\kappa_{ex}$: %.2f' % self.k_ex
-        else:
-            k_ex_str = r'\textbf{$\kappa_{ex}$: %.2f}' % self.k_ex
+        lck_str = '%.3f' % self.lock_err
+        k_ex_str = '$\kappa_{ex}$: %.2f' % self.k_ex
         # status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
         status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter}'
         playback_str = 'PLAYBACK: ' if self.playback['active'] else ''
@@ -1341,9 +1332,9 @@ class QRAMExperiment(BaseExperiment):
 
         # Transits per sequence
         if plot_switches['graph-5']:
-            ax[5].plot(range(self.number_of_QRAM_sequences), self.seq_transit_events_batched,
+            ax[5].plot(range(self.number_of_sequences), self.seq_transit_events_batched,
                        label='Transit Events Accumulated')
-            ax[5].plot(range(self.number_of_QRAM_sequences), self.seq_transit_events_live, label='Transit Events Live')
+            ax[5].plot(range(self.number_of_sequences), self.seq_transit_events_live, label='Transit Events Live')
             ax[5].set(xlabel='Sequence [#]', ylabel='Counts [Photons]')
             ax[5].set_title('Transits per sequence', fontweight="bold")
             ax[5].legend(loc='upper right')
@@ -1358,7 +1349,7 @@ class QRAMExperiment(BaseExperiment):
 
     def init_params_for_experiment(self):
         # define empty variables
-        self.number_of_QRAM_sequences = math.ceil(self.M_window / self.sequence_len)
+        self.number_of_sequences = math.ceil(self.M_window / self.sequence_len)
 
         # Reformatting the above variables into an object - (a) for better clarity (b) make it "experiment-agnostic"
         self.experiment = {
@@ -1378,23 +1369,23 @@ class QRAMExperiment(BaseExperiment):
         self.folded_transmission = np.zeros(len(Config.QRAM_Exp_Gaussian_samples_S))
         self.folded_reflection = np.zeros(len(Config.QRAM_Exp_Gaussian_samples_S))
 
-        self.tt_S_binning = np.zeros(self.number_of_QRAM_sequences + 1)
-        self.seq_transit_events_live = np.zeros(self.number_of_QRAM_sequences)
-        self.seq_transit_events_batched = np.zeros(self.number_of_QRAM_sequences)
+        self.tt_S_binning = np.zeros(self.number_of_sequences + 1)
+        self.seq_transit_events_live = np.zeros(self.number_of_sequences)
+        self.seq_transit_events_batched = np.zeros(self.number_of_sequences)
         self.tt_S_SPRINT_events = np.zeros(self.sequence_len)
         self.tt_S_SPRINT_events_batch = np.zeros(self.sequence_len)
-        self.num_of_det_reflections_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_transmissions_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
+        self.num_of_det_reflections_per_seq_accumulated = np.zeros(self.number_of_sequences)
+        self.num_of_det_transmissions_per_seq_accumulated = np.zeros(self.number_of_sequences)
 
         num_of_seq_per_count = 50
-        self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences//num_of_seq_per_count)
-        self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences//num_of_seq_per_count)
-        self.num_of_S_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences//num_of_seq_per_count)
+        self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_sequences // num_of_seq_per_count)
+        self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_sequences // num_of_seq_per_count)
+        self.num_of_S_counts_per_n_sequences = np.zeros(self.number_of_sequences // num_of_seq_per_count)
 
-        self.num_of_det_reflections_per_seq_S = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_reflections_per_seq_N = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_transmissions_per_seq_S = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_transmissions_per_seq_N = np.zeros(self.number_of_QRAM_sequences)
+        self.num_of_det_reflections_per_seq_S = np.zeros(self.number_of_sequences)
+        self.num_of_det_reflections_per_seq_N = np.zeros(self.number_of_sequences)
+        self.num_of_det_transmissions_per_seq_S = np.zeros(self.number_of_sequences)
+        self.num_of_det_transmissions_per_seq_N = np.zeros(self.number_of_sequences)
 
         self.seq_with_data_points = []
         self.reflection_SPRINT_data = []  # Array of vectors with data on the number of reflections per SPRINT pulse in sequence.
@@ -1573,18 +1564,18 @@ class QRAMExperiment(BaseExperiment):
         pass
 
     # TODO: Refactor/Rename (this method analyzes the results)
-    def Save_SNSPDs_QRAM_Measurement_with_tt(self, N, sequence_len, pre_comment, lock_err_threshold, desired_k_ex,
-                                             k_ex_err,
-                                             transit_condition,
-                                             max_probe_counts, filter_delay, reflection_threshold,
-                                             reflection_threshold_time,
-                                             photons_per_det_pulse_threshold, FLR_threshold, exp_flag, with_atoms,
-                                             MZ_infidelity_threshold):
+    def Save_SNSPDs_Measurement_with_tt(self, N, experiment_sequence_len, pre_comment, lock_err_threshold, desired_k_ex,
+                                        k_ex_err,
+                                        transit_condition,
+                                        max_probe_counts, filter_delay, reflection_threshold,
+                                        reflection_threshold_time,
+                                        photons_per_det_pulse_threshold, FLR_threshold, exp_flag, with_atoms,
+                                        MZ_infidelity_threshold):
         """
         Function for analyzing, saving and displaying data from SPRINT experiment.
         :param N: Number of maximum experiments (free throws) saved and displayed.
                  program we are looking for transits of atoms next to the toroid and record them.
-        :param sequence_len: the number of sprint sequences (detection and sprint pulses combination)
+        :param experiment_sequence_len: the number of sprint sequences (detection and sprint pulses combination)
         :param pre_comment: The comment added at the start of the experiment, usually consisting of unique experiment
                            parameters.
         :param transit_condition:
@@ -1616,7 +1607,7 @@ class QRAMExperiment(BaseExperiment):
         # TODO: These come as parameters for the experiment run - we may want to have them all under "self.params[..]" so we can
         # TODO: (a) group logically (b) pass to other functions, instead of passing them one by one or relying on them being on self
         self.N = N
-        self.sequence_len = sequence_len
+        self.sequence_len = experiment_sequence_len
         self.with_atoms = with_atoms
         self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
         self.lock_err_threshold = lock_err_threshold
@@ -1894,7 +1885,7 @@ class QRAMExperiment(BaseExperiment):
                 self.num_of_det_transmissions_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S \
                                                                      + self.num_of_det_transmissions_per_seq_N
 
-                self.seq_transit_events_live = np.zeros(self.number_of_QRAM_sequences)
+                self.seq_transit_events_live = np.zeros(self.number_of_sequences)
 
                 ### Find transits and build histogram:  ###
                 # self.find_transits_and_sprint_events_changed(cond=self.transit_condition, minimum_number_of_seq_detected=2)
@@ -1911,7 +1902,7 @@ class QRAMExperiment(BaseExperiment):
 
                 # Analyze SPRINT data when no transit occur:
                 self.all_seq_without_transits = [
-                    np.delete(np.arange(0, self.number_of_QRAM_sequences, 1, dtype='int'),
+                    np.delete(np.arange(0, self.number_of_sequences, 1, dtype='int'),
                               sum(self.all_transits_seq_indx, [])).tolist()
                 ]
                 _, self.reflection_SPRINT_data_without_transits, self.transmission_SPRINT_data_without_transits = \
@@ -2035,6 +2026,8 @@ class QRAMExperiment(BaseExperiment):
             "tt_BP_measure_batch": self.batcher['tt_BP_measure_batch'],
             "tt_DP_measure_batch": self.batcher['tt_DP_measure_batch'],
 
+            "folded_tt_S"
+            
             "MZ_BP_counts_balancing_batch": self.batcher['MZ_BP_counts_balancing_batch'],
             "MZ_BP_counts_balancing_check_batch": self.batcher['MZ_BP_counts_balancing_check_batch'],
             "MZ_DP_counts_balancing_batch": self.batcher['MZ_DP_counts_balancing_batch'],
@@ -2060,10 +2053,6 @@ class QRAMExperiment(BaseExperiment):
 
     def is_acquired(self):
 
-        self.lock_err_flag = True
-        self.k_ex_flag = True
-        self.fluorescence_flag = True
-
         # If we are not in experiment, we don't care about the rest - just say we're acquired.
         if not self.exp_flag:
             return True
@@ -2071,26 +2060,21 @@ class QRAMExperiment(BaseExperiment):
         # Are we properly locked on resonance?
         # TODO: (Dor) is it ok to do so?
         if self.lock_err == None:
-            self.lock_err_flag = False
             return False
 
         if abs(self.lock_err) > self.lock_err_threshold:
-            self.lock_err_flag = False
             return False
 
         if self.k_ex == None:
-            self.k_ex_flag = False
             return False
 
         # Are we on the right width ?
         if not np.abs(self.k_ex-self.desired_k_ex)<self.k_ex_err:
-            self.k_ex_flag = False
             return False
 
 
         # Is fluorescence strong enough? (assuming we're running with atoms)
         if self.fluorescence_average < self.FLR_threshold and self.with_atoms:
-            self.fluorescence_flag = False
             return False
 
         # TODO: should be self.avg... What does the below do?
@@ -2179,7 +2163,7 @@ class QRAMExperiment(BaseExperiment):
         self.divide_to_reflection_trans(sprint_pulse_len=self.sprint_pulse_len,
                                         num_of_det_pulses=len(Config.det_pulse_amp_S),
                                         num_of_sprint_pulses=len(Config.sprint_pulse_amp_S),
-                                        num_of_sprint_sequences=self.number_of_QRAM_sequences)
+                                        num_of_sprint_sequences=self.number_of_sequences)
 
         # TODO: needed?
         self.tt_S_SPRINT_events = np.zeros(self.sequence_len)
@@ -2288,8 +2272,7 @@ class QRAMExperiment(BaseExperiment):
     def pre_run(self, run_parameters):
         # Change the pre comment based on the with_atoms parameter
         suffix = ' with atoms' if run_parameters['with_atoms'] else ' without atoms'
-        pre_comment = '' if 'pre_comment' not in run_parameters else run_parameters['pre_comment']
-        run_parameters['pre_comment'] = pre_comment + suffix
+        run_parameters['pre_comment'] += suffix
         pass
 
     def run(self, run_parameters):
@@ -2306,22 +2289,22 @@ class QRAMExperiment(BaseExperiment):
 
         # TODO: Q: Config.QRAM_Exp_Gaussian_samples_S is constructed in a function, using the parameter "sprint_pulse_len" - so why not use it here?
         # TODO: Q: (a) we don't want to use duplicate variables holding the same value, (b) it mentions "samples_S" - but it's the same for "N" as well...
-        run_status = self.Save_SNSPDs_QRAM_Measurement_with_tt(N=rp['N'],
-                                                  sequence_len=len(Config.QRAM_Exp_Square_samples_Late),
-                                                  pre_comment=rp['pre_comment'],
-                                                  lock_err_threshold=rp['lock_err_threshold'],
-                                                  desired_k_ex=rp['desired_k_ex'],
-                                                  k_ex_err=rp['k_ex_err'],
-                                                  transit_condition=rp['transit_condition'],
-                                                  max_probe_counts=max_probe_counts,
-                                                  filter_delay=rp['filter_delay'],
-                                                  reflection_threshold=rp['reflection_threshold'],
-                                                  reflection_threshold_time=rp['reflection_threshold_time'],
-                                                  photons_per_det_pulse_threshold=rp['photons_per_det_pulse_threshold'],
-                                                  FLR_threshold=rp['FLR_threshold'],
-                                                  exp_flag=rp['Exp_flag'],
-                                                  with_atoms=rp['with_atoms'],
-                                                  MZ_infidelity_threshold=rp['MZ_infidelity_threshold'])
+        run_status = self.Save_SNSPDs_Measurement_with_tt(N=rp['N'],
+                                                          experiment_sequence_len=len(Config.QRAM_Exp_Square_samples_Late),
+                                                          pre_comment=rp['pre_comment'],
+                                                          lock_err_threshold=rp['lock_err_threshold'],
+                                                          desired_k_ex=rp['desired_k_ex'],
+                                                          k_ex_err=rp['k_ex_err'],
+                                                          transit_condition=rp['transit_condition'],
+                                                          max_probe_counts=max_probe_counts,
+                                                          filter_delay=rp['filter_delay'],
+                                                          reflection_threshold=rp['reflection_threshold'],
+                                                          reflection_threshold_time=rp['reflection_threshold_time'],
+                                                          photons_per_det_pulse_threshold=rp['photons_per_det_pulse_threshold'],
+                                                          FLR_threshold=rp['FLR_threshold'],
+                                                          exp_flag=rp['Exp_flag'],
+                                                          with_atoms=rp['with_atoms'],
+                                                          MZ_infidelity_threshold=rp['MZ_infidelity_threshold'])
         return run_status
 
     def post_run(self, run_parameters):
@@ -2337,10 +2320,10 @@ if __name__ == "__main__":
     run_parameters = {
         'N': 1000,  # 50,
         'transit_condition': [2, 1, 2],
-        # 'pre_comment': '',
+        'pre_comment': '',
         'lock_err_threshold': 2, # [Mhz]
-        'desired_k_ex': 30,# [Mhz]
-        'k_ex_err': 3, # [Mhz]
+        'desired_k_ex': 70,# [Mhz]
+        'k_ex_err': 5, # [Mhz]
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,
         'reflection_threshold_time': 9e6,
@@ -2358,23 +2341,23 @@ if __name__ == "__main__":
         'sequence': [
             {
                 'parameters': {
-                    'N': 50,
+                    'N': 30,
                     'with_atoms': False
                 }
             },
             {
                 'parameters': {
-                    'N': 500,
+                    'N': 300,
                     'with_atoms': True
                 }
-            }
+            },
         ]
     }
 
-    experiment = QRAMExperiment(playback=False, save_raw_data=False)
+    experiment = SPRINTExperiment(playback=True, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
-    # sequence_definitions = None
+    sequence_definitions = None
 
     if sequence_definitions is None:
         experiment.run(run_parameters)

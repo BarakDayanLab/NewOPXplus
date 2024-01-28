@@ -132,11 +132,11 @@ class BaseExperiment:
 
         # Dynamically import the config-experiment and config-table and merge the values
         try:
-            Config = importlib.import_module("Config_Experiment")
-            ConfigTable = importlib.import_module("Config_Table")
+            Config = importlib.import_module(f'{self.experiment_name}_Config_Experiment')
+            ConfigTable = importlib.import_module(f'{self.experiment_name}_Config_Table')
             self.Exp_Values = Utils.merge_multiple_jsons([self.Exp_Values, ConfigTable.Experiment_Values])
         except Exception as err:
-            self.warn(f'Unable to import Config file ({err})')
+            self.info(f'Unable to import Config file ({err}). Loading BaseExperiment config files.')
 
         # Get the opx-control method from the OPX-Code file in the BaseExperiment
         opx_control = OPX_Code.opx_control
@@ -146,7 +146,7 @@ class BaseExperiment:
             OPX_Code_Module = importlib.import_module("OPX_Code")
             opx_control = OPX_Code_Module.opx_control
         except Exception as err:
-            self.warn(f'Unable to import OPX_Code file ({err}). Loading local opx code from BaseExperiment')
+            self.info(f'Unable to import OPX_Code file ({err}). Loading local opx code from BaseExperiment')
             # try:
             #     OPX_Code = importlib.import_module("Experiments.BaseExperiment.OPX_Code", "OPX_Code")
             # except Exception as err:
@@ -437,6 +437,7 @@ class BaseExperiment:
             "cwd": os.getcwd(),
             "root": str(pathlib.Path(__file__).parent.resolve())
         }
+        self.experiment_name = os.path.basename(os.path.normpath(os.getcwd()))
         pass
 
     def handle_user_events(self):
