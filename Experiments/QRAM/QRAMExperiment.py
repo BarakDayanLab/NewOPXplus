@@ -1120,15 +1120,15 @@ class QRAMExperiment(BaseExperiment):
         if self.fluorescence_flag:
             flr_str = '%.2f' % self.fluorescence_average
         else:
-            flr_str = Utils.bold_text('%.2f' % self.fluorescence_average)
+            flr_str = r'\textbf{%.2f}' % self.fluorescence_average
         if self.lock_err_flag:
             lck_str = '%.3f' % self.lock_err
         else:
-            lck_str = Utils.bold_text('%.3f' % self.lock_err)
+            lck_str = r'\textbf{%.3f}' % self.lock_err
         if self.k_ex_flag:
             k_ex_str = '$\kappa_{ex}$: %.2f' % self.k_ex
         else:
-            k_ex_str =  Utils.bold_text('$\kappa_{ex}$: %.2f' % self.k_ex)
+            k_ex_str = r'\textbf{$\kappa_{ex}$: %.2f}' % self.k_ex
         # status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
         status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter}'
         playback_str = 'PLAYBACK: ' if self.playback['active'] else ''
