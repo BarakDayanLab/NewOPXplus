@@ -1,4 +1,4 @@
-from Experiments.QRAM import Config_Experiment as Config
+from Experiments.QRAM import QRAM_Config_Experiment as Config
 from Experiments.Enums.Phases import Phases
 from Experiments.Enums.IOParameters import IOParameters as IOP
 from qm.qua import *

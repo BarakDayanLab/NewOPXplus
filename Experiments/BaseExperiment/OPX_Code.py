@@ -1,4 +1,4 @@
-from Experiments.BaseExperiment import Config_Experiment as Config
+import Experiments.BaseExperiment.Config_Experiment as Config
 from Experiments.Enums.IOParameters import IOParameters as IOP
 from Experiments.Enums.Phases import Phases
 from Utilities.OPX_Utils import OPX_Utils
@@ -421,7 +421,7 @@ def opx_control(obj, qm):
                 ## MOT variables control ##
                 with if_(i == IOP.MOT_DURATION.value):  # Live control over the
                     assign(MOT_Repetitions, IO2)
-                with if_(i == IOP.POST_MOT_DELAY):  # Live control over the post MOT delay
+                with if_(i == IOP.POST_MOT_DELAY.value):  # Live control over the post MOT delay
                     assign(post_MOT_delay, IO2)
                     #assign(params[IOP.POST_MOT_DELAY], IO2)  # @@@ - 4  TODO: Generalize this! assign(p[i], IO2)
 

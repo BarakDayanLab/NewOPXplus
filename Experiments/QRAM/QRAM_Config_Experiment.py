@@ -307,6 +307,12 @@ num_fin_zeros_N = 0  # For only det pulses sequence
 det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0, 0]
 sprint_pulse_amp_N = [0.095]
 
+# For Echos:
+det_pulse_amp_S = [0, 0, 0, 0, 0, 0, 0]
+sprint_pulse_amp_S = [0]
+det_pulse_amp_N = [0.45, 0, 0, 0, 0, 0, 0]
+sprint_pulse_amp_N = [0]
+
 
 # Sprint_Exp_Gaussian_samples_N = Sprint_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
 #                                                             det_pulse_len=det_pulse_len,
@@ -336,7 +342,7 @@ det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_Ancilla = [0, 0, 0, 0]
 sprint_pulse_amp_Ancilla = [0]
 
-# Qram
+#
 
 QRAM_Exp_Gaussian_samples_General = QRAM_Exp_Gaussian_samples(sprint_pulse_len=sprint_pulse_len,
                                                               det_pulse_len=det_pulse_len,
