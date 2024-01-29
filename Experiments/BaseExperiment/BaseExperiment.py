@@ -3,6 +3,7 @@ import sys
 import time
 import json
 import socket
+import asyncio
 import pathlib
 import matplotlib.pyplot as plt
 import os
@@ -95,7 +96,7 @@ class BaseExperiment:
             "data_loaded": False,
             "save_results": False,
             "plot": "LIVE",  # "LIVE", "LAST", "NONE"
-            "delay": -1,  # 0.5,  # sec
+            "delay": -1,  # 0.5,  # In seconds. Use -1 for not playback delay
             "row_count": 0,
             "streams": {}
         }
@@ -171,6 +172,8 @@ class BaseExperiment:
         # Open server-socket
         # TODO: complete implementation of this - listen on socket for outer process/machines to communicate with us
         #self._open_socket()
+
+        #asyncio.run(self.run_server())
 
         # Attempt to initialize Camera functionality
         self.connect_camera()
@@ -527,12 +530,36 @@ class BaseExperiment:
     # https://stackoverflow.com/questions/23828264/how-to-make-a-simple-multithreaded-socket-server-in-python-that-remembers-client
     #--------------------------
     def _open_socket(self):
+
         # Create an INET, STREAMing socket
         serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
         # Bind the socket to a public host, and a well-known port
-        serversocket.bind((socket.gethostname(), 80))
+        host2 = 'localhost'
+        host = socket.gethostname()
+
+        serversocket.bind((host2, 5050))
+
         # Become a server socket
-        serversocket.listen(5)
+        serversocket.listen()
+
+        serversocket.setblocking(False)
+
+    async def handle_client(self, reader, writer):
+        request = None
+        while request != 'quit':
+            request = (await reader.read(255)).decode('utf8')
+            response = str(eval(request)) + '\n'
+            writer.write(response.encode('utf8'))
+            await writer.drain()
+        writer.close()
+
+    async def run_server(self):
+        server = await asyncio.start_server(self.handle_client, 'localhost', 5050)
+        async with server:
+            # await server.serve_forever()
+            server.serve_forever()
+
 
     # -------------------------------------------------------
     # Keyboard related methods

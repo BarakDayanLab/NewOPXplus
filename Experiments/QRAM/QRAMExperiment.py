@@ -1862,6 +1862,9 @@ class QRAMExperiment(BaseExperiment):
             # Experiment delay
             self.experiment_mainloop_delay()
 
+            # print('Socket Debug: Finished wait. Continuing.')
+            # continue
+
             # Handle warm-up phase
             self.warm_up = self.handle_warm_up_phase()
             if self.warm_up:
@@ -2334,6 +2337,8 @@ if __name__ == "__main__":
     print(f'In use: {matplotlib_version}')
     matplotlib.use("Qt5Agg")
 
+    debug_run = True  # Make True if you want to run playback and exp_flag=False
+
     run_parameters = {
         'N': 100,  # 50,
         'transit_condition': [2, 1, 2],
@@ -2347,7 +2352,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 1.12,
         'photons_per_det_pulse_threshold': 12,
-        'Exp_flag': False,
+        'Exp_flag': not debug_run,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2371,7 +2376,7 @@ if __name__ == "__main__":
         ]
     }
 
-    experiment = QRAMExperiment(playback=False, save_raw_data=False)
+    experiment = QRAMExperiment(playback=debug_run, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
     sequence_definitions = None
