@@ -7,15 +7,23 @@ from Utilities.Utils import Utils
 
 # For SPRINT experiment:
 # Transmission N:
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0]
+# sprint_pulse_amp_N = [0.095]
 # det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0]
 # sprint_pulse_amp_S = [0]
 # Reflection N:
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0]
+# sprint_pulse_amp_N = [0]
 # det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0, 0]
 # sprint_pulse_amp_S = [0.105]
 # Transmission S:
+# det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0, 0]
+# sprint_pulse_amp_N = [0]
 # det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.45, 0]
 # sprint_pulse_amp_S = [0.105]
 # Reflection S:
+det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
+sprint_pulse_amp_N = [0.095]
 det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.45]
 sprint_pulse_amp_S = [0]
 
@@ -23,17 +31,13 @@ sprint_pulse_amp_S = [0]
 
 # For SPRINT experiment
 # Transmission N:
-# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0]
-# sprint_pulse_amp_N = [0.095]
+
 # Reflection N:
-# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.45, 0]
-# sprint_pulse_amp_N = [0]
+
 # Transmission S:
-# det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0, 0]
-# sprint_pulse_amp_N = [0]
+
 # Reflection S:
-det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
-sprint_pulse_amp_N = [0.095]
+
 
 
 
