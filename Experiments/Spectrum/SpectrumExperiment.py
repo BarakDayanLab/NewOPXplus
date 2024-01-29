@@ -1,6 +1,6 @@
 from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
 from Experiments.BaseExperiment.BaseExperiment import TerminationReason
-from Experiments.Spectrum import Config_Experiment as Config
+from Experiments.Spectrum import Spectrum_Config_Experiment as Config
 
 import matplotlib
 import matplotlib.pyplot as plt

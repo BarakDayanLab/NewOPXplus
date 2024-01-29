@@ -24,6 +24,7 @@ class Utils:
     @staticmethod
     def running_average(values, new_value, counter):
         return (values * (counter - 1) + new_value) / counter
+
     @staticmethod
     def moving_average(a, n=3):
         ret = np.cumsum(a, dtype=float)
@@ -56,16 +57,16 @@ class Utils:
         """
         theta = correction_vars[0]
         k = correction_vars[1]
-        R = [[np.sin(theta), np.cos(theta)], [np.cos(theta), np.sin(theta)]]
+        r = [[np.sin(theta), np.cos(theta)], [np.cos(theta), np.sin(theta)]]
         c = [[k, 0], [0, 1 / k]]
-        return np.matmul(c, R).flatten().tolist()
+        return np.matmul(c, r).flatten().tolist()
 
     @staticmethod
     def most_common(self, lst):
         # get an iterable of (item, iterable) pairs
-        SL = sorted((x, i) for i, x in enumerate(lst))
+        sl = sorted((x, i) for i, x in enumerate(lst))
         # print 'SL:', SL
-        groups = itertools.groupby(SL, key=operator.itemgetter(0))
+        groups = itertools.groupby(sl, key=operator.itemgetter(0))
 
         # auxiliary function to get "quality" for an item
         def _auxfun(g):
@@ -124,7 +125,7 @@ class Utils:
         Given an array of jsons, we merge them one onto the other, going from left to right
         This means that the first json in the array is the "weakest" and the last is the "strongest"
         """
-        if len(array_of_jsons)==1:
+        if len(array_of_jsons) == 1:
             return array_of_jsons[0]
 
         # Iterate over all jsons in array and merge each one on top of the prev merger:
@@ -145,7 +146,7 @@ class Utils:
     @staticmethod
     def verify_keys_for_case_sensitivity(array_of_dictionaries):
         """
-        Method for running sanity on keys in dictionaries - should not have the same keys with different case-sensitivity
+        Method for running sanity on keys in dictionaries - shouldn't have the same keys with different case-sensitivity
         :param array_of_dictionaries: array of dictionaries
         :return: N/A
 
@@ -164,14 +165,14 @@ class Utils:
         pass
 
     @staticmethod
-    def bucket_timetags_SIMPLE(timetags, window_size, buckets_number=1, filter=None, start_time=-math.inf, end_time=math.inf):
+    def bucket_timetags_SIMPLE(time_tags, window_size, buckets_number=1, filter=None, start_time=-math.inf, end_time=math.inf):
         """
         This function takes a sequence of time-tags and divides thjem into buckets.
         It does so scanning all time-tags from start to end and placing each timetag into the relevant bin.
         Bins are opened dynamically (e.g. if all time tags fall into the same bin, only one will return.
         The function returns both the counts and the time-tags themselves.
 
-        :param timetags: An array of time tags we need to put into buckets
+        :param time_tags: An array of time tags we need to put into buckets
         :param window_size: The window size for the binning action
         :param buckets_number: Pre-allocated the buckets. If no time-tags for a specific bucket, it will return 0
                                If this param is None, there will be dynamic allocation until the last relevant timetag
@@ -194,7 +195,7 @@ class Utils:
             buckets_content.append([])
 
         # Perform the bucketing
-        for time_tag in timetags:
+        for time_tag in time_tags:
             if time_tag > start_time and time_tag < end_time:
                 time_tag_in_sequence = time_tag % window_size
                 seq_num = (time_tag - 1) // window_size
@@ -271,7 +272,7 @@ class Utils:
         Checks that the tailing end of the array has some values that are non-zero
         TODO: add an option to have "head"/"trail"
         """
-        percent = percent/100 if percent>100 else percent
+        percent = percent/100 if percent > 100 else percent
         index = int((1 - percent) * len(values))
         tail_array = np.array(values[index:])
         non_zero = sum(tail_array) != 0
@@ -311,13 +312,13 @@ class Utils:
         for s in filters:
             if len(s["filter"]) < window_size:
                 # TODO: Pad it or raise an exception? Add "strict" mode
-                #raise Exception('Filter size must be equal or greater than window size!')
+                # raise Exception('Filter size must be equal or greater than window size!')
                 gap = window_size - len(s["filter"])
                 s["filter"] = np.pad(s["filter"], (0, gap))
             if len(s["filter"]) > window_size:
                 print(f'Warning: filter size {len(s["filter"])} is larger than window size ({window_size})')
 
-            #counts = [0] * buckets_number
+            # counts = [0] * buckets_number
             counts = np.zeros(buckets_number)
             content = [[]]
             for x in range(0, buckets_number-1):
@@ -340,7 +341,7 @@ class Utils:
 
                     # If we skipped few buckets (no time tags for them, create zero-count/zero-content buckets
                     for i in range(len(b["counts"]), seq_num+1):
-                        #b["counts"].append(0)
+                        # b["counts"].append(0)
                         b["counts"] = np.append(b["counts"], 0)
                         b["content"].append([])
                     b["counts"][seq_num] += inc
@@ -354,8 +355,8 @@ class Utils:
         time_tags = [1, 4, 15, 22, 24, 98, 99, 100]
         # s_filter = [i//50 for i in range(0, 100)]
         # n_filter = [1-(i//50) for i in range(0, 100)]
-        s_filter = [0,1,0,1,0,1,0,1,0,1]  # Bucket of only odd timetags
-        n_filter = [1,1,1,1,1,1,1,1,1,1]  # Bucket of all time tags
+        s_filter = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1]  # Bucket of only odd timetags
+        n_filter = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]  # Bucket of all time tags
 
         buckets = Utils.bucket_timetags(
             timetags=time_tags,
@@ -443,7 +444,3 @@ class Utils:
         r = np.power(np.abs(2 * k_ex * h /
                             (np.power((1j * f + (k_i + k_ex)), 2) + np.power(h, 2))), 2)
         return r
-
-    @staticmethod
-    def bold_text(text):
-        return "\033[1m" + text + "\033[0m"

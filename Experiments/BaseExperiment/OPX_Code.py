@@ -1,4 +1,4 @@
-import Config_Experiment as Config
+from Experiments.BaseExperiment import Config_Experiment as Config
 from Experiments.Enums.IOParameters import IOParameters as IOP
 from Experiments.Enums.Phases import Phases
 from Utilities.OPX_Utils import OPX_Utils

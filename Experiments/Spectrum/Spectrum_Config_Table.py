@@ -1,7 +1,7 @@
 import numpy as np
 from Experiments.Enums.Phases import Phases
 from Experiments.BaseExperiment.Config_Table import Initial_Values
-import Experiments.Spectrum.Config_Experiment as Config
+import Experiments.Spectrum.Spectrum_Config_Experiment as Config
 
 
 # These values will be added/override the ones in Initial_Values (e.g. Common Experiment Values)
