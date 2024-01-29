@@ -742,7 +742,7 @@ class QRAMExperiment(BaseExperiment):
                         len(self.num_of_det_reflections_per_seq_S_[seq_indx][-1]) == 1:
                     potential_data = True
                 # Getting SPRINT data if the SPRINT pulse has one photon in the reflection or transmission
-                if potential_data:
+                if potential_data and len(self.sorted_pulses) > self.number_of_detection_pulses_per_seq:
                     if self.sorted_pulses[self.number_of_detection_pulses_per_seq-1+SPRINT_pulse_number][2] == 'n':
                         transmissions = len(self.num_of_SPRINT_transmissions_per_seq_N_[seq_indx][SPRINT_pulse_number-1])
                         reflections = len(self.num_of_SPRINT_reflections_per_seq_N_[seq_indx][SPRINT_pulse_number-1])
@@ -1120,15 +1120,15 @@ class QRAMExperiment(BaseExperiment):
         if self.fluorescence_flag:
             flr_str = '%.2f' % self.fluorescence_average
         else:
-            flr_str = r'\textbf{%.2f}' % self.fluorescence_average
+            flr_str = r'$\bf{%.2f}$' % self.fluorescence_average
         if self.lock_err_flag:
             lck_str = '%.3f' % self.lock_err
         else:
-            lck_str = r'\textbf{%.3f}' % self.lock_err
+            lck_str = r'$\bf{%.3f}$' % self.lock_err
         if self.k_ex_flag:
             k_ex_str = '$\kappa_{ex}$: %.2f' % self.k_ex
         else:
-            k_ex_str = r'\textbf{$\kappa_{ex}$: %.2f}' % self.k_ex
+            k_ex_str = r'$\bf{\kappa_{ex}: %.2f}$' % self.k_ex
         # status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
         status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter}'
         playback_str = 'PLAYBACK: ' if self.playback['active'] else ''
@@ -1280,7 +1280,7 @@ class QRAMExperiment(BaseExperiment):
             textstr_total_transmission_avg = 'Average transmissions per cycle = %.2f' % (
                 sum(self.num_of_det_transmissions_per_seq_accumulated / self.counter),)
 
-            textstr_total_reflections_percentage = 'Total reflections per cycle "S" = %d' % (
+            textstr_total_reflections_percentage = 'Average reflections percentage = %.1f%%' % (
                 (sum(self.num_of_det_reflections_per_seq_accumulated) * 100) /
                 (sum(self.num_of_det_reflections_per_seq_accumulated) +
                  (sum(self.num_of_det_transmissions_per_seq_accumulated) / self.Cavity_transmission)),)
@@ -1307,7 +1307,7 @@ class QRAMExperiment(BaseExperiment):
                 ax[3].plot(self.num_of_det_reflections_per_seq * 0.5 * max_reflect_avg / max_reflect * 0.3, label='Num of reflections per sequence (Live)')
             ax[3].set_title('Num of reflections per sequence', fontweight="bold")
             ax[3].legend(loc='upper right')
-            ax[3].text(0.01, 0.99 * max_reflect_avg, textstr_total_reflections, fontsize=14, verticalalignment='top', bbox=props)
+            ax[3].text(0.02, 0.95, textstr_total_reflections, transform=ax[3].transAxes, fontsize=14, verticalalignment='top', bbox=props)
 
         # MZ outputs around experiment
         if plot_switches['graph-4']:
@@ -1347,7 +1347,7 @@ class QRAMExperiment(BaseExperiment):
             ax[5].set(xlabel='Sequence [#]', ylabel='Counts [Photons]')
             ax[5].set_title('Transits per sequence', fontweight="bold")
             ax[5].legend(loc='upper right')
-            ax[5].text(0.05, 0.95, textstr_transit_event_counter, transform=ax[5].transAxes, fontsize=14,
+            ax[5].text(0.02, 0.92, textstr_transit_event_counter, transform=ax[5].transAxes, fontsize=14,
                        verticalalignment='top', bbox=props)
 
         # End timer
@@ -1847,13 +1847,13 @@ class QRAMExperiment(BaseExperiment):
             self.lock_err = self._read_locking_error()
 
             # Get k_ex
-            self.k_i = 3.9  # [MHz]
+            self.k_i = 4.3  # [MHz]
             self.k_ex = (self._read_k_ex() / 2) - self.k_i
             # TODO: Now we get FWHM from NADAV. Change to commentout when it's real k_ex.
             # self.k_ex = self._read_k_ex()
 
             # Define efficiencies:
-            self.Cavity_transmission = Utils.cavity_transmission(0, self.k_ex, k_i=self.k_i, h=0.6)
+            self.Cavity_transmission = Utils.cavity_transmission(0, self.k_ex, k_i=self.k_i, h=1.4)
             self.Eff_from_taper_N = Config.Eff_from_taper_N * \
                                     (self.Cavity_transmission / 0.5)
             self.Eff_from_taper_S = Config.Eff_from_taper_S * \
@@ -2338,9 +2338,9 @@ if __name__ == "__main__":
     matplotlib.use("Qt5Agg")
 
     run_parameters = {
-        'N': 1000,  # 50,
+        'N': 100,  # 50,
         'transit_condition': [2, 1, 2],
-        # 'pre_comment': '',
+        'pre_comment': '',
         'lock_err_threshold': 2, # [Mhz]
         'desired_k_ex': 30,# [Mhz]
         'k_ex_err': 3, # [Mhz]
@@ -2350,13 +2350,13 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 1.12,
         'photons_per_det_pulse_threshold': 12,
-        'Exp_flag': True,
+        'Exp_flag': False,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
     # The sequence_definitions params would replace parameters from run_parameters('N','with_atoms')
     sequence_definitions = {
-        'total_cycles': 1,
+        'total_cycles': 3,
         'delay_between_cycles': None,  # seconds
         'sequence': [
             {
@@ -2367,7 +2367,7 @@ if __name__ == "__main__":
             },
             {
                 'parameters': {
-                    'N': 500,
+                    'N': 250,
                     'with_atoms': True
                 }
             }
@@ -2377,7 +2377,7 @@ if __name__ == "__main__":
     experiment = QRAMExperiment(playback=False, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
-    # sequence_definitions = None
+    sequence_definitions = None
 
     if sequence_definitions is None:
         experiment.run(run_parameters)
