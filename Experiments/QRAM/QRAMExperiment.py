@@ -2044,6 +2044,8 @@ class QRAMExperiment(BaseExperiment):
             "MZ_DP_counts_balancing_check_batch": self.batcher['MZ_DP_counts_balancing_check_batch'],
             "Phase_Correction_vec_batch": self.batcher['Phase_Correction_vec_batch'],
             "Phase_Correction_min_vec_batch": self.batcher['Phase_Correction_min_vec_batch'],
+            "Phase_Correction_value": self.batcher['Phase_Correction_value'],
+            "MZ_S_tot_counts": self.batcher['MZ_S_tot_counts'],
 
             "Index_of_Sequences_with_data_points": self.batcher['seq_with_data_points_batch'],
             "Reflections_per_data_point": self.batcher['reflection_SPRINT_data_batch'],
@@ -2337,7 +2339,7 @@ if __name__ == "__main__":
     print(f'In use: {matplotlib_version}')
     matplotlib.use("Qt5Agg")
 
-    debug_run = True  # Make True if you want to run playback and exp_flag=False
+    debug_run = False  # Make True if you want to run playback and exp_flag=False
 
     run_parameters = {
         'N': 100,  # 50,
