@@ -722,7 +722,7 @@ class QRAMExperiment(BaseExperiment):
                     self.all_transits_seq_indx = self.all_transits_seq_indx[:-1]
             self.all_transits_seq_indx.append(current_transit)
 
-    def analyze_SPRINT_data_points(self, all_transits_seq_indx, SPRINT_pulse_number=1):
+    def analyze_SPRINT_data_points(self, all_transits_seq_indx, SPRINT_pulse_number=1, background=False):
         '''
         Find the relevent data points for SPRINT pulse and analyze results.
         :param SPRINT_pulse_number: The SPRINT pulse number for which we want to check the results
@@ -734,7 +734,7 @@ class QRAMExperiment(BaseExperiment):
             for seq_indx in transit[:-1]:
                 # Checking potential for data point by looking for a single photon at the reflection of the last
                 # detection pulse:
-                potential_data = False
+                potential_data = False if not background else True
                 if self.sorted_pulses[self.number_of_detection_pulses_per_seq-1][2] == 'N' and \
                    len(self.num_of_det_reflections_per_seq_N_[seq_indx][-1]) == 1:
                     potential_data = True
@@ -1137,12 +1137,20 @@ class QRAMExperiment(BaseExperiment):
 
         # SPRINT results box
         SPRINT_reflections_without_transits = '%d' % sum(self.batcher['num_of_total_SPRINT_reflections_batch'])
+        SPRINT_reflections_percentage_without_transits = (
+                '%.1f%%' % ((sum(self.batcher['num_of_total_SPRINT_reflections_batch']) * 100) /
+                            (sum(self.batcher['num_of_total_SPRINT_reflections_batch']) + sum(self.batcher['num_of_total_SPRINT_transmissions_batch']))))
         SPRINT_reflections_with_transits = '%d' % sum(sum(self.batcher['reflection_SPRINT_data_batch'], []))
-        SPRINT_reflections = f'${SPRINT_reflections_with_transits}_{{({SPRINT_reflections_without_transits})}}$'
+        # SPRINT_reflections = f'${SPRINT_reflections_with_transits}_{{({SPRINT_reflections_without_transits})}}$'
+        SPRINT_reflections = f'${SPRINT_reflections_with_transits}_{{({SPRINT_reflections_percentage_without_transits})}}$'
         SPRINT_reflections_text = '$R_{SPRINT}$'
         SPRINT_transmissions_without_transits = '%d' % sum(self.batcher['num_of_total_SPRINT_transmissions_batch'])
+        SPRINT_transmissions_percentage_without_transits = (
+                '%.1f%%' % ((sum(self.batcher['num_of_total_SPRINT_transmissions_batch']) * 100) /
+                            (sum(self.batcher['num_of_total_SPRINT_reflections_batch']) + sum(self.batcher['num_of_total_SPRINT_transmissions_batch']))))
         SPRINT_transmissions_with_transits = '%d' % sum(sum(self.batcher['transmission_SPRINT_data_batch'], []))
-        SPRINT_transmissions = f'${SPRINT_transmissions_with_transits}_{{({SPRINT_transmissions_without_transits})}}$'
+        # SPRINT_transmissions = f'${SPRINT_transmissions_with_transits}_{{({SPRINT_transmissions_without_transits})}}$'
+        SPRINT_transmissions = f'${SPRINT_transmissions_with_transits}_{{({SPRINT_transmissions_percentage_without_transits})}}$'
         SPRINT_transmissions_text = '$T_{SPRINT}$'
         SPRINT_Score = f'{SPRINT_reflections} - {SPRINT_transmissions}'
         table_vals = [SPRINT_reflections_text, SPRINT_Score, SPRINT_transmissions_text]
@@ -1910,7 +1918,8 @@ class QRAMExperiment(BaseExperiment):
 
                 # Analyze SPRINT data during transits:
                 self.seq_with_data_points, self.reflection_SPRINT_data, self.transmission_SPRINT_data = \
-                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=1)  # Enter the index of the SPRINT pulse for which the data should be analyzed
+                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=1,
+                                                    background=False)  # Enter the index of the SPRINT pulse for which the data should be analyzed
 
                 # Analyze SPRINT data when no transit occur:
                 self.all_seq_without_transits = [
@@ -1918,7 +1927,8 @@ class QRAMExperiment(BaseExperiment):
                               sum(self.all_transits_seq_indx, [])).tolist()
                 ]
                 _, self.reflection_SPRINT_data_without_transits, self.transmission_SPRINT_data_without_transits = \
-                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=1)  # Enter the index of the SPRINT pulse for which the data should be analyzed
+                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=1,
+                                                    background=True)  # Enter the index of the SPRINT pulse for which the data should be analyzed
                 self.num_of_total_SPRINT_reflections = sum(self.reflection_SPRINT_data_without_transits)
                 self.num_of_total_SPRINT_transmissions = sum(self.transmission_SPRINT_data_without_transits)
 
@@ -2381,7 +2391,7 @@ if __name__ == "__main__":
     experiment = QRAMExperiment(playback=debug_run, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
-    sequence_definitions = None
+    # sequence_definitions = None
 
     if sequence_definitions is None:
         experiment.run(run_parameters)
