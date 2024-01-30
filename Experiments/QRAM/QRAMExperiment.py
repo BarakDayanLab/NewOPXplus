@@ -1118,22 +1118,22 @@ class QRAMExperiment(BaseExperiment):
         ref_str = '%.2f' % self.sum_for_threshold
         eff_str = '%.2f' % (self.counter / self.repetitions)
         if self.fluorescence_flag:
-            flr_str = '%.2f' % self.fluorescence_average
+            flr_str = '$Flr: %.2f$' % self.fluorescence_average
         else:
-            flr_str = r'$\bf{%.2f}$' % self.fluorescence_average
+            flr_str = r'$\bf{Flr: %.2f}$' % self.fluorescence_average
         if self.lock_err_flag:
-            lck_str = '%\Delta_{lock}: .3f' % self.lock_err
+            lck_str = '$\Delta_{lock}: %.3f$' % self.lock_err
         else:
-            lck_str = r'$\bf{\Delta_{lock}: .3f}$' % self.lock_err
+            lck_str = r'$\bf{\Delta_{lock}: %.3f}$' % self.lock_err
         if self.k_ex_flag:
-            k_ex_str = '$\kappa_{ex}$: %.2f' % self.k_ex
+            k_ex_str = '$\kappa_{ex}: %.2f$' % self.k_ex
         else:
             k_ex_str = r'$\bf{\kappa_{ex}: %.2f}$' % self.k_ex
         # status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
         status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter}'
         playback_str = 'PLAYBACK: ' if self.playback['active'] else ''
         # header_text = f'{playback_str} {status_str} - Reflections: {ref_str}, Eff: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str}, k_ex: {k_ex_str} {pause_str}'
-        header_text = f'{playback_str} {status_str} - Eff: {eff_str}, Flr: {flr_str}, {lck_str}, {k_ex_str} {pause_str}'
+        header_text = f'{playback_str} {self.experiment_type}, {status_str} - Eff: {eff_str}, {flr_str}, {lck_str}, {k_ex_str} {pause_str}'
 
         # SPRINT results box
         SPRINT_reflections_without_transits = '%d' % sum(self.batcher['num_of_total_SPRINT_reflections_batch'])
@@ -2364,8 +2364,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 1.12,
         'photons_per_det_pulse_threshold': 12,
-        # 'Exp_flag': not debug_run,
-        'Exp_flag': False,
+        'Exp_flag': not debug_run,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2392,7 +2391,7 @@ if __name__ == "__main__":
     experiment = QRAMExperiment(playback=debug_run, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
-    sequence_definitions = None
+    # sequence_definitions = None
 
     if sequence_definitions is None:
         experiment.run(run_parameters)
