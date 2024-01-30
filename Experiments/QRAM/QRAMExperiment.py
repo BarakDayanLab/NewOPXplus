@@ -1123,19 +1123,19 @@ class QRAMExperiment(BaseExperiment):
         else:
             flr_str = r'$\bf{Flr: %.2f}$' % self.fluorescence_average
         if self.lock_err_flag:
-            lck_str = '$\Delta_{lock}: %.3f$' % self.lock_err
+            lck_str = '$\Delta_{lock}: %.1f$' % self.lock_err
         else:
-            lck_str = r'$\bf{\Delta_{lock}: %.3f}$' % self.lock_err
+            lck_str = r'$\bf{\Delta_{lock}: %.1f}$' % self.lock_err
         if self.k_ex_flag:
-            k_ex_str = '$\kappa_{ex}: %.2f$' % self.k_ex
+            k_ex_str = '$\kappa_{ex}: %.1f$' % self.k_ex
         else:
-            k_ex_str = r'$\bf{\kappa_{ex}: %.2f}$' % self.k_ex
+            k_ex_str = r'$\bf{\kappa_{ex}: %.1f}$' % self.k_ex
         # status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
         status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({eff_str})'
         # status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter}'
         playback_str = 'PLAYBACK: ' if self.playback['active'] else ''
         # header_text = f'{playback_str} {status_str} - Reflections: {ref_str}, Eff: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str}, k_ex: {k_ex_str} {pause_str}'
-        header_text = f'{playback_str} {self.experiment_type}, {status_str} - {flr_str}, {lck_str}, {k_ex_str} {pause_str}'
+        header_text = f'{playback_str} {exp_str}, {status_str} - {flr_str}, {lck_str}, {k_ex_str} {pause_str}'
 
         # SPRINT results box
         SPRINT_reflections_without_transits = '%d' % sum(self.batcher['num_of_total_SPRINT_reflections_batch'])
