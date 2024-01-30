@@ -1138,19 +1138,19 @@ class QRAMExperiment(BaseExperiment):
         # SPRINT results box
         SPRINT_reflections_without_transits = '%d' % sum(self.batcher['num_of_total_SPRINT_reflections_batch'])
         SPRINT_reflections_percentage_without_transits = (
-                '%.1f%%' % ((sum(self.batcher['num_of_total_SPRINT_reflections_batch']) * 100) /
-                            (sum(self.batcher['num_of_total_SPRINT_reflections_batch']) + sum(self.batcher['num_of_total_SPRINT_transmissions_batch']))))
+                '%.1f' % ((sum(self.batcher['num_of_total_SPRINT_reflections_batch']) * 100) /
+                          (sum(self.batcher['num_of_total_SPRINT_reflections_batch']) + sum(self.batcher['num_of_total_SPRINT_transmissions_batch']))))
         SPRINT_reflections_with_transits = '%d' % sum(sum(self.batcher['reflection_SPRINT_data_batch'], []))
         # SPRINT_reflections = f'${SPRINT_reflections_with_transits}_{{({SPRINT_reflections_without_transits})}}$'
-        SPRINT_reflections = f'${SPRINT_reflections_with_transits}_{{({SPRINT_reflections_percentage_without_transits})}}$'
+        SPRINT_reflections = f'${SPRINT_reflections_with_transits}_{{({SPRINT_reflections_percentage_without_transits}\%)}}$'
         SPRINT_reflections_text = '$R_{SPRINT}$'
         SPRINT_transmissions_without_transits = '%d' % sum(self.batcher['num_of_total_SPRINT_transmissions_batch'])
         SPRINT_transmissions_percentage_without_transits = (
-                '%.1f%%' % ((sum(self.batcher['num_of_total_SPRINT_transmissions_batch']) * 100) /
-                            (sum(self.batcher['num_of_total_SPRINT_reflections_batch']) + sum(self.batcher['num_of_total_SPRINT_transmissions_batch']))))
+                '%.1f' % ((sum(self.batcher['num_of_total_SPRINT_transmissions_batch']) * 100) /
+                          (sum(self.batcher['num_of_total_SPRINT_reflections_batch']) + sum(self.batcher['num_of_total_SPRINT_transmissions_batch']))))
         SPRINT_transmissions_with_transits = '%d' % sum(sum(self.batcher['transmission_SPRINT_data_batch'], []))
         # SPRINT_transmissions = f'${SPRINT_transmissions_with_transits}_{{({SPRINT_transmissions_without_transits})}}$'
-        SPRINT_transmissions = f'${SPRINT_transmissions_with_transits}_{{({SPRINT_transmissions_percentage_without_transits})}}$'
+        SPRINT_transmissions = f'${SPRINT_transmissions_with_transits}_{{({SPRINT_transmissions_percentage_without_transits}\%)}}$'
         SPRINT_transmissions_text = '$T_{SPRINT}$'
         SPRINT_Score = f'{SPRINT_reflections} - {SPRINT_transmissions}'
         table_vals = [SPRINT_reflections_text, SPRINT_Score, SPRINT_transmissions_text]
@@ -2364,7 +2364,8 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 1.12,
         'photons_per_det_pulse_threshold': 12,
-        'Exp_flag': not debug_run,
+        # 'Exp_flag': not debug_run,
+        'Exp_flag': False,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2391,7 +2392,7 @@ if __name__ == "__main__":
     experiment = QRAMExperiment(playback=debug_run, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
-    # sequence_definitions = None
+    sequence_definitions = None
 
     if sequence_definitions is None:
         experiment.run(run_parameters)

@@ -120,6 +120,7 @@ Initial_Values = {
     'Pulse_1_initial_amp_minus': 0,         # By default, taken from previous phase (see @Operation_Modes['DefaulValues'])
     'Pulse_1_initial_amp_plus': 0,        # By default, taken from previous phase (see @Operation_Modes['DefaulValues'])
     'Pulse_1_Repump_amp': 1,  # Relative AOM amplitude between 0 to 1
+    'Pulse_1_Depump_amp': 1,  # Relative AOM amplitude between 0 to 1
 
     'InterPulses_duration': 0,     # [msec]; Time between pulse 1 & 2.
 
