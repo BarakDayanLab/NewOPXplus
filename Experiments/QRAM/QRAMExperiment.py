@@ -1598,7 +1598,9 @@ class QRAMExperiment(BaseExperiment):
         """
 
         if not pre_comment:
-            pre_comment = self.prompt(title='Pre Experiment Run', msg='Add pre-run comment to measurement (or click Cancel to ignore):')
+            pre_comment = self.prompt(title='Pre Experiment Run', msg='Add pre-run comment to measurement (click Cancel for "Ignore")')
+            if pre_comment == None:
+                pre_comment = 'Ignore'
 
         # set constant parameters for the function
 
@@ -1861,9 +1863,6 @@ class QRAMExperiment(BaseExperiment):
 
             # Experiment delay
             self.experiment_mainloop_delay()
-
-            # print('Socket Debug: Finished wait. Continuing.')
-            # continue
 
             # Handle warm-up phase
             self.warm_up = self.handle_warm_up_phase()

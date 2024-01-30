@@ -2,8 +2,7 @@ import os.path
 import sys
 import time
 import json
-import socket
-import asyncio
+import threading
 import pathlib
 import matplotlib.pyplot as plt
 import os
@@ -16,6 +15,7 @@ from Utilities.BDResults import BDResults
 from Utilities.BDStreams import BDStreams
 from Utilities.BDBatch import BDBatch
 from Utilities.BDSound import BDSound
+from Utilities.BDSocket import BDSocket
 
 from Experiments.Enums.TerminationReason import TerminationReason
 from Experiments.Enums.IOParameters import IOParameters as IOP
@@ -169,11 +169,10 @@ class BaseExperiment:
         self.ignore_data = False
         self.runs_status = None  # Uses the TerminationReason enum
 
-        # Open server-socket
-        # TODO: complete implementation of this - listen on socket for outer process/machines to communicate with us
-        #self._open_socket()
-
-        #asyncio.run(self.run_server())
+        # Start listening on sockets
+        self.comm_messages = {}
+        self.bdsocket = BDSocket(self.comm_messages)
+        self.bdsocket.run_server()
 
         # Attempt to initialize Camera functionality
         self.connect_camera()
@@ -525,41 +524,6 @@ class BaseExperiment:
             self.logger.error(f'Unable to find/load lock-error file.')
 
         return lock_err
-
-    #--------------------------
-    # https://stackoverflow.com/questions/23828264/how-to-make-a-simple-multithreaded-socket-server-in-python-that-remembers-client
-    #--------------------------
-    def _open_socket(self):
-
-        # Create an INET, STREAMing socket
-        serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        # Bind the socket to a public host, and a well-known port
-        host2 = 'localhost'
-        host = socket.gethostname()
-
-        serversocket.bind((host2, 5050))
-
-        # Become a server socket
-        serversocket.listen()
-
-        serversocket.setblocking(False)
-
-    async def handle_client(self, reader, writer):
-        request = None
-        while request != 'quit':
-            request = (await reader.read(255)).decode('utf8')
-            response = str(eval(request)) + '\n'
-            writer.write(response.encode('utf8'))
-            await writer.drain()
-        writer.close()
-
-    async def run_server(self):
-        server = await asyncio.start_server(self.handle_client, 'localhost', 5050)
-        async with server:
-            # await server.serve_forever()
-            server.serve_forever()
-
 
     # -------------------------------------------------------
     # Keyboard related methods
