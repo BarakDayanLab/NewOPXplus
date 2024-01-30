@@ -722,7 +722,7 @@ class QRAMExperiment(BaseExperiment):
                     self.all_transits_seq_indx = self.all_transits_seq_indx[:-1]
             self.all_transits_seq_indx.append(current_transit)
 
-    def analyze_SPRINT_data_points(self, all_transits_seq_indx, SPRINT_pulse_number=1):
+    def analyze_SPRINT_data_points(self, all_transits_seq_indx, SPRINT_pulse_number=1, background=False):
         '''
         Find the relevent data points for SPRINT pulse and analyze results.
         :param SPRINT_pulse_number: The SPRINT pulse number for which we want to check the results
@@ -734,7 +734,7 @@ class QRAMExperiment(BaseExperiment):
             for seq_indx in transit[:-1]:
                 # Checking potential for data point by looking for a single photon at the reflection of the last
                 # detection pulse:
-                potential_data = False
+                potential_data = False if not background else True
                 if self.sorted_pulses[self.number_of_detection_pulses_per_seq-1][2] == 'N' and \
                    len(self.num_of_det_reflections_per_seq_N_[seq_indx][-1]) == 1:
                     potential_data = True
@@ -1116,33 +1116,43 @@ class QRAMExperiment(BaseExperiment):
         # Prepare header text
         pause_str = ' , PAUSED!' if self.pause_flag else ''
         ref_str = '%.2f' % self.sum_for_threshold
-        eff_str = '%.2f' % (self.counter / self.repetitions)
+        eff_str = '%.1f%%' % (self.counter * 100 / self.repetitions)
+        exp_str = '$\bf{' + self.experiment_type + '}$'
         if self.fluorescence_flag:
-            flr_str = '%.2f' % self.fluorescence_average
+            flr_str = '$Flr: %.2f$' % self.fluorescence_average
         else:
-            flr_str = r'$\bf{%.2f}$' % self.fluorescence_average
+            flr_str = r'$\bf{Flr: %.2f}$' % self.fluorescence_average
         if self.lock_err_flag:
-            lck_str = '%.3f' % self.lock_err
+            lck_str = '$\Delta_{lock}: %.1f$' % self.lock_err
         else:
-            lck_str = r'$\bf{%.3f}$' % self.lock_err
+            lck_str = r'$\bf{\Delta_{lock}: %.1f}$' % self.lock_err
         if self.k_ex_flag:
-            k_ex_str = '$\kappa_{ex}$: %.2f' % self.k_ex
+            k_ex_str = '$\kappa_{ex}: %.1f$' % self.k_ex
         else:
-            k_ex_str = r'$\bf{\kappa_{ex}: %.2f}$' % self.k_ex
+            k_ex_str = r'$\bf{\kappa_{ex}: %.1f}$' % self.k_ex
         # status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
-        status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter}'
+        status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({eff_str})'
+        # status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter}'
         playback_str = 'PLAYBACK: ' if self.playback['active'] else ''
         # header_text = f'{playback_str} {status_str} - Reflections: {ref_str}, Eff: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str}, k_ex: {k_ex_str} {pause_str}'
-        header_text = f'{playback_str} {status_str} - Eff: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str}, {k_ex_str} {pause_str}'
+        header_text = f'{playback_str} {exp_str}, {status_str} - {flr_str}, {lck_str}, {k_ex_str} {pause_str}'
 
         # SPRINT results box
         SPRINT_reflections_without_transits = '%d' % sum(self.batcher['num_of_total_SPRINT_reflections_batch'])
+        SPRINT_reflections_percentage_without_transits = (
+                '%.1f' % ((sum(self.batcher['num_of_total_SPRINT_reflections_batch']) * 100) /
+                          (sum(self.batcher['num_of_total_SPRINT_reflections_batch']) + sum(self.batcher['num_of_total_SPRINT_transmissions_batch']))))
         SPRINT_reflections_with_transits = '%d' % sum(sum(self.batcher['reflection_SPRINT_data_batch'], []))
-        SPRINT_reflections = f'${SPRINT_reflections_with_transits}_{{({SPRINT_reflections_without_transits})}}$'
+        # SPRINT_reflections = f'${SPRINT_reflections_with_transits}_{{({SPRINT_reflections_without_transits})}}$'
+        SPRINT_reflections = f'${SPRINT_reflections_with_transits}_{{({SPRINT_reflections_percentage_without_transits}\%)}}$'
         SPRINT_reflections_text = '$R_{SPRINT}$'
         SPRINT_transmissions_without_transits = '%d' % sum(self.batcher['num_of_total_SPRINT_transmissions_batch'])
+        SPRINT_transmissions_percentage_without_transits = (
+                '%.1f' % ((sum(self.batcher['num_of_total_SPRINT_transmissions_batch']) * 100) /
+                          (sum(self.batcher['num_of_total_SPRINT_reflections_batch']) + sum(self.batcher['num_of_total_SPRINT_transmissions_batch']))))
         SPRINT_transmissions_with_transits = '%d' % sum(sum(self.batcher['transmission_SPRINT_data_batch'], []))
-        SPRINT_transmissions = f'${SPRINT_transmissions_with_transits}_{{({SPRINT_transmissions_without_transits})}}$'
+        # SPRINT_transmissions = f'${SPRINT_transmissions_with_transits}_{{({SPRINT_transmissions_without_transits})}}$'
+        SPRINT_transmissions = f'${SPRINT_transmissions_with_transits}_{{({SPRINT_transmissions_percentage_without_transits}\%)}}$'
         SPRINT_transmissions_text = '$T_{SPRINT}$'
         SPRINT_Score = f'{SPRINT_reflections} - {SPRINT_transmissions}'
         table_vals = [SPRINT_reflections_text, SPRINT_Score, SPRINT_transmissions_text]
@@ -1909,7 +1919,8 @@ class QRAMExperiment(BaseExperiment):
 
                 # Analyze SPRINT data during transits:
                 self.seq_with_data_points, self.reflection_SPRINT_data, self.transmission_SPRINT_data = \
-                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=1)  # Enter the index of the SPRINT pulse for which the data should be analyzed
+                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=1,
+                                                    background=False)  # Enter the index of the SPRINT pulse for which the data should be analyzed
 
                 # Analyze SPRINT data when no transit occur:
                 self.all_seq_without_transits = [
@@ -1917,7 +1928,8 @@ class QRAMExperiment(BaseExperiment):
                               sum(self.all_transits_seq_indx, [])).tolist()
                 ]
                 _, self.reflection_SPRINT_data_without_transits, self.transmission_SPRINT_data_without_transits = \
-                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=1)  # Enter the index of the SPRINT pulse for which the data should be analyzed
+                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=1,
+                                                    background=True)  # Enter the index of the SPRINT pulse for which the data should be analyzed
                 self.num_of_total_SPRINT_reflections = sum(self.reflection_SPRINT_data_without_transits)
                 self.num_of_total_SPRINT_transmissions = sum(self.transmission_SPRINT_data_without_transits)
 
@@ -2043,6 +2055,8 @@ class QRAMExperiment(BaseExperiment):
             "MZ_DP_counts_balancing_check_batch": self.batcher['MZ_DP_counts_balancing_check_batch'],
             "Phase_Correction_vec_batch": self.batcher['Phase_Correction_vec_batch'],
             "Phase_Correction_min_vec_batch": self.batcher['Phase_Correction_min_vec_batch'],
+            "Phase_Correction_value": self.batcher['Phase_Correction_value'],
+            "MZ_S_tot_counts": self.batcher['MZ_S_tot_counts'],
 
             "Index_of_Sequences_with_data_points": self.batcher['seq_with_data_points_batch'],
             "Reflections_per_data_point": self.batcher['reflection_SPRINT_data_batch'],
@@ -2336,7 +2350,7 @@ if __name__ == "__main__":
     print(f'In use: {matplotlib_version}')
     matplotlib.use("Qt5Agg")
 
-    debug_run = True  # Make True if you want to run playback and exp_flag=False
+    debug_run = False  # Make True if you want to run playback and exp_flag=False
 
     run_parameters = {
         'N': 100,  # 50,
@@ -2378,7 +2392,7 @@ if __name__ == "__main__":
     experiment = QRAMExperiment(playback=debug_run, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
-    sequence_definitions = None
+    # sequence_definitions = None
 
     if sequence_definitions is None:
         experiment.run(run_parameters)

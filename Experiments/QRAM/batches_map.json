@@ -51,6 +51,13 @@
     "Phase_Correction_min_vec_batch": {
         "value_name": "Phase_Correction_min_vec"
     },
+    "Phase_Correction_value": {
+        "value_name": "Phase_Correction_value"
+    },
+    "MZ_S_tot_counts": {
+        "value_name": "MZ_S_tot_counts"
+    },
+
     "all_transits_seq_indx_batch": {
         "value_name": "all_transits_seq_indx"
     },

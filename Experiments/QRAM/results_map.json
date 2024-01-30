@@ -189,6 +189,67 @@
 		},
 
 		{
+			"# OUTPUT FILES - MZ BALANCING": "-----------------------------------"
+		},
+
+		{
+			"data": "MZ_BP_counts_balancing_batch",
+			"name": "Mach-zehnder Bright Port counts vector at balancing phase",
+			"file_name": "MZ_BP_counts_balancing_batch",
+			"folder": "output\\MZ_balancing",
+			"type": "npz"
+		},
+		{
+			"data": "MZ_BP_counts_balancing_check_batch",
+			"name": "Mach-zehnder Bright Port counts vector at balancing-check phase",
+			"file_name": "MZ_BP_counts_balancing_check_batch",
+			"folder": "output\\MZ_balancing",
+			"type": "npz"
+		},
+		{
+			"data": "MZ_DP_counts_balancing_batch",
+			"name": "Mach-zehnder Dark Port counts vector at balancing phase",
+			"file_name": "MZ_DP_counts_balancing_batch",
+			"folder": "output\\MZ_balancing",
+			"type": "npz"
+		},
+		{
+			"data": "MZ_DP_counts_balancing_check_batch",
+			"name": "Mach-zehnder Dark Port counts vector at balancing-check phase",
+			"file_name": "MZ_DP_counts_balancing_check_batch",
+			"folder": "output\\MZ_balancing",
+			"type": "npz"
+		},
+		{
+			"data": "Phase_Correction_vec_batch",
+			"name": "Mach-zehnder phase sweep vec during balancing",
+			"file_name": "Phase_Correction_vec_batch",
+			"folder": "output\\MZ_balancing",
+			"type": "npz"
+		},
+		{
+			"data": "Phase_Correction_min_vec_batch",
+			"name": "Phase correction value of current best during phase sweep of Mach-zehnder balancing",
+			"file_name": "Phase_Correction_min_vec_batch",
+			"folder": "output\\MZ_balancing",
+			"type": "npz"
+		},
+		{
+			"data": "Phase_Correction_value",
+			"name": "The final phase correction value found for the Mach-zehnder balancing",
+			"file_name": "Phase_Correction_value",
+			"folder": "output\\MZ_balancing",
+			"type": "npz"
+		},
+		{
+			"data": "MZ_S_tot_counts",
+			"name": "The maximum difference between the Bright port and Dark port counts during Mach-zehnder balancing",
+			"file_name": "MZ_S_tot_counts",
+			"folder": "output\\MZ_balancing",
+			"type": "npz"
+		},
+
+		{
 			"# OUTPUT FILES - FLOURESENCE/LOCK-ERROR": "-----------------------------------"
 		},
 
