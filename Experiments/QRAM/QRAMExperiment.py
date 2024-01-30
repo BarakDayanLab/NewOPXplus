@@ -1028,6 +1028,9 @@ class QRAMExperiment(BaseExperiment):
 
     def prepare_figures(self):
         self.fig = plt.figure()
+        current_date_time = time.strftime("%H:%M:%S (%d/%m/%Y)")
+        self.fig.canvas.manager.set_window_title(current_date_time)
+
         self.subplots = []
         self.plot_shown = False
 
@@ -1117,7 +1120,7 @@ class QRAMExperiment(BaseExperiment):
         pause_str = ' , PAUSED!' if self.pause_flag else ''
         ref_str = '%.2f' % self.sum_for_threshold
         eff_str = '%.1f%%' % (self.counter * 100 / self.repetitions)
-        exp_str = '$\bf{' + self.experiment_type + '}$'
+        exp_str = r'$\bf{' + self.experiment_type + '}$'
         if self.fluorescence_flag:
             flr_str = '$Flr: %.2f$' % self.fluorescence_average
         else:
@@ -1135,7 +1138,7 @@ class QRAMExperiment(BaseExperiment):
         # status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter}'
         playback_str = 'PLAYBACK: ' if self.playback['active'] else ''
         # header_text = f'{playback_str} {status_str} - Reflections: {ref_str}, Eff: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str}, k_ex: {k_ex_str} {pause_str}'
-        header_text = f'{playback_str} {exp_str}, {status_str} - {flr_str}, {lck_str}, {k_ex_str} {pause_str}'
+        header_text = f'{playback_str} {self.experiment_type}, {status_str} - {flr_str}, {lck_str}, {k_ex_str} {pause_str}'
 
         # SPRINT results box
         SPRINT_reflections_without_transits = '%d' % sum(self.batcher['num_of_total_SPRINT_reflections_batch'])
