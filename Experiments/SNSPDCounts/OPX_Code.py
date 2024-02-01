@@ -1,17 +1,15 @@
 from Experiments.SNSPDCounts import SNSPDCounts_Config_Experiment as Config
 from qm.qua import *
-from Utilities.OPX_Utils import OPX_Utils
 
 
 def opx_control(obj, qm):
 
     with program() as opx_control_prog:
-        # QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH1_freq': '113MHz', 'CH1_amp': '10.074226808222061dbm'},
-        # QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH1_freq': '113MHz', 'CH1_amp': '16.95dbm'},
-        #                     updateChannels=[1], debugging=False, continuous=False)  # updates values on QuadRF (uploads table) #
-        QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
-                            updateChannels=[3], debugging=False,
-                            continuous=False)  # updates values on QuadRF (uploads table) #
+
+        # This should go into experiment initialization, not here
+        # QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
+        #                     updateChannels=[3], debugging=False,
+        #                     continuous=False)  # updates values on QuadRF (uploads table) #
 
         counts1 = declare(int)
         counts2 = declare(int)
@@ -39,17 +37,14 @@ def opx_control(obj, qm):
 
         n = declare(int)
 
-        m_window = MOT_pulse_len  # [nsec]
+        m_window = Config.MOT_pulse_len  # [nsec]
         # diff = declare(int)
         # g2 = declare(fixed, size=m_window)
         # g2_idx = declare(int)
         # g2_st = declare_stream()
-        Measuring_time = 100 * 1e6  # [nsec]
-        rep = int(Measuring_time / m_window)
-        # with infinite_loop_():
-        #     play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
-        # play("Depump", "AOM_2-2'")
-        # play("MOT", "AOM_TOP_1")
+        measuring_time = 100 * 1e6  # [nsec]
+        rep = int(measuring_time / m_window)
+
         with infinite_loop_():
             with for_(n, 0, n < rep, n + 1):
                 play("Const_open_triggered", "PULSER_N")
@@ -94,13 +89,13 @@ def opx_control(obj, qm):
                 save(counts10, counts_st10)
 
         with stream_processing():
-            counts_st1.buffer(rep).save("avg_counts_1")
-            counts_st2.buffer(rep).save("avg_counts_2")
-            counts_st3.buffer(rep).save("avg_counts_3")
-            counts_st4.buffer(rep).save("avg_counts_4")
-            counts_st5.buffer(rep).save("avg_counts_5")
-            counts_st6.buffer(rep).save("avg_counts_6")
-            counts_st7.buffer(rep).save("avg_counts_7")
-            counts_st8.buffer(rep).save("avg_counts_8")
-            counts_st9.buffer(rep).save("avg_counts_9")
-            counts_st10.buffer(rep).save("avg_counts_10")
+            counts_st1.buffer(rep).save("Detector_1_Avg_Counts")
+            counts_st2.buffer(rep).save("Detector_2_Avg_Counts")
+            counts_st3.buffer(rep).save("Detector_3_Avg_Counts")
+            counts_st4.buffer(rep).save("Detector_4_Avg_Counts")
+            counts_st5.buffer(rep).save("Detector_5_Avg_Counts")
+            counts_st6.buffer(rep).save("Detector_6_Avg_Counts")
+            counts_st7.buffer(rep).save("Detector_7_Avg_Counts")
+            counts_st8.buffer(rep).save("Detector_8_Avg_Counts")
+            counts_st9.buffer(rep).save("Detector_9_Avg_Counts")
+            counts_st10.buffer(rep).save("Detector_10_Avg_Counts")

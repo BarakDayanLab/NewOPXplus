@@ -50,7 +50,7 @@ IF_CRUS_pulser = 125e6
 
 SQUARE_wf = [0.45] * 10000
 
-Super_Sprint_Config = {
+config = {
 
     'version': 1,
 
@@ -498,12 +498,84 @@ Super_Sprint_Config = {
 
 
 streams = {
-    "Detector_1_Timetags": {
+    "Detector_1_Counts": {
         "number": 1,
-        "name": "Detector_1_Timetags",
+        "name": "Detector_1_Avg_Counts",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det1_timetags.npz",
+        "playback": "Det1_avg_counts.npz",
+        "save_raw": True
+    },
+    "Detector_2_Counts": {
+        "number": 2,
+        "name": "Detector_2_Avg_Counts",
+        "type": "int",
+        "binary": "I",  # Unsigned int
+        "playback": "Det2_avg_counts.npz",
+        "save_raw": True
+    },
+    "Detector_3_Counts": {
+        "number": 1,
+        "name": "Detector_3_Avg_Counts",
+        "type": "int",
+        "binary": "I",  # Unsigned int
+        "playback": "Det3_avg_counts.npz",
+        "save_raw": True
+    },
+    "Detector_4_Counts": {
+        "number": 1,
+        "name": "Detector_4_Avg_Counts",
+        "type": "int",
+        "binary": "I",  # Unsigned int
+        "playback": "Det1_avg_counts.npz",
+        "save_raw": True
+    },
+    "Detector_5_Counts": {
+        "number": 1,
+        "name": "Detector_5_Avg_Counts",
+        "type": "int",
+        "binary": "I",  # Unsigned int
+        "playback": "Det5_avg_counts.npz",
+        "save_raw": True
+    },
+    "Detector_6_Counts": {
+        "number": 1,
+        "name": "Detector_6_Avg_Counts",
+        "type": "int",
+        "binary": "I",  # Unsigned int
+        "playback": "Det6_avg_counts.npz",
+        "save_raw": True
+    },
+    "Detector_7_Counts": {
+        "number": 1,
+        "name": "Detector_7_Avg_Counts",
+        "type": "int",
+        "binary": "I",  # Unsigned int
+        "playback": "Det7_avg_counts.npz",
+        "save_raw": True
+    },
+    "Detector_8_Counts": {
+        "number": 1,
+        "name": "Detector_8_Avg_Counts",
+        "type": "int",
+        "binary": "I",  # Unsigned int
+        "playback": "Det8_avg_counts.npz",
+        "save_raw": True
+    },
+    "Detector_9_Counts": {
+        "number": 1,
+        "name": "Detector_9_Avg_Counts",
+        "type": "int",
+        "binary": "I",  # Unsigned int
+        "playback": "Det9_avg_counts.npz",
+        "save_raw": True
+    },
+    "Detector_10_Counts": {
+        "number": 1,
+        "name": "Detector_10_Avg_Counts",
+        "type": "int",
+        "binary": "I",  # Unsigned int
+        "playback": "Det10_avg_counts.npz",
         "save_raw": True
     }
 }

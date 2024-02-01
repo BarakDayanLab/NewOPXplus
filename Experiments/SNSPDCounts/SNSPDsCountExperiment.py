@@ -12,14 +12,17 @@ import numpy as np
 
 """
 TODO:
-1) Check that works... ;-)
+1) Why is original code using "job = qm_ss.execute(dig)" while QRAM is not?
+2) Why is original code using is_processing while QRAM code is not?
 2) Implement await_for_values
 3) Align QRAM with this paradigm
-4) Define Streams
 6) Save basic data as binary - so we can rerun it
 7) Remove TODOs from this file
 8) Cntrl +/-
+9) QuadRF handling - why is it in the "with program() as dig"
 """
+
+
 class SNSPDsCountExperiment(BaseExperiment):
     def __init__(self, playback=False, save_raw_data=False):
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
@@ -38,6 +41,21 @@ class SNSPDsCountExperiment(BaseExperiment):
         pass
 
     def await_for_values(self):
+
+        while not avg_count1_handle.is_processing():
+            pass
+
+        avg_counts_res1 = avg_count1_handle.fetch_all()
+        avg_counts_res2 = avg_count2_handle.fetch_all()
+        avg_counts_res3 = avg_count3_handle.fetch_all()
+        avg_counts_res4 = avg_count4_handle.fetch_all()
+        avg_counts_res5 = avg_count5_handle.fetch_all()
+        avg_counts_res6 = avg_count6_handle.fetch_all()
+        avg_counts_res7 = avg_count7_handle.fetch_all()
+        avg_counts_res8 = avg_count8_handle.fetch_all()
+        avg_counts_res9 = avg_count9_handle.fetch_all()
+        avg_counts_res10 = avg_count10_handle.fetch_all()
+
         pass
 
     def print_experiment_information(self):
@@ -226,5 +244,5 @@ if __name__ == "__main__":
           'This is important so the continuous laser beam wont be degraded by the shutters. ')
     input()
 
-    experiment = SNSPDsCountExperiment(playback=False, save_raw_data=False)
+    experiment = SNSPDsCountExperiment(playback=True, save_raw_data=False)
     experiment.run(run_parameters)

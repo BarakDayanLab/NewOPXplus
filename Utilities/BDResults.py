@@ -185,7 +185,7 @@ class BDResults:
             return self.results_map[root_name_with_env]
 
         if root_name not in self.results_map:
-            self.logger.error(f'Missing root {root_name} in results_map.json. Please check.')
+            self._handle_error(f'Missing root {root_name} in results_map.json. Please check.')
 
         return self.results_map[root_name]
 

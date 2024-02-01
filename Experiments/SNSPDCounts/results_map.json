@@ -1,7 +1,10 @@
 {
-    "env": "LAB",
+    "env": "113",
     "version": "0.1",
     "strict": false,
+
+	"temp_root": "C:\\temp\\streams_raw_data",
+    "root": "C:\\temp\\refactor_debug\\Experiment_results\\SNSPDsCount\\{current_date}\\{current_time}_Photon_Counts",
 
    	"files": [
 		{
