@@ -544,8 +544,8 @@ Super_Sprint_Config = {
     },
 }
 
-print(r'please switch SRS South and North directional detectors shutters to manual and then press enter\n' +
-      'This is important so the continuous laser beam wont be degraded by the shutters. ')
+print('please switch SRS South and North dirrectional detectors shutters to manual and then press enter /n '
+      'This is important so the continouos laser beam wont be degraded by the shutters. ')
 input()
 
 qm_ss = QMm.open_qm(Super_Sprint_Config)

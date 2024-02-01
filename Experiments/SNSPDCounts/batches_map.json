@@ -1,0 +1,11 @@
+{
+    "south_counts": {
+        "value_name": "south_avg_counts"
+    },
+    "north_counts": {
+        "value_name": "north_avg_counts"
+    },
+    "spcms_counts": {
+        "value_name": "spcm_avg_counts"
+    }
+}

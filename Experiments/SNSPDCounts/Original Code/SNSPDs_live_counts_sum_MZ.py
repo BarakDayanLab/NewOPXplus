@@ -1,4 +1,4 @@
-# %%
+                                                                                                                     # %%
 from quadRFMOTController import QuadRFMOTController
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
@@ -15,7 +15,6 @@ import math
 import json
 import csv
 
-
 def find_nearest(array, value):
     array = np.asarray(array)
     idx = (np.abs(np.abs(array) - value)).argmin()
@@ -29,7 +28,6 @@ def r_squared(y, vec, apd):
     sstot = np.sum((apd - ybar) ** 2)  # total sum of squares
     r_squared = ssreg / sstot
     return r_squared
-
 
 def calc_cmat(correction_vars):
     """
@@ -54,19 +52,20 @@ controller = 'con1'
 # Parameters:0
 
 # Pulse_durations
-readout_pulse_len = int(50 * 1e3)
+readout_pulse_len = int(1 * 1e6)
 north_const_pulse_len = 500
 south_const_pulse_len = 500
 analyzer_const_pulse_len = 500
-MOT_pulse_len = int(50 * 1e3)
+MOT_pulse_len = 1000000
 PGC_pulse_len = 500
-Probe_pulse_len = 500
+Probe_pulse_len =500
 Fountain_pulse_len = 500
 Depump_pulse_len = 500
-OD_pulse_len = int(50 * 1e3)
+OD_pulse_len = int(100 * 1e3)
 Repump_pulse_len = 500
 Trigger_pulse_len = 1
 AntiHelmholtz_pulse_len = 60
+
 
 # Intermediate frequencies
 IF_TOP1_MOT = 113e6
@@ -80,16 +79,16 @@ IF_AOM_OD = 93e6
 IF_AOM_Depump = 133.325e6
 # IF_AOM_Depump = 139.325e6
 IF_AOM_Repump = 78.4735e6
-IF_AOM_N = 129.2368e6
-IF_AOM_S = 129.2368e6
-IF_AOM_LO = 129.2368e6
+# IF_AOM_N = 129.2368e6
+IF_AOM_N = 129e6
+IF_AOM_S = 129e6
+IF_AOM_LO = 129e6
 IF_AOMs_MZ = 110e6
 IF_AOM_Anc = 184e6
-IF_AOM_Spectrum = 133.325e6 / 2
 
 IF_Divert = 20e6
-# IF_AOM_N = 127.1e6
-# IF_AOM_S = 90e6
+#IF_AOM_N = 127.1e6
+#IF_AOM_S = 90e6
 IF_AOM_SigmaPlus = 114.58e6
 IF_AOM_SigmaMinus = 114.58e6
 IF_AOM_Pi = 75.34e6
@@ -114,24 +113,23 @@ Super_Sprint_Config = {
                 6: {'offset': +0.0},  # AOM 1-2' - Repump
                 7: {'offset': 0.0},  # MW_I
 
+
                 # changed for MW_SPEC
                 # 7: {'offset': +0.0},  # Pulse_EOM
                 8: {'offset': +0.0},  # AOM_N
 
                 9: {'offset': +0.0},  # AOM_S
-                10: {'offset': +0.0},  # AOM_Analyzer
+                10: {'offset': +0.0}, # AOM_Analyzer
             },
             'digital_outputs': {
                 1: {},  # Switch AOM + / AOM 2-2'
                 2: {},  # Switch AOM - / AOM 2-3'
                 3: {},  # AntiHelmholtz Coils
-                4: {},  # Helmholtz Coils
                 5: {},  # Camtrigger
-                6: {},  # APDs
+                6: {},  # Camtrigger
                 7: {},  # Trigger STIRAP
                 8: {},  # Trigger FS
                 9: {},  # trigger
-                10: {},  # EOM pulses
             },
             'analog_inputs': {
                 1: {'offset': +0.0},  # DET10
@@ -210,6 +208,11 @@ Super_Sprint_Config = {
                     "delay": 0,
                     "buffer": 0,
                 },
+                "switch3": {
+                    "port": (controller, 6),
+                    "delay": 0,
+                    "buffer": 0,
+                },
             },
             "digitalOutputs": {
                 "out1": (controller, 1),
@@ -250,6 +253,11 @@ Super_Sprint_Config = {
                     "delay": 0,
                     "buffer": 0,
                 },
+                "switch3": {
+                    "port": (controller, 6),
+                    "delay": 0,
+                    "buffer": 0,
+                },
             },
             "digitalOutputs": {
                 "out1": (controller, 1),
@@ -277,13 +285,8 @@ Super_Sprint_Config = {
 
         "AntiHelmholtz_Coils": {
             'digitalInputs': {
-                # "AntiHelmholtz": {
-                #     "port": (controller, 3),
-                #     "delay": 0,
-                #     "buffer": 0,
-                # },
-                "Helmholtz": {
-                    "port": (controller, 4),
+                "AntiHelmholtz": {
+                    "port": (controller, 3),
                     "delay": 0,
                     "buffer": 0,
                 },
@@ -293,22 +296,12 @@ Super_Sprint_Config = {
             },
         },
 
-        "PULSER_E": {
+        "AOM_Early": {
             "singleInput": {
                 "port": (controller, 6),
             },
-            'digitalInputs': {
-                "AWG_Switch": {
-                    "port": (controller, 10),
-                    # "delay": 176, # OPX control EOM
-                    "delay": 160,  # OPX control EOM double pass
-                    # "delay": 400, # AWG control EOM
-                    "buffer": 0,
-                },
-            },
             'operations': {
-                'Const_open': "Pulser_ON",
-                'Const_high_open': "Pulser_ON_high",
+                'Const_open': "MOT_lock",
                 'Square_Pulse': "square_pulse",
             },
             # 'intermediate_frequency': IF_AOM_LO,
@@ -316,30 +309,7 @@ Super_Sprint_Config = {
             # 'intermediate_frequency': IF_AOM_Anc,
         },
 
-        "PULSER_L": {
-            "singleInput": {
-                "port": (controller, 7),
-            },
-            'digitalInputs': {
-                "AWG_Switch": {
-                    "port": (controller, 10),
-                    # "delay": 176, # OPX control EOM
-                    "delay": 160,  # OPX control EOM double pass
-                    # "delay": 400, # AWG control EOM
-                    "buffer": 0,
-                },
-            },
-            'operations': {
-                'Const_open': "Pulser_ON",
-                'Const_high_open': "Pulser_ON_high",
-                'Square_Pulse': "square_pulse",
-            },
-            # 'intermediate_frequency': IF_AOM_LO,
-            'intermediate_frequency': IF_AOMs_MZ,
-            # 'intermediate_frequency': IF_AOM_Anc,
-        },
-
-        "PULSER_LO": {
+        "AOM_Late": {
             "singleInput": {
                 "port": (controller, 7),
             },
@@ -349,16 +319,19 @@ Super_Sprint_Config = {
             },
             # 'intermediate_frequency': IF_AOM_LO,
             'intermediate_frequency': IF_AOMs_MZ,
+            # 'intermediate_frequency': IF_AOM_Anc,
         },
 
-        "AOM_Spectrum": {
-            'singleInput': {
-                "port": (controller, 8)
+        "PULSER_LO": {
+            "singleInput": {
+                "port": (controller, 8),
             },
             'operations': {
-                'Spectrum_pulse': "Frequency_Sweep",
+                'Const_open': "MOT_lock",
+                'Square_Pulse': "square_pulse",
             },
-            'intermediate_frequency': IF_AOM_Spectrum,
+            # 'intermediate_frequency': IF_AOM_LO,
+            'intermediate_frequency': IF_AOMs_MZ,
         },
 
         "PULSER_N": {
@@ -383,21 +356,8 @@ Super_Sprint_Config = {
             "singleInput": {
                 "port": (controller, 10),
             },
-            'digitalInputs': {
-                "APD_Switch": {
-                    "port": (controller, 6),
-                    "delay": 0,
-                    "buffer": 0,
-                },
-                "SouthtoNorth_Shutter": {
-                    "port": (controller, 9),
-                    "delay": 0,
-                    "buffer": 0,
-                },
-            },
             'operations': {
                 'Const_open': "MOT_lock",
-                'Const_open_triggered': "MOT_lock_ON",
             },
             'intermediate_frequency': IF_AOM_S,
         },
@@ -409,7 +369,7 @@ Super_Sprint_Config = {
             'length': 100,
             'operation': 'control',
             'waveforms': {
-                'single': 'zero_wf'
+                'single':  'zero_wf'
             },
             'digital_marker': 'ON'
         },
@@ -433,25 +393,7 @@ Super_Sprint_Config = {
             'length': MOT_pulse_len,
             'waveforms': {
                 'single': 'const_wf'
-            },
-            # 'digital_marker': 'ON',
-        },
-        "Pulser_ON": {
-            'operation': 'control',
-            'length': MOT_pulse_len,
-            'waveforms': {
-                'single': 'const_wf'
-            },
-            # 'digital_marker': 'ON',
-            'digital_marker': 'Trig_EOM_MZ'
-        },
-        "Pulser_ON_high": {
-            'operation': 'control',
-            'length': MOT_pulse_len,
-            'waveforms': {
-                'single': 'const_high_wf'
-            },
-            'digital_marker': 'ON',
+            }
         },
         "MOT_lock_ON": {
             'operation': 'control',
@@ -468,13 +410,6 @@ Super_Sprint_Config = {
             'waveforms': {
                 'single': 'square_wf'
             }
-        },
-        "Frequency_Sweep": {
-            'operation': 'control',
-            'length': MOT_pulse_len,
-            'waveforms': {
-                'single': 'const_wf'
-            },
         },
         "AntiHelmholtz_on": {
             'operation': 'control',
@@ -513,12 +448,7 @@ Super_Sprint_Config = {
         'const_wf': {
             'type': 'constant',
             # 'sample': 0.1
-            'sample': 0.35
-        },
-        'const_high_wf': {
-            'type': 'constant',
-            # 'sample': 0.1
-            'sample': 0.49
+            'sample': 0.45
         },
         'square_wf': {
             'type': 'arbitrary',
@@ -534,19 +464,11 @@ Super_Sprint_Config = {
         "Trig": {
             "samples": [(1, 20), (0, 0)]
         },
-        "Trig_EOM_MZ": {
-            "samples": [(0, 250), (1, 250)] * int(MOT_pulse_len / 500) + [(0, 0)]
-            # "samples": [(0, 270), (1, 230)] * MZ_balancing_seq_rep + [(0, 0)]
-        },
         "trig_wf0": {
             "samples": [(1, 0)]
         }
     },
 }
-
-print(r'please switch SRS South and North directional detectors shutters to manual and then press enter\n' +
-      'This is important so the continuous laser beam wont be degraded by the shutters. ')
-input()
 
 qm_ss = QMm.open_qm(Super_Sprint_Config)
 QMm.clear_all_job_results()
@@ -556,8 +478,7 @@ with program() as dig:
     # QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH1_freq': '113MHz', 'CH1_amp': '16.95dbm'},
     #                     updateChannels=[1], debugging=False, continuous=False)  # updates values on QuadRF (uploads table) #
     QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
-                        updateChannels=[3], debugging=False,
-                        continuous=False)  # updates values on QuadRF (uploads table) #
+                        updateChannels=[3], debugging=False, continuous=False)  # updates values on QuadRF (uploads table) #
 
     counts1 = declare(int)
     counts2 = declare(int)
@@ -585,7 +506,7 @@ with program() as dig:
 
     n = declare(int)
 
-    m_window = MOT_pulse_len  # [nsec]
+    m_window = OD_pulse_len # [nsec]
     # diff = declare(int)
     # g2 = declare(fixed, size=m_window)
     # g2_idx = declare(int)
@@ -594,26 +515,16 @@ with program() as dig:
     rep = int(Measuring_time / m_window)
     # with infinite_loop_():
     #     play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
-    # play("Depump", "AOM_2-2'")
-    # play("MOT", "AOM_TOP_1")
+        # play("Depump", "AOM_2-2'")
+        # play("MOT", "AOM_TOP_1")
+
     with infinite_loop_():
-        with for_(n, 0, n < rep, n + 1):
-            play("Const_open_triggered", "PULSER_N")
-            # play("Const_open", "PULSER_N")
-            # play("Const_open", "PULSER_S")
-            play("Const_open_triggered", "PULSER_S")
-
-            # playing early and late AOM's
-            play("Const_open", "PULSER_L")
-            # play("Const_high_open", "PULSER_E")
-
-            # play("Square_Pulse", "PULSER_LO")
-            # play("Const_open"*amp(0.7), "PULSER_LO")
-            play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
-            # play("Spectrum_pulse", "AOM_Spectrum")
-            # play("CRUS_pulse", "Pulser_CRUS")
-
-            # measure("OD_measure", "digital_detectors_S", None,
+        play("Const_open_triggered", "PULSER_N", duration=int(Measuring_time / 4))
+        # play("Const_open", "PULSER_N")
+        play("Const_open", "PULSER_S", duration=int(Measuring_time / 4))
+        play("Const_open" * amp(0.51), "AOM_Early", duration=int(Measuring_time / 4))
+        play("Const_open", "AOM_Late", duration=int(Measuring_time / 4))
+        with for_(n, 0, n < rep, n+1):
             measure("OD_measure", "digital_detectors_N", None,
                     counting.digital(counts1, m_window, element_outputs="out1"),
                     counting.digital(counts2, m_window, element_outputs="out2"),
@@ -651,6 +562,7 @@ with program() as dig:
         counts_st9.buffer(rep).save("avg_counts_9")
         counts_st10.buffer(rep).save("avg_counts_10")
 
+
 job = qm_ss.execute(dig)
 avg_count1_handle = job.result_handles.get('avg_counts_1')
 avg_count2_handle = job.result_handles.get('avg_counts_2')
@@ -674,14 +586,17 @@ avg_count8_handle.wait_for_values(1)
 avg_count9_handle.wait_for_values(1)
 avg_count10_handle.wait_for_values(1)
 
-south_vals = []
-north_vals = []
+BP_vals = []
+DP_vals = []
+sum_vals = []
 SPCMs_vals = []
+counter = 0
 
 fig = plt.figure()
 font = font_manager.FontProperties(family='Comic Sans MS', weight='bold', style='normal', size=16)
 
 while avg_count1_handle.is_processing():
+
     avg_counts_res1 = avg_count1_handle.fetch_all()
     avg_counts_res2 = avg_count2_handle.fetch_all()
     avg_counts_res3 = avg_count3_handle.fetch_all()
@@ -693,30 +608,50 @@ while avg_count1_handle.is_processing():
     avg_counts_res9 = avg_count9_handle.fetch_all()
     avg_counts_res10 = avg_count10_handle.fetch_all()
 
-    print(
-        str(sum(avg_counts_res1 + avg_counts_res2 + avg_counts_res3 + avg_counts_res4 + avg_counts_res8)) + ' , ' + str(
-            sum(avg_counts_res6 + avg_counts_res7 + avg_counts_res5)))
+    # print(str(sum(avg_counts_res1 + avg_counts_res2)) + ' , ' + str(sum(avg_counts_res3 + avg_counts_res4)))
 
     # plot:
     # north_vals.append(sum(avg_counts_res1 + avg_counts_res2 + avg_counts_res3 + avg_counts_res4))
     # south_vals.append(sum(avg_counts_res5 + avg_counts_res6 + avg_counts_res7 + avg_counts_res8))
-    # Ziv
-    south_vals.append(sum(avg_counts_res6 + avg_counts_res7 + avg_counts_res5))
-    north_vals.append(sum(avg_counts_res1 + avg_counts_res2 + avg_counts_res3 + avg_counts_res4 + avg_counts_res8))
+    #Ziv
+    BP_vals.append(sum(avg_counts_res2 + avg_counts_res1))
+    DP_vals.append(sum(avg_counts_res3 + avg_counts_res4))
+    sum_vals.append(sum(avg_counts_res2 + avg_counts_res1 + avg_counts_res3 + avg_counts_res4))
     SPCMs_vals.append(sum(avg_counts_res9 + avg_counts_res10))
     ##
-    N_counts = "{:,}".format(north_vals[-1] * 2)
-    S_counts = "{:,}".format(south_vals[-1] * 2)
-    SPCMs_counts = "{:,}".format(SPCMs_vals[-1] * 2)
-
+    BP_counts = "{:,}".format(BP_vals[-1])
+    DP_counts = "{:,}".format(DP_vals[-1])
+    sum_counts = "{:,}".format(sum_vals[-1])
+    SPCMs_counts = "{:,}".format(SPCMs_vals[-1])
+    # print(counter)
+    # if (counter % 100) == 0:
     plt.clf()
-    plt.plot(north_vals[-100:], label='North Counts: ' + N_counts + ' Hz')
-    plt.plot(south_vals[-100:], label='South Counts: ' + S_counts + ' Hz')
-    plt.plot(SPCMs_vals[-100:], label='SPCMs Counts: ' + SPCMs_counts + ' Hz')
-    plt.title("counts")
-    plt.legend(loc='upper left', prop=font)
-    plt.show()
+    # plt.plot(BP_vals[-100:], label='Bright Port Counts: ' + BP_counts + ' Hz')
+    # plt.plot(DP_vals[-100:], label='Dark Port Counts: ' + DP_counts + ' Hz')
+    # plt.plot(sum_vals[-100:], label='Sum Counts: ' + sum_counts + ' Hz')
+    # # plt.plot(SPCMs_vals[-100:], label='SPCMs Counts: ' + SPCMs_counts + ' Hz')
+    # plt.title("counts")
+    # plt.legend(loc='upper left', prop=font)
+    # plt.show()
+    # plt.text(0, 8000, str(np.round(abs(DP_vals[-1]-BP_vals[-1])/(DP_vals[-1]+BP_vals[-1]),decimals=2)), fontsize=28,
+    #                        verticalalignment='top')
+    #
+    # plt.pause(0.01)
+    # print(str(abs(DP_vals[-1]-BP_vals[-1])/(DP_vals[-1]+BP_vals[-1])))
+
+    # counter = counter + 1
+    B_arr = (np.array(avg_counts_res2[:-100]) + np.array(avg_counts_res1[:-100]))#[:-int(0.05*len(avg_counts_res2))]
+    D_arr = (np.array(avg_counts_res3[:-100]) + np.array(avg_counts_res4[:-100]))#[:-int(0.05*len(avg_counts_res2))]
+    plt.plot(B_arr)
+    plt.plot(D_arr)
+    # plt.plot(B_arr + D_arr)
+    plt.text(0, np.mean(B_arr + D_arr), str(np.round(max(abs((B_arr-D_arr)/(B_arr+D_arr))), decimals=2)), fontsize=48,
+                           verticalalignment='top')
+    # plt.text(0, 200, str(np.round((max(D_arr)-min(D_arr)) / np.mean(D_arr + B_arr), decimals=3)), fontsize=28,
+    #          verticalalignment='top')
 
     plt.pause(0.1)
+
+
 
 print('finished')
