@@ -23,9 +23,10 @@ from Utilities.Utils import Utils
 # sprint_pulse_amp_S = [0.105]
 # Reflection S:
 det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
-sprint_pulse_amp_N = [0.095]
-det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.45]
-sprint_pulse_amp_S = [0]
+sprint_pulse_amp_N = [0.001, 0, 0, 0]
+# sprint_pulse_amp_N = [0.005]
+det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.30]
+sprint_pulse_amp_S = [0, 0, 0, 0]
 
 
 
@@ -54,15 +55,16 @@ def QRAM_Exp_Gaussian_samples(sprint_pulse_len=110, det_pulse_len=30, det_pulses
 
     # TODO: Dor - wtf are all of this numbers?
     qram_exp_gaussian_samples = [0] * (num_init_zeros - 2 + 12 - 1)  # -2 for echos from south
-    for n in det_pulses_amp:
+    for n in det_pulses_amp[:-1]:
         qram_exp_gaussian_samples += (signal.gaussian(det_pulse_len, std=(det_pulse_len * 0.5 / 2.355)) * n).tolist() + [0] * (num_between_zeros) # -3 for echos from south
+    qram_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len-2), std=((sprint_pulse_len-2) * 0.5 / 2.355)) * det_pulses_amp[-1]).tolist() + [0] * (num_between_zeros)  # -3 for echos from south
     # qram_exp_gaussian_samples += [0] * (num_mid_zeros - 10) # due to unresolved reflections +40 for S echos
     qram_exp_gaussian_samples = qram_exp_gaussian_samples[:-(num_between_zeros)] + [0] * (num_between_zeros + num_mid_zeros - 2) # - 16 - 12) # due to unresolved reflections +40 for S echos
     for m in sprint_pulses_amp:
-        qram_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len-4), std=((sprint_pulse_len-4) / 2.355)) * m).tolist() + [0] * (num_between_zeros + 4)
+        qram_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len), std=((sprint_pulse_len) / 2.355)) * m).tolist() + [0] * (num_between_zeros)
     # qram_exp_gaussian_samples += [0] * num_fin_zeros
     # qram_exp_gaussian_samples = qram_exp_gaussian_samples[:-(num_between_zeros + 4)] + [0] * (num_between_zeros + 4 + num_fin_zeros - 16) # -14 due to S echos
-    qram_exp_gaussian_samples = qram_exp_gaussian_samples[:-(num_between_zeros + 4)] + [0] * (num_between_zeros + 4 + num_fin_zeros - 16) # -14 due to S echos
+    qram_exp_gaussian_samples = qram_exp_gaussian_samples[:-(num_between_zeros)] + [0] * (num_between_zeros + num_fin_zeros)
     return qram_exp_gaussian_samples
 
 
@@ -241,7 +243,7 @@ num_fin_zeros = 0  # For only det pulses sequence
 # det_pulse_amp_General = [1, 1, 1, 1, 1, 1, 1, 1]
 det_pulse_amp_General = [1, 1, 1, 1, 1, 1]
 # sprint_pulse_amp_General = [1, 1, 1, 1]
-sprint_pulse_amp_General = [1]
+sprint_pulse_amp_General = [1, 1, 1, 1]
 
 
 num_init_zeros_S = 10  # For only det pulses sequence
@@ -347,8 +349,8 @@ num_fin_zeros_Ancilla = 0  # For only det pulses sequence
 # # |1c, (0 + 1)t>
 # det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0, 0, 0]
 det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0]
-# sprint_pulse_amp_Ancilla = [0, 0, 0, 0]
-sprint_pulse_amp_Ancilla = [0]
+sprint_pulse_amp_Ancilla = [0, 0, 0, 0]
+# sprint_pulse_amp_Ancilla = [0]
 
 #
 
@@ -407,8 +409,8 @@ Pulses_Amp_Early = 0.495
 # det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 0, 0]
 det_pulse_amp_Early = [0, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_Early = [1, 1, 0, 0]
-# sprint_pulse_amp_Early = [0, 0, 0, 0]
-sprint_pulse_amp_Early = [0]
+sprint_pulse_amp_Early = [0, 0, 0, 0]
+# sprint_pulse_amp_Early = [0]
 
 
 # QRAM_Exp_Gaussian_samples_S =[0.45]*516
@@ -455,8 +457,8 @@ Pulses_Amp_Late = 0.35  # For balancing with AOM Early (since added the switch)
 # det_pulse_amp_Late = [1, 1, 1, 1, 1, 1, 1, 1]
 det_pulse_amp_Late = [1, 1, 1, 1, 1, 1]
 # sprint_pulse_amp_Late = [0, 0, 0, 0]
-# sprint_pulse_amp_Late = [1, 1, 1, 1]
-sprint_pulse_amp_Late = [1]
+sprint_pulse_amp_Late = [1, 1, 1, 1]
+# sprint_pulse_amp_Late = [1]
 # sprint_pulse_amp_Late = [0, 1, 1, 0]
 # For Bell |(0 + 1)c, 1t>
 # det_pulse_amp_Late = [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0, 0]
@@ -494,9 +496,9 @@ num_fin_val_FS = 0  # For only det pulses sequence
 # sprint_pulse_FS = [1, 1, 1, 1]
 # # |1c, (0 + 1)t>
 # det_pulse_amp_FS = [1, 1, 1, 1, 1, 1, 1, 1]
-# sprint_pulse_FS = [1, 1, 1, 1]
+sprint_pulse_FS = [1, 1, 1, 1]
 det_pulse_amp_FS = [1, 1, 1, 1, 1, 1]
-sprint_pulse_FS = [1]
+# sprint_pulse_FS = [1]
 
 QRAM_Exp_Square_samples_FS = QRAM_Exp_Square_samples(amp=Pulses_Amp,
                                                      sprint_pulse_len=sprint_pulse_len,

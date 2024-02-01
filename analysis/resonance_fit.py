@@ -12,7 +12,7 @@ from pynput.keyboard import GlobalHotKeys, Key
 
 class ResonanceFit:
     def __init__(self, calc_k_ex=False, save_folder=None, save_time=60):
-        self.cavity = CavityKex(k_i=3.9, h=0.6) if calc_k_ex else CavityFwhm()
+        self.cavity = CavityKex(k_i=4.6, h=1.7) if calc_k_ex else CavityFwhm()
         self.lock_idx = 4
         self.save_folder = save_folder
         self.save_time = save_time

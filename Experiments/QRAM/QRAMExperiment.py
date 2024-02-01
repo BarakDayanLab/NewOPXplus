@@ -233,7 +233,7 @@ class QRAMExperiment(BaseExperiment):
 
         # Get fluorescence data
         self.FLR_res = -self.streams['FLR_measure']['results']
-        self.fluorescence_average = 1000 * self.FLR_res
+        self.fluorescence_average = 100000 * self.FLR_res
 
         # Clear time-tags vectors from last data
         self.tt_measure = []
@@ -1012,7 +1012,8 @@ class QRAMExperiment(BaseExperiment):
         """
         locking_efficiency = self.counter / self.repetitions
         locking_efficiency_str = '%.2f' % locking_efficiency
-        fluorescence_str = '%.2f' % self.fluorescence_average
+        # fluorescence_str = '%.2f' % self.fluorescence_average
+        fluorescence_str = '%d' % int(self.fluorescence_average)
         time_formatted = time.strftime("%Y/%m/%d, %H:%M:%S")
         status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
         photons_str = '' if self.warm_up else f', #Photons/[us]: {self.sum_for_threshold}'
@@ -1122,9 +1123,11 @@ class QRAMExperiment(BaseExperiment):
         eff_str = '%.1f%%' % (self.counter * 100 / self.repetitions)
         exp_str = r'$\bf{' + self.experiment_type + '}$'
         if self.fluorescence_flag:
-            flr_str = '$Flr: %.2f$' % self.fluorescence_average
+            # flr_str = '$Flr: %.2f$' % self.fluorescence_average
+            flr_str = '$Flr: %d$' % int(self.fluorescence_average)
         else:
-            flr_str = r'$\bf{Flr: %.2f}$' % self.fluorescence_average
+            # flr_str = r'$\bf{Flr: %.2f}$' % self.fluorescence_average
+            flr_str = r'$\bf{Flr: %d}$' % int(self.fluorescence_average)
         if self.lock_err_flag:
             lck_str = '$\Delta_{lock}: %.1f$' % self.lock_err
         else:
@@ -1657,10 +1660,10 @@ class QRAMExperiment(BaseExperiment):
         # TODO: Q: we used to rely on this: "int(Config.num_between_zeros/2)" - why aren't we anymore?
         self.pulses_location_in_seq, self.filter_gen = self.get_pulses_location_in_seq(0,
                                                                                        Config.QRAM_Exp_Gaussian_samples_General,
-                                                                                       smearing=5)  # smearing=int(Config.num_between_zeros/2))
+                                                                                       smearing=0)  # smearing=int(Config.num_between_zeros/2))
         self.pulses_location_in_seq_S, self.filter_S = self.get_pulses_location_in_seq(filter_delay[0],
                                                                                        Config.QRAM_Exp_Gaussian_samples_S,
-                                                                                       smearing=5)  # smearing=int(Config.num_between_zeros/2))
+                                                                                       smearing=0)  # smearing=int(Config.num_between_zeros/2))
         # TODO: Q: Why are we fixing the Gaussian here?
         self.QRAM_Exp_Gaussian_samples_N = Config.QRAM_Exp_Gaussian_samples_N
         self.QRAM_Exp_Gaussian_samples_N[self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]] = \
@@ -1671,10 +1674,10 @@ class QRAMExperiment(BaseExperiment):
              Config.sprint_pulse_amp_Early[0]).tolist()
         self.pulses_location_in_seq_N, self.filter_N = self.get_pulses_location_in_seq(filter_delay[1],
                                                                                        self.QRAM_Exp_Gaussian_samples_N,
-                                                                                       smearing=5)  # smearing=int(Config.num_between_zeros/2))
+                                                                                       smearing=0)  # smearing=int(Config.num_between_zeros/2))
         self.pulses_location_in_seq_A, self.filter_A = self.get_pulses_location_in_seq(filter_delay[2],
                                                                                        Config.QRAM_Exp_Gaussian_samples_Ancilla,
-                                                                                       smearing=5)  # smearing=int(Config.num_between_zeros/2))
+                                                                                       smearing=0)  # smearing=int(Config.num_between_zeros/2))
         # Get experiment type: (Added by Dor, Sorry for the mess)
         self.sorted_pulses = sorted([tup + ('N',) for tup in experiment.pulses_location_in_seq_N if
                                      (tup[1] - tup[0]) < Config.sprint_pulse_len] +
@@ -1862,13 +1865,13 @@ class QRAMExperiment(BaseExperiment):
             self.lock_err = self._read_locking_error()
 
             # Get k_ex
-            self.k_i = 4.3  # [MHz]
+            self.k_i = 5  # [MHz]
             self.k_ex = (self._read_k_ex() / 2) - self.k_i
             # TODO: Now we get FWHM from NADAV. Change to commentout when it's real k_ex.
             # self.k_ex = self._read_k_ex()
 
             # Define efficiencies:
-            self.Cavity_transmission = Utils.cavity_transmission(0, self.k_ex, k_i=self.k_i, h=1.4)
+            self.Cavity_transmission = Utils.cavity_transmission(0, self.k_ex, k_i=self.k_i, h=2.3)
             self.Eff_from_taper_N = Config.Eff_from_taper_N * \
                                     (self.Cavity_transmission / 0.5)
             self.Eff_from_taper_S = Config.Eff_from_taper_S * \
@@ -2354,7 +2357,7 @@ if __name__ == "__main__":
         'transit_condition': [2, 1, 2],
         'pre_comment': '',
         'lock_err_threshold': 2, # [Mhz]
-        'desired_k_ex': 30,# [Mhz]
+        'desired_k_ex': 36,# [Mhz]
         'k_ex_err': 3, # [Mhz]
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,
@@ -2368,7 +2371,7 @@ if __name__ == "__main__":
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
     # The sequence_definitions params would replace parameters from run_parameters('N','with_atoms')
     sequence_definitions = {
-        'total_cycles': 3,
+        'total_cycles': 2,
         'delay_between_cycles': None,  # seconds
         'sequence': [
             {
@@ -2379,7 +2382,7 @@ if __name__ == "__main__":
             },
             {
                 'parameters': {
-                    'N': 250,
+                    'N': 500,
                     'with_atoms': True
                 }
             }
