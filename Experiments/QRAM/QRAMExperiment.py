@@ -2004,16 +2004,17 @@ class QRAMExperiment(BaseExperiment):
             self.logger.info(f'Error Terminated the measurements after {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
 
         # Adding comment to measurement [prompt whether stopped or finished regularly]
-        if exp_flag:
+        aft_comment = 'ignore'
+        if self.exp_flag:
             if self.counter < N:
-                aftComment = self.prompt(title='Post Experiment Run', msg='Add post-run comment to measurement (or click ignore): ', default='', timeout=int(30e3))
+                aft_comment = self.prompt(title='Post Experiment Run', msg='Add post-run comment to measurement: (click Cancel for "Ignore") ', default='', timeout=int(30e3))
+                if aft_comment == None:
+                    aft_comment = 'Ignore'
             else:
-                aftComment = ''
-        else:
-            aftComment = 'ignore'
+                aft_comment = ''
 
         experiment_comment = f'Transit condition: {self.transit_condition}\nReflection threshold {self.reflection_threshold} @ {int(self.reflection_threshold_time/1e6)} ms'
-        daily_experiment_comments = self.generate_experiment_summary_line(pre_comment, aftComment, self.with_atoms, self.counter)
+        daily_experiment_comments = self.generate_experiment_summary_line(pre_comment, aft_comment, self.with_atoms, self.counter)
 
         # Save all results of experiment
         self.save_experiment_results(experiment_comment, daily_experiment_comments)
@@ -2083,32 +2084,32 @@ class QRAMExperiment(BaseExperiment):
         self.k_ex_flag = True
         self.fluorescence_flag = True
 
+        playback = self.playback['active']
+
         # If we are not in experiment, we don't care about the rest - just say we're acquired.
         if not self.exp_flag:
             return True
 
         # Are we properly locked on resonance?
-        # TODO: (Dor) is it ok to do so?
-        if self.lock_err == None:
+        if self.lock_err is None and not playback:
             self.lock_err_flag = False
             return False
 
-        if abs(self.lock_err) > self.lock_err_threshold:
+        if abs(self.lock_err) > self.lock_err_threshold and not playback:
             self.lock_err_flag = False
             return False
 
-        if self.k_ex == None:
+        if self.k_ex is None and not playback:
             self.k_ex_flag = False
             return False
 
         # Are we on the right width ?
-        if not np.abs(self.k_ex-self.desired_k_ex)<self.k_ex_err:
+        if not np.abs(self.k_ex-self.desired_k_ex) < self.k_ex_err and not playback:
             self.k_ex_flag = False
             return False
 
-
         # Is fluorescence strong enough? (assuming we're running with atoms)
-        if self.fluorescence_average < self.FLR_threshold and self.with_atoms:
+        if self.fluorescence_average < self.FLR_threshold and self.with_atoms and not playback:
             self.fluorescence_flag = False
             return False
 
@@ -2117,10 +2118,10 @@ class QRAMExperiment(BaseExperiment):
             return False
 
         # Are any of the detectors latched?
-        if self.latched_detectors():
-           return False
+        if self.latched_detectors() and not playback:
+            return False
 
-        if self.saturated_detectors():
+        if self.saturated_detectors() and not playback:
             return False
 
         threshold_flag = (self.sum_for_threshold < self.reflection_threshold) and \
@@ -2164,11 +2165,15 @@ class QRAMExperiment(BaseExperiment):
     def is_warm_up_phase_complete(self):
         """
         We are in warm-up if these conditions are met:
+        - We are in playback mode
         - We didn't complete already the warm-up post process
         - We haven't yet completed WARMUP_CYCLES
         - We haven't yet acquired a lock on resonance
         - We are in experiment, and the threshold is not yet filled
         """
+
+        if self.playback['active']:
+            return True
 
         # Did we finish going through all warm-up cycles? If not, we're still in warm-up -> return True
         if self.warm_up_cycles > 0:
@@ -2283,23 +2288,14 @@ class QRAMExperiment(BaseExperiment):
             figure_manager.frame.Maximize(True)
         else:
             self.logger.warn(f'Unknown matplotlib backend ({backend_name}). Cannot maximize figure')
-    def generate_experiment_summary_line(self, pre_comment, aftComment, with_atoms, counter):
+    def generate_experiment_summary_line(self, pre_comment, aft_comment, with_atoms, counter):
         time_str = time.strftime("%H%M%S")
         date_str = time.strftime("%Y%m%d")
-        # cmnt = None
-        # if pre_comment is not None:
-        #     cmnt = pre_comment + '; '
-        # if aftComment is not None:
-        #     cmnt = pre_comment + ' After comment: ' + aftComment
-        # if pre_comment is None and aftComment is None:
-        #     cmnt = 'No comment.'
         cmnt = self.experiment_type
         if pre_comment is not None:
             cmnt = cmnt + '; ' + pre_comment + '; '
-        if aftComment is not None:
-            cmnt = cmnt + '; ' + pre_comment + ' After comment: ' + aftComment
-        # if pre_comment is None and aftComment is None:
-        #     cmnt = 'No comment.'
+        if aft_comment is not None:
+            cmnt = cmnt + '; ' + pre_comment + ' After comment: ' + aft_comment
         experiment_success = 'ignore' if 'ignore' in cmnt or not self.exp_flag else 'valid'
         full_line = f'{date_str},{time_str},{experiment_success},{with_atoms},{counter},{cmnt}'
         return full_line
@@ -2353,8 +2349,6 @@ if __name__ == "__main__":
     print(f'In use: {matplotlib_version}')
     matplotlib.use("Qt5Agg")
 
-    debug_run = False  # Make True if you want to run playback and exp_flag=False
-
     run_parameters = {
         'N': 100,  # 50,
         'transit_condition': [2, 1, 2],
@@ -2368,7 +2362,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 1.12,
         'photons_per_det_pulse_threshold': 12,
-        'Exp_flag': not debug_run,
+        'Exp_flag': True,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2392,7 +2386,7 @@ if __name__ == "__main__":
         ]
     }
 
-    experiment = QRAMExperiment(playback=debug_run, save_raw_data=False)
+    experiment = QRAMExperiment(playback=False, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
     # sequence_definitions = None
