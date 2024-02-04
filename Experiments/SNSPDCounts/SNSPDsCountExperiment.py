@@ -8,18 +8,17 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 
+from Experiments.QuadRF.quadRFMOTController import QuadRFMOTController
+
 import numpy as np
 
 """
 TODO:
-1) Why is original code using "job = qm_ss.execute(dig)" while QRAM is not?
-2) Why is original code using is_processing while QRAM code is not?
-2) Implement await_for_values
-3) Align QRAM with this paradigm
-6) Save basic data as binary - so we can rerun it
-7) Remove TODOs from this file
-8) Cntrl +/-
-9) QuadRF handling - why is it in the "with program() as dig"
+1) Why is original code using is_processing while QRAM code is not?
+2) Align QRAM with this paradigm
+3) Save basic data as binary - so we can rerun it
+4) Remove TODOs from this file
+5) Alt +/-
 """
 
 
@@ -34,29 +33,73 @@ class SNSPDsCountExperiment(BaseExperiment):
         super(type(self), self).__del__()
         pass
 
+    def initialize_experiment_variables(self):
+        pass
+
+    def initiliaze_QuadRF(self):
+        if self._quadrf_skip: return
+
+        self.QuadRFControllers = []
+
+        qrfContr = QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
+                            updateChannels=[3], debugging=False,
+                            continuous=False)  # updates values on QuadRF (uploads table) #
+
+        self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
+
     def experiment_mainloop_delay(self):
         """
         We override the base class method - as we don't need any delay at all
         """
         pass
 
-    def await_for_values(self):
+    def wait_for_values_from_opx_streams(self):
+        """
+        Given the streams config and handles, wait and fetch the values from OPX
+        """
+        if self.streams is None:
+            return
 
-        while not avg_count1_handle.is_processing():
-            pass
+        # Wait_for_values
+        for stream in self.streams.values():
+            if stream['handler'] is not None:
+                stream['handler'].wait_for_values(1)
 
-        avg_counts_res1 = avg_count1_handle.fetch_all()
-        avg_counts_res2 = avg_count2_handle.fetch_all()
-        avg_counts_res3 = avg_count3_handle.fetch_all()
-        avg_counts_res4 = avg_count4_handle.fetch_all()
-        avg_counts_res5 = avg_count5_handle.fetch_all()
-        avg_counts_res6 = avg_count6_handle.fetch_all()
-        avg_counts_res7 = avg_count7_handle.fetch_all()
-        avg_counts_res8 = avg_count8_handle.fetch_all()
-        avg_counts_res9 = avg_count9_handle.fetch_all()
-        avg_counts_res10 = avg_count10_handle.fetch_all()
+        # Save streams to file
+        # if self.save_raw_data:
+        #     self.bdstreams.save_streams()
 
         pass
+
+    def fetch_values_from_opx_streams(self):
+
+        first_stream = self.streams.values()[0]['handler']
+        while not first_stream.is_processing():
+            pass
+
+        # Fetch Values
+        for stream in self.streams.values():
+            if stream['handler'] is not None:
+                stream['handler'].fetch_all()
+        pass
+
+    def handle_user_events(self):
+        """
+        Handle cases where user pressed ESC to terminate or ALT_SPACE to pause/continue measurements
+        """
+        if self.keyPress == 'ESC':
+            self.logger.blue('ESC pressed. Stopping measurement.')
+            self.runs_status = TerminationReason.USER
+            self.keyPress = None
+        elif self.keyPress == 'ALT_+':
+            self.logger.blue('ALT+ pressed - zooming in.')
+            self.keyPress = None
+        elif self.keyPress == 'ALT_-':
+            self.logger.blue('ALT- pressed - zooming out.')
+            self.keyPress = None
+        elif self.keyPress == 'ALT_0':
+            self.logger.blue('ALT_0 pressed - reseting zoom.')
+            self.keyPress = None
 
     def print_experiment_information(self):
         """
@@ -67,7 +110,7 @@ class SNSPDsCountExperiment(BaseExperiment):
     def prepare_figures(self):
         """
         Prepares the figure before the mainloop
-        TODO: this should go into the mainloop - for all experiments to enjoy
+        TODO: this should go into the BaseExperiment - for all experiments to enjoy
         """
         # Create figure and set the time and date as its title
         self.fig = plt.figure()
@@ -110,10 +153,15 @@ class SNSPDsCountExperiment(BaseExperiment):
         pass
 
     def experiment_calculations(self):
+
+        avg_counts = []
+        for stream in self.streams.values():
+            avg_counts.append = stream['results']
+
         # Add counts of South and North detectors and SPCMs
-        self.south_vals.append(sum(avg_counts_res6 + avg_counts_res7 + avg_counts_res5))
-        self.north_vals.append(sum(avg_counts_res1 + avg_counts_res2 + avg_counts_res3 + avg_counts_res4 + avg_counts_res8))
-        self.SPCMs_vals.append(sum(avg_counts_res9 + avg_counts_res10))
+        self.south_vals.append(sum(avg_counts[6] + avg_counts[7] + avg_counts[5]))
+        self.north_vals.append(sum(avg_counts[1] + avg_counts[2] + avg_counts[3] + avg_counts[4] + avg_counts[8]))
+        self.SPCMs_vals.append(sum(avg_counts[9] + avg_counts[10]))
 
         # Format the N/S/SPCM counts
         self.N_counts = "{:,}".format(self.north_vals[-1] * 2)
@@ -133,6 +181,12 @@ class SNSPDsCountExperiment(BaseExperiment):
         pass
 
     def pre_run(self, run_parameters):
+
+        # Associate the streams filled in OPX (FPGA) code with result handles
+        self.get_handles_from_OPX_server()
+
+        # Await for values
+        self.wait_for_values_from_opx_streams()
         pass
 
     def run(self, run_parameters):
@@ -148,9 +202,6 @@ class SNSPDsCountExperiment(BaseExperiment):
         # Initialize the batcher
         self.batcher.set_batch_size(100)
         self.batcher.empty_all()
-
-        # Associate the streams filled in OPX (FPGA) code with result handles
-        self.get_handles_from_OPX_server()
 
         # Prepare the figures for the experiment
         self.prepare_figures()
@@ -170,9 +221,7 @@ class SNSPDsCountExperiment(BaseExperiment):
             self.experiment_mainloop_delay()
 
             # Await for values from OPX
-            self.sampling_timestamp = self.await_for_values()
-            if self.runs_status != TerminationReason.SUCCESS:
-                break
+            self.fetch_values_from_opx_streams()
 
             # Informational printing
             self.print_experiment_information()
@@ -203,46 +252,9 @@ if __name__ == "__main__":
     print(f'In use: {matplotlib_version}')
     matplotlib.use("Qt5Agg")
 
-    run_parameters = {
-        'N': 100,  # 50,
-        'transit_condition': [2, 1, 2],
-        'pre_comment': '',
-        'lock_err_threshold': 2, # [Mhz]
-        'desired_k_ex': 36,# [Mhz]
-        'k_ex_err': 3, # [Mhz]
-        'filter_delay': [0, 0, 0],
-        'reflection_threshold': 2550,
-        'reflection_threshold_time': 9e6,
-        'FLR_threshold': -0.01,
-        'MZ_infidelity_threshold': 1.12,
-        'photons_per_det_pulse_threshold': 12,
-        'Exp_flag': True,
-        'with_atoms': True
-    }
-    # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
-    # The sequence_definitions params would replace parameters from run_parameters('N','with_atoms')
-    sequence_definitions = {
-        'total_cycles': 2,
-        'delay_between_cycles': None,  # seconds
-        'sequence': [
-            {
-                'parameters': {
-                    'N': 50,
-                    'with_atoms': False
-                }
-            },
-            {
-                'parameters': {
-                    'N': 500,
-                    'with_atoms': True
-                }
-            }
-        ]
-    }
-
     print(r'please switch SRS South and North directional detectors shutters to manual and then press enter.\n ' +
           'This is important so the continuous laser beam wont be degraded by the shutters. ')
     input()
 
     experiment = SNSPDsCountExperiment(playback=True, save_raw_data=False)
-    experiment.run(run_parameters)
+    experiment.run(run_parameters={})

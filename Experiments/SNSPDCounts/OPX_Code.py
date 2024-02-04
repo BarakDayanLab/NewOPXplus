@@ -6,11 +6,6 @@ def opx_control(obj, qm):
 
     with program() as opx_control_prog:
 
-        # This should go into experiment initialization, not here
-        # QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
-        #                     updateChannels=[3], debugging=False,
-        #                     continuous=False)  # updates values on QuadRF (uploads table) #
-
         counts1 = declare(int)
         counts2 = declare(int)
         counts3 = declare(int)
@@ -22,8 +17,6 @@ def opx_control(obj, qm):
         counts9 = declare(int)
         counts10 = declare(int)
 
-        counts_st_N = declare_stream()
-        counts_st_S = declare_stream()
         counts_st1 = declare_stream()
         counts_st2 = declare_stream()
         counts_st3 = declare_stream()
@@ -99,3 +92,8 @@ def opx_control(obj, qm):
             counts_st8.buffer(rep).save("Detector_8_Avg_Counts")
             counts_st9.buffer(rep).save("Detector_9_Avg_Counts")
             counts_st10.buffer(rep).save("Detector_10_Avg_Counts")
+
+    job = qm.execute(opx_control_prog)
+    #job = qm.execute(opx_control_prog, flags=['auto-element-thread'])
+
+    return job

@@ -122,11 +122,6 @@ class BaseExperiment:
         # Initialize the BDStreams
         self.bdstreams = BDStreams(save_path=self.bd_results.get_custom_root('temp_root'))
 
-        # Set the location of the locking error file - this is a generic file that serves as communication between
-        # the locking application that runs on a different computer. The file contains the current PID error value.
-        self.lock_error_file = os.path.join(self.bd_results.get_custom_root('locking_error_root'), 'locking_err.npy')
-        self.k_ex_file = os.path.join(self.bd_results.get_custom_root('k_ex_root'), 'k_ex.npy')
-
         # Load Initial Values and Default Values - merge them together (Default Values prevails!)
         # These will be the experiment values
         self.Exp_Values = Utils.merge_multiple_jsons([Initial_Values, Default_Values])
@@ -239,10 +234,6 @@ class BaseExperiment:
                                        debugging=True,
                                        continuous=False)
         self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
-
-        # DEBUG DEBUG DEBUG - Test if it works - REMOVE
-        for qrdCtrl in self.QuadRFControllers:
-            test = qrdCtrl.get_channel_data(1)
 
         # TODO: why aren't the values below part of the experiment values or configuration values?
         qrfContr2 = QuadRFMOTController(MOGdevice=qrfContr.device,
@@ -471,9 +462,8 @@ class BaseExperiment:
         pass
 
     def _read_k_ex(self):
-        if self.k_ex_file is None:
-            self.logger.warn('k_ex file not defined. Not reading k_ex values.')
-            return None
+        if not hasattr(self, 'k_ex_file'):
+            self.k_ex_file = os.path.join(self.bd_results.get_custom_root('k_ex_root'), 'k_ex.npy')
 
         max_time = 10  # We will wait 0.1 sec for the file
         k_ex = None
@@ -499,9 +489,10 @@ class BaseExperiment:
 
     # Returns the error of the locking mechanism of the resonator to Rb line
     def _read_locking_error(self):
-        if self.lock_error_file is None:
-            self.logger.warn('Lock error file not defined. Not reading error signal.')
-            return None
+        if not hasattr(self, 'lock_error_file'):
+            # Set the location of the locking error file - this is a generic file that serves as communication between
+            # the locking application that runs on a different computer. The file contains the current PID error value.
+            self.lock_error_file = os.path.join(self.bd_results.get_custom_root('locking_error_root'), 'locking_err.npy')
 
         max_time = 10  # We will wait 0.1 sec for the file
         lock_err = None
