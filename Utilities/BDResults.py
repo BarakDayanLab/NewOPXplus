@@ -2,7 +2,9 @@ import os
 import csv
 import json
 import time
+import errno
 import numpy as np
+import shutil
 from scipy.io import savemat
 import collections.abc
 import matplotlib.pyplot as plt
@@ -300,7 +302,7 @@ class BDResults:
 
             print(f'Saving {file_path} - Done!')
 
-        pass
+        return resolved_path
 
     def create_folders(self):
         """
@@ -332,6 +334,22 @@ class BDResults:
             self.folders[entity['name']] = path
 
         pass
+
+    def copy_folder(self, source, destination):
+        """
+        Copy recursively entire folder from source to destination. Resolve destination before copy.
+        If source is not a folder, it ignores it (does not copy!)
+        """
+        try:
+            source = self._resolve_parameterized(source)
+            destination = self._resolve_parameterized(destination)
+            destination_2 = shutil.copytree(source, destination)
+        except OSError as err:
+            # error caused if the source was not a directory
+            if err.errno == errno.ENOTDIR:
+                print(f'Error: {err}')  # shutil.copy2(src, dest)
+            else:
+                print("Error: % s" % err)
 
     @staticmethod
     def unit_tests():

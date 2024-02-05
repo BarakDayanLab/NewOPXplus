@@ -1,5 +1,5 @@
 {
-	"env": "113",
+	"env": "LAB",
 	"version": "0.1",
 	"strict": false,
 
@@ -11,6 +11,9 @@
 	"all_experiments_root": "C:\\temp\\refactor_debug\\Experiment_results",
 	"experiment_root": "C:\\temp\\refactor_debug\\Experiment_results\\QRAM",
 	"root": "C:\\temp\\refactor_debug\\Experiment_results\\QRAM\\{current_date}\\{current_time}_Photon_TimeTags",
+
+	"for_analysis": "U:\\Lab_2023\\Experiment_results\\QRAM\\for_analysis\\{current_date}\\{current_time}_Photon_TimeTags",
+	"for_analysis_113": "C:\\temp\\for_analysis\\{current_date}\\{current_time}_Photon_TimeTags",
 
 	"locking_error_root": "U:\\Lab_2023\\Experiment_results\\QRAM\\Locking_PID_Error",
 	"locking_error_root_LAB": "C:\\temp\\refactor_debug\\Experiment_results\\QRAM\\resonance_params",

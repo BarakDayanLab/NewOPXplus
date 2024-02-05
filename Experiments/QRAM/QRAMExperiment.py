@@ -12,6 +12,7 @@ import pymsgbox
 import traceback
 
 from Utilities.BDSound import SOUNDS
+from Utilities.BDDialog import BDDialog
 from Utilities.Utils import Utils
 
 
@@ -1993,7 +1994,8 @@ class QRAMExperiment(BaseExperiment):
             self.handle_user_atoms_on_off_switch()
 
             # Did we complete N successful iterations? (we check for N+1 because we started with 1)
-            if self.counter == self.N+1:
+            if self.counter == 6:
+            # if self.counter == self.N+1:
                 break
 
             # We completed another repetition.
@@ -2009,20 +2011,28 @@ class QRAMExperiment(BaseExperiment):
             self.logger.info(f'Error Terminated the measurements after {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
 
         # Adding comment to measurement [prompt whether stopped or finished regularly]
-        aft_comment = 'ignore'
+        aft_comment = 'Ignore'
+        for_analysis = False
         if self.exp_flag:
-            if self.counter < N:
-                aft_comment = self.prompt(title='Post Experiment Run', msg='Add post-run comment to measurement: (click Cancel for "Ignore") ', default='', timeout=int(30e3))
-                if aft_comment == None:
-                    aft_comment = 'Ignore'
-            else:
-                aft_comment = ''
+            bdd = BDDialog()
+            text_res, text_button = bdd.prompt(title='Experiment completed', message='Insert comment for experiment',
+                                               button1_text='Shager!', button2_text='Ignore')
+            aft_comment = ('Ignore. ' if text_button == 'Ignore' else '') + text_res
+
+            for_analysis = text_button == 'Shager!'
+
+            # if self.counter < N:
+            #     aft_comment = self.prompt(title='Post Experiment Run', msg='Add post-run comment to measurement: (click Cancel for "Ignore") ', default='', timeout=int(30e3))
+            #     if aft_comment == None:
+            #         aft_comment = 'Ignore'
+            # else:
+            #     aft_comment = ''
 
         experiment_comment = f'Transit condition: {self.transit_condition}\nReflection threshold {self.reflection_threshold} @ {int(self.reflection_threshold_time/1e6)} ms'
         daily_experiment_comments = self.generate_experiment_summary_line(pre_comment, aft_comment, self.with_atoms, self.counter)
 
         # Save all results of experiment
-        self.save_experiment_results(experiment_comment, daily_experiment_comments)
+        self.save_experiment_results(experiment_comment, daily_experiment_comments, for_analysis)
 
         # End of Experiment! Ensure we turn the experiment flag off and return the MOT
         self.updateValue("Experiment_Switch", False)
@@ -2030,7 +2040,7 @@ class QRAMExperiment(BaseExperiment):
 
         return self.runs_status
 
-    def save_experiment_results(self, experiment_comment, daily_experiment_comments):
+    def save_experiment_results(self, experiment_comment, daily_experiment_comments, for_analysis=False):
         """
         This method is responsible for saving all the results gathered in the experiment and required by analysis
         """
@@ -2081,7 +2091,11 @@ class QRAMExperiment(BaseExperiment):
 
             "experiment_config_values": self.Exp_Values
         }
-        self.bd_results.save_results(results)
+        save_path = self.bd_results.save_results(results)
+
+        # If these results should be saved for analysis, copy them to analysis folder
+        if for_analysis:
+            self.bd_results.copy_folder(source=save_path, destination=self.bd_results.get_custom_root('for_analysis'))
 
     def is_acquired(self):
 
@@ -2394,7 +2408,7 @@ if __name__ == "__main__":
     experiment = QRAMExperiment(playback=False, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
-    # sequence_definitions = None
+    sequence_definitions = None
 
     if sequence_definitions is None:
         experiment.run(run_parameters)

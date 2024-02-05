@@ -7,9 +7,13 @@ class BDDialog:
         self.result = None
         pass
 
-    def handle_button(self, button):
+    def handle_button(self, button_id):
+        # Get the text from the text field and trim newlines and extra spaces at the start/end
         self.res_text = self.entry.get("1.0", tk.END)
-        self.res_button = button
+        self.res_text = ' '.join(self.res_text.split())
+
+        # Remember the button id that was pressed
+        self.res_button = button_id
 
         # Destroy the dialog window
         self.root.destroy()
