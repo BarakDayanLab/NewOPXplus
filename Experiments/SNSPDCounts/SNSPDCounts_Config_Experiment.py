@@ -498,7 +498,7 @@ config = {
 
 
 streams = {
-    "Detector_1_Counts": {
+    "Detector_1_Avg_Counts": {
         "number": 1,
         "name": "Detector_1_Avg_Counts",
         "type": "int",
@@ -506,7 +506,7 @@ streams = {
         "playback": "Det1_avg_counts.npz",
         "save_raw": True
     },
-    "Detector_2_Counts": {
+    "Detector_2_Avg_Counts": {
         "number": 2,
         "name": "Detector_2_Avg_Counts",
         "type": "int",
@@ -514,7 +514,7 @@ streams = {
         "playback": "Det2_avg_counts.npz",
         "save_raw": True
     },
-    "Detector_3_Counts": {
+    "Detector_3_Avg_Counts": {
         "number": 1,
         "name": "Detector_3_Avg_Counts",
         "type": "int",
@@ -522,15 +522,15 @@ streams = {
         "playback": "Det3_avg_counts.npz",
         "save_raw": True
     },
-    "Detector_4_Counts": {
+    "Detector_4_Avg_Counts": {
         "number": 1,
         "name": "Detector_4_Avg_Counts",
         "type": "int",
         "binary": "I",  # Unsigned int
-        "playback": "Det1_avg_counts.npz",
+        "playback": "Det4_avg_counts.npz",
         "save_raw": True
     },
-    "Detector_5_Counts": {
+    "Detector_5_Avg_Counts": {
         "number": 1,
         "name": "Detector_5_Avg_Counts",
         "type": "int",
@@ -538,7 +538,7 @@ streams = {
         "playback": "Det5_avg_counts.npz",
         "save_raw": True
     },
-    "Detector_6_Counts": {
+    "Detector_6_Avg_Counts": {
         "number": 1,
         "name": "Detector_6_Avg_Counts",
         "type": "int",
@@ -546,7 +546,7 @@ streams = {
         "playback": "Det6_avg_counts.npz",
         "save_raw": True
     },
-    "Detector_7_Counts": {
+    "Detector_7_Avg_Counts": {
         "number": 1,
         "name": "Detector_7_Avg_Counts",
         "type": "int",
@@ -554,7 +554,7 @@ streams = {
         "playback": "Det7_avg_counts.npz",
         "save_raw": True
     },
-    "Detector_8_Counts": {
+    "Detector_8_Avg_Counts": {
         "number": 1,
         "name": "Detector_8_Avg_Counts",
         "type": "int",
@@ -562,7 +562,7 @@ streams = {
         "playback": "Det8_avg_counts.npz",
         "save_raw": True
     },
-    "Detector_9_Counts": {
+    "Detector_9_Avg_Counts": {
         "number": 1,
         "name": "Detector_9_Avg_Counts",
         "type": "int",
@@ -570,7 +570,7 @@ streams = {
         "playback": "Det9_avg_counts.npz",
         "save_raw": True
     },
-    "Detector_10_Counts": {
+    "Detector_10_Avg_Counts": {
         "number": 1,
         "name": "Detector_10_Avg_Counts",
         "type": "int",

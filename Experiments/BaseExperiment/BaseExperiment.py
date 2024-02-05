@@ -543,13 +543,19 @@ class BaseExperiment:
     def _on_release(self, key):
         self.ignore_data = False
 
-        if str(key) == "'q'" or str(key) == "'Q'" :
+        if str(key) == "'q'" or str(key) == "'Q'":
             self.keyPress = 'Q'
 
         if str(key) == "'A'" and self.alt_modifier == 'ALT':
             self.keyPress = 'ALT_A'
 
-        if key == keyboard.Key.esc :
+        if str(key) == "'+'":
+            self.keyPress = '+'
+
+        if str(key) == "'-'":
+            self.keyPress = '-'
+
+        if key == keyboard.Key.esc:
             self.keyPress = 'ESC'
 
         # TODO: Generalize it to be in the form of "ALT-SPACE" or "CTRL-SPACE" or "SHIFT-ESC"

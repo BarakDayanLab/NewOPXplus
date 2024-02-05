@@ -14,8 +14,6 @@ import traceback
 from Utilities.BDSound import SOUNDS
 from Utilities.Utils import Utils
 
-matplotlib.mathtext.SHRINK_FACTOR = 0.4
-matplotlib.mathtext.GROW_FACTOR = 1 / 0.4
 
 
 class QRAMExperiment(BaseExperiment):
@@ -1028,6 +1026,10 @@ class QRAMExperiment(BaseExperiment):
             time.sleep(0.01)  # TODO: do we need this delay?
 
     def prepare_figures(self):
+
+        matplotlib.mathtext.SHRINK_FACTOR = 0.4
+        matplotlib.mathtext.GROW_FACTOR = 1 / 0.4
+
         self.fig = plt.figure()
         current_date_time = time.strftime("%H:%M:%S (%d/%m/%Y)")
         self.fig.canvas.manager.set_window_title(current_date_time)

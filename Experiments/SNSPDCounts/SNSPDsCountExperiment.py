@@ -34,7 +34,10 @@ class SNSPDsCountExperiment(BaseExperiment):
         pass
 
     def initialize_experiment_variables(self):
-        pass
+        # TODO - probably remobe
+        self.south_vals = []
+        self.north_vals = []
+        self.SPCMs_vals = []
 
     def initiliaze_QuadRF(self):
         if self._quadrf_skip: return
@@ -43,7 +46,7 @@ class SNSPDsCountExperiment(BaseExperiment):
 
         qrfContr = QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
                             updateChannels=[3], debugging=False,
-                            continuous=False)  # updates values on QuadRF (uploads table) #
+                            continuous=True)  # updates values on QuadRF (uploads table) #
 
         self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
 
@@ -73,14 +76,15 @@ class SNSPDsCountExperiment(BaseExperiment):
 
     def fetch_values_from_opx_streams(self):
 
-        first_stream = self.streams.values()[0]['handler']
+        # TODO: insert a different check here
+        first_stream = self.streams['Detector_1_Avg_Counts']['handler']
         while not first_stream.is_processing():
             pass
 
         # Fetch Values
         for stream in self.streams.values():
             if stream['handler'] is not None:
-                stream['handler'].fetch_all()
+                stream['results'] = stream['handler'].fetch_all()
         pass
 
     def handle_user_events(self):
@@ -91,11 +95,13 @@ class SNSPDsCountExperiment(BaseExperiment):
             self.logger.blue('ESC pressed. Stopping measurement.')
             self.runs_status = TerminationReason.USER
             self.keyPress = None
-        elif self.keyPress == 'ALT_+':
-            self.logger.blue('ALT+ pressed - zooming in.')
+        elif self.keyPress == '+':
+            self.logger.blue('+ pressed - zooming in.')
+            self.font_size += 10
             self.keyPress = None
-        elif self.keyPress == 'ALT_-':
-            self.logger.blue('ALT- pressed - zooming out.')
+        elif self.keyPress == '-':
+            self.logger.blue('- pressed - zooming out.')
+            self.font_size -= 10
             self.keyPress = None
         elif self.keyPress == 'ALT_0':
             self.logger.blue('ALT_0 pressed - reseting zoom.')
@@ -118,7 +124,8 @@ class SNSPDsCountExperiment(BaseExperiment):
         self.fig.canvas.manager.set_window_title(current_date_time)
 
         # Set the font we want to use
-        self.font = font_manager.FontProperties(family='Comic Sans MS', weight='bold', style='normal', size=16)
+        self.font_size = 16
+        self.font = font_manager.FontProperties(family='Comic Sans MS', weight='bold', style='normal', size=self.font_size)
 
         self.plot_shown = False
 
@@ -133,15 +140,13 @@ class SNSPDsCountExperiment(BaseExperiment):
         plt.clf()
         plt.plot(self.batcher['north_avg_counts'], label='North Counts: ' + self.N_counts + ' Hz')
         plt.plot(self.batcher['south_avg_counts'], label='South Counts: ' + self.S_counts + ' Hz')
-        plt.plot(self.batcher['spcm_avg_counts'], label='SPCMs Counts: ' + self.SPCMs_counts + ' Hz')
+        plt.plot(self.batcher['spcms_avg_counts'], label='SPCMs Counts: ' + self.SPCMs_counts + ' Hz')
         plt.title("Detectors Counts")
+
+        self.font = font_manager.FontProperties(family='Comic Sans MS', weight='bold', style='normal', size=self.font_size)
         plt.legend(loc='upper left', prop=self.font)
 
-        # TODO: remove after everything works
-        #plt.show()
-
         plt.pause(0.1)
-
         pass
 
     def plot_figures(self):
@@ -154,16 +159,24 @@ class SNSPDsCountExperiment(BaseExperiment):
 
     def experiment_calculations(self):
 
-        avg_counts = []
+        # TODO: start from 0 - so no need to append a dummy initial value
+        avg_counts = [999]
         for stream in self.streams.values():
-            avg_counts.append = stream['results']
+            avg_counts.append(stream['results'])
 
         # Add counts of South and North detectors and SPCMs
+        # TODO: why are we sometimes getting here a None value? Check and ignore
         self.south_vals.append(sum(avg_counts[6] + avg_counts[7] + avg_counts[5]))
         self.north_vals.append(sum(avg_counts[1] + avg_counts[2] + avg_counts[3] + avg_counts[4] + avg_counts[8]))
         self.SPCMs_vals.append(sum(avg_counts[9] + avg_counts[10]))
 
+        # Temp work around - use only batcher values
+        self.south_avg_counts = self.south_vals[-1]
+        self.north_avg_counts = self.north_vals[-1]
+        self.spcm_avg_counts = self.SPCMs_vals[-1]
+
         # Format the N/S/SPCM counts
+        # TODO: we mulitply by 2 since in the past, we were measuring every 500 ms, now: 100ms - calc it instead of hard-coded
         self.N_counts = "{:,}".format(self.north_vals[-1] * 2)
         self.S_counts = "{:,}".format(self.south_vals[-1] * 2)
         self.SPCMs_counts = "{:,}".format(self.SPCMs_vals[-1] * 2)
@@ -202,6 +215,9 @@ class SNSPDsCountExperiment(BaseExperiment):
         # Initialize the batcher
         self.batcher.set_batch_size(100)
         self.batcher.empty_all()
+
+        # Associate the streams filled in OPX (FPGA) code with result handles
+        self.get_handles_from_OPX_server()
 
         # Prepare the figures for the experiment
         self.prepare_figures()
@@ -252,9 +268,10 @@ if __name__ == "__main__":
     print(f'In use: {matplotlib_version}')
     matplotlib.use("Qt5Agg")
 
-    print(r'please switch SRS South and North directional detectors shutters to manual and then press enter.\n ' +
+    print('please switch SRS South and North directional detectors shutters to manual and then press enter.\n' +
           'This is important so the continuous laser beam wont be degraded by the shutters. ')
     input()
 
-    experiment = SNSPDsCountExperiment(playback=True, save_raw_data=False)
+    experiment = SNSPDsCountExperiment(playback=False, save_raw_data=False)
     experiment.run(run_parameters={})
+    pass
