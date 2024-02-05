@@ -1451,6 +1451,13 @@ class QRAMExperiment(BaseExperiment):
         new_timetags_found = sum(compare_values) < min_len / 2
         return new_timetags_found
 
+    def should_terminate(self):
+        """
+        Decides if to terminate mainloop. Overrides BaseExperiment method.
+        Did we complete N successful iterations? (we check for N+1 because we started with 1)
+        """
+        return self.counter == self.N+1
+
     def await_for_values(self):
         """
         Awaits for values to come from OPX streams. Returns the timestamp of the incoming data.
@@ -1994,8 +2001,7 @@ class QRAMExperiment(BaseExperiment):
             self.handle_user_atoms_on_off_switch()
 
             # Did we complete N successful iterations? (we check for N+1 because we started with 1)
-            if self.counter == 6:
-            # if self.counter == self.N+1:
+            if self.should_terminate():
                 break
 
             # We completed another repetition.

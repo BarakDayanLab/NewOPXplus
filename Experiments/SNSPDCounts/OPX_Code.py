@@ -35,7 +35,9 @@ def opx_control(obj, qm):
         # g2 = declare(fixed, size=m_window)
         # g2_idx = declare(int)
         # g2_st = declare_stream()
-        measuring_time = 100 * 1e6  # [nsec]
+
+        measuring_time = Config.Measure_Time * 1e6
+        #measuring_time = 100 * 1e6  # [nsec]
         rep = int(measuring_time / m_window)
 
         with infinite_loop_():

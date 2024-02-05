@@ -3,6 +3,8 @@ import numpy as np
 
 controller = 'con1'
 
+Measure_Time = 100  # ms
+
 # Parameters:0
 
 # Pulse_durations

@@ -461,6 +461,13 @@ class BaseExperiment:
             self.keyPress = None
         pass
 
+    def should_terminate(self):
+        """
+        Decides if to terminate mainloop. By default, we return False, e.g. endless loop.
+        Experiment class should override this if it has a different condition
+        """
+        return False
+
     def _read_k_ex(self):
         if not hasattr(self, 'k_ex_file'):
             self.k_ex_file = os.path.join(self.bd_results.get_custom_root('k_ex_root'), 'k_ex.npy')

@@ -1,6 +1,6 @@
 from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
 from Experiments.BaseExperiment.BaseExperiment import TerminationReason
-from Experiments.QRAM import QRAM_Config_Experiment as Config
+from Experiments.SNSPDCounts import SNSPDCounts_Config_Table as Config
 
 import time
 import traceback
@@ -9,17 +9,6 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 
 from Experiments.QuadRF.quadRFMOTController import QuadRFMOTController
-
-import numpy as np
-
-"""
-TODO:
-1) Why is original code using is_processing while QRAM code is not?
-2) Align QRAM with this paradigm
-3) Save basic data as binary - so we can rerun it
-4) Remove TODOs from this file
-5) Alt +/-
-"""
 
 
 class SNSPDsCountExperiment(BaseExperiment):
@@ -34,10 +23,7 @@ class SNSPDsCountExperiment(BaseExperiment):
         pass
 
     def initialize_experiment_variables(self):
-        # TODO - probably remobe
-        self.south_vals = []
-        self.north_vals = []
-        self.SPCMs_vals = []
+        pass
 
     def initiliaze_QuadRF(self):
         if self._quadrf_skip: return
@@ -159,36 +145,23 @@ class SNSPDsCountExperiment(BaseExperiment):
 
     def experiment_calculations(self):
 
-        # TODO: start from 0 - so no need to append a dummy initial value
-        avg_counts = [999]
+        avg_counts = []
         for stream in self.streams.values():
             avg_counts.append(stream['results'])
 
         # Add counts of South and North detectors and SPCMs
-        # TODO: why are we sometimes getting here a None value? Check and ignore
-        self.south_vals.append(sum(avg_counts[6] + avg_counts[7] + avg_counts[5]))
-        self.north_vals.append(sum(avg_counts[1] + avg_counts[2] + avg_counts[3] + avg_counts[4] + avg_counts[8]))
-        self.SPCMs_vals.append(sum(avg_counts[9] + avg_counts[10]))
+        self.south_avg_counts = sum(avg_counts[5] + avg_counts[6] + avg_counts[4])
+        self.north_avg_counts = sum(avg_counts[0] + avg_counts[1] + avg_counts[2] + avg_counts[3] + avg_counts[7])
+        self.spcm_avg_counts = sum(avg_counts[8] + avg_counts[9])
 
-        # Temp work around - use only batcher values
-        self.south_avg_counts = self.south_vals[-1]
-        self.north_avg_counts = self.north_vals[-1]
-        self.spcm_avg_counts = self.SPCMs_vals[-1]
+        factor = int(1000 / Config.Measure_Time)
 
-        # Format the N/S/SPCM counts
-        # TODO: we mulitply by 2 since in the past, we were measuring every 500 ms, now: 100ms - calc it instead of hard-coded
-        self.N_counts = "{:,}".format(self.north_vals[-1] * 2)
-        self.S_counts = "{:,}".format(self.south_vals[-1] * 2)
-        self.SPCMs_counts = "{:,}".format(self.SPCMs_vals[-1] * 2)
+        # Format the N/S/SPCM counts. Multiply by factor to get to Hz
+        self.N_counts = "{:,}".format(self.south_avg_counts * factor)
+        self.S_counts = "{:,}".format(self.north_avg_counts * factor)
+        self.SPCMs_counts = "{:,}".format(self.spcm_avg_counts * factor)
 
         pass
-
-    def should_terminate(self):
-        """
-        This method decides if we should terminate mainloop or not
-        TODO: move this to QRAM experiment and to BaseExperiment
-        """
-        return False
 
     def save_experiment_results(self):
         pass
