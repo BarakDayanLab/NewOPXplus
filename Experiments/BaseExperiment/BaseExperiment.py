@@ -556,6 +556,9 @@ class BaseExperiment:
         if str(key) == "'A'" and self.alt_modifier == 'ALT':
             self.keyPress = 'ALT_A'
 
+        if str(key) == "'='":
+            self.keyPress = '='
+
         if str(key) == "'+'":
             self.keyPress = '+'
 

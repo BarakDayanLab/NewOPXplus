@@ -1,6 +1,7 @@
 from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
 from Experiments.BaseExperiment.BaseExperiment import TerminationReason
-from Experiments.SNSPDCounts import SNSPDCounts_Config_Table as Config
+from Experiments.SNSPDCounts import SNSPDCounts_Config_Experiment as Config
+
 
 import time
 import traceback
@@ -81,16 +82,15 @@ class SNSPDsCountExperiment(BaseExperiment):
             self.logger.blue('ESC pressed. Stopping measurement.')
             self.runs_status = TerminationReason.USER
             self.keyPress = None
-        elif self.keyPress == '+':
-            self.logger.blue('+ pressed - zooming in.')
+        elif self.keyPress == '+' or self.keyPress == '=':
             self.font_size += 10
+            self.line_width += 1
             self.keyPress = None
         elif self.keyPress == '-':
-            self.logger.blue('- pressed - zooming out.')
             self.font_size -= 10
+            self.line_width -= 1
             self.keyPress = None
-        elif self.keyPress == 'ALT_0':
-            self.logger.blue('ALT_0 pressed - reseting zoom.')
+        else:
             self.keyPress = None
 
     def print_experiment_information(self):
@@ -113,6 +113,9 @@ class SNSPDsCountExperiment(BaseExperiment):
         self.font_size = 16
         self.font = font_manager.FontProperties(family='Comic Sans MS', weight='bold', style='normal', size=self.font_size)
 
+        # Set line_width of plots
+        self.line_width = 2
+
         self.plot_shown = False
 
         pass
@@ -124,9 +127,9 @@ class SNSPDsCountExperiment(BaseExperiment):
             self.plot_shown = True
 
         plt.clf()
-        plt.plot(self.batcher['north_avg_counts'], label='North Counts: ' + self.N_counts + ' Hz')
-        plt.plot(self.batcher['south_avg_counts'], label='South Counts: ' + self.S_counts + ' Hz')
-        plt.plot(self.batcher['spcms_avg_counts'], label='SPCMs Counts: ' + self.SPCMs_counts + ' Hz')
+        plt.plot(self.batcher['north_avg_counts'], linewidth=self.line_width, label='North Counts: ' + self.N_counts + ' Hz')
+        plt.plot(self.batcher['south_avg_counts'], linewidth=self.line_width, label='South Counts: ' + self.S_counts + ' Hz')
+        plt.plot(self.batcher['spcms_avg_counts'], linewidth=self.line_width, label='SPCMs Counts: ' + self.SPCMs_counts + ' Hz')
         plt.title("Detectors Counts")
 
         self.font = font_manager.FontProperties(family='Comic Sans MS', weight='bold', style='normal', size=self.font_size)
@@ -147,7 +150,10 @@ class SNSPDsCountExperiment(BaseExperiment):
 
         avg_counts = []
         for stream in self.streams.values():
-            avg_counts.append(stream['results'])
+            if stream['results'] is None:
+                avg_counts.append(0)  # Just for safety. Sometimes opx code did not yet send values, so we dont want to crash
+            else:
+                avg_counts.append(stream['results'])
 
         # Add counts of South and North detectors and SPCMs
         self.south_avg_counts = sum(avg_counts[5] + avg_counts[6] + avg_counts[4])
@@ -241,8 +247,8 @@ if __name__ == "__main__":
     print(f'In use: {matplotlib_version}')
     matplotlib.use("Qt5Agg")
 
-    print('please switch SRS South and North directional detectors shutters to manual and then press enter.\n' +
-          'This is important so the continuous laser beam wont be degraded by the shutters. ')
+    print('\033[96m' + 'NOTE!\nSwitch SRS South and North directional detectors shutters to MANUAL and then press <Enter>.\n' +
+          '(this is important as continuous laser beam tends to degrade by the shutters)' + '\033[0m')
     input()
 
     experiment = SNSPDsCountExperiment(playback=False, save_raw_data=False)
