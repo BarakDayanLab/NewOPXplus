@@ -729,33 +729,34 @@ class QRAMExperiment(BaseExperiment):
         reflection_SPRINT_data = []  # Array of vectors with data on the number of reflections per SPRINT pulse in sequence.
         transmission_SPRINT_data = []  # Array of vectors with data on the number of transmissions per SPRINT pulse in sequence.
         seq_with_data_points = []
-        for transit in all_transits_seq_indx:
-            for seq_indx in transit[:-1]:
-                # Checking potential for data point by looking for a single photon at the reflection of the last
-                # detection pulse:
-                potential_data = False if not background else True
-                if self.sorted_pulses[self.number_of_detection_pulses_per_seq-1][2] == 'N' and \
-                   len(self.num_of_det_reflections_per_seq_N_[seq_indx][-1]) == 1:
-                    potential_data = True
-                elif self.sorted_pulses[self.number_of_detection_pulses_per_seq-1][2] == 'S' and \
-                        len(self.num_of_det_reflections_per_seq_S_[seq_indx][-1]) == 1:
-                    potential_data = True
-                # Getting SPRINT data if the SPRINT pulse has one photon in the reflection or transmission
-                if potential_data and len(self.sorted_pulses) > self.number_of_detection_pulses_per_seq:
-                    if self.sorted_pulses[self.number_of_detection_pulses_per_seq-1+SPRINT_pulse_number][2] == 'n':
-                        transmissions = len(self.num_of_SPRINT_transmissions_per_seq_N_[seq_indx][SPRINT_pulse_number-1])
-                        reflections = len(self.num_of_SPRINT_reflections_per_seq_N_[seq_indx][SPRINT_pulse_number-1])
-                        if (transmissions + reflections) == 1:
-                            seq_with_data_points.append(seq_indx)
-                            reflection_SPRINT_data.append(reflections)
-                            transmission_SPRINT_data.append(transmissions)
-                    elif self.sorted_pulses[self.number_of_detection_pulses_per_seq-1+SPRINT_pulse_number][2] == 's':
-                        transmissions = len(self.num_of_SPRINT_transmissions_per_seq_S_[seq_indx][SPRINT_pulse_number-1])
-                        reflections = len(self.num_of_SPRINT_reflections_per_seq_S_[seq_indx][SPRINT_pulse_number-1])
-                        if (transmissions + reflections) == 1:
-                            seq_with_data_points.append(seq_indx)
-                            reflection_SPRINT_data.append(reflections)
-                            transmission_SPRINT_data.append(transmissions)
+        if len(self.sorted_pulses) > 0:
+            for transit in all_transits_seq_indx:
+                for seq_indx in transit[:-1]:
+                    # Checking potential for data point by looking for a single photon at the reflection of the last
+                    # detection pulse:
+                    potential_data = False if not background else True
+                    if self.sorted_pulses[self.number_of_detection_pulses_per_seq-1][2] == 'N' and \
+                       len(self.num_of_det_reflections_per_seq_N_[seq_indx][-1]) == 1:
+                        potential_data = True
+                    elif self.sorted_pulses[self.number_of_detection_pulses_per_seq-1][2] == 'S' and \
+                            len(self.num_of_det_reflections_per_seq_S_[seq_indx][-1]) == 1:
+                        potential_data = True
+                    # Getting SPRINT data if the SPRINT pulse has one photon in the reflection or transmission
+                    if potential_data and len(self.sorted_pulses) > self.number_of_detection_pulses_per_seq:
+                        if self.sorted_pulses[self.number_of_detection_pulses_per_seq-1+SPRINT_pulse_number][2] == 'n':
+                            transmissions = len(self.num_of_SPRINT_transmissions_per_seq_N_[seq_indx][SPRINT_pulse_number-1])
+                            reflections = len(self.num_of_SPRINT_reflections_per_seq_N_[seq_indx][SPRINT_pulse_number-1])
+                            if (transmissions + reflections) == 1:
+                                seq_with_data_points.append(seq_indx)
+                                reflection_SPRINT_data.append(reflections)
+                                transmission_SPRINT_data.append(transmissions)
+                        elif self.sorted_pulses[self.number_of_detection_pulses_per_seq-1+SPRINT_pulse_number][2] == 's':
+                            transmissions = len(self.num_of_SPRINT_transmissions_per_seq_S_[seq_indx][SPRINT_pulse_number-1])
+                            reflections = len(self.num_of_SPRINT_reflections_per_seq_S_[seq_indx][SPRINT_pulse_number-1])
+                            if (transmissions + reflections) == 1:
+                                seq_with_data_points.append(seq_indx)
+                                reflection_SPRINT_data.append(reflections)
+                                transmission_SPRINT_data.append(transmissions)
         return seq_with_data_points, reflection_SPRINT_data, transmission_SPRINT_data
 
 
@@ -1148,17 +1149,22 @@ class QRAMExperiment(BaseExperiment):
 
         # SPRINT results box
         SPRINT_reflections_without_transits = '%d' % sum(self.batcher['num_of_total_SPRINT_reflections_batch'])
-        SPRINT_reflections_percentage_without_transits = (
-                '%.1f' % ((sum(self.batcher['num_of_total_SPRINT_reflections_batch']) * 100) /
-                          (sum(self.batcher['num_of_total_SPRINT_reflections_batch']) + sum(self.batcher['num_of_total_SPRINT_transmissions_batch']))))
+        SPRINT_transmissions_without_transits = '%d' % sum(self.batcher['num_of_total_SPRINT_transmissions_batch'])
+        if (sum(self.batcher['num_of_total_SPRINT_reflections_batch']) + sum(self.batcher['num_of_total_SPRINT_transmissions_batch'])) > 0:
+            SPRINT_reflections_percentage_without_transits = (
+                    '%.1f' % ((sum(self.batcher['num_of_total_SPRINT_reflections_batch']) * 100) /
+                              (sum(self.batcher['num_of_total_SPRINT_reflections_batch']) + sum(self.batcher['num_of_total_SPRINT_transmissions_batch']))))
+            SPRINT_transmissions_percentage_without_transits = (
+                    '%.1f' % ((sum(self.batcher['num_of_total_SPRINT_transmissions_batch']) * 100) /
+                              (sum(self.batcher['num_of_total_SPRINT_reflections_batch']) + sum(self.batcher['num_of_total_SPRINT_transmissions_batch']))))
+        else:
+            SPRINT_reflections_percentage_without_transits = '%.1f' % 0
+            SPRINT_transmissions_percentage_without_transits = '%.1f' % 0
+
         SPRINT_reflections_with_transits = '%d' % sum(sum(self.batcher['reflection_SPRINT_data_batch'], []))
         # SPRINT_reflections = f'${SPRINT_reflections_with_transits}_{{({SPRINT_reflections_without_transits})}}$'
         SPRINT_reflections = f'${SPRINT_reflections_with_transits}_{{({SPRINT_reflections_percentage_without_transits}\%)}}$'
         SPRINT_reflections_text = '$R_{SPRINT}$'
-        SPRINT_transmissions_without_transits = '%d' % sum(self.batcher['num_of_total_SPRINT_transmissions_batch'])
-        SPRINT_transmissions_percentage_without_transits = (
-                '%.1f' % ((sum(self.batcher['num_of_total_SPRINT_transmissions_batch']) * 100) /
-                          (sum(self.batcher['num_of_total_SPRINT_reflections_batch']) + sum(self.batcher['num_of_total_SPRINT_transmissions_batch']))))
         SPRINT_transmissions_with_transits = '%d' % sum(sum(self.batcher['transmission_SPRINT_data_batch'], []))
         # SPRINT_transmissions = f'${SPRINT_transmissions_with_transits}_{{({SPRINT_transmissions_without_transits})}}$'
         SPRINT_transmissions = f'${SPRINT_transmissions_with_transits}_{{({SPRINT_transmissions_percentage_without_transits}\%)}}$'
@@ -1299,11 +1305,13 @@ class QRAMExperiment(BaseExperiment):
             textstr_total_transmission_avg = 'Average transmissions per cycle = %.2f' % (
                 sum(self.num_of_det_transmissions_per_seq_accumulated / self.counter),)
 
-            textstr_total_reflections_percentage = 'Average reflections percentage = %.1f%%' % (
-                (sum(self.num_of_det_reflections_per_seq_accumulated) * 100) /
-                (sum(self.num_of_det_reflections_per_seq_accumulated) +
-                 (sum(self.num_of_det_transmissions_per_seq_accumulated) / self.Cavity_transmission)),)
-
+            total_photons_per_seq_accumulated = sum(self.num_of_det_reflections_per_seq_accumulated) + \
+                 (sum(self.num_of_det_transmissions_per_seq_accumulated) / self.Cavity_transmission)
+            if total_photons_per_seq_accumulated > 0:
+                textstr_total_reflections_percentage = 'Average reflections percentage = %.1f%%' % (
+                    (sum(self.num_of_det_reflections_per_seq_accumulated) * 100) / total_photons_per_seq_accumulated,)
+            else:
+                textstr_total_reflections_percentage = 'Average reflections percentage = %.1f%%' % 0
 
             textstr_total_reflections = f'{textstr_total_reflections_N} \n{textstr_total_reflections_S} \n' \
                                         f'{textstr_total_reflections_avg} \n{textstr_total_transmission_avg} \n' \
@@ -1946,6 +1954,7 @@ class QRAMExperiment(BaseExperiment):
                 _, self.reflection_SPRINT_data_without_transits, self.transmission_SPRINT_data_without_transits = \
                     self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=1,
                                                     background=True)  # Enter the index of the SPRINT pulse for which the data should be analyzed
+
                 self.num_of_total_SPRINT_reflections = sum(self.reflection_SPRINT_data_without_transits)
                 self.num_of_total_SPRINT_transmissions = sum(self.transmission_SPRINT_data_without_transits)
 
@@ -2387,7 +2396,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 1.12,
         'photons_per_det_pulse_threshold': 12,
-        'Exp_flag': True,
+        'Exp_flag': False,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
