@@ -75,52 +75,68 @@ class BDStreams:
             stream['results'] = []
 
     # TODO: complete this:
-    def load_entire_folder(self, raw_streams_folder):
+    def load_entire_folder(self, playback_files_path):
 
         # Clean all streams
         self.clean_streams()
 
-        # Get all files in folder
-        # TODO: ...
+        # Get all files in playback folder
+        playback_files = [f for f in os.listdir(playback_files_path) if os.path.isfile(os.path.join(playback_files_path, f))]
 
-        # Iterate over files, and for each, run the following:
-        self.load_streams(r'C:\temp\streams_raw_data_2\20231225_143721_streams.dat')
+        # Iterate over all files in folder
+        for playback_file in playback_files:
+            self.load_streams(os.path.join(playback_files_path,playback_file))
 
         pass
 
     def load_streams(self, data_file):
 
         # Create an array of stream names (because we'll be working with indices)
-        stream_names = list(self.streams_defs.keys())
+        #stream_names = list(self.streams_defs.keys())
+
+        # Get only those streams that their configuration indicates they need to be saved
+        streams_to_load = [s for s in self.streams_defs.values() if 'save_raw' in s and s['save_raw']]
 
         # Open the binary file
         with open(data_file, 'rb') as file:
 
-            current_time = int(struct.unpack('>i'), file.read(4)[0])
-            number_of_streams = int(struct.unpack('>b', file.read(1))[0])
-            for i in range(0, number_of_streams):
-                stream = self.streams_defs[stream_names[i]]
-                stream_data_len = struct.unpack('>H', file.read(2))[0]
-                type_func = Utils.type_string_to_type_function(stream['type'])
+            try:
+                bytes = file.read(4)
+                bytes_unpacked = struct.unpack('>i', bytes)[0]
+                current_time = int(bytes_unpacked)
+                number_of_streams = int(struct.unpack('>b', file.read(1))[0])
+                for i in range(0, number_of_streams):
+                    if i == 8:
+                        stream_name = 'FLR_measure'
+                    else:
+                        stream_name = f'Detector_{i+1}_Timetags'  # TODO: need to do something smarter in the save - and then here
 
-                # Read the data of stream
-                results = []
-                for j in range(0, stream_data_len):
-                    # Get the value
-                    sz = struct.calcsize(f'>{stream["binary"]}')
-                    val = struct.unpack(f'>{stream["binary"]}', file.read(sz))[0]
-                    # Cast it
-                    val = type_func(val)
-                    # Keep it
-                    results.append(val)
+                    stream = self.streams_defs[stream_name]
+                    #stream = self.streams_defs[stream_names[i]]
+                    stream_data_len = struct.unpack('>H', file.read(2))[0]
+                    type_func = Utils.type_string_to_type_function(stream['type'])
 
-                    # If it's the first results we're adding, create a new array
-                    if 'all_rows' not in stream:
-                        stream['all_rows'] = []
+                    # Read the data of stream
+                    results = []
+                    for j in range(0, stream_data_len):
+                        # Get the value
+                        sz = struct.calcsize(f'>{stream["binary"]}')
+                        val = struct.unpack(f'>{stream["binary"]}', file.read(sz))[0]
+                        # Cast it
+                        val = type_func(val)
+                        # Keep it
+                        results.append(val)
 
-                # Append it to all rows
-                stream['all_rows'].append(results)
-                stream['timestamp'] = current_time
+                        # If it's the first results we're adding, create a new array
+                        if 'all_rows' not in stream:
+                            stream['all_rows'] = []
+
+                    # Append it to all rows
+                    stream['all_rows'].append(results)
+                    stream['timestamp'] = current_time
+            except Exception as err:
+                print(err)
+                pass
         pass
 
     def load_streams_from_a_single_file(self):

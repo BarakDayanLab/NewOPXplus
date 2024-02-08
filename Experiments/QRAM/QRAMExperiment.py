@@ -966,7 +966,7 @@ class QRAMExperiment(BaseExperiment):
             })
         return merged_array
 
-    def load_data_for_playback(self):
+    def load_data_for_playback__old_files(self):
         """
         This function loads relevant data saved in previous experiments
         and re-constructs the original streams raw data.
@@ -2428,7 +2428,7 @@ if __name__ == "__main__":
     run_parameters = {
         'N': 500,  # 50,
         'transit_condition': [2, 1, 2],
-        'pre_comment': '',
+        'pre_comment': '',  # Put 'None' or '' if you don't want pre-comment prompt
         'lock_err_threshold': 2, # [Mhz]
         'desired_k_ex': 36, # [Mhz]
         'k_ex_err': 3,  # [Mhz]
@@ -2462,7 +2462,7 @@ if __name__ == "__main__":
         ]
     }
 
-    experiment = QRAMExperiment(playback_parameters=playback_parameters, save_raw_data=False)
+    experiment = QRAMExperiment(playback_parameters=playback_parameters, save_raw_data=True)
 
     # TODO: REMOVE, for debug only
     sequence_definitions = None

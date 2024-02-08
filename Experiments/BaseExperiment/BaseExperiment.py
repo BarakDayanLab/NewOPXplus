@@ -749,13 +749,18 @@ class BaseExperiment:
         # Advance all streams to hold the next data row from all_rows
         row = self.playback['row_count']
         for stream in self.streams.values():
-            if 'all_rows' in stream:
+            if stream['save_raw'] and 'all_rows' in stream:
                 # If there's no more playback data on this stream, we request to terminate experiment
                 if row == len(stream['all_rows']):
                     self.runs_status = TerminationReason.PLAYBACK_END
                     return
 
-                stream['results'] = stream['all_rows'][row]
+                # Ensure we eventually have nparray data
+                data = stream['all_rows'][row]
+                if type(data) == list:
+                    data = np.array(data)
+
+                stream['results'] = data
 
         # Advance the row for the next time
         self.playback['row_count'] += 1
@@ -763,7 +768,14 @@ class BaseExperiment:
         pass
 
     def load_data_for_playback(self):
-        raise Exception('Not implemented in base class. Implement in superclass!')
+
+        load_old_files = False
+        if load_old_files:
+            self.load_data_for_playback__old_files()
+
+        playback_files_path = r'C:\temp\streams_raw_data'
+        self.bdstreams.load_entire_folder(playback_files_path)
+        pass
 
     def get_results_from_streams(self, playback=False):
         """
