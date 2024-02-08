@@ -6,10 +6,20 @@ import threading
 from Utilities.BDLogger import BDLogger
 
 
+# ---------------------------------------------------------------------#
+# IMPORTANT NOTE
+#
+# If you wish to enable another connection, not that it must be with
+# the 5050-5059 ports. This is what the FireWall in lab room 112
+# is configured with. You can change the rule in Windows Defender Firewall
+# ---------------------------------------------------------------------#
+
 class BDSocket:
 
-    SERVER_IP = "132.77.55.172"  # Dror's machine
-    #SERVER_IP = "127.0.0.1"
+    SERVER_IP_DROR = "132.77.55.172"  # Dror's machine at room 113
+    SERVER_IP_LAB = "132.77.54.212"  # Lab's machine at room 112
+    SERVER_IP_LOOPBACK = "127.0.0.1"  # Localhost
+
     PORT = 5050  # server port number
 
     def __init__(self, writeable):
@@ -154,7 +164,14 @@ class BDSocket:
 
 if __name__ == "__main__":
 
-    # Run a test client
-    BDSocket.run_client()
+    run_as = "client"  # "server"
+
+    if run_as == "server":
+        writeable = {}
+        bdsocket = BDSocket(writeable)
+        bdsocket.run_server()
+    else:
+        # Run a test client
+        BDSocket.run_client()
 
     pass

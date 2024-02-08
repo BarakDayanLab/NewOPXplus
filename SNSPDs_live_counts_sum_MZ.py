@@ -521,8 +521,8 @@ with program() as dig:
     with infinite_loop_():
         play("Const_open_triggered", "PULSER_N", duration=int(Measuring_time / 4))
         # play("Const_open", "PULSER_N")
-        play("Const_open", "PULSER_S", duration=int(Measuring_time / 4))
-        play("Const_open" * amp(0.51), "AOM_Early", duration=int(Measuring_time / 4))
+        # play("Const_open", "PULSER_S", duration=int(Measuring_time / 4))
+        play("Const_open" * amp(0.61), "AOM_Early", duration=int(Measuring_time / 4))
         play("Const_open", "AOM_Late", duration=int(Measuring_time / 4))
         with for_(n, 0, n < rep, n+1):
             measure("OD_measure", "digital_detectors_N", None,
@@ -645,8 +645,9 @@ while avg_count1_handle.is_processing():
     plt.plot(B_arr)
     plt.plot(D_arr)
     # plt.plot(B_arr + D_arr)
-    plt.text(0, np.mean(B_arr + D_arr), str(np.round(max(abs((B_arr-D_arr)/(B_arr+D_arr))), decimals=2)), fontsize=48,
+    plt.text(0, np.mean(B_arr + D_arr) / 2, str(np.round(max(abs((B_arr-D_arr)/(B_arr+D_arr))), decimals=2)), fontsize=48,
                            verticalalignment='top')
+    print(str(np.round(max(abs((B_arr-D_arr)/(B_arr+D_arr))), decimals=2)))
     # plt.text(0, 200, str(np.round((max(D_arr)-min(D_arr)) / np.mean(D_arr + B_arr), decimals=3)), fontsize=28,
     #          verticalalignment='top')
 

@@ -862,6 +862,20 @@ class QRAMExperiment(BaseExperiment):
             box_loc = np.array([])
         return box_loc
 
+    def number_of_pulses_per_seq(self):
+        '''
+
+        :return:
+        '''
+        detection_pulses_per_seq = 0
+        SPRINT_pulses_per_seq = 0
+        for tup in self.sorted_pulses:
+            if (tup[2] == 'N') or (tup[2] == 'S'):
+                detection_pulses_per_seq += 1
+            elif (tup[2] == 'n') or (tup[2] == 's'):
+                SPRINT_pulses_per_seq += 1
+        return detection_pulses_per_seq, SPRINT_pulses_per_seq
+
     def fold_tt_histogram(self, exp_sequence_len):
 
         self.folded_tt_S = np.zeros(exp_sequence_len, dtype=int)
@@ -1125,20 +1139,32 @@ class QRAMExperiment(BaseExperiment):
         ref_str = '%.2f' % self.sum_for_threshold
         eff_str = '%.1f%%' % (self.counter * 100 / self.repetitions)
         exp_str = r'$\bf{' + self.experiment_type + '}$'
-        if self.fluorescence_flag:
-            # flr_str = '$Flr: %.2f$' % self.fluorescence_average
-            flr_str = '$Flr: %d$' % int(self.fluorescence_average)
+        if hasattr(self, 'fluorescence_flag'):
+            if self.fluorescence_flag:  # @@@
+                # flr_str = '$Flr: %.2f$' % self.fluorescence_average
+                flr_str = '$Flr: %d$' % int(self.fluorescence_average)
+            else:
+                # flr_str = r'$\bf{Flr: %.2f}$' % self.fluorescence_average
+                flr_str = r'$\bf{Flr: %d}$' % int(self.fluorescence_average)
         else:
-            # flr_str = r'$\bf{Flr: %.2f}$' % self.fluorescence_average
-            flr_str = r'$\bf{Flr: %d}$' % int(self.fluorescence_average)
-        if self.lock_err_flag:
-            lck_str = '$\Delta_{lock}: %.1f$' % self.lock_err
+            flt_str = "Flr: N/A"
+
+        if self.lock_err is not None:
+            if self.lock_err_flag:
+                lck_str = '$\Delta_{lock}: %.1f$' % self.lock_err
+            else:
+                lck_str = r'$\bf{\Delta_{lock}: %.1f}$' % self.lock_err
         else:
-            lck_str = r'$\bf{\Delta_{lock}: %.1f}$' % self.lock_err
-        if self.k_ex_flag:
-            k_ex_str = '$\kappa_{ex}: %.1f$' % self.k_ex
+            lck_str = r'LckErr: N/A'
+
+        if self.k_ex is not None:
+            if self.k_ex_flag:
+                k_ex_str = '$\kappa_{ex}: %.1f$' % self.k_ex
+            else:
+                k_ex_str = r'$\bf{\kappa_{ex}: %.1f}$' % self.k_ex
         else:
-            k_ex_str = r'$\bf{\kappa_{ex}: %.1f}$' % self.k_ex
+            k_ex_str = "K_ex: N/A"
+
         # status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
         status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({eff_str})'
         # status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter}'
@@ -1227,6 +1253,7 @@ class QRAMExperiment(BaseExperiment):
         if plot_switches['graph-1']:
             # ax[1].plot(self.folded_tt_BP_cumulative_avg, label='"BP" detectors')
             # ax[1].plot(self.folded_tt_DP_cumulative_avg, label='"DP" detectors')
+            # ax[1].plot(self.folded_tt_N_cumulative_avg, label='"N" detectors')
             ax[1].plot(self.folded_tt_N_directional_cumulative_avg, label='"N" detectors')
             ax[1].plot(self.folded_tt_S_directional_cumulative_avg, label='"S" detectors')
             ax[1].plot(self.folded_tt_BP_timebins_cumulative_avg, label='"BP" detectors')
@@ -1685,12 +1712,13 @@ class QRAMExperiment(BaseExperiment):
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
         # TODO: Q: Why are we fixing the Gaussian here?
         self.QRAM_Exp_Gaussian_samples_N = Config.QRAM_Exp_Gaussian_samples_N
-        self.QRAM_Exp_Gaussian_samples_N[self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]] = \
-            (np.array(Config.QRAM_Exp_Gaussian_samples_N[
-                      self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]]) + \
-             np.array(Config.QRAM_Exp_Gaussian_samples_General[
-                      self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]]) * \
-             Config.sprint_pulse_amp_Early[0]).tolist()
+        # TODO: what the hell did I use it for?!
+        # self.QRAM_Exp_Gaussian_samples_N[self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]] = \
+        #     (np.array(Config.QRAM_Exp_Gaussian_samples_N[
+        #               self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]]) + \
+        #      np.array(Config.QRAM_Exp_Gaussian_samples_General[
+        #               self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]]) * \
+        #      Config.sprint_pulse_amp_Early[0]).tolist()
         self.pulses_location_in_seq_N, self.filter_N = self.get_pulses_location_in_seq(filter_delay[1],
                                                                                        self.QRAM_Exp_Gaussian_samples_N,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
@@ -1698,13 +1726,13 @@ class QRAMExperiment(BaseExperiment):
                                                                                        Config.QRAM_Exp_Gaussian_samples_Ancilla,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
         # Get experiment type: (Added by Dor, Sorry for the mess)
-        self.sorted_pulses = sorted([tup + ('N',) for tup in experiment.pulses_location_in_seq_N if
+        self.sorted_pulses = sorted([tup + ('N',) for tup in self.pulses_location_in_seq_N if
                                      (tup[1] - tup[0]) < Config.sprint_pulse_len] +
-                                    [tup + ('n',) for tup in experiment.pulses_location_in_seq_N if
+                                    [tup + ('n',) for tup in self.pulses_location_in_seq_N if
                                      (tup[1] - tup[0]) >= Config.sprint_pulse_len] +
-                                    [tup + ('S',) for tup in experiment.pulses_location_in_seq_S if
+                                    [tup + ('S',) for tup in self.pulses_location_in_seq_S if
                                      (tup[1] - tup[0]) < Config.sprint_pulse_len] +
-                                    [tup + ('s',) for tup in experiment.pulses_location_in_seq_S if
+                                    [tup + ('s',) for tup in self.pulses_location_in_seq_S if
                                      (tup[1] - tup[0]) >= Config.sprint_pulse_len],
                                     key=lambda tup: tup[1])
         self.experiment_type = '-'.join(tup[2] for tup in self.sorted_pulses)
@@ -1718,6 +1746,8 @@ class QRAMExperiment(BaseExperiment):
         self.Num_of_photons_txt_box_x_loc_for_MZ_ports = self.num_of_photons_txt_box_loc(
             self.pulses_location_in_seq[-2:])
         self.num_of_detection_pulses = len(Config.det_pulse_amp_N)
+
+        self.number_of_detection_pulses_per_seq, self.number_of_SPRINT_pulses_per_seq = self.number_of_pulses_per_seq()
 
         # Take the 2nd number in the last tuple (which is the time of the last pulse)
         # TODO: uncomment this for QRAM
@@ -1883,10 +1913,10 @@ class QRAMExperiment(BaseExperiment):
             # Set lock error and kappa_ex
             self.lock_err = None
             self.k_i = 5  # [MHz
-            self.k_ex = None
+            self.k_ex = 99.9  # Dummy default value for a case we don't have it
             if 'cavity_lock' in self.comm_messages:
                 self.lock_err = self.comm_messages['cavity_lock']['lock_error'] if 'lock_error' in self.comm_messages['cavity_lock'] else None
-                self.k_ex = self.comm_messages['cavity_lock']['k_ex'] if 'k_ex' in self.comm_messages['cavity_lock'] else None
+                self.k_ex = self.comm_messages['cavity_lock']['k_ex'] if 'k_ex' in self.comm_messages['cavity_lock'] else 99.9  # TODO: need to handle case where there's no Kappa Ex yet
 
             # Define efficiencies:
             self.Cavity_transmission = Utils.cavity_transmission(0, self.k_ex, k_i=self.k_i, h=2.3)
@@ -2396,7 +2426,7 @@ if __name__ == "__main__":
     }
 
     run_parameters = {
-        'N': 100,  # 50,
+        'N': 500,  # 50,
         'transit_condition': [2, 1, 2],
         'pre_comment': '',
         'lock_err_threshold': 2, # [Mhz]
