@@ -65,7 +65,7 @@ class BaseExperiment:
         - Updating IO Parameters
     """
 
-    def __init__(self, playback=False, save_raw_data=False):
+    def __init__(self, playback_parameters=None, save_raw_data=False):
 
         # Setup console logger. We do this first, so rest of code can use logging functions.
         self.logger = BDLogger()
@@ -90,16 +90,14 @@ class BaseExperiment:
         self._opx_skip = False
         self._quadrf_skip = False
 
-        # Playback definitions
-        self.playback = {
-            "active": playback,
-            "data_loaded": False,
-            "save_results": False,
-            "plot": "LIVE",  # "LIVE", "LAST", "NONE"
-            "delay": -1,  # 0.5,  # In seconds. Use -1 for not playback delay
-            "row_count": 0,
-            "streams": {}
-        }
+        # Set playback definitions and initialize it
+        if playback_parameters is None:
+            self.playback = {'active': False}
+        else:
+            self.playback = playback_parameters
+            self.playback['data_loaded'] = False
+            self.playback['row_count'] = 0
+            self.playback['streams'] = {}
 
         # Insert a prompt to check we're not running on live lab devices (OPX, QuadRF)
         if not self.playback["active"] and self.login == 'drorg':
@@ -164,10 +162,11 @@ class BaseExperiment:
         self.ignore_data = False
         self.runs_status = None  # Uses the TerminationReason enum
 
-        # Start listening on sockets
+        # Start listening on sockets (except when in playback mode)
         self.comm_messages = {}
-        self.bdsocket = BDSocket(self.comm_messages)
-        self.bdsocket.run_server()
+        if not self.playback["active"]:
+            self.bdsocket = BDSocket(self.comm_messages)
+            self.bdsocket.run_server()
 
         # Attempt to initialize Camera functionality
         self.connect_camera()

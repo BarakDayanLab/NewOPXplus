@@ -1,12 +1,7 @@
 {
-    "lock_error": {
-        "description": "Lock Error coming from cavity lock process",
-        "value_name": "lock_error",
-        "trusted_IP": ["127.0.0.1"]
-    },
-    "kappa_ex": {
-        "description": "Kappa Ex value as calculated from auto fit process",
-        "value_name": "kappa_ex",
+    "cavity_lock": {
+        "description": "Kappa Ex and lock error values as calculated from auto fit process",
+        "value_name": "cavity_lock",
         "trusted_IP": ["*"]
     },
     "remote_command": {

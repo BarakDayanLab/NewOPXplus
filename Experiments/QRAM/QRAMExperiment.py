@@ -16,11 +16,10 @@ from Utilities.BDDialog import BDDialog
 from Utilities.Utils import Utils
 
 
-
 class QRAMExperiment(BaseExperiment):
-    def __init__(self, playback=False, save_raw_data=False):
+    def __init__(self, playback_parameters=None, save_raw_data=False):
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
-        super().__init__(playback, save_raw_data)
+        super().__init__(playback_parameters, save_raw_data)
         pass
 
     def __del__(self):
@@ -1143,7 +1142,9 @@ class QRAMExperiment(BaseExperiment):
         # status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({self.repetitions})'
         status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({eff_str})'
         # status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter}'
-        playback_str = 'PLAYBACK: ' if self.playback['active'] else ''
+
+        playback_str = 'P: ' if self.playback['active'] else ''
+
         # header_text = f'{playback_str} {status_str} - Reflections: {ref_str}, Eff: {eff_str}, Flr: {flr_str}, Lock Error: {lck_str}, k_ex: {k_ex_str} {pause_str}'
         header_text = f'{playback_str} {self.experiment_type}, {status_str} - {flr_str}, {lck_str}, {k_ex_str} {pause_str}'
 
@@ -1835,7 +1836,7 @@ class QRAMExperiment(BaseExperiment):
 
             # Check locking error, break if we are above threshold
             self.lock_err = (lock_err_threshold / 2) if exp_flag else self._read_locking_error()
-            # self.k_ex = (lock_err_threshold / 2) if exp_flag else self._read_k_ex()
+            self.k_ex = (lock_err_threshold / 2) if exp_flag else self._read_k_ex()
             self.logger.debug(f'{self.lock_err}, {self.lock_err > lock_err_threshold}, {self.sum_for_threshold}')
 
             #TODO: is this bug? should be oppoisite? @dror
@@ -1879,14 +1880,13 @@ class QRAMExperiment(BaseExperiment):
             if self.runs_status == TerminationReason.USER:
                 break
 
-            # Get locking error
-            self.lock_err = self._read_locking_error()
-
-            # Get k_ex
-            self.k_i = 5  # [MHz]
-            self.k_ex = (self._read_k_ex() / 2) - self.k_i
-            # TODO: Now we get FWHM from NADAV. Change to commentout when it's real k_ex.
-            # self.k_ex = self._read_k_ex()
+            # Set lock error and kappa_ex
+            self.lock_err = None
+            self.k_i = 5  # [MHz
+            self.k_ex = None
+            if 'cavity_lock' in self.comm_messages:
+                self.lock_err = self.comm_messages['cavity_lock']['lock_error'] if 'lock_error' in self.comm_messages['cavity_lock'] else None
+                self.k_ex = self.comm_messages['cavity_lock']['k_ex'] if 'k_ex' in self.comm_messages['cavity_lock'] else None
 
             # Define efficiencies:
             self.Cavity_transmission = Utils.cavity_transmission(0, self.k_ex, k_i=self.k_i, h=2.3)
@@ -2059,6 +2059,10 @@ class QRAMExperiment(BaseExperiment):
         """
         This method is responsible for saving all the results gathered in the experiment and required by analysis
         """
+
+        # If we're in playback mode and we don't want to keep results, exit function
+        if self.playback['active'] and not self.playback['save_results']:
+            return
 
         # Save Quad RF controllers commands
         # TODO: re-implement in QuadRF class - to get the data - and BDResults will save...
@@ -2383,13 +2387,21 @@ if __name__ == "__main__":
     print(f'In use: {matplotlib_version}')
     matplotlib.use("Qt5Agg")
 
+    # Playback definitions
+    playback_parameters = {
+        "active": False,
+        "save_results": False,
+        "plot": "LIVE",  # "LIVE", "LAST", "NONE"
+        "delay": -1,  # -1,  # 0.5,  # In seconds. Use -1 for not playback delay
+    }
+
     run_parameters = {
         'N': 100,  # 50,
         'transit_condition': [2, 1, 2],
         'pre_comment': '',
         'lock_err_threshold': 2, # [Mhz]
-        'desired_k_ex': 36,# [Mhz]
-        'k_ex_err': 3, # [Mhz]
+        'desired_k_ex': 36, # [Mhz]
+        'k_ex_err': 3,  # [Mhz]
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,
         'reflection_threshold_time': 9e6,
@@ -2420,7 +2432,7 @@ if __name__ == "__main__":
         ]
     }
 
-    experiment = QRAMExperiment(playback=False, save_raw_data=False)
+    experiment = QRAMExperiment(playback_parameters=playback_parameters, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
     sequence_definitions = None

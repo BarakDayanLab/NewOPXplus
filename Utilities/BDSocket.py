@@ -1,17 +1,25 @@
 import os
 import json
 import socket
+import struct
 import threading
+from Utilities.BDLogger import BDLogger
 
 
 class BDSocket:
 
-    SERVER_IP = "127.0.0.1"  # server hostname or IP address
+    SERVER_IP = "132.77.55.172"  # Dror's machine
+    #SERVER_IP = "127.0.0.1"
     PORT = 5050  # server port number
 
     def __init__(self, writeable):
 
+        self.logger = BDLogger()
+
         self.writeable = writeable
+
+        self.hostname = socket.gethostname()
+        self.my_ip_address = socket.gethostbyname(self.hostname)
 
         # Load the connection definitions into map
         try:
@@ -21,51 +29,51 @@ class BDSocket:
             self.connections_map = json.load(f)
             f.close()
         except Exception as err:
-            self._handle_error(f'Unable to open connections.json. Reason: {err}', True)
+            self.logger.error(f'Unable to open/read connections.json. Reason: {err}')
         pass
 
     def handle_client(self, client_socket, addr, connection_name, writeable):
         try:
-            while True:
-                # Receive client messages
-                request = client_socket.recv(1024).decode("utf-8")
+            # Get the relevant entry
+            connection = self.connections_map[connection_name]
 
-                # Get the relevant entry
-                connection = self.connections_map[connection_name]
+            request = None
+            request_unpacked = None
+
+            while True:
+
+                # Receive client messages
+                data_size = client_socket.recv(4)
+                data_size = struct.unpack("!I", data_size)[0]
+                request = client_socket.recv(data_size).decode("utf-8")  # 1024
+                request_object = json.loads(request)
 
                 if 'callback' in connection:
-                    connection['callback'](request)
+                    connection['callback'](request_object)
                     continue
                 else:
                     # Assign the value received
-                    writeable[connection['value_name']] = request
+                    writeable[connection['value_name']] = request_object
 
-                if request.lower() == "close":
-                    client_socket.send("closed".encode("utf-8"))
-                    break
-                print(f"Received: {request}")
-                # convert and send accept response to the client
-                response = "accepted"
-                client_socket.send(response.encode("utf-8"))
+                # Send a message back to the client
+                response_message = "accepted"
+                response_message = json.dumps(response_message)
+                response_message = response_message.encode('utf-8')
+                data_size = len(response_message)
+                struct_data = struct.pack('!I', data_size) + response_message
+                client_socket.send(struct_data)
+
         except Exception as e:
-            print(f"Error when handling client: {e}")
+            self.logger.error(f"Error when handling client: {e}.")
+            connection['thread'] = None
         finally:
             client_socket.close()
-            print(f"Connection to client ({addr[0]}:{addr[1]}) closed")
+            self.logger.info(f"Connection to client ({addr[0]}:{addr[1]}) closed")
 
     def run_server(self):
+        self.logger.info(f'Socket listening on host {self.hostname} on {self.my_ip_address}:{BDSocket.PORT}')
         server_thread = threading.Thread(target=self._run_server)
         server_thread.start()
-
-    # def _get_connection_by_key(self, key, value):
-    #     """ Look for the connection that has the specific value in the key defined
-    #         Return None if not found.
-    #     """
-    #     # Iterate over all connections
-    #     for attribute, entry in self.connections_map.items():
-    #         if value == entry[key] or value in entry[key]:
-    #             return attribute, entry
-    #     return None, None
 
     def _get_connection_entry(self, address, port):
         """ Look for the connection that has this address defined
@@ -74,7 +82,7 @@ class BDSocket:
         # Iterate over all connections
         for attribute, entry in self.connections_map.items():
             if '*' in entry['trusted_IP']:
-                return entry
+                return attribute, entry
             if address in entry['trusted_IP']:
                 return attribute, entry
         return None, None
@@ -85,10 +93,10 @@ class BDSocket:
         try:
             server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             # bind the socket to the host and port
-            server.bind((BDSocket.SERVER_IP, BDSocket.PORT))
+            server.bind((self.my_ip_address, BDSocket.PORT))
             # listen for incoming connections
             server.listen()
-            print(f"Listening on {BDSocket.SERVER_IP}:{BDSocket.PORT}")
+            self.logger.info(f'Listening on {self.my_ip_address}:{BDSocket.PORT}')
 
             while True:
                 # accept a client connection
@@ -97,16 +105,16 @@ class BDSocket:
                 # Check if this is a connection we are ready to accept
                 connection_name, connection_entry = self._get_connection_entry(addr[0], addr[1])
                 if connection_entry is None:
-                    print(f'Attempt to connect from {addr[0]}:{addr[1]}. Not approved!')
+                    self.logger.warn(f'Attempt to connect from {addr[0]}:{addr[1]}. Not approved!')
                     continue
 
                 # Accept the connection & start the new thread to handle it
-                print(f"Accepted connection from {addr[0]}:{addr[1]}")
+                self.logger.info(f"Accepted connection from {addr[0]}:{addr[1]}")
                 connection_entry['thread'] = threading.Thread(target=self.handle_client, args=(client_socket, addr, connection_name, self.writeable))
                 connection_entry['thread'].start()
 
         except Exception as e:
-            print(f"Error: {e}")
+            self.logger.error(e)
         finally:
             server.close()
 
@@ -143,16 +151,6 @@ class BDSocket:
             # close client socket (connection to the server)
             client.close()
             print("Connection to server closed")
-
-    def _handle_error(self, message, raise_exception=False):
-        OK_COLOR = '\033[94m'
-        ERR_COLOR = '\033[91m'
-        cc = ERR_COLOR  # OK_COLOR
-        message = f"{cc} NOTE: Error in connections: {message} {cc}"
-        print(message)
-        if raise_exception:
-            raise Exception(f'Failed. Aborting.')
-
 
 if __name__ == "__main__":
 
