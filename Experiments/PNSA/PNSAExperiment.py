@@ -1,6 +1,6 @@
 from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
 from Experiments.BaseExperiment.BaseExperiment import TerminationReason
-from Experiments.QRAM import QRAM_Config_Experiment as Config
+from Experiments.PNSA import PNSA_Config_Experiment as Config
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -16,7 +16,7 @@ from Utilities.BDDialog import BDDialog
 from Utilities.Utils import Utils
 
 
-class QRAMExperiment(BaseExperiment):
+class PNSAExperiment(BaseExperiment):
     def __init__(self, playback_parameters=None, save_raw_data=False):
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
         super().__init__(playback_parameters, save_raw_data)
@@ -144,13 +144,13 @@ class QRAMExperiment(BaseExperiment):
         # MZ balancing:
         self.Balancing_check_window = 2  # [msec]
         self.rep_MZ_scan = int(0.5 * (self.prepulse_duration - self.Shutter_open_time - self.Balancing_check_window)
-                               * 1e6 / len(Config.QRAM_MZ_balance_pulse_Late))
+                               * 1e6 / len(Config.PNSA_MZ_balance_pulse_Late))
         self.rep_MZ_fast_scan = int(
             0.3 * (self.prepulse_duration - self.Shutter_open_time - self.Balancing_check_window)
-            * 1e6 / len(Config.QRAM_MZ_balance_pulse_Late))
+            * 1e6 / len(Config.PNSA_MZ_balance_pulse_Late))
         self.rep_MZ_slow_scan = int(
             0.4 * (self.prepulse_duration - self.Shutter_open_time - self.Balancing_check_window)
-            * 1e6 / len(Config.QRAM_MZ_balance_pulse_Late))
+            * 1e6 / len(Config.PNSA_MZ_balance_pulse_Late))
         self.points_for_sum = 5
         self.points_for_sum_fast = 3
         self.points_for_sum_slow = 4
@@ -168,7 +168,7 @@ class QRAMExperiment(BaseExperiment):
             self.phase_rep_MZ_fast_scan = int(self.rep_MZ_fast_scan / self.points_for_sum_fast)
         self.total_phase_rep_MZ = int(2 * self.phase_rep_MZ)
         self.total_phase_rep_MZ_scan = 2 * self.phase_rep_MZ_fast_scan + self.phase_rep_MZ_slow_scan
-        self.rep_MZ_check = int(self.Balancing_check_window * 1e6 / len(Config.QRAM_MZ_balance_pulse_North))
+        self.rep_MZ_check = int(self.Balancing_check_window * 1e6 / len(Config.PNSA_MZ_balance_pulse_North))
 
         # MW spectroscopy parameters:
         self.MW_start_frequency = int(100e6)  # [Hz]
@@ -362,19 +362,19 @@ class QRAMExperiment(BaseExperiment):
         :param num_of_det_pulses: the number of detection pulses in the sequence.
         :return:
         '''
-        self.num_of_det_reflections_per_seq_S = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_reflections_per_seq_N = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_transmissions_per_seq_S = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_transmissions_per_seq_N = np.zeros(self.number_of_QRAM_sequences)
+        self.num_of_det_reflections_per_seq_S = np.zeros(self.number_of_PNSA_sequences)
+        self.num_of_det_reflections_per_seq_N = np.zeros(self.number_of_PNSA_sequences)
+        self.num_of_det_transmissions_per_seq_S = np.zeros(self.number_of_PNSA_sequences)
+        self.num_of_det_transmissions_per_seq_N = np.zeros(self.number_of_PNSA_sequences)
 
         self.num_of_SPRINT_reflections_per_seq_S = np.zeros(
-            [self.number_of_QRAM_sequences, self.number_of_SPRINT_pulses_per_seq])
+            [self.number_of_PNSA_sequences, self.number_of_SPRINT_pulses_per_seq])
         self.num_of_SPRINT_reflections_per_seq_N = np.zeros(
-            [self.number_of_QRAM_sequences, self.number_of_SPRINT_pulses_per_seq])
+            [self.number_of_PNSA_sequences, self.number_of_SPRINT_pulses_per_seq])
         self.num_of_SPRINT_transmissions_per_seq_S = np.zeros(
-            [self.number_of_QRAM_sequences, self.number_of_SPRINT_pulses_per_seq])
+            [self.number_of_PNSA_sequences, self.number_of_SPRINT_pulses_per_seq])
         self.num_of_SPRINT_transmissions_per_seq_N = np.zeros(
-            [self.number_of_QRAM_sequences, self.number_of_SPRINT_pulses_per_seq])
+            [self.number_of_PNSA_sequences, self.number_of_SPRINT_pulses_per_seq])
 
         # tt_small_perturb = []
         for element in self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure:
@@ -426,10 +426,10 @@ class QRAMExperiment(BaseExperiment):
         :return:
         '''
 
-        self.num_of_det_reflections_per_seq_S = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_reflections_per_seq_N = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_transmissions_per_seq_S = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_transmissions_per_seq_N = np.zeros(self.number_of_QRAM_sequences)
+        self.num_of_det_reflections_per_seq_S = np.zeros(self.number_of_PNSA_sequences)
+        self.num_of_det_reflections_per_seq_N = np.zeros(self.number_of_PNSA_sequences)
+        self.num_of_det_transmissions_per_seq_S = np.zeros(self.number_of_PNSA_sequences)
+        self.num_of_det_transmissions_per_seq_N = np.zeros(self.number_of_PNSA_sequences)
 
         self.num_of_det_reflections_per_seq_S_,\
         self.num_of_det_reflections_per_seq_N_, \
@@ -439,7 +439,7 @@ class QRAMExperiment(BaseExperiment):
                 [
                     [] for _ in range(self.number_of_detection_pulses_per_seq)
                 ]
-                for _ in range(self.number_of_QRAM_sequences)
+                for _ in range(self.number_of_PNSA_sequences)
             ] for _ in range(4)
         ]
 
@@ -451,7 +451,7 @@ class QRAMExperiment(BaseExperiment):
                 [
                     [] for _ in range(self.number_of_SPRINT_pulses_per_seq)
                 ]
-                for _ in range(self.number_of_QRAM_sequences)
+                for _ in range(self.number_of_PNSA_sequences)
             ] for _ in range(4)
         ]
 
@@ -525,11 +525,11 @@ class QRAMExperiment(BaseExperiment):
         :return:
         '''
 
-        # self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences)
-        # self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences // num_of_seq_per_count + 1)
-        self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences // num_of_seq_per_count + 1)
-        self.num_of_S_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences // num_of_seq_per_count + 1)
+        # self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_PNSA_sequences)
+        # self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_PNSA_sequences)
+        self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_PNSA_sequences // num_of_seq_per_count + 1)
+        self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_PNSA_sequences // num_of_seq_per_count + 1)
+        self.num_of_S_counts_per_n_sequences = np.zeros(self.number_of_PNSA_sequences // num_of_seq_per_count + 1)
 
         for element in self.tt_BP_measure:
             tt_inseq = element % self.sequence_len
@@ -537,7 +537,7 @@ class QRAMExperiment(BaseExperiment):
                 # print(element, (element - 1) // (self.sequence_len * num_of_seq_per_count))
                 self.num_of_BP_counts_per_n_sequences[
                     (element - 1) // (self.sequence_len * num_of_seq_per_count)] += \
-                    np.ceil(Config.QRAM_Exp_Square_samples_Late[tt_inseq])
+                    np.ceil(Config.PNSA_Exp_Square_samples_Late[tt_inseq])
 
         for element in self.tt_DP_measure:
             tt_inseq = element % self.sequence_len
@@ -546,7 +546,7 @@ class QRAMExperiment(BaseExperiment):
                 try:
                     self.num_of_DP_counts_per_n_sequences[
                         (element - 1) // (self.sequence_len * num_of_seq_per_count)] += \
-                        np.ceil(Config.QRAM_Exp_Square_samples_Late[tt_inseq])
+                        np.ceil(Config.PNSA_Exp_Square_samples_Late[tt_inseq])
                 except Exception as err:
                     print(err)
 
@@ -558,10 +558,10 @@ class QRAMExperiment(BaseExperiment):
                     # lll = (element - 1) // (self.sequence_len * num_of_seq_per_count)
                     # if (element - 1) // (self.sequence_len * num_of_seq_per_count) > 385:
                     #     lll = 385
-                    # self.num_of_S_counts_per_n_sequences[lll] += np.ceil(Config.QRAM_Exp_Square_samples_Late[tt_inseq])
+                    # self.num_of_S_counts_per_n_sequences[lll] += np.ceil(Config.PNSA_Exp_Square_samples_Late[tt_inseq])
                     self.num_of_S_counts_per_n_sequences[
                         (element - 1) // (self.sequence_len * num_of_seq_per_count)] += \
-                        np.ceil(Config.QRAM_Exp_Square_samples_Late[tt_inseq])
+                        np.ceil(Config.PNSA_Exp_Square_samples_Late[tt_inseq])
                 except Exception as err:
                     print(err)
 
@@ -587,11 +587,11 @@ class QRAMExperiment(BaseExperiment):
 
         num_of_detected_atom = 0
         num_of_sprints = 0
-        detection_pulse_range = np.zeros([self.number_of_QRAM_sequences, num_of_det_pulses], dtype=int)
-        sprint_pulse_range = np.zeros([self.number_of_QRAM_sequences, num_of_sprint_pulses], dtype=int)
+        detection_pulse_range = np.zeros([self.number_of_PNSA_sequences, num_of_det_pulses], dtype=int)
+        sprint_pulse_range = np.zeros([self.number_of_PNSA_sequences, num_of_sprint_pulses], dtype=int)
 
         # define ranges for tt_histogram (a vector that counts number of photons in each pulse)
-        for i in range(self.number_of_QRAM_sequences):
+        for i in range(self.number_of_PNSA_sequences):
             detection_pulse_range[i] = \
                 list(range(i * num_of_pulses, i * num_of_pulses + num_of_det_pulses))
             # sprint pulse range starts from last detection pulse andfo num_of_sprint_pulses
@@ -599,7 +599,7 @@ class QRAMExperiment(BaseExperiment):
                 list(range(int(detection_pulse_range[i][-1]) + 1,
                            int(detection_pulse_range[i][-1]) + 1 + num_of_sprint_pulses))
         # find transits and sprint events
-        for j in range(self.number_of_QRAM_sequences - 2):
+        for j in range(self.number_of_PNSA_sequences - 2):
             if \
                     sum(self.tt_histogram_reflection[detection_pulse_range[j]]) >= detection_condition[0] and \
                             sum(self.tt_histogram_reflection[detection_pulse_range[j + 1]]) >= detection_condition[1]:
@@ -691,7 +691,7 @@ class QRAMExperiment(BaseExperiment):
         current_transit = []
         self.all_transits_seq_indx = []  # Array of the sequence indexes of all recognized transits per cycle. The length of it will be the number of all transits at the current cycle.
 
-        for i in range(self.number_of_QRAM_sequences - len(cond) + 1):
+        for i in range(self.number_of_PNSA_sequences - len(cond) + 1):
             cond_check = (self.num_of_det_reflections_per_seq[i:(i + len(cond))] >= cond).astype(int)
             if sum(cond_check) >= minimum_number_of_seq_detected:
                 # TODO: ask dor (08.01.24) - what happens at [0,4,0]? and why including the middle at [2,0,2]?
@@ -790,7 +790,7 @@ class QRAMExperiment(BaseExperiment):
         for (start, end) in pulses_loc: np.put_along_axis(seq_filter_with_smearing, np.arange(start, end), 1, axis=0)
         return pulses_loc, seq_filter_with_smearing
 
-    def get_pulses_location_in_seq_DEP(self, delay, seq=Config.QRAM_Exp_Gaussian_samples_S,
+    def get_pulses_location_in_seq_DEP(self, delay, seq=Config.PNSA_Exp_Gaussian_samples_S,
                                        smearing=int(Config.num_between_zeros / 2)):
         '''
         A function that uses the original sequence samples that the OPX uses, in order to obtain the location of the
@@ -834,10 +834,10 @@ class QRAMExperiment(BaseExperiment):
     def get_avg_num_of_photons_in_seq_pulses(self, seq, pulse_loc, tt_measure, efficiency):
         avg_num_of_photons_in_seq_pulses = []
         try:
-            real_number_of_seq = math.ceil(max(tt_measure) / len(Config.QRAM_Exp_Gaussian_samples_S))
+            real_number_of_seq = math.ceil(max(tt_measure) / len(Config.PNSA_Exp_Gaussian_samples_S))
             # self.logger.debug('Real number of seq = %d' %real_number_of_seq)
         except:
-            real_number_of_seq = self.number_of_QRAM_sequences
+            real_number_of_seq = self.number_of_PNSA_sequences
             # self.logger.debug('Max number of seq')
         for t in pulse_loc:
             avg_num_of_photons_in_seq_pulses.append((sum(seq[t[0]:t[1]]) + seq[t[1]]) / (
@@ -1400,9 +1400,9 @@ class QRAMExperiment(BaseExperiment):
 
         # Transits per sequence
         if plot_switches['graph-5']:
-            ax[5].plot(range(self.number_of_QRAM_sequences), self.seq_transit_events_batched,
+            ax[5].plot(range(self.number_of_PNSA_sequences), self.seq_transit_events_batched,
                        label='Transit Events Accumulated')
-            ax[5].plot(range(self.number_of_QRAM_sequences), self.seq_transit_events_live, label='Transit Events Live')
+            ax[5].plot(range(self.number_of_PNSA_sequences), self.seq_transit_events_live, label='Transit Events Live')
             ax[5].set(xlabel='Sequence [#]', ylabel='Counts [Photons]')
             ax[5].set_title('Transits per sequence', fontweight="bold")
             ax[5].legend(loc='upper right')
@@ -1417,7 +1417,7 @@ class QRAMExperiment(BaseExperiment):
 
     def init_params_for_experiment(self):
         # define empty variables
-        self.number_of_QRAM_sequences = math.ceil(self.M_window / self.sequence_len)
+        self.number_of_PNSA_sequences = math.ceil(self.M_window / self.sequence_len)
 
         # Reformatting the above variables into an object - (a) for better clarity (b) make it "experiment-agnostic"
         self.experiment = {
@@ -1434,26 +1434,26 @@ class QRAMExperiment(BaseExperiment):
         self.tt_measure = []
         self.tt_S_measure = []
 
-        self.folded_transmission = np.zeros(len(Config.QRAM_Exp_Gaussian_samples_S))
-        self.folded_reflection = np.zeros(len(Config.QRAM_Exp_Gaussian_samples_S))
+        self.folded_transmission = np.zeros(len(Config.PNSA_Exp_Gaussian_samples_S))
+        self.folded_reflection = np.zeros(len(Config.PNSA_Exp_Gaussian_samples_S))
 
-        self.tt_S_binning = np.zeros(self.number_of_QRAM_sequences + 1)
-        self.seq_transit_events_live = np.zeros(self.number_of_QRAM_sequences)
-        self.seq_transit_events_batched = np.zeros(self.number_of_QRAM_sequences)
+        self.tt_S_binning = np.zeros(self.number_of_PNSA_sequences + 1)
+        self.seq_transit_events_live = np.zeros(self.number_of_PNSA_sequences)
+        self.seq_transit_events_batched = np.zeros(self.number_of_PNSA_sequences)
         self.tt_S_SPRINT_events = np.zeros(self.sequence_len)
         self.tt_S_SPRINT_events_batch = np.zeros(self.sequence_len)
-        self.num_of_det_reflections_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_transmissions_per_seq_accumulated = np.zeros(self.number_of_QRAM_sequences)
+        self.num_of_det_reflections_per_seq_accumulated = np.zeros(self.number_of_PNSA_sequences)
+        self.num_of_det_transmissions_per_seq_accumulated = np.zeros(self.number_of_PNSA_sequences)
 
         num_of_seq_per_count = 50
-        self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences//num_of_seq_per_count)
-        self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences//num_of_seq_per_count)
-        self.num_of_S_counts_per_n_sequences = np.zeros(self.number_of_QRAM_sequences//num_of_seq_per_count)
+        self.num_of_BP_counts_per_n_sequences = np.zeros(self.number_of_PNSA_sequences//num_of_seq_per_count)
+        self.num_of_DP_counts_per_n_sequences = np.zeros(self.number_of_PNSA_sequences//num_of_seq_per_count)
+        self.num_of_S_counts_per_n_sequences = np.zeros(self.number_of_PNSA_sequences//num_of_seq_per_count)
 
-        self.num_of_det_reflections_per_seq_S = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_reflections_per_seq_N = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_transmissions_per_seq_S = np.zeros(self.number_of_QRAM_sequences)
-        self.num_of_det_transmissions_per_seq_N = np.zeros(self.number_of_QRAM_sequences)
+        self.num_of_det_reflections_per_seq_S = np.zeros(self.number_of_PNSA_sequences)
+        self.num_of_det_reflections_per_seq_N = np.zeros(self.number_of_PNSA_sequences)
+        self.num_of_det_transmissions_per_seq_S = np.zeros(self.number_of_PNSA_sequences)
+        self.num_of_det_transmissions_per_seq_N = np.zeros(self.number_of_PNSA_sequences)
 
         self.seq_with_data_points = []
         self.reflection_SPRINT_data = []  # Array of vectors with data on the number of reflections per SPRINT pulse in sequence.
@@ -1568,7 +1568,7 @@ class QRAMExperiment(BaseExperiment):
         # self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_N \
         #                                            + self.num_of_SPRINT_transmissions_per_seq_S
         self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(self.reflection_threshold_time // len(
-            Config.QRAM_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
+            Config.PNSA_Exp_Gaussian_samples_S)):])  # summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
 
         # fold reflections and transmission
         self.fold_tt_histogram(exp_sequence_len=self.sequence_len)
@@ -1639,7 +1639,7 @@ class QRAMExperiment(BaseExperiment):
         pass
 
     # TODO: Refactor/Rename (this method analyzes the results)
-    def Save_SNSPDs_QRAM_Measurement_with_tt(self, N, sequence_len, pre_comment, lock_err_threshold, desired_k_ex,
+    def Save_SNSPDs_PNSA_Measurement_with_tt(self, N, sequence_len, pre_comment, lock_err_threshold, desired_k_ex,
                                              k_ex_err,
                                              transit_condition,
                                              max_probe_counts, filter_delay, reflection_threshold,
@@ -1709,25 +1709,25 @@ class QRAMExperiment(BaseExperiment):
 
         # TODO: Q: we used to rely on this: "int(Config.num_between_zeros/2)" - why aren't we anymore?
         self.pulses_location_in_seq, self.filter_gen = self.get_pulses_location_in_seq(0,
-                                                                                       Config.QRAM_Exp_Gaussian_samples_General,
+                                                                                       Config.PNSA_Exp_Gaussian_samples_General,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
         self.pulses_location_in_seq_S, self.filter_S = self.get_pulses_location_in_seq(filter_delay[0],
-                                                                                       Config.QRAM_Exp_Gaussian_samples_S,
+                                                                                       Config.PNSA_Exp_Gaussian_samples_S,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
         # TODO: Q: Why are we fixing the Gaussian here?
-        self.QRAM_Exp_Gaussian_samples_N = Config.QRAM_Exp_Gaussian_samples_N
+        self.PNSA_Exp_Gaussian_samples_N = Config.PNSA_Exp_Gaussian_samples_N
         # TODO: what the hell did I use it for?!
-        # self.QRAM_Exp_Gaussian_samples_N[self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]] = \
-        #     (np.array(Config.QRAM_Exp_Gaussian_samples_N[
+        # self.PNSA_Exp_Gaussian_samples_N[self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]] = \
+        #     (np.array(Config.PNSA_Exp_Gaussian_samples_N[
         #               self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]]) + \
-        #      np.array(Config.QRAM_Exp_Gaussian_samples_General[
+        #      np.array(Config.PNSA_Exp_Gaussian_samples_General[
         #               self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]]) * \
         #      Config.sprint_pulse_amp_Early[0]).tolist()
         self.pulses_location_in_seq_N, self.filter_N = self.get_pulses_location_in_seq(filter_delay[1],
-                                                                                       self.QRAM_Exp_Gaussian_samples_N,
+                                                                                       self.PNSA_Exp_Gaussian_samples_N,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
         self.pulses_location_in_seq_A, self.filter_A = self.get_pulses_location_in_seq(filter_delay[2],
-                                                                                       Config.QRAM_Exp_Gaussian_samples_Ancilla,
+                                                                                       Config.PNSA_Exp_Gaussian_samples_Ancilla,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
         # Get experiment type: (Added by Dor, Sorry for the mess)
         self.sorted_pulses = sorted([tup + ('N',) for tup in self.pulses_location_in_seq_N if
@@ -1754,10 +1754,10 @@ class QRAMExperiment(BaseExperiment):
         self.number_of_detection_pulses_per_seq, self.number_of_SPRINT_pulses_per_seq = self.number_of_pulses_per_seq()
 
         # Take the 2nd number in the last tuple (which is the time of the last pulse)
-        # TODO: uncomment this for QRAM
+        # TODO: uncomment this for PNSA
         # self.end_of_det_pulse_in_seq = self.pulses_location_in_seq[self.num_of_detection_pulses - 1][1]
         # TODO: give dor box babeten - and then go back to the commented line
-        self.end_of_det_pulse_in_seq = self.pulses_location_in_seq[self.num_of_detection_pulses - 1][1]+6 # 6 only relevant for sprint - not QRAM!
+        self.end_of_det_pulse_in_seq = self.pulses_location_in_seq[self.num_of_detection_pulses - 1][1]+6 # 6 only relevant for sprint - not PNSA!
 
         # Start experiment flag and set MOT according to flag
         self.updateValue("Experiment_Switch", True)
@@ -1772,116 +1772,8 @@ class QRAMExperiment(BaseExperiment):
         # Associate the streams filled in OPX (FPGA) code with result handles
         self.get_handles_from_OPX_server()
 
-        ############################# WHILE 1 - START #############################
-
-        # TODO: remove the "old" warmup loop
-        WARMUP_CYCLES = -1
-        cycle = 0
+        # Initialize threasholds and flags before we start
         self.sum_for_threshold = self.reflection_threshold
-        while exp_flag and (cycle < WARMUP_CYCLES or self.sum_for_threshold > self.reflection_threshold):
-
-            if self.keyPress == 'ESC':
-                self.logger.blue('ESC pressed. Stopping measurement.')
-                self.updateValue("Experiment_Switch", False)
-                self.MOT_switch(True)
-                self.update_parameters()
-                break
-
-            # -------------------------------------------
-            # Deal with the time-tags and counts
-            # -------------------------------------------
-
-            # Filter/Manipulate the values we got
-            self.get_results_from_streams()
-            self.ingest_time_tags()
-
-            # TODO: Review:
-            # TODO: The below calls come instead of:          self.divide_tt_to_reflection_trans(...)
-
-            buckets = Utils.bucket_timetags(
-                timetags=self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure,
-                window_size=self.experiment["sequence_length"],  # [ns]
-                buckets_number=self.experiment["number_of_sequences"],
-                start_time=int(0.6e6),
-                end_time=int(self.experiment["measurement_window"] - 0.4e6),
-                filters=[{"name": "reflections_south", "filter": self.filter_S},
-                         {"name": "transmissions_north", "filter": self.filter_N}])
-
-            self.num_of_det_reflections_per_seq_S = buckets["reflections_south"]["counts"]
-            self.num_of_det_transmissions_per_seq_N = buckets["transmissions_north"]["counts"]
-
-            buckets = Utils.bucket_timetags(
-                timetags=self.tt_S_measure + self.tt_FS_measure,
-                window_size=self.experiment["sequence_length"],  # [ns]
-                buckets_number=self.experiment["number_of_sequences"],
-                start_time=int(0.6e6),
-                end_time=int(self.experiment["measurement_window"] - 0.4e6),
-                filters=[{"name": "reflections_north", "filter": self.filter_N},
-                         {"name": "transmissions_south", "filter": self.filter_S}])
-
-            self.num_of_det_reflections_per_seq_N = buckets["reflections_north"]["counts"]
-            self.num_of_det_transmissions_per_seq_S = buckets["transmissions_south"]["counts"]
-
-            # self.divide_tt_to_reflection_trans(self.sprint_pulse_len, self.num_of_detection_pulses)
-
-            # TODO: Review:
-            # TODO: The below calls come instead of:          self.divide_BP_and_DP_counts(50)
-            buckets = Utils.bucket_timetags(
-                timetags=self.tt_BP_measure,
-                window_size=self.experiment["sequence_length"],  # [ns]
-                buckets_number=self.experiment["number_of_sequences"] // 50,
-                start_time=self.end_of_det_pulse_in_seq,
-                filters=[{"name": "BP_counts_per_n_sequences", "filter": np.ceil(Config.QRAM_Exp_Square_samples_Late)}]
-            )
-            self.num_of_BP_counts_per_n_sequences = buckets["BP_counts_per_n_sequences"]["counts"]
-
-            buckets = Utils.bucket_timetags(
-                timetags=self.tt_DP_measure,
-                window_size=self.experiment["sequence_length"],  # [ns]
-                buckets_number=self.experiment["number_of_sequences"] // 50,
-                start_time=self.end_of_det_pulse_in_seq,
-                filters=[{"name": "DP_counts_per_n_sequences", "filter": np.ceil(Config.QRAM_Exp_Square_samples_Late)}]
-            )
-            self.num_of_DP_counts_per_n_sequences = buckets["DP_counts_per_n_sequences"]["counts"]
-
-            buckets = Utils.bucket_timetags(
-                timetags=self.tt_FS_measure + self.tt_S_measure,
-                window_size=self.experiment["sequence_length"],  # [ns]
-                buckets_number=self.experiment["number_of_sequences"] // 50,
-                start_time=self.end_of_det_pulse_in_seq,
-                filters=[{"name": "S_counts_per_n_sequences", "filter": np.ceil(Config.QRAM_Exp_Square_samples_Late)}]
-            )
-            self.num_of_S_counts_per_n_sequences = buckets["S_counts_per_n_sequences"]["counts"]
-
-            # self.divide_BP_and_DP_counts(50)
-
-            self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
-                                                  + self.num_of_det_reflections_per_seq_N
-            self.num_of_det_transmissions_per_seq = self.num_of_det_transmissions_per_seq_S \
-                                                    + self.num_of_det_transmissions_per_seq_N
-            # self.num_of_SPRINT_reflections_per_seq = self.num_of_SPRINT_reflections_per_seq_S \
-            #                                          + self.num_of_SPRINT_reflections_per_seq_N
-            # self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_S \
-            #                                            + self.num_of_SPRINT_transmissions_per_seq_N
-
-            # Summing over the reflection from detection pulses of each sequence corresponding to the reflection_threshold_time
-            self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[
-                                         -int(self.reflection_threshold_time // len(Config.QRAM_Exp_Gaussian_samples_S)):])
-
-            # Check locking error, break if we are above threshold
-            self.lock_err = (lock_err_threshold / 2) if exp_flag else self._read_locking_error()
-            self.k_ex = (lock_err_threshold / 2) if exp_flag else self._read_k_ex()
-            self.logger.debug(f'{self.lock_err}, {self.lock_err > lock_err_threshold}, {self.sum_for_threshold}')
-
-            #TODO: is this bug? should be oppoisite? @dror
-            if self.lock_err > lock_err_threshold:
-                break
-            cycle += 1
-
-        ############################# WHILE 1 - END #############################
-
-        ####    end get tt and counts from OPX to python   #####
-
         self.acquisition_flag = True
         self.threshold_flag = True
         self.pause_flag = False
@@ -1964,7 +1856,7 @@ class QRAMExperiment(BaseExperiment):
                 self.num_of_det_transmissions_per_seq_accumulated += self.num_of_det_transmissions_per_seq_S \
                                                                      + self.num_of_det_transmissions_per_seq_N
 
-                self.seq_transit_events_live = np.zeros(self.number_of_QRAM_sequences)
+                self.seq_transit_events_live = np.zeros(self.number_of_PNSA_sequences)
 
                 ### Find transits and build histogram:  ###
                 # self.find_transits_and_sprint_events_changed(cond=self.transit_condition, minimum_number_of_seq_detected=2)
@@ -1982,7 +1874,7 @@ class QRAMExperiment(BaseExperiment):
 
                 # Analyze SPRINT data when no transit occur:
                 self.all_seq_without_transits = [
-                    np.delete(np.arange(0, self.number_of_QRAM_sequences, 1, dtype='int'),
+                    np.delete(np.arange(0, self.number_of_PNSA_sequences, 1, dtype='int'),
                               sum(self.all_transits_seq_indx, [])).tolist()
                 ]
                 _, self.reflection_SPRINT_data_without_transits, self.transmission_SPRINT_data_without_transits = \
@@ -2107,11 +1999,11 @@ class QRAMExperiment(BaseExperiment):
 
         # Save all other files
         results = {
-            "early_sequence": Config.QRAM_Exp_Square_samples_Early,  #Config.QRAM_Exp_Gaussian_samples_Early,
-            "late_sequence": Config.QRAM_Exp_Square_samples_Late,  #Config.QRAM_Exp_Gaussian_samples_Late,
-            "north_sequence": Config.QRAM_Exp_Gaussian_samples_N,
-            "south_sequence": Config.QRAM_Exp_Gaussian_samples_S,
-            "fs_sequence": (1-np.array(Config.QRAM_Exp_Square_samples_FS)).tolist(),  #Config.QRAM_Exp_Square_samples_FS,
+            "early_sequence": Config.PNSA_Exp_Square_samples_Early,  #Config.PNSA_Exp_Gaussian_samples_Early,
+            "late_sequence": Config.PNSA_Exp_Square_samples_Late,  #Config.PNSA_Exp_Gaussian_samples_Late,
+            "north_sequence": Config.PNSA_Exp_Gaussian_samples_N,
+            "south_sequence": Config.PNSA_Exp_Gaussian_samples_S,
+            "fs_sequence": (1-np.array(Config.PNSA_Exp_Square_samples_FS)).tolist(),  #Config.PNSA_Exp_Square_samples_FS,
             "pulses_location": self.sorted_pulses,
 
             "tt_measure_batch": self.batcher['tt_measure_batch'],
@@ -2222,7 +2114,7 @@ class QRAMExperiment(BaseExperiment):
         self.num_of_det_transmissions_per_seq = self.num_of_det_transmissions_per_seq_S + self.num_of_det_transmissions_per_seq_N
 
         # Summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
-        self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(self.reflection_threshold_time // len(Config.QRAM_Exp_Gaussian_samples_S)):])
+        self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(self.reflection_threshold_time // len(Config.PNSA_Exp_Gaussian_samples_S)):])
 
         # Check if conditions have been met for the completion of the warm-up phase
         warm_up_phase_complete = self.is_warm_up_phase_complete()
@@ -2275,7 +2167,7 @@ class QRAMExperiment(BaseExperiment):
         self.divide_to_reflection_trans(sprint_pulse_len=self.sprint_pulse_len,
                                         num_of_det_pulses=len(Config.det_pulse_amp_S),
                                         num_of_sprint_pulses=len(Config.sprint_pulse_amp_S),
-                                        num_of_sprint_sequences=self.number_of_QRAM_sequences)
+                                        num_of_sprint_sequences=self.number_of_PNSA_sequences)
 
         # TODO: needed?
         self.tt_S_SPRINT_events = np.zeros(self.sequence_len)
@@ -2391,10 +2283,10 @@ class QRAMExperiment(BaseExperiment):
         self.MOT_switch(rp['with_atoms'])
         self.update_parameters()
 
-        # TODO: Q: Config.QRAM_Exp_Gaussian_samples_S is constructed in a function, using the parameter "sprint_pulse_len" - so why not use it here?
+        # TODO: Q: Config.PNSA_Exp_Gaussian_samples_S is constructed in a function, using the parameter "sprint_pulse_len" - so why not use it here?
         # TODO: Q: (a) we don't want to use duplicate variables holding the same value, (b) it mentions "samples_S" - but it's the same for "N" as well...
-        run_status = self.Save_SNSPDs_QRAM_Measurement_with_tt(N=rp['N'],
-                                                  sequence_len=len(Config.QRAM_Exp_Square_samples_Late),
+        run_status = self.Save_SNSPDs_PNSA_Measurement_with_tt(N=rp['N'],
+                                                  sequence_len=len(Config.PNSA_Exp_Square_samples_Late),
                                                   pre_comment=rp['pre_comment'],
                                                   lock_err_threshold=rp['lock_err_threshold'],
                                                   desired_k_ex=rp['desired_k_ex'],
@@ -2466,7 +2358,7 @@ if __name__ == "__main__":
         ]
     }
 
-    experiment = QRAMExperiment(playback_parameters=playback_parameters, save_raw_data=False)
+    experiment = PNSAExperiment(playback_parameters=playback_parameters, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
     sequence_definitions = None

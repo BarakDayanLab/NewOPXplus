@@ -76,6 +76,9 @@ class BDStreams:
 
     # TODO: complete this:
     def load_entire_folder(self, playback_files_path):
+        """
+        Iterates over all files in folder and loads them
+        """
 
         # Clean all streams
         self.clean_streams()
@@ -87,6 +90,41 @@ class BDStreams:
         for playback_file in playback_files:
             self.load_streams(os.path.join(playback_files_path,playback_file))
 
+        pass
+
+    def load_streams_enhanced(self, data_file):
+
+        # Open the binary file
+        with open(data_file, 'rb') as file:
+
+            try:
+                bytes = file.read(4)
+                bytes_unpacked = struct.unpack('>i', bytes)[0]
+                current_time = int(bytes_unpacked)
+                number_of_streams = int(struct.unpack('>b', file.read(1))[0])
+                for i in range(0, number_of_streams):
+
+                    # Get stream name len
+                    name_len = struct.unpack(f'>I', file.read(4))[0]
+                    name = struct.unpack(f'>{name_len}s', file.read(name_len))[0]
+
+                    # Get stream data
+                    sz = struct.calcsize(f'>{stream["binary"]}')
+                    data_len = struct.unpack('>H', file.read(2))[0]
+                    data = struct.unpack(f'>{data_len}{stream["binary"]}', file.read(data_len*sz))[0]
+
+                    # Append the data we got to all rows
+                    stream = self.streams_defs[name]
+                    if 'all_rows' not in stream:  # If it's the first results we're adding, create a new array
+                        stream['all_rows'] = [data]
+                    else:
+                        stream['all_rows'].append(data)
+
+                    stream['timestamp'] = current_time
+
+            except Exception as err:
+                print(err)
+                pass
         pass
 
     def load_streams(self, data_file):
@@ -139,47 +177,71 @@ class BDStreams:
                 pass
         pass
 
-    def load_streams_from_a_single_file(self):
+    def _data_to_list(self, data):
+        """
+        If data is ndarray --> list
+        If data is int --> list
+        If data is list --> list
+        """
+        if type(data) is np.ndarray:
+            return data.tolist()
+        elif type(data) != list and (type(data) == int or type(data) == float):
+            return [data]
+        return data
 
-        # Create an array of stream names (because we'll be working with indices)
-        stream_names = list(self.streams_defs.keys())
+    def save_streams_enhanced(self):
+        """
 
-        # Initialize the file position and size for the reading loop
-        file_position = 0
-        file_size = os.stat(self.save_name).st_size
+                        +-----------------+-------------+
+        Stream Name ==> | Stream Name Len | Stream Name |
+                        +-----------------+-------------+
 
-        # Open the binary file
-        with open(self.save_name, 'rb') as file:
+                        +-----------------+-------------+
+        Stream Data ==> | Stream Data Len | Stream Data +
+                        +-----------------+-------------+
 
-            # Iterate while we still have something to read
-            while file_position < file_size:
+        +-----------+-------------+---------------+---------------+-------+---------------+---------------+
+        + Timestamp | Num Streams | Stream-1 Name | Stream-1 Data | ..... | Stream-N Name | Stream-N Data |
+        +-----------+-------------+---------------+---------------+-------+---------------+---------------+
 
-                number_of_streams = int(struct.unpack('>b', file.read(1))[0])
-                for i in range(0, number_of_streams):
-                    stream_name = stream_names[i]
-                    stream = self.streams_defs[stream_name]
-                    stream_data_len = int(struct.unpack('I', file.read(4))[0])
-                    type_func = Utils.type_string_to_type_function(self.streams_defs[stream_name]['type'])
+        """
+        if self.streams_defs is None:
+            print('No streams defined - nothing to save! Ignoring')
+            return
 
-                    # Read the data of stream
-                    results = []
-                    for j in range(0, stream_data_len):
-                        # Get the value
-                        sz = struct.calcsize(f'>{stream["binary"]}')
-                        val = struct.unpack(f'>{stream["binary"]}', file.read(sz))[0]
-                        # Cast it
-                        val = type_func(val)
-                        # Keep it
-                        results.append(val)
+        current_time = time.time()
+        bytes_array = []
 
-                    # If its the first results we're adding, create a new array
-                    if 'all_rows' not in self.streams_defs[stream_name]:
-                        self.streams_defs[stream_name]['all_rows'] = []
+        try:
+            # Get only those streams that their configuration indicates they need to be saved
+            streams_to_save = [s for s in self.streams_defs.values() if 'save_raw' in s and s['save_raw']]
 
-                    # Append it to all rows
-                    self.streams_defs[stream_name]['all_rows'].append(self.streams_defs[stream_name]['all_rows'])
+            # Start packing the data with 'b' (1-byte=unsigned-char) for number of streams
+            bytes_array += struct.pack('>ib', int(current_time), len(streams_to_save))
 
-                file_position = file.tell()
+            # Iterate over all streams and pack their name and data
+            for stream in streams_to_save:
+
+                # Pack the name (I=unsigned int for len and then name)
+                name = stream['name']
+                bytes_array += struct.pack(f'>I{len(name)}s', len(name), name)
+
+                # Pack the data
+                data = [] if stream['handler'] is None else stream['results']
+                bytes_array += struct.pack(f'>H{len(data)}{stream["binary"]}', len(data), data)
+
+        except Exception as err:
+            print(f'Failed to save raw data: {err}')
+
+        time_formatted = time.strftime("%Y%m%d_%H%M%S")
+        save_name = os.path.join(self.save_path, f'{time_formatted}_streams.dat')
+
+        with open(save_name, "wb") as file:
+            file.write(bytes_array)
+
+        self.number_of_rows_saved += 1
+
+        total_prep_time = time.time() - current_time
         pass
 
     def save_streams(self):
@@ -194,6 +256,7 @@ class BDStreams:
         +-----------+-------------+--------------+---------------+-------+--------------+---------------+
         + Timestamp + Num Streams | Stream-1 Len | Stream 1 Data | ..... | Stream-N Len | Stream-N Data |
         +-----------+-------------+--------------+---------------+-------+--------------+---------------+
+
         """
         if self.streams_defs is None:
             print('No streams defined - nothing to save! Ignoring')
@@ -210,12 +273,10 @@ class BDStreams:
             for stream in streams_to_save:
 
                 data = [] if stream['handler'] is None else stream['results']
+
                 # TODO: when we save the data correctly, we should not need this, as everything will be arrays
                 # TODO: unlike now where FLR is saved as a single float value
-                if type(data) is np.ndarray:
-                    data = data.tolist()
-                elif type(data) != list:
-                    data = [data]
+                data = self._data_to_list(data)
 
                 # Pack the data with: (a) 'H'=2-bytes-Unsigned Short for stream size (b) 'I'=4-bytes-Unsigned int for stream data
                 data = [len(data)] + data
@@ -234,47 +295,4 @@ class BDStreams:
         self.number_of_rows_saved += 1
 
         total_prep_time = time.time() - current_time
-
-        pass
-
-    # TODO: this method needs to be refactored - to use the code written in the save_stream() method
-    def save_streams_append(self):
-        """
-        Iterate over all streams and append to file
-        Structure of binary file:
-        - Records, each holding the Number of Streams
-        - Then, for each stream, the size of it
-        - The sttream data
-        """
-        if self.streams_defs is None:
-            print('No streams defined - nothing to save! Ignoring')
-            return
-
-        if self.file is None:
-            self.file = open(self.save_name, 'ab')
-
-        start_save_time = time.time()
-
-        all_data = []
-        for stream in self.streams_defs.values():
-            data = [] if stream['handler'] is None else stream['results']
-            # TODO: when we save the data correctly, we should not need this, as everything will be arrays
-            # TODO: unlike now where FLR is saved as a single float value
-            if type(data) != list:
-                data = [data]
-            all_data = all_data + [len(data)] + data
-        # Write number of streams in "line" of data and then the stream data itself
-        all_data = [len(self.streams_defs)] + all_data
-
-        # TODO: make this more compact - like we do today in the save_file method - take struct.pack code from there.
-        fmt = f'{len(all_data)}d'  # Double
-        self.file.write(struct.pack(fmt, *all_data))
-
-        # TODO: We can decide to flush every few cycles and not every save
-        self.file.flush()
-
-        self.number_of_rows_saved += 1
-
-        total_prep_time = time.time() - start_save_time
-
         pass
