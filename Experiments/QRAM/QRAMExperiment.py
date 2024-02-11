@@ -722,8 +722,12 @@ class QRAMExperiment(BaseExperiment):
 
     def analyze_SPRINT_data_points(self, all_transits_seq_indx, SPRINT_pulse_number=1, background=False):
         '''
-        Find the relevent data points for SPRINT pulse and analyze results.
-        :param SPRINT_pulse_number: The SPRINT pulse number for which we want to check the results
+        For a given vector of sequence indexes, find the relevant data points for SPRINT pulse and analyze results.
+        :param all_transits_seq_indx: The vector of indexes of sequences that need to be analyzed.
+        :param SPRINT_pulse_number: The SPRINT pulse number for which we want to check the results.
+        :param background: If the check is for background data and not for actual transits, the "potential data" check,
+                           for which we condition the relevance of the data if we get at least 1 reflection from the
+                           last detection pulse, is irrelevant.
         '''
         reflection_SPRINT_data = []  # Array of vectors with data on the number of reflections per SPRINT pulse in sequence.
         transmission_SPRINT_data = []  # Array of vectors with data on the number of transmissions per SPRINT pulse in sequence.
@@ -735,10 +739,10 @@ class QRAMExperiment(BaseExperiment):
                     # detection pulse:
                     potential_data = False if not background else True
                     if self.sorted_pulses[self.number_of_detection_pulses_per_seq-1][2] == 'N' and \
-                       len(self.num_of_det_reflections_per_seq_N_[seq_indx][-1]) == 1:
+                       len(self.num_of_det_reflections_per_seq_N_[seq_indx][-1]) >= 1:
                         potential_data = True
                     elif self.sorted_pulses[self.number_of_detection_pulses_per_seq-1][2] == 'S' and \
-                            len(self.num_of_det_reflections_per_seq_S_[seq_indx][-1]) == 1:
+                            len(self.num_of_det_reflections_per_seq_S_[seq_indx][-1]) >= 1:
                         potential_data = True
                     # Getting SPRINT data if the SPRINT pulse has one photon in the reflection or transmission
                     if potential_data and len(self.sorted_pulses) > self.number_of_detection_pulses_per_seq:
