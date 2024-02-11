@@ -2058,6 +2058,8 @@ class QRAMExperiment(BaseExperiment):
             self.logger.info(f'User Terminated the measurements after {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.ERROR:
             self.logger.info(f'Error Terminated the measurements after {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
+        elif self.runs_status == TerminationReason.PLAYBACK_END:
+            self.logger.info(f'Run Terminated - completed all recorded playback data after {self.counter} Runs')
 
         # Adding comment to measurement [prompt whether stopped or finished regularly]
         aft_comment = 'Ignore'
@@ -2425,8 +2427,8 @@ if __name__ == "__main__":
     playback_parameters = {
         "active": False,
         #"playback_files_path": "<put here path to folder where playback files reside"  # r'C:\temp\streams_raw_data'
-        #'playback_files_path': '"C:\\temp\\playback_data\\QRAM\\20231225\\165550_Photon_TimeTags"'
-        "old_format": True,
+        'playback_files_path': 'C:\\temp\\streams_raw_data',
+        "old_format": False,
         "save_results": False,
         "plot": "LIVE",  # "LIVE", "LAST", "NONE"
         "delay": -1,  # -1,  # 0.5,  # In seconds. Use -1 for not playback delay
@@ -2469,7 +2471,7 @@ if __name__ == "__main__":
         ]
     }
 
-    experiment = QRAMExperiment(playback_parameters=playback_parameters, save_raw_data=False)
+    experiment = QRAMExperiment(playback_parameters=playback_parameters, save_raw_data=True)
 
     # TODO: REMOVE, for debug only
     sequence_definitions = None

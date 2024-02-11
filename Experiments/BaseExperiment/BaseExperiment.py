@@ -734,7 +734,7 @@ class BaseExperiment:
 
         # Save streams to file
         if self.save_raw_data:
-            self.bdstreams.save_streams()
+            self.bdstreams.save_streams_enhanced()
 
         pass
 
@@ -749,6 +749,10 @@ class BaseExperiment:
         # Advance all streams to hold the next data row from all_rows
         row = self.playback['row_count']
         for stream in self.streams.values():
+
+            if 'helm' in stream['name']:
+                continue
+
             #if stream['save_raw'] and 'all_rows' in stream:
             if 'all_rows' in stream:
 

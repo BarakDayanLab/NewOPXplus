@@ -2,6 +2,7 @@ import os
 import time
 import struct
 import numpy as np
+from io import BytesIO
 from Utilities.Utils import Utils
 
 # -------------------------------------------------------------------------------------------------------
@@ -80,7 +81,8 @@ class BDStreams:
 
         # Iterate over all files in folder
         for playback_file in playback_files:
-            self.load_streams(os.path.join(playback_files_path,playback_file))
+            self.load_streams_enhanced(os.path.join(playback_files_path,playback_file))
+
 
         pass
 
@@ -96,21 +98,25 @@ class BDStreams:
                 number_of_streams = int(struct.unpack('>b', file.read(1))[0])
                 for i in range(0, number_of_streams):
 
-                    # Get stream name len
+                    # Get stream name len and then name
                     name_len = struct.unpack(f'>I', file.read(4))[0]
                     name = struct.unpack(f'>{name_len}s', file.read(name_len))[0]
+                    name = name.decode()
 
-                    # Get stream data
-                    sz = struct.calcsize(f'>{stream["binary"]}')
-                    data_len = struct.unpack('>H', file.read(2))[0]
-                    data = struct.unpack(f'>{data_len}{stream["binary"]}', file.read(data_len*sz))[0]
+                    # Get data len and then data
+                    data_len = struct.unpack('>I', file.read(4))[0]
+                    data_bytes = file.read(data_len)
+
+                    # Reconstruct the numpy array from bytes
+                    load_bytes = BytesIO(data_bytes)
+                    loaded_np = np.load(load_bytes, allow_pickle=True)
 
                     # Append the data we got to all rows
                     stream = self.streams_defs[name]
                     if 'all_rows' not in stream:  # If it's the first results we're adding, create a new array
-                        stream['all_rows'] = [data]
+                        stream['all_rows'] = [loaded_np]
                     else:
-                        stream['all_rows'].append(data)
+                        stream['all_rows'].append(loaded_np)
 
                     stream['timestamp'] = current_time
 
@@ -202,7 +208,7 @@ class BDStreams:
             return
 
         current_time = time.time()
-        bytes_array = []
+        bytes_array = bytearray()
 
         try:
             # Get only those streams that their configuration indicates they need to be saved
@@ -216,11 +222,18 @@ class BDStreams:
 
                 # Pack the name (I=unsigned int for len and then name)
                 name = stream['name']
-                bytes_array += struct.pack(f'>I{len(name)}s', len(name), name)
+                bytes_array += struct.pack(f'>I{len(name)}s', len(name), bytes(name, 'utf-8'))
 
                 # Pack the data
                 data = [] if stream['handler'] is None else stream['results']
-                bytes_array += struct.pack(f'>H{len(data)}{stream["binary"]}', len(data), data)
+
+                # Save in to BytesIo buffer
+                np_bytes = BytesIO()
+                np.save(np_bytes, data, allow_pickle=True)
+
+                # get bytes value
+                np_bytes = np_bytes.getvalue()
+                bytes_array += (struct.pack(f'>I', len(np_bytes)) + np_bytes)
 
         except Exception as err:
             print(f'Failed to save raw data: {err}')
