@@ -19,7 +19,7 @@ _m = 1.443e-25  #[Kg] of Rb87
 
 class CoolingSequenceOptimizer(BaseExperiment):
 
-    def __init__(self,playback=False, save_raw_data=False):
+    def __init__(self, playback=False, save_raw_data=False):
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
         super().__init__(playback, save_raw_data)
         pass
@@ -470,7 +470,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
 if __name__ == "__main__":
 
     # Initiate the experiment
-    experiment = CoolingSequenceOptimizer()
+    experiment = CoolingSequenceOptimizer(playback=None)
 
     # Display menu to get action
     selection = BDMenu(experiment, r'./menu.json', None).display()
