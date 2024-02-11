@@ -26,18 +26,10 @@ class BDStreams:
         self.streams_defs = streams
         self.number_of_rows_saved = 0
 
-        # The file handle for cases we would like to write all to a singel file
-        self.file = None
-
         pass
 
     def __del__(self):
-        self.close_file()
-
-    def close_file(self):
-        if self.file is not None:
-            self.file.close()
-            self.file = None
+        pass
 
     def set_streams_definitions(self, streams):
         self.streams_defs = streams

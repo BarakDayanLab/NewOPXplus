@@ -749,7 +749,9 @@ class BaseExperiment:
         # Advance all streams to hold the next data row from all_rows
         row = self.playback['row_count']
         for stream in self.streams.values():
-            if stream['save_raw'] and 'all_rows' in stream:
+            #if stream['save_raw'] and 'all_rows' in stream:
+            if 'all_rows' in stream:
+
                 # If there's no more playback data on this stream, we request to terminate experiment
                 if row == len(stream['all_rows']):
                     self.runs_status = TerminationReason.PLAYBACK_END
@@ -769,13 +771,21 @@ class BaseExperiment:
 
     def load_data_for_playback(self):
 
-        load_old_files = False
-        if load_old_files:
-            self.load_data_for_playback__old_files()
+        # Get the path for the playback files - either from playback parameters or from json definitions:
+        playback_files_path = self.bd_results.get_custom_root('playback_data')
+        if 'playback_files_path' in self.playback and self.playback['playback_files_path'] is not None:
+            playback_files_path = self.playback['playback_files_path']
 
-        playback_files_path = r'C:\temp\streams_raw_data'
-        self.bdstreams.load_entire_folder(playback_files_path)
-        pass
+        # Take time
+        start_load_time = time.time()
+
+        # Choose what format we should load:
+        if self.playback['old_format']:
+            self.load_data_for_playback_using_old_format(playback_files_path)
+        else:
+            self.bdstreams.load_entire_folder(playback_files_path)
+
+        self.info(f'Finished load playback files. Took {time.time()-start_load_time} seconds')
 
     def get_results_from_streams(self, playback=False):
         """

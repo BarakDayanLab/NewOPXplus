@@ -970,15 +970,13 @@ class QRAMExperiment(BaseExperiment):
             })
         return merged_array
 
-    def load_data_for_playback__old_files(self):
+    def load_data_for_playback_using_old_format(self, playback_files_path):
         """
         This function loads relevant data saved in previous experiments
         and re-constructs the original streams raw data.
         (the raw data will serve for the playback runs)
         """
-        playback_folder = self.bd_results.get_custom_root('playback_data')
-
-        # TODO: try/raise on all - to catch cases where data file is missing!
+        # TODO: try/raise on all - to catch cases where any one of the data files is missing!
 
         # Iterate over all stream and load detectors data from the relevant file
         for stream in self.streams.values():
@@ -987,7 +985,7 @@ class QRAMExperiment(BaseExperiment):
                 stream['handler'] = 'playback: data loaded!'  # Mark the stream as loaded
                 if stream['name'].startswith('Detector_'):
                     # Load the file and add first element with the size
-                    data_file = os.path.join(playback_folder, 'AllDetectors', stream['playback'])
+                    data_file = os.path.join(playback_files_path, 'AllDetectors', stream['playback'])
                     zipped_data = np.load(data_file, allow_pickle=True)
                     stream['all_rows'] = zipped_data['arr_0'].tolist()
 
@@ -1004,8 +1002,8 @@ class QRAMExperiment(BaseExperiment):
                         # Add the count before the data
                         stream['all_rows'] = [[len(arr)] + arr for arr in stream['all_rows']]
 
-        # Load fluorescence
-        data_file = os.path.join(playback_folder, 'Flouresence.npz')
+        # Load fluorescence (-this is the correct spelling :-)
+        data_file = os.path.join(playback_files_path, 'Flouresence.npz')
         zipped_data = np.load(data_file, allow_pickle=True)
         self.streams['FLR_measure']['all_rows'] = (-zipped_data['arr_0']).tolist()
 
@@ -1022,6 +1020,8 @@ class QRAMExperiment(BaseExperiment):
 
         # There is no file that saved this information, so we just put zeros here
         self.streams['Max_counts']['all_rows'] = np.zeros(shape=len(zipped_data['arr_0']), dtype=int)
+
+        pass
 
     def print_experiment_information(self):
         """
@@ -2424,6 +2424,9 @@ if __name__ == "__main__":
     # Playback definitions
     playback_parameters = {
         "active": False,
+        #"playback_files_path": "<put here path to folder where playback files reside"  # r'C:\temp\streams_raw_data'
+        #'playback_files_path': '"C:\\temp\\playback_data\\QRAM\\20231225\\165550_Photon_TimeTags"'
+        "old_format": True,
         "save_results": False,
         "plot": "LIVE",  # "LIVE", "LAST", "NONE"
         "delay": -1,  # -1,  # 0.5,  # In seconds. Use -1 for not playback delay
