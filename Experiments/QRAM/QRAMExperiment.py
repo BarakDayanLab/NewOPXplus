@@ -2466,7 +2466,7 @@ if __name__ == "__main__":
         ]
     }
 
-    experiment = QRAMExperiment(playback_parameters=playback_parameters, save_raw_data=True)
+    experiment = QRAMExperiment(playback_parameters=playback_parameters, save_raw_data=False)
 
     # TODO: REMOVE, for debug only
     sequence_definitions = None
