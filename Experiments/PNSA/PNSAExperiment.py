@@ -188,42 +188,6 @@ class PNSAExperiment(BaseExperiment):
         # self.update_exp_pgc_final_amplitude(final_amplitude)
         return x
 
-    def Get_Max_Probe_counts(self, repetitions):
-
-        self.Max_Probe_counts_switch(True)
-        self.update_parameters()
-
-        Probe_N_handle = self.job.result_handles.get("North_Probe")
-        Probe_S_handle = self.job.result_handles.get("South_Probe")
-
-        Probe_N_handle.wait_for_values(1)
-        Probe_S_handle.wait_for_values(1)
-
-        Probe_N_res = Probe_N_handle.fetch_all()
-        Probe_S_res = Probe_S_handle.fetch_all()
-
-        Probe_counts_North = [np.sum(Probe_N_res.tolist())]
-        Probe_counts_South = [np.sum(Probe_S_res.tolist())]
-        self.logger.debug(Probe_counts_South)
-
-        for n in range(repetitions - 1):
-            while np.sum(Probe_S_res.tolist()) == Probe_counts_South[-1]:
-                Probe_N_res = Probe_N_handle.fetch_all()
-                Probe_S_res = Probe_S_handle.fetch_all()
-            Probe_counts_North.append(np.sum(Probe_N_res.tolist()))
-            Probe_counts_South.append(np.sum(Probe_S_res.tolist()))
-
-        self.logger.debug(
-            r'$Max Probe_N = %.1f$' % ((np.average(Probe_counts_North) * 1000) / self.M_time,) + '[MPhotons/sec]')
-        self.logger.debug(
-            r'$Max Probe_S = %.1f$' % ((np.average(Probe_counts_South) * 1000) / self.M_time,) + '[MPhotons/sec]')
-
-        self.Max_Probe_counts_switch(False)
-        self.update_parameters()
-
-        return [(np.average(Probe_counts_North) * 1000) / self.M_time,
-                (np.average(Probe_counts_South) * 1000) / self.M_time]
-
     def ingest_time_tags(self):
         """
         Takes all the raw results we got from the streams and does some processing on them - preparing "measures"
@@ -1642,7 +1606,7 @@ class PNSAExperiment(BaseExperiment):
     def Save_SNSPDs_PNSA_Measurement_with_tt(self, N, sequence_len, pre_comment, lock_err_threshold, desired_k_ex,
                                              k_ex_err,
                                              transit_condition,
-                                             max_probe_counts, filter_delay, reflection_threshold,
+                                             filter_delay, reflection_threshold,
                                              reflection_threshold_time,
                                              photons_per_det_pulse_threshold, FLR_threshold, exp_flag, with_atoms,
                                              MZ_infidelity_threshold):
@@ -1772,7 +1736,7 @@ class PNSAExperiment(BaseExperiment):
         # Associate the streams filled in OPX (FPGA) code with result handles
         self.get_handles_from_OPX_server()
 
-        # Initialize threasholds and flags before we start
+        # Initialize thresholds and flags before we start
         self.sum_for_threshold = self.reflection_threshold
         self.acquisition_flag = True
         self.threshold_flag = True
@@ -2274,9 +2238,6 @@ class PNSAExperiment(BaseExperiment):
     def run(self, run_parameters):
         rp = run_parameters  # Set so we can use in short - "rp", instead of "run_parameters"...
 
-        # max_probe_counts = self.Get_Max_Probe_counts(3)  # return the average maximum probe counts of 3 cycles.
-        max_probe_counts = None  # return the average maximum probe counts of 3 cycles.
-
         # Set switches
         # TODO: Can we move here to Enums?
         self.Experiment_Switch(True)
@@ -2292,7 +2253,6 @@ class PNSAExperiment(BaseExperiment):
                                                   desired_k_ex=rp['desired_k_ex'],
                                                   k_ex_err=rp['k_ex_err'],
                                                   transit_condition=rp['transit_condition'],
-                                                  max_probe_counts=max_probe_counts,
                                                   filter_delay=rp['filter_delay'],
                                                   reflection_threshold=rp['reflection_threshold'],
                                                   reflection_threshold_time=rp['reflection_threshold_time'],

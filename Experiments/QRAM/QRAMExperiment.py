@@ -189,6 +189,11 @@ class QRAMExperiment(BaseExperiment):
         return x
 
     def Get_Max_Probe_counts(self, repetitions):
+        """
+        Auxiliary function - not used now.
+        Its purpose was to get the maximum counts probe counts at each direction measured when cavity isn't locked.
+        (to be done before the experiment starts)
+        """
 
         self.Max_Probe_counts_switch(True)
         self.update_parameters()
@@ -1638,16 +1643,10 @@ class QRAMExperiment(BaseExperiment):
         self.folded_tt_DP_timebins_cumulative_avg = Utils.running_average(self.folded_tt_DP_timebins_cumulative_avg, self.folded_tt_DP_timebins, self.counter)
         pass
 
-    # TODO: Refactor/Rename (this method analyzes the results)
-    def Save_SNSPDs_QRAM_Measurement_with_tt(self, N, sequence_len, pre_comment, lock_err_threshold, desired_k_ex,
-                                             k_ex_err,
-                                             transit_condition,
-                                             max_probe_counts, filter_delay, reflection_threshold,
-                                             reflection_threshold_time,
-                                             photons_per_det_pulse_threshold, FLR_threshold, exp_flag, with_atoms,
-                                             MZ_infidelity_threshold):
+    def run(self, run_parameters):
         """
-        Function for analyzing, saving and displaying data from SPRINT experiment.
+        Main experiment run function.
+
         :param N: Number of maximum experiments (free throws) saved and displayed.
                  program we are looking for transits of atoms next to the toroid and record them.
         :param sequence_len: the number of sprint sequences (detection and sprint pulses combination)
@@ -1655,18 +1654,40 @@ class QRAMExperiment(BaseExperiment):
                            parameters.
         :param transit_condition:
         :param lock_err_threshold: The maximal error in locking resonator to rb line (in ms, depends on the scan width/vpp)
-        :param max_probe_counts: The maximum counts probe counts at each direction measured when cavity isn't locked.
         :param filter_delay: Delay of the filter window compared to original location (can be taken by comparing the
                              time of the 1st detection pulse pick location to the original sequence)
         :param reflection_threshold:
         :param reflection_threshold_time:
+        :param exp_flag - are we running an experiment now - this implies special warmup conditons and run thresholds
         :return:
         """
 
-        if not pre_comment:
-            pre_comment = self.prompt(title='Pre Experiment Run', msg='Add pre-run comment to measurement (click Cancel for "Ignore")')
-            if pre_comment == None:
-                pre_comment = 'Ignore'
+        # Put all run_parameters on "self" - to be used in all parts of code
+        # Apply defaults for those parameters which were not passed
+        # (this is a temp work-around as this is how original code was used - it is better in the future
+        # to refer to run_parameters['<param>'] ...
+        self.run_parameters = run_parameters
+        self.N = run_parameters['N']
+        self.sequence_len = run_parameters['sequence_len'] if 'sequence_len' in run_parameters else len(Config.QRAM_Exp_Square_samples_Late)
+        self.pre_comment = run_parameters['pre_comment']
+        self.lock_err_threshold = run_parameters['lock_err_threshold']
+        self.desired_k_ex = run_parameters['desired_k_ex']
+        self.k_ex_err = run_parameters['k_ex_err']
+        self.transit_condition = run_parameters['transit_condition']
+        self.filter_delay = run_parameters['filter_delay'] if 'filter_delay' in run_parameters else [0, 0, 0]
+        self.reflection_threshold = run_parameters['reflection_threshold']
+        self.reflection_threshold_time = run_parameters['reflection_threshold_time']
+        self.photons_per_det_pulse_threshold = run_parameters['photons_per_det_pulse_threshold']
+        self.FLR_threshold = run_parameters['FLR_threshold']
+        self.exp_flag = run_parameters['exp_flag'] if 'exp_flag' in run_parameters else False
+        self.with_atoms = run_parameters['with_atoms']
+        self.MZ_infidelity_threshold = run_parameters['MZ_infidelity_threshold']
+
+        # Handle pre-comment - keep what we got in parameters or prompt the user for a comment
+        if not self.pre_comment:
+            self.pre_comment = self.prompt(title='Pre Experiment Run', msg='Add pre-run comment to measurement (click Cancel for "Ignore")')
+            if self.pre_comment == None:
+                self.pre_comment = 'Ignore'
 
         # set constant parameters for the function
 
@@ -1681,22 +1702,8 @@ class QRAMExperiment(BaseExperiment):
 
         self.sprint_pulse_len = Config.sprint_pulse_len + Config.num_between_zeros  # TODO: Q: what is num_between_zeros ?
 
-        # TODO: These come as parameters for the experiment run - we may want to have them all under "self.params[..]" so we can
-        # TODO: (a) group logically (b) pass to other functions, instead of passing them one by one or relying on them being on self
-        self.N = N
-        self.sequence_len = sequence_len
-        self.with_atoms = with_atoms
+        # Flag used to hold the status of with/without atoms - operated by user
         self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
-        self.lock_err_threshold = lock_err_threshold
-        self.desired_k_ex = desired_k_ex
-        self.k_ex_err = k_ex_err
-        self.transit_condition = transit_condition
-        self.reflection_threshold = reflection_threshold
-        self.reflection_threshold_time = reflection_threshold_time
-        self.MZ_infidelity_threshold = MZ_infidelity_threshold
-        self.photons_per_det_pulse_threshold = photons_per_det_pulse_threshold
-        self.FLR_threshold = FLR_threshold
-        self.exp_flag = exp_flag
 
         self.warm_up_cycles = 5  # Should also come as params, with some default. E.g. self.warm_up_cycles = 10 if 'warm_up_cycles' not in params else params['warm_up_cycles']
 
@@ -1711,7 +1718,7 @@ class QRAMExperiment(BaseExperiment):
         self.pulses_location_in_seq, self.filter_gen = self.get_pulses_location_in_seq(0,
                                                                                        Config.QRAM_Exp_Gaussian_samples_General,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
-        self.pulses_location_in_seq_S, self.filter_S = self.get_pulses_location_in_seq(filter_delay[0],
+        self.pulses_location_in_seq_S, self.filter_S = self.get_pulses_location_in_seq(self.filter_delay[0],
                                                                                        Config.QRAM_Exp_Gaussian_samples_S,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
         # TODO: Q: Why are we fixing the Gaussian here?
@@ -1723,10 +1730,10 @@ class QRAMExperiment(BaseExperiment):
         #      np.array(Config.QRAM_Exp_Gaussian_samples_General[
         #               self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]]) * \
         #      Config.sprint_pulse_amp_Early[0]).tolist()
-        self.pulses_location_in_seq_N, self.filter_N = self.get_pulses_location_in_seq(filter_delay[1],
+        self.pulses_location_in_seq_N, self.filter_N = self.get_pulses_location_in_seq(self.filter_delay[1],
                                                                                        self.QRAM_Exp_Gaussian_samples_N,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
-        self.pulses_location_in_seq_A, self.filter_A = self.get_pulses_location_in_seq(filter_delay[2],
+        self.pulses_location_in_seq_A, self.filter_A = self.get_pulses_location_in_seq(self.filter_delay[2],
                                                                                        Config.QRAM_Exp_Gaussian_samples_Ancilla,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
         # Get experiment type: (Added by Dor, Sorry for the mess)
@@ -1766,7 +1773,7 @@ class QRAMExperiment(BaseExperiment):
         self.logger.blue('Press ESC to stop measurement.')
 
         # Initialize the batcher
-        self.batcher.set_batch_size(N)
+        self.batcher.set_batch_size(self.N)
         self.batcher.empty_all()
 
         # Associate the streams filled in OPX (FPGA) code with result handles
@@ -1774,114 +1781,20 @@ class QRAMExperiment(BaseExperiment):
 
         ############################# WHILE 1 - START #############################
 
-        # TODO: remove the "old" warmup loop
-        WARMUP_CYCLES = -1
-        cycle = 0
+        # TODO: The below calls come instead of:          self.divide_tt_to_reflection_trans(...)
+        # TODO: Consider using "bucket_timetags" instead
+        # buckets = Utils.bucket_timetags(
+        #     timetags=self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure,
+        #     window_size=self.experiment["sequence_length"],  # [ns]
+        #     buckets_number=self.experiment["number_of_sequences"],
+        #     start_time=int(0.6e6),
+        #     end_time=int(self.experiment["measurement_window"] - 0.4e6),
+        #     filters=[{"name": "reflections_south", "filter": self.filter_S},
+        #              {"name": "transmissions_north", "filter": self.filter_N}])
+
+
+        # Initialize thresholds and flags before we start
         self.sum_for_threshold = self.reflection_threshold
-        while exp_flag and (cycle < WARMUP_CYCLES or self.sum_for_threshold > self.reflection_threshold):
-
-            if self.keyPress == 'ESC':
-                self.logger.blue('ESC pressed. Stopping measurement.')
-                self.updateValue("Experiment_Switch", False)
-                self.MOT_switch(True)
-                self.update_parameters()
-                break
-
-            # -------------------------------------------
-            # Deal with the time-tags and counts
-            # -------------------------------------------
-
-            # Filter/Manipulate the values we got
-            self.get_results_from_streams()
-            self.ingest_time_tags()
-
-            # TODO: Review:
-            # TODO: The below calls come instead of:          self.divide_tt_to_reflection_trans(...)
-
-            buckets = Utils.bucket_timetags(
-                timetags=self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure,
-                window_size=self.experiment["sequence_length"],  # [ns]
-                buckets_number=self.experiment["number_of_sequences"],
-                start_time=int(0.6e6),
-                end_time=int(self.experiment["measurement_window"] - 0.4e6),
-                filters=[{"name": "reflections_south", "filter": self.filter_S},
-                         {"name": "transmissions_north", "filter": self.filter_N}])
-
-            self.num_of_det_reflections_per_seq_S = buckets["reflections_south"]["counts"]
-            self.num_of_det_transmissions_per_seq_N = buckets["transmissions_north"]["counts"]
-
-            buckets = Utils.bucket_timetags(
-                timetags=self.tt_S_measure + self.tt_FS_measure,
-                window_size=self.experiment["sequence_length"],  # [ns]
-                buckets_number=self.experiment["number_of_sequences"],
-                start_time=int(0.6e6),
-                end_time=int(self.experiment["measurement_window"] - 0.4e6),
-                filters=[{"name": "reflections_north", "filter": self.filter_N},
-                         {"name": "transmissions_south", "filter": self.filter_S}])
-
-            self.num_of_det_reflections_per_seq_N = buckets["reflections_north"]["counts"]
-            self.num_of_det_transmissions_per_seq_S = buckets["transmissions_south"]["counts"]
-
-            # self.divide_tt_to_reflection_trans(self.sprint_pulse_len, self.num_of_detection_pulses)
-
-            # TODO: Review:
-            # TODO: The below calls come instead of:          self.divide_BP_and_DP_counts(50)
-            buckets = Utils.bucket_timetags(
-                timetags=self.tt_BP_measure,
-                window_size=self.experiment["sequence_length"],  # [ns]
-                buckets_number=self.experiment["number_of_sequences"] // 50,
-                start_time=self.end_of_det_pulse_in_seq,
-                filters=[{"name": "BP_counts_per_n_sequences", "filter": np.ceil(Config.QRAM_Exp_Square_samples_Late)}]
-            )
-            self.num_of_BP_counts_per_n_sequences = buckets["BP_counts_per_n_sequences"]["counts"]
-
-            buckets = Utils.bucket_timetags(
-                timetags=self.tt_DP_measure,
-                window_size=self.experiment["sequence_length"],  # [ns]
-                buckets_number=self.experiment["number_of_sequences"] // 50,
-                start_time=self.end_of_det_pulse_in_seq,
-                filters=[{"name": "DP_counts_per_n_sequences", "filter": np.ceil(Config.QRAM_Exp_Square_samples_Late)}]
-            )
-            self.num_of_DP_counts_per_n_sequences = buckets["DP_counts_per_n_sequences"]["counts"]
-
-            buckets = Utils.bucket_timetags(
-                timetags=self.tt_FS_measure + self.tt_S_measure,
-                window_size=self.experiment["sequence_length"],  # [ns]
-                buckets_number=self.experiment["number_of_sequences"] // 50,
-                start_time=self.end_of_det_pulse_in_seq,
-                filters=[{"name": "S_counts_per_n_sequences", "filter": np.ceil(Config.QRAM_Exp_Square_samples_Late)}]
-            )
-            self.num_of_S_counts_per_n_sequences = buckets["S_counts_per_n_sequences"]["counts"]
-
-            # self.divide_BP_and_DP_counts(50)
-
-            self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S \
-                                                  + self.num_of_det_reflections_per_seq_N
-            self.num_of_det_transmissions_per_seq = self.num_of_det_transmissions_per_seq_S \
-                                                    + self.num_of_det_transmissions_per_seq_N
-            # self.num_of_SPRINT_reflections_per_seq = self.num_of_SPRINT_reflections_per_seq_S \
-            #                                          + self.num_of_SPRINT_reflections_per_seq_N
-            # self.num_of_SPRINT_transmissions_per_seq = self.num_of_SPRINT_transmissions_per_seq_S \
-            #                                            + self.num_of_SPRINT_transmissions_per_seq_N
-
-            # Summing over the reflection from detection pulses of each sequence corresponding to the reflection_threshold_time
-            self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[
-                                         -int(self.reflection_threshold_time // len(Config.QRAM_Exp_Gaussian_samples_S)):])
-
-            # Check locking error, break if we are above threshold
-            self.lock_err = (lock_err_threshold / 2) if exp_flag else self._read_locking_error()
-            self.k_ex = (lock_err_threshold / 2) if exp_flag else self._read_k_ex()
-            self.logger.debug(f'{self.lock_err}, {self.lock_err > lock_err_threshold}, {self.sum_for_threshold}')
-
-            #TODO: is this bug? should be oppoisite? @dror
-            if self.lock_err > lock_err_threshold:
-                break
-            cycle += 1
-
-        ############################# WHILE 1 - END #############################
-
-        ####    end get tt and counts from OPX to python   #####
-
         self.acquisition_flag = True
         self.threshold_flag = True
         self.pause_flag = False
@@ -1889,8 +1802,6 @@ class QRAMExperiment(BaseExperiment):
 
         # Prepare the sub figures needed for the plotting phase
         self.prepare_figures()
-
-        ############################################ START WHILE LOOP #################################################
 
         # Initialize the variables before loop starts
         self.counter = 1  # Total number of successful cycles
@@ -1901,6 +1812,8 @@ class QRAMExperiment(BaseExperiment):
 
         self.pause_flag = False
         self.runs_status = TerminationReason.SUCCESS  # default status of the run is Success
+
+        ############################################ START WHILE LOOP #################################################
 
         # ---------------------------------------------------------------------------------
         # Experiment Mainloop
@@ -1914,7 +1827,7 @@ class QRAMExperiment(BaseExperiment):
             if self.runs_status == TerminationReason.USER:
                 break
 
-            # Set lock error and kappa_ex
+            # Set lock error and kappa_ex as coming over communication line
             self.lock_err = None
             self.k_i = 5  # [MHz
             self.k_ex = 99.9  # Dummy default value for a case we don't have it
@@ -2053,7 +1966,7 @@ class QRAMExperiment(BaseExperiment):
         ############################################## END WHILE-LOOP #################################################
 
         if self.runs_status == TerminationReason.SUCCESS:
-            self.logger.info(f'Finished {N} Runs, {"with" if self.with_atoms else "without"} atoms')
+            self.logger.info(f'Finished {self.N} Runs, {"with" if self.with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.USER:
             self.logger.info(f'User Terminated the measurements after {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.ERROR:
@@ -2080,14 +1993,10 @@ class QRAMExperiment(BaseExperiment):
             #     aft_comment = ''
 
         experiment_comment = f'Transit condition: {self.transit_condition}\nReflection threshold {self.reflection_threshold} @ {int(self.reflection_threshold_time/1e6)} ms'
-        daily_experiment_comments = self.generate_experiment_summary_line(pre_comment, aft_comment, self.with_atoms, self.counter)
+        daily_experiment_comments = self.generate_experiment_summary_line(self.pre_comment, aft_comment, self.with_atoms, self.counter)
 
         # Save all results of experiment
         self.save_experiment_results(experiment_comment, daily_experiment_comments, for_analysis)
-
-        # End of Experiment! Ensure we turn the experiment flag off and return the MOT
-        self.updateValue("Experiment_Switch", False)
-        self.MOT_switch(with_atoms=True, update_parameters=True)
 
         return self.runs_status
 
@@ -2379,41 +2288,24 @@ class QRAMExperiment(BaseExperiment):
         suffix = ' with atoms' if run_parameters['with_atoms'] else ' without atoms'
         pre_comment = '' if 'pre_comment' not in run_parameters else run_parameters['pre_comment']
         run_parameters['pre_comment'] = pre_comment + suffix
+
+        # Turn Experiment flag on
+        self.Experiment_Switch(True)
+
+        # Turn MOT on/off according to parameter
+        self.MOT_switch(run_parameters['with_atoms'])
+
+        self.update_parameters()
         pass
 
-    def run(self, run_parameters):
-        rp = run_parameters  # Set so we can use in short - "rp", instead of "run_parameters"...
-
-        # max_probe_counts = self.Get_Max_Probe_counts(3)  # return the average maximum probe counts of 3 cycles.
-        max_probe_counts = None  # return the average maximum probe counts of 3 cycles.
-
-        # Set switches
-        # TODO: Can we move here to Enums?
-        self.Experiment_Switch(True)
-        self.MOT_switch(rp['with_atoms'])
-        self.update_parameters()
-
-        # TODO: Q: Config.QRAM_Exp_Gaussian_samples_S is constructed in a function, using the parameter "sprint_pulse_len" - so why not use it here?
-        # TODO: Q: (a) we don't want to use duplicate variables holding the same value, (b) it mentions "samples_S" - but it's the same for "N" as well...
-        run_status = self.Save_SNSPDs_QRAM_Measurement_with_tt(N=rp['N'],
-                                                  sequence_len=len(Config.QRAM_Exp_Square_samples_Late),
-                                                  pre_comment=rp['pre_comment'],
-                                                  lock_err_threshold=rp['lock_err_threshold'],
-                                                  desired_k_ex=rp['desired_k_ex'],
-                                                  k_ex_err=rp['k_ex_err'],
-                                                  transit_condition=rp['transit_condition'],
-                                                  max_probe_counts=max_probe_counts,
-                                                  filter_delay=rp['filter_delay'],
-                                                  reflection_threshold=rp['reflection_threshold'],
-                                                  reflection_threshold_time=rp['reflection_threshold_time'],
-                                                  photons_per_det_pulse_threshold=rp['photons_per_det_pulse_threshold'],
-                                                  FLR_threshold=rp['FLR_threshold'],
-                                                  exp_flag=rp['Exp_flag'],
-                                                  with_atoms=rp['with_atoms'],
-                                                  MZ_infidelity_threshold=rp['MZ_infidelity_threshold'])
-        return run_status
-
     def post_run(self, run_parameters):
+
+        # The experiment is done - we turn the experiment flag off (for OPX code)
+        self.updateValue("Experiment_Switch", False)
+
+        # Ensure we turn the MOT back on
+        self.MOT_switch(with_atoms=True, update_parameters=True)
+
         pass
 
 
@@ -2425,10 +2317,10 @@ if __name__ == "__main__":
 
     # Playback definitions
     playback_parameters = {
-        "active": False,
+        "active": True,
         #"playback_files_path": "<put here path to folder where playback files reside"  # r'C:\temp\streams_raw_data'
-        'playback_files_path': 'C:\\temp\\streams_raw_data',
-        "old_format": False,
+        #'playback_files_path': 'C:\\temp\\streams_raw_data',
+        "old_format": True,
         "save_results": False,
         "plot": "LIVE",  # "LIVE", "LAST", "NONE"
         "delay": -1,  # -1,  # 0.5,  # In seconds. Use -1 for not playback delay
@@ -2438,7 +2330,7 @@ if __name__ == "__main__":
         'N': 500,  # 50,
         'transit_condition': [2, 1, 2],
         'pre_comment': '',  # Put 'None' or '' if you don't want pre-comment prompt
-        'lock_err_threshold': 2, # [Mhz]
+        'lock_err_threshold': 2,  # [Mhz]
         'desired_k_ex': 36, # [Mhz]
         'k_ex_err': 3,  # [Mhz]
         'filter_delay': [0, 0, 0],
@@ -2447,7 +2339,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 1.12,
         'photons_per_det_pulse_threshold': 12,
-        'Exp_flag': False,
+        'exp_flag': False,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
