@@ -118,6 +118,8 @@ class BaseExperiment:
         # Tell logger we want to save the log
         self.logger.turn_save_on(log_path=self.experiment_folder)
 
+        self.logger.info(f'Starting experiment. Experiment folder is here: {self.experiment_folder}')
+
         # Initialize the BDBatch helper - to serve us when batching experiment samples
         self.batcher = BDBatch(json_map_path=self.paths_map['cwd'])
 

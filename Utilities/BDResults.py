@@ -303,6 +303,7 @@ class BDResults:
             file_path = os.path.join(path, entity['file_name'])
 
             print(f'Saving {file_path}...')
+            start_save_time = time.time()
 
             # Save the file
             try:
@@ -310,7 +311,7 @@ class BDResults:
             except Exception as err:
                 self._handle_error(f'Failed to save file {file_path}. {err}')
 
-            print(f'Saving {file_path} - Done!')
+            print(f'Saving {file_path} - Done! (took {time.time() - start_save_time} sec)')
 
         return resolved_path
 
