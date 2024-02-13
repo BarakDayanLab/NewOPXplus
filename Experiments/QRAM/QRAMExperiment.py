@@ -1511,11 +1511,11 @@ class QRAMExperiment(BaseExperiment):
         - User terminated - user terminated the experiment
         - Too many cycles - no data arrived after a given number of cycles
         """
-        WAIT_TIME = 0.01  # [sec]
+        WAIT_TIME = 0 if self.playback['active'] else 1  # [1 sec]
         #TOO_MANY_WAITING_CYCLES = WAIT_TIME*100*20  # 5 seconds. Make this -1 to wait indefinitely
         TOO_MANY_WAITING_CYCLES = -1
 
-        count = 1
+        wait_cycle = 1
         while True:
 
             self.handle_user_events()
@@ -1544,13 +1544,14 @@ class QRAMExperiment(BaseExperiment):
             if self.new_timetags_detected(self.batcher['tt_FS_measure_batch'], self.tt_FS_measure):
                 break
 
+            self.info(f'Repetition #{self.repetitions}. Waiting for values from stream (wait_cycle: {wait_cycle}). No new data coming from detectors (exp_flag = {self.exp_flag})')
+
             # Are we waiting too long?
-            count += 1
-            if TOO_MANY_WAITING_CYCLES != -1 and count > TOO_MANY_WAITING_CYCLES:
+            wait_cycle += 1
+            if TOO_MANY_WAITING_CYCLES != -1 and wait_cycle > TOO_MANY_WAITING_CYCLES:
                 self.runs_status = TerminationReason.ERROR
                 break
 
-            self.info(f'Waiting for values from stream (count: {count}). No new data coming from detectors (exp_flag = {self.exp_flag})')
             time.sleep(WAIT_TIME)
 
         # We return the timestamp - this is when we declare we got the measurement
@@ -2317,10 +2318,11 @@ if __name__ == "__main__":
 
     # Playback definitions
     playback_parameters = {
-        "active": True,
+        "active": False,
         #"playback_files_path": "<put here path to folder where playback files reside"  # r'C:\temp\streams_raw_data'
         #'playback_files_path': 'C:\\temp\\streams_raw_data',
-        "old_format": True,
+        #'playback_files_path': 'C:\\temp\\playback_data\\QRAM\\20240212-NEW',
+        "old_format": False,
         "save_results": False,
         "plot": "LIVE",  # "LIVE", "LAST", "NONE"
         "delay": -1,  # -1,  # 0.5,  # In seconds. Use -1 for not playback delay

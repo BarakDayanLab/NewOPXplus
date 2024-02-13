@@ -113,6 +113,10 @@ class BaseExperiment:
 
         # Initialize the BDResults helper - for saving experiment results
         self.bd_results = BDResults(json_map_path=self.paths_map['cwd'], version="0.1")
+        self.experiment_folder = self.bd_results.create_experiment_folder()
+
+        # Tell logger we want to save the log
+        self.logger.turn_save_on(log_path=self.experiment_folder)
 
         # Initialize the BDBatch helper - to serve us when batching experiment samples
         self.batcher = BDBatch(json_map_path=self.paths_map['cwd'])
@@ -721,6 +725,10 @@ class BaseExperiment:
         if self.streams is None:
             return
 
+        # TODO: Currently, self.bdstreams has a pointer to self.streams - so it can save it
+        # TODO: It makes more sense to work ONLY through self.bdstreams and not self.streams
+        # TODO: this method should go into bdstreams class and code should call "self.bdstreams.get_results_from_opx"
+
         # TODO: Should we first "wait_for_values" on all and only then "fetch_all"?
         for stream in self.streams.values():
             if stream['handler'] is not None:
@@ -732,9 +740,9 @@ class BaseExperiment:
             else:
                 stream['results'] = None
 
-        # Save streams to file
+        # Save streams to file (self.bdstreams has a pointer to self.streams - so it saves it)
         if self.save_raw_data:
-            self.bdstreams.save_streams_enhanced()
+            self.bdstreams.save_streams_enhanced(self.repetitions)
 
         pass
 

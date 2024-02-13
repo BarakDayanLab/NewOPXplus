@@ -243,6 +243,17 @@ class BDResults:
 
         return self.folders[name]
 
+    def create_experiment_folder(self):
+        """
+        Resolve the experiment folder and create it (if does not exist)
+        """
+        resolved_path = self._resolve_parameterized(self.results_map['root'])
+
+        if not os.path.exists(resolved_path):
+            os.makedirs(resolved_path, exist_ok=True)
+
+        return resolved_path
+
     def save_results(self, data_pool):
 
         # Resolve the root folder - with current time/date
@@ -283,7 +294,6 @@ class BDResults:
             path = resolved_path
             if 'folder' in entity:
                 path = os.path.join(resolved_path, entity['folder'])
-
 
             # Create folder if it does not exist
             if not os.path.exists(path):

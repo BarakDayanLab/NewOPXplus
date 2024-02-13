@@ -81,7 +81,7 @@ class BDStreams:
 
         # Iterate over all files in folder
         for playback_file in playback_files:
-            self.load_streams_enhanced(os.path.join(playback_files_path,playback_file))
+            self.load_streams_enhanced(os.path.join(playback_files_path, playback_file))
 
 
         pass
@@ -95,6 +95,10 @@ class BDStreams:
                 bytes = file.read(4)
                 bytes_unpacked = struct.unpack('>i', bytes)[0]
                 current_time = int(bytes_unpacked)
+
+                # Get the repetition we were at for this data
+                #repetition = int(struct.unpack('>H', file.read(2))[0])
+
                 number_of_streams = int(struct.unpack('>b', file.read(1))[0])
                 for i in range(0, number_of_streams):
 
@@ -118,6 +122,7 @@ class BDStreams:
                     else:
                         stream['all_rows'].append(loaded_np)
 
+                    # TODO: we should append these - to create the sequence of time stamps recorded. Now we override.
                     stream['timestamp'] = current_time
 
             except Exception as err:
@@ -187,7 +192,7 @@ class BDStreams:
             return [data]
         return data
 
-    def save_streams_enhanced(self):
+    def save_streams_enhanced(self, repetitions):
         """
 
                         +-----------------+-------------+
@@ -215,7 +220,7 @@ class BDStreams:
             streams_to_save = [s for s in self.streams_defs.values() if 'save_raw' in s and s['save_raw']]
 
             # Start packing the data with 'b' (1-byte=unsigned-char) for number of streams
-            bytes_array += struct.pack('>ib', int(current_time), len(streams_to_save))
+            #bytes_array += struct.pack('>iHb', int(current_time), repetitions, len(streams_to_save))
 
             # Iterate over all streams and pack their name and data
             for stream in streams_to_save:
