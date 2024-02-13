@@ -2056,7 +2056,7 @@ class QRAMExperiment(BaseExperiment):
 
             "experiment_config_values": self.Exp_Values
         }
-        save_path = self.bd_results.save_results(results)
+        save_path = self.bd_results.save_results(results, self.experiment_folder)
 
         # If these results should be saved for analysis, copy them to analysis folder
         if for_analysis:
@@ -2321,7 +2321,7 @@ if __name__ == "__main__":
         "active": False,
         #"playback_files_path": "<put here path to folder where playback files reside"  # r'C:\temp\streams_raw_data'
         #'playback_files_path': 'C:\\temp\\streams_raw_data',
-        #'playback_files_path': 'C:\\temp\\playback_data\\QRAM\\20240212-NEW',
+        'playback_files_path': 'C:\\temp\\playback_data\\QRAM\\20240213-NEW',
         "old_format": False,
         "save_results": False,
         "plot": "LIVE",  # "LIVE", "LAST", "NONE"

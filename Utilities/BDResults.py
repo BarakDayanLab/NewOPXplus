@@ -254,10 +254,11 @@ class BDResults:
 
         return resolved_path
 
-    def save_results(self, data_pool):
+    def save_results(self, data_pool, resolved_path=None):
 
         # Resolve the root folder - with current time/date
-        resolved_path = self._resolve_parameterized(self.results_map['root'])
+        if resolved_path is None:
+            resolved_path = self._resolve_parameterized(self.results_map['root'])
 
         # Resolve the file names and folders in results map
         for entity in self.results_map['files']:

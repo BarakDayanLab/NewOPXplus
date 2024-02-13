@@ -220,6 +220,7 @@ class BDStreams:
             streams_to_save = [s for s in self.streams_defs.values() if 'save_raw' in s and s['save_raw']]
 
             # Start packing the data with 'b' (1-byte=unsigned-char) for number of streams
+            bytes_array += struct.pack('>ib', int(current_time), len(streams_to_save))
             #bytes_array += struct.pack('>iHb', int(current_time), repetitions, len(streams_to_save))
 
             # Iterate over all streams and pack their name and data
