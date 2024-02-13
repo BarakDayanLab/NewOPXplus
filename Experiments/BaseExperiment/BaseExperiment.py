@@ -112,7 +112,7 @@ class BaseExperiment:
 
 
         # Initialize the BDResults helper - for saving experiment results
-        self.bd_results = BDResults(json_map_path=self.paths_map['cwd'], version="0.1")
+        self.bd_results = BDResults(json_map_path=self.paths_map['cwd'], version="0.1", logger=self.logger)
         self.experiment_folder = self.bd_results.create_experiment_folder()
 
         # Tell logger we want to save the log

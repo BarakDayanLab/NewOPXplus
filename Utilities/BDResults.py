@@ -18,9 +18,12 @@ TODO: Wishlist
 
 class BDResults:
 
-    def __init__(self, json_map_path=None, version=None):
+    def __init__(self, json_map_path=None, version=None, logger=None):
 
         self.strict = True
+
+        if logger is not None:
+            self.logger = logger
 
         # Load results map from json file
         try:
@@ -30,16 +33,19 @@ class BDResults:
             self.results_map = json.load(f)
             f.close()
         except Exception as err:
-            self._handle_error(f'Unable to open results_map.json. Reason: {err}', True)
+            self.logger.error(f'Unable to open results_map.json. Reason: {err}')
+            raise Exception(f'Unable to open results_map.json. Reason: {err}')
 
         self.strict = self.results_map['strict'] if 'strict' in self.results_map else None
 
         # Resolve root folder and create it
         if 'root' not in self.results_map:
-            self._handle_error("Cannot find 'root' in results_map.json.", True)
+            self.logger.error("Cannot find 'root' in results_map.json.")
+            raise Exception("Cannot find 'root' in results_map.json.")
 
         if 'files' not in self.results_map:
-            self._handle_error("Cannot find 'files' in results_map.json.", True)
+            self.logger.error("Cannot find 'files' in results_map.json.")
+            raise Exception("Cannot find 'files' in results_map.json.")
 
         # We initialize the folders map with None, since it is not relevant until someone
         # invokes the create_folders() - so they are actually resolved and created.
@@ -48,9 +54,10 @@ class BDResults:
         # Perform version check
         if version is not None:
             if 'version' not in self.results_map:
-                self._handle_error('results map file has no version mentioned', True)
+                self.logger.error('results map file has no version mentioned')
             elif self.results_map['version'] != version:
-                self._handle_error(f"results map version mismatch! (is {self.results_map['version']} but should be {version})", True)
+                self.logger.error(f"results map version mismatch! (is {self.results_map['version']} but should be {version})")
+                raise Exception(f"results map version mismatch! (is {self.results_map['version']} but should be {version})")
         pass
 
     def _create_folder(self, path, allow_existing=True):
@@ -85,7 +92,7 @@ class BDResults:
             elif _type == 'json':
                 self._save_json(data_to_save, path)
             else:
-                self._handle_error(f'Invalid file type- {_type}. Check your json configuration.')
+                self.logger.error(f'Invalid file type- {_type}. Check your json configuration.')
 
     def _save_figure(self, path):
         # Ensure there is the ".png" extension
@@ -187,7 +194,7 @@ class BDResults:
             return self.results_map[root_name_with_env]
 
         if root_name not in self.results_map:
-            self._handle_error(f'Missing root {root_name} in results_map.json. Please check.')
+            self.logger.error(f'Missing root {root_name} in results_map.json. Please check.')
 
         return self.results_map[root_name]
 
@@ -202,20 +209,6 @@ class BDResults:
         root_pattern = root_pattern.replace('{current_time}', current_time)
 
         return root_pattern
-
-    def _warn(self, message):
-        WARN_COLOR = '\033[93m'
-        message = f"{WARN_COLOR} WARN: {message} {WARN_COLOR}"
-        print(message)
-
-    def _handle_error(self, message, raise_exception=False):
-        OK_COLOR = '\033[94m'
-        ERR_COLOR = '\033[91m'
-        cc = ERR_COLOR if self.strict or raise_exception else OK_COLOR
-        message = f"{cc} NOTE: Error in writing results: {message} {cc}"
-        print(message)
-        if self.strict or raise_exception:
-            raise Exception(f'Result saving failed. Aborting.')
 
     def get_root(self):
         resolved_env = self._resolve_env('root')
@@ -279,16 +272,16 @@ class BDResults:
 
             # Sanity check on type
             if 'type' not in entity:
-                self._handle_error("Missing 'type' entity in 'file' attribute")
+                self.logger.error("Missing 'type' entity in 'file' attribute")
                 continue
 
             # Is this a data vector we need to save (not a plot)
             if entity['type'] != 'plt':
                 if 'data' not in entity:
-                    self._handle_error("Missing 'data' entity in 'file' attribute")
+                    self.logger.error("Missing 'data' entity in 'file' attribute")
                     continue
                 if entity['data'] not in data_pool:
-                    self._handle_error(f"Cannot find {entity['data']} in the results data")
+                    self.logger.error(f"Cannot find {entity['data']} in the results data")
                     continue
 
             # Resolve the root folder - with current time/date
@@ -303,16 +296,16 @@ class BDResults:
             # Add the file name
             file_path = os.path.join(path, entity['file_name'])
 
-            print(f'Saving {file_path}...')
+            self.logger.info(f'Saving {file_path}...')
             start_save_time = time.time()
 
             # Save the file
             try:
                 self._save_file(entity, file_path, data_pool)
             except Exception as err:
-                self._handle_error(f'Failed to save file {file_path}. {err}')
+                self.logger.error(f'Failed to save file {file_path}. {err}')
 
-            print(f'Saving {file_path} - Done! (took {time.time() - start_save_time} sec)')
+            self.logger.info(f'Saving {file_path} - Done! (took {time.time() - start_save_time} sec)')
 
         return resolved_path
 
@@ -359,9 +352,9 @@ class BDResults:
         except OSError as err:
             # error caused if the source was not a directory
             if err.errno == errno.ENOTDIR:
-                print(f'Error: {err}')  # shutil.copy2(src, dest)
+                self.logger.error(f'Error: {err}')  # shutil.copy2(src, dest)
             else:
-                print("Error: % s" % err)
+                self.logger.error("Error: % s" % err)
 
     @staticmethod
     def unit_tests():

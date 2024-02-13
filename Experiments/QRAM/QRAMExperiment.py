@@ -2139,6 +2139,8 @@ class QRAMExperiment(BaseExperiment):
         # Check if conditions have been met for the completion of the warm-up phase
         warm_up_phase_complete = self.is_warm_up_phase_complete()
 
+        self.logger.info(f'Warmup phase: {self.warm_up_cycles} (exp_flag: {self.exp_flag})')
+
         # This is the first time we realize we are no loger in warm-up - so run post stage
         if warm_up_phase_complete:
             self.post_warm_up()
