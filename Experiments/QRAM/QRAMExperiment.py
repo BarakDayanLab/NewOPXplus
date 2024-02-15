@@ -2122,6 +2122,8 @@ class QRAMExperiment(BaseExperiment):
         if self.post_warm_up_completed:
             return False
 
+        self.logger.info(f'Running Warmup phase #{self.warm_up_cycles} (exp_flag: {self.exp_flag})')
+
         # Get data from OPX streams
         self.get_results_from_streams()
 
@@ -2139,12 +2141,11 @@ class QRAMExperiment(BaseExperiment):
         # Check if conditions have been met for the completion of the warm-up phase
         warm_up_phase_complete = self.is_warm_up_phase_complete()
 
-        self.logger.info(f'Warmup phase: {self.warm_up_cycles} (exp_flag: {self.exp_flag})')
-
         # This is the first time we realize we are no loger in warm-up - so run post stage
         if warm_up_phase_complete:
             self.post_warm_up()
             self.post_warm_up_completed = True  # Mark the fact we are done
+            self.logger.info(f'Warmup phase completed.')
 
         return not warm_up_phase_complete
 
@@ -2158,16 +2159,13 @@ class QRAMExperiment(BaseExperiment):
         - We are in experiment, and the threshold is not yet filled
         """
 
-        if self.playback['active']:
-            return True
-
         # Did we finish going through all warm-up cycles? If not, we're still in warm-up -> return True
         if self.warm_up_cycles > 0:
             self.warm_up_cycles -= 1
             return False
 
-        # We stay in warm-up while we're not locked
-        if self.exp_flag and self.lock_err > self.lock_err_threshold:
+        # We stay in warm-up while we're not locked (unless it's playback mode - so we don't care)
+        if self.exp_flag and self.lock_err > self.lock_err_threshold and not self.playback['active']:
             return False
 
         # We stay in warm-up if we're not within threshold
@@ -2323,7 +2321,7 @@ if __name__ == "__main__":
         "active": False,
         #"playback_files_path": "<put here path to folder where playback files reside"  # r'C:\temp\streams_raw_data'
         #'playback_files_path': 'C:\\temp\\streams_raw_data',
-        'playback_files_path': 'C:\\temp\\playback_data\\QRAM\\20240213-NEW',
+        'playback_files_path': 'C:\\temp\\playback_data\\QRAM\\20240213-NEW\\run 2',
         "old_format": False,
         "save_results": False,
         "plot": "LIVE",  # "LIVE", "LAST", "NONE"

@@ -340,14 +340,20 @@ class BDResults:
 
         pass
 
-    def copy_folder(self, source, destination):
+    def copy_folder(self, source, destination, create_destination_folder=False):
         """
         Copy recursively entire folder from source to destination. Resolve destination before copy.
         If source is not a folder, it ignores it (does not copy!)
         """
+
         try:
             source = self._resolve_parameterized(source)
             destination = self._resolve_parameterized(destination)
+
+            # If destination folder does not exist, create it:
+            if create_destination_folder and not os.path.exists(destination):
+                os.makedirs(destination, exist_ok=True)
+
             destination_2 = shutil.copytree(source, destination)
         except OSError as err:
             # error caused if the source was not a directory
