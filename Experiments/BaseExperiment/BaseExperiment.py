@@ -2,12 +2,10 @@ import os.path
 import sys
 import time
 import json
-import threading
 import pathlib
 import matplotlib.pyplot as plt
 import os
 import importlib
-import numpy as np
 
 from Utilities.Utils import Utils
 from Utilities.BDLogger import BDLogger
@@ -646,29 +644,46 @@ class BaseExperiment:
     def get_batcher_map(self):
         raise Exception("'get_batcher_map' method must be implemented in subclass!")
 
-    def pre_run(self, run_parameters):
-        raise Exception("'pre_run' method must be implemented in subclass!")
+    def pre_run(self, sequence_definitions, run_parameters):
+        pre_comment = '' if 'pre_comment' not in run_parameters else run_parameters['pre_comment']
 
-    def run(self, run_parameters):
+        # Prefix the pre_comment with the sequence number
+        run_parameters['pre_comment'] = f'Cycle #{sequence_definitions["current_cycle"]+1}, Sequence [{sequence_definitions["sequence_name"]}]: {pre_comment}'
+
+
+    def run(self, sequence_definitions, run_parameters):
         raise Exception("'run' method must implemented in subclass!")
 
-    def post_run(self, run_parameters):
+    def post_run(self, sequence_definitions, run_parameters):
         raise Exception("'post_run' method must be implemented in subclass!")
 
     def run_sequence(self, sequence_definitions, run_parameters):
 
+        # If there was no sequence defined, we create a fictatious sequence with a single iteration an no parameters
+        if sequence_definitions is None:
+            sequence_definitions = {
+                'total_cycles': 1,
+                'delay_between_cycles': None,  # seconds
+                'sequence': [{}]
+            }
+
         run_status = TerminationReason.SUCCESS
         num_cycles = sequence_definitions['total_cycles']
         for i in range(num_cycles):
-            self.info(f'Starting cycle sequence # {i}')
+            self.info(f'Starting cycle sequence # {i+1} (out of {num_cycles})')
 
-            for run in sequence_definitions['sequence']:
+            # Keep the current cycle, so pre_run, run, post_run can relate to it and do things once/first/last/etc.
+            sequence_definitions['current_cycle'] = i
+
+            for sequence in sequence_definitions['sequence']:
                 # Modify params
-                merged_params = Utils.merge_jsons(run_parameters, run['parameters'])
+                merged_params = Utils.merge_jsons(run_parameters, sequence['parameters'])
 
-                self.pre_run(merged_params)
-                run_status = self.run(merged_params)
-                self.post_run(merged_params)
+                sequence_definitions['sequence_name'] = sequence['name']
+
+                self.pre_run(sequence_definitions, merged_params)
+                run_status = self.run(sequence_definitions, merged_params)
+                self.post_run(sequence_definitions, merged_params)
                 if run_status != TerminationReason.SUCCESS:
                     break
 

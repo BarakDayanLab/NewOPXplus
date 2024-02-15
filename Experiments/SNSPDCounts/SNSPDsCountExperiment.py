@@ -172,7 +172,7 @@ class SNSPDsCountExperiment(BaseExperiment):
     def save_experiment_results(self):
         pass
 
-    def pre_run(self, run_parameters):
+    def pre_run(self, sequence_definitions, run_parameters):
 
         # Associate the streams filled in OPX (FPGA) code with result handles
         self.get_handles_from_OPX_server()
@@ -181,7 +181,7 @@ class SNSPDsCountExperiment(BaseExperiment):
         self.wait_for_values_from_opx_streams()
         pass
 
-    def run(self, run_parameters):
+    def run(self, sequence_definitions, run_parameters):
         """
         Main executing function - performs pre-mainloop stuff and then runs the mainloop
         TODO: should eventually go into BaseExperiment - also for QRAM and Sprint
@@ -238,7 +238,7 @@ class SNSPDsCountExperiment(BaseExperiment):
 
         return run_status
 
-    def post_run(self, run_parameters):
+    def post_run(self, sequence_definitions, run_parameters):
         pass
 
 if __name__ == "__main__":
@@ -252,5 +252,5 @@ if __name__ == "__main__":
     input()
 
     experiment = SNSPDsCountExperiment(playback=False, save_raw_data=False)
-    experiment.run(run_parameters={})
+    run_status = experiment.run_sequence(sequence_definitions=None, run_parameters={})
     pass

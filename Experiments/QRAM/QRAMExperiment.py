@@ -1643,7 +1643,7 @@ class QRAMExperiment(BaseExperiment):
         self.folded_tt_DP_timebins_cumulative_avg = Utils.running_average(self.folded_tt_DP_timebins_cumulative_avg, self.folded_tt_DP_timebins, self.counter)
         pass
 
-    def run(self, run_parameters):
+    def run(self, sequence_definitions, run_parameters):
         """
         Main experiment run function.
 
@@ -2280,11 +2280,13 @@ class QRAMExperiment(BaseExperiment):
         full_line = f'{date_str},{time_str},{experiment_success},{with_atoms},{counter},{cmnt}'
         return full_line
 
-    def pre_run(self, run_parameters):
-        # Change the pre comment based on the with_atoms parameter
+    def pre_run(self, sequence_definitions, run_parameters):
+
+        super().pre_run(sequence_definitions, run_parameters)
+
+        # Append the pre-comment - the with_atoms parameter
         suffix = ' with atoms' if run_parameters['with_atoms'] else ' without atoms'
-        pre_comment = '' if 'pre_comment' not in run_parameters else run_parameters['pre_comment']
-        run_parameters['pre_comment'] = pre_comment + suffix
+        run_parameters['pre_comment'] += suffix
 
         # Turn Experiment flag on
         self.Experiment_Switch(True)
@@ -2295,7 +2297,7 @@ class QRAMExperiment(BaseExperiment):
         self.update_parameters()
         pass
 
-    def post_run(self, run_parameters):
+    def post_run(self, sequence_definitions, run_parameters):
 
         # The experiment is done - we turn the experiment flag off (for OPX code)
         self.updateValue("Experiment_Switch", False)
@@ -2343,30 +2345,27 @@ if __name__ == "__main__":
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
     # The sequence_definitions params would replace parameters from run_parameters('N','with_atoms')
     sequence_definitions = {
-        'total_cycles': 2,
+        'total_cycles': 1,
         'delay_between_cycles': None,  # seconds
         'sequence': [
             {
-                'parameters': {
-                    'N': 50,
-                    'with_atoms': False
-                }
-            },
-            {
+                'name': 'With Atoms',
                 'parameters': {
                     'N': 500,
                     'with_atoms': True
                 }
-            }
+            },
+            # {
+            #     'name': 'Without Atoms',
+            #     'parameters': {
+            #         'N': 50,
+            #         'with_atoms': False
+            #     }
+            # }
         ]
     }
 
     experiment = QRAMExperiment(playback_parameters=playback_parameters, save_raw_data=True)
+    run_status = experiment.run_sequence(sequence_definitions, run_parameters)
 
-    # TODO: REMOVE, for debug only
-    sequence_definitions = None
-
-    if sequence_definitions is None:
-        experiment.run(run_parameters)
-    else:
-        experiment.run_sequence(sequence_definitions, run_parameters)
+    pass

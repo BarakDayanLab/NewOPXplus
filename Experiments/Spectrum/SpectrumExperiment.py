@@ -855,11 +855,7 @@ class SpectrumExperiment(BaseExperiment):
 
         pass
 
-    # TODO: There's no need in Spectrum experiment for transit_counts_threshold ?
-    def Save_SNSPDs_Spectrum_Measurement_with_tt(self, N, transit_profile_bin_size, pre_comment, transit_cond,
-                                                 total_counts_threshold, transit_counts_threshold, FLR_threshold,
-                                                 lock_err_threshold, exp_flag, with_atoms):
-
+    def run(self, sequence_definitions, run_parameters):
         """
         Function for analyzing,saving and displaying data from spectrum experiment.
         :param N: Number of maximum experiments (free throws) saved and displayed.
@@ -878,6 +874,24 @@ class SpectrumExperiment(BaseExperiment):
         :return: Returns the run status (Success, User-Termination, Error, etc.)
         """
 
+        self.run_parameters = run_parameters
+        self.N = run_parameters['N']
+        self.with_atoms = run_parameters['with_atoms']
+        self.pre_comment = run_parameters['pre_comment']
+        self.lock_err_threshold = run_parameters['lock_err_threshold']
+        self.FLR_threshold = run_parameters['FLR_threshold']
+        self.transit_cond = run_parameters['transit_cond']
+        self.transit_profile_bin_size = run_parameters['transit_profile_bin_size']
+        self.exp_flag = run_parameters['exp_flag'] if 'exp_flag' in run_parameters else False
+
+        # Handle pre-comment - keep what we got in parameters or prompt the user for a comment
+        if not self.pre_comment:
+            self.pre_comment = self.prompt(title='Pre Experiment Run', msg='Add pre-run comment to measurement (click Cancel for "Ignore")')
+            if self.pre_comment == None:
+                self.pre_comment = 'Ignore'
+
+        self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
+
         # set constant parameters for the function
         self.Num_Of_dets = [1, 2, 3, 4, 5, 6, 7, 8]
         self.histogram_bin_size = Config.frequency_sweep_duration * 2
@@ -888,28 +902,12 @@ class SpectrumExperiment(BaseExperiment):
         self.freq_bins = np.linspace((self.frequency_start - Config.IF_AOM_Spectrum) * 2,
                                      (self.frequency_start + self.spectrum_bandwidth - Config.IF_AOM_Spectrum) * 2,
                                      self.spectrum_bin_number)
-        self.Transit_profile_bin_size = transit_profile_bin_size
         time_threshold = int(self.histogram_bin_size * 1.6)  # The minimum time between two time tags to be counted for a transit. # TODO: might need a factor of 2???
-
-        # TODO: These come as parameters for the experiment run - we may want to have them all under "self.params[..]" so we can
-        # TODO: (a) group logically (b) pass to other functions, instead of passing them one by one or relying on them being on self
-        self.N = N
-        self.with_atoms = with_atoms
-        self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
-        self.lock_err_threshold = lock_err_threshold
-        self.warm_up_cycles = 10  # Should also come as params, with some default. E.g. self.warm_up_cycles = 10 if 'warm_up_cycles' not in params else params['warm_up_cycles']
-        self.total_counts_threshold = total_counts_threshold
-        self.FLR_threshold = FLR_threshold
-        self.exp_flag = exp_flag
-
-        # Start experiment flag and set MOT according to flag
-        self.updateValue("Experiment_Switch", True)
-        self.MOT_switch(with_atoms=self.with_atoms, update_parameters=True)
 
         self.logger.blue('Press ESC to stop measurement.')
 
         # Initialize the batcher
-        self.batcher.set_batch_size(N)
+        self.batcher.set_batch_size(self.N)
         self.batcher.empty_all()
 
         # Associate the streams filled in OPX (FPGA) code with result handles
@@ -1017,13 +1015,13 @@ class SpectrumExperiment(BaseExperiment):
                 self.S_bins_res_acc = np.sum(np.array(self.batcher['tt_S_binning_resonance_batch']),0)  # tt_S_binning_resonance accumulated (sum over the batch)
                 self.S_bins_detuned_acc = np.sum(np.array(self.batcher['tt_S_binning_detuned_batch']), 0)  # tt_S_binning_resonance accumulated (sum over the batch)
 
-                self.find_transits_events_spectrum_exp(self.tt_S_binning_resonance, N, transit_cond)
+                self.find_transits_events_spectrum_exp(self.tt_S_binning_resonance, self.N, self.transit_cond)
 
             # Did user request we change with/without atoms state?
             self.handle_user_atoms_on_off_switch()
 
             # Did we complete N successful iterations?
-            if self.counter == N+1:
+            if self.counter == self.N+1:
                 break
 
             # We completed another repetition.
@@ -1034,7 +1032,7 @@ class SpectrumExperiment(BaseExperiment):
         # TODO: move all the below to post_run()
 
         if self.runs_status == TerminationReason.SUCCESS:
-            self.logger.info(f'Finished {N} Runs, {"with" if self.with_atoms else "without"} atoms')
+            self.logger.info(f'Finished {self.N} Runs, {"with" if self.with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.PLAYBACK_END:
             self.logger.info(f'Playback completed. Finished {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.USER:
@@ -1043,8 +1041,8 @@ class SpectrumExperiment(BaseExperiment):
             self.logger.info(f'Error Terminated the measurements after {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
 
         # Adding comment to measurement [prompt whether stopped or finished regularly]
-        if exp_flag:
-            if self.counter < N:
+        if self.exp_flag:
+            if self.counter < self.N:
                 aftComment = pymsgbox.prompt('Add comment to measurement: ', default='', timeout=int(30e3))
             else:
                 aftComment = ''
@@ -1052,8 +1050,8 @@ class SpectrumExperiment(BaseExperiment):
             aftComment = 'ignore'
 
 
-        experiment_comment = f'Transit condition: {transit_cond}\nWhich means - for {len(transit_cond)} consecutive on-resonance pulses at least 2 of the conditions must apply.\n Each element represents the minimum number of photon required per pulse to be regarded as transit.'
-        daily_experiment_comments = self.generate_experiment_summary_line(pre_comment, aftComment, self.with_atoms, self.counter)
+        experiment_comment = f'Transit condition: {self.transit_cond}\nWhich means - for {len(self.transit_cond)} consecutive on-resonance pulses at least 2 of the conditions must apply.\n Each element represents the minimum number of photon required per pulse to be regarded as transit.'
+        daily_experiment_comments = self.generate_experiment_summary_line(self.pre_comment, aftComment, self.with_atoms, self.counter)
 
         self.save_experiment_results(experiment_comment, daily_experiment_comments)
 
@@ -1252,34 +1250,37 @@ class SpectrumExperiment(BaseExperiment):
 
         # ------------------ end of saving section -------
 
-    def pre_run(self, run_parameters):
-        # Change the pre comment based on the with_atoms parameter
+    def pre_run(self, sequence_definitions, run_parameters):
+
+        super().pre_run(sequence_definitions, run_parameters)
+
+        # Append the pre-comment - the with_atoms parameter
         suffix = ' with atoms' if run_parameters['with_atoms'] else ' without atoms'
         run_parameters['pre_comment'] += suffix
+
+        # Turn Experiment flag on
+        self.Experiment_Switch(True)
+
+        # Turn MOT on/off according to parameter
+        self.MOT_switch(run_parameters['with_atoms'])
+
+        self.update_parameters()
         pass
 
-    def run(self, run_parameters):
-        rp = run_parameters  # Set so we can use in short - "rp", instead of "run_parameters"...
+    def post_run(self, sequence_definitions, run_parameters):
 
-        # TODO: (!) Why do we need the extra method "Save_SNSPDs_Spectrum_Measurement_with_tt" ?
-        run_status = self.Save_SNSPDs_Spectrum_Measurement_with_tt(N=rp['N'],
-                                                      transit_profile_bin_size=rp['transit_profile_bin_size'],
-                                                      pre_comment=rp['pre_comment'],
-                                                      transit_cond=rp['transit_cond'],
-                                                      total_counts_threshold=rp['total_counts_threshold'],
-                                                      transit_counts_threshold=rp['transit_counts_threshold'],
-                                                      FLR_threshold=rp['FLR_threshold'],
-                                                      lock_err_threshold=rp['lock_err_threshold'],
-                                                      exp_flag=rp['Exp_flag'],
-                                                      with_atoms=rp['with_atoms'])
-        return run_status
+        # The experiment is done - we turn the experiment flag off (for OPX code)
+        self.updateValue("Experiment_Switch", False)
 
-    def post_run(self, run_parameters):
+        # Ensure we turn the MOT back on
+        self.MOT_switch(with_atoms=True, update_parameters=True)
+
         pass
+
 
 if __name__ == "__main__":
 
-    run_parameters_0 = {
+    run_parameters = {
         'N': 500,
         'transit_profile_bin_size': 100,  # TODO: Q: should this be 10 or 100?
         'pre_comment': 'Spectrum Experiment. No pre-comments defined',
@@ -1292,33 +1293,27 @@ if __name__ == "__main__":
         'with_atoms': True
     }
     sequence_definitions = {
-        'total_cycles': 2,
+        'total_cycles': 1,
         'delay_between_cycles': None,  # seconds
         'sequence': [
             {
+                'name': "With atoms",
                 'parameters': {
                     'N': 500,
                     'with_atoms': True
                 }
             },
-            {
-                'parameters': {
-                    'N': 50,
-                    'with_atoms': False
-                }
-            }
+            # {
+            #     'name': 'Without Atoms',
+            #     'parameters': {
+            #         'N': 50,
+            #         'with_atoms': False
+            #     }
+            # }
         ]
     }
 
     experiment = SpectrumExperiment(playback=False, save_raw_data=False)
+    run_status = experiment.run_sequence(sequence_definitions, run_parameters)
 
-    # TODO: REMOVE, for debug only
-    sequence_definitions = None
-
-    if sequence_definitions is None:
-        experiment.run(run_parameters_0)
-    else:
-        experiment.run_sequence(sequence_definitions, run_parameters_0)
-
-    #experiment.close_opx()
-    #pass
+    pass
