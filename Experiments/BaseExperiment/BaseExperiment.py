@@ -124,7 +124,9 @@ class BaseExperiment:
         self.batcher = BDBatch(json_map_path=self.paths_map['cwd'])
 
         # Initialize the BDStreams
-        self.bdstreams = BDStreams(save_path=self.bd_results.get_custom_root('temp_root'))
+        #self.bdstreams = BDStreams(save_path=self.bd_results.get_custom_root('temp_root'))
+        self.bdstreams = BDStreams(save_path=os.path.join(self.experiment_folder, 'playback'))
+
 
         # Load Initial Values and Default Values - merge them together (Default Values prevails!)
         # These will be the experiment values
@@ -744,7 +746,7 @@ class BaseExperiment:
 
         # Save streams to file (self.bdstreams has a pointer to self.streams - so it saves it)
         if self.save_raw_data:
-            self.bdstreams.save_streams_enhanced(self.repetitions)
+            self.bdstreams.save_streams_enhanced()
 
         pass
 

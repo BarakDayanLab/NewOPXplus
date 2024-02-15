@@ -23,7 +23,6 @@ class PNSAExperiment(BaseExperiment):
         pass
 
     def __del__(self):
-        print('**** SpectrumExperiment Destructor ****')
         super(type(self), self).__del__()
         pass
 
@@ -1602,14 +1601,7 @@ class PNSAExperiment(BaseExperiment):
         self.folded_tt_DP_timebins_cumulative_avg = Utils.running_average(self.folded_tt_DP_timebins_cumulative_avg, self.folded_tt_DP_timebins, self.counter)
         pass
 
-    # TODO: Refactor/Rename (this method analyzes the results)
-    def Save_SNSPDs_PNSA_Measurement_with_tt(self, N, sequence_len, pre_comment, lock_err_threshold, desired_k_ex,
-                                             k_ex_err,
-                                             transit_condition,
-                                             filter_delay, reflection_threshold,
-                                             reflection_threshold_time,
-                                             photons_per_det_pulse_threshold, FLR_threshold, exp_flag, with_atoms,
-                                             MZ_infidelity_threshold):
+    def run(self, run_parameters):
         """
         Function for analyzing, saving and displaying data from SPRINT experiment.
         :param N: Number of maximum experiments (free throws) saved and displayed.
@@ -1619,7 +1611,6 @@ class PNSAExperiment(BaseExperiment):
                            parameters.
         :param transit_condition:
         :param lock_err_threshold: The maximal error in locking resonator to rb line (in ms, depends on the scan width/vpp)
-        :param max_probe_counts: The maximum counts probe counts at each direction measured when cavity isn't locked.
         :param filter_delay: Delay of the filter window compared to original location (can be taken by comparing the
                              time of the 1st detection pulse pick location to the original sequence)
         :param reflection_threshold:
@@ -1627,12 +1618,27 @@ class PNSAExperiment(BaseExperiment):
         :return:
         """
 
-        if not pre_comment:
-            pre_comment = self.prompt(title='Pre Experiment Run', msg='Add pre-run comment to measurement (click Cancel for "Ignore")')
-            if pre_comment == None:
-                pre_comment = 'Ignore'
+        self.run_parameters = run_parameters
+        self.N = run_parameters['N']
+        self.sequence_len = run_parameters['sequence_len'] if 'sequence_len' in run_parameters else len(Config.QRAM_Exp_Square_samples_Late)
+        self.pre_comment = run_parameters['pre_comment']
+        self.lock_err_threshold = run_parameters['lock_err_threshold']
+        self.desired_k_ex = run_parameters['desired_k_ex']
+        self.k_ex_err = run_parameters['k_ex_err']
+        self.transit_condition = run_parameters['transit_condition']
+        self.filter_delay = run_parameters['filter_delay'] if 'filter_delay' in run_parameters else [0, 0, 0]
+        self.reflection_threshold = run_parameters['reflection_threshold']
+        self.reflection_threshold_time = run_parameters['reflection_threshold_time']
+        self.photons_per_det_pulse_threshold = run_parameters['photons_per_det_pulse_threshold']
+        self.FLR_threshold = run_parameters['FLR_threshold']
+        self.exp_flag = run_parameters['exp_flag'] if 'exp_flag' in run_parameters else False
+        self.with_atoms = run_parameters['with_atoms']
+        self.MZ_infidelity_threshold = run_parameters['MZ_infidelity_threshold']
 
-        # set constant parameters for the function
+        if not self.pre_comment:
+            self.pre_comment = self.prompt(title='Pre Experiment Run', msg='Add pre-run comment to measurement (click Cancel for "Ignore")')
+            if self.pre_comment == None:
+                self.pre_comment = 'Ignore'
 
         # TODO: Q: Are these just detector "names"/"Symbols"? And also used to define the number of detectors (e.g. 8)?
         self.Num_Of_dets = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -1644,23 +1650,6 @@ class PNSAExperiment(BaseExperiment):
         self.det_pulse_len = Config.det_pulse_len + Config.num_between_zeros
 
         self.sprint_pulse_len = Config.sprint_pulse_len + Config.num_between_zeros  # TODO: Q: what is num_between_zeros ?
-
-        # TODO: These come as parameters for the experiment run - we may want to have them all under "self.params[..]" so we can
-        # TODO: (a) group logically (b) pass to other functions, instead of passing them one by one or relying on them being on self
-        self.N = N
-        self.sequence_len = sequence_len
-        self.with_atoms = with_atoms
-        self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
-        self.lock_err_threshold = lock_err_threshold
-        self.desired_k_ex = desired_k_ex
-        self.k_ex_err = k_ex_err
-        self.transit_condition = transit_condition
-        self.reflection_threshold = reflection_threshold
-        self.reflection_threshold_time = reflection_threshold_time
-        self.MZ_infidelity_threshold = MZ_infidelity_threshold
-        self.photons_per_det_pulse_threshold = photons_per_det_pulse_threshold
-        self.FLR_threshold = FLR_threshold
-        self.exp_flag = exp_flag
 
         self.warm_up_cycles = 5  # Should also come as params, with some default. E.g. self.warm_up_cycles = 10 if 'warm_up_cycles' not in params else params['warm_up_cycles']
 
@@ -1746,8 +1735,6 @@ class PNSAExperiment(BaseExperiment):
         # Prepare the sub figures needed for the plotting phase
         self.prepare_figures()
 
-        ############################################ START WHILE LOOP #################################################
-
         # Initialize the variables before loop starts
         self.counter = 1  # Total number of successful cycles
         self.repetitions = 1  # Total number of cycles
@@ -1757,6 +1744,8 @@ class PNSAExperiment(BaseExperiment):
 
         self.pause_flag = False
         self.runs_status = TerminationReason.SUCCESS  # default status of the run is Success
+
+        ############################################ START WHILE LOOP #################################################
 
         # ---------------------------------------------------------------------------------
         # Experiment Mainloop
@@ -1914,6 +1903,8 @@ class PNSAExperiment(BaseExperiment):
             self.logger.info(f'User Terminated the measurements after {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.ERROR:
             self.logger.info(f'Error Terminated the measurements after {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
+        elif self.runs_status == TerminationReason.PLAYBACK_END:
+            self.logger.info(f'Run Terminated - completed all recorded playback data after {self.counter} Runs')
 
         # Adding comment to measurement [prompt whether stopped or finished regularly]
         aft_comment = 'Ignore'
@@ -1934,14 +1925,10 @@ class PNSAExperiment(BaseExperiment):
             #     aft_comment = ''
 
         experiment_comment = f'Transit condition: {self.transit_condition}\nReflection threshold {self.reflection_threshold} @ {int(self.reflection_threshold_time/1e6)} ms'
-        daily_experiment_comments = self.generate_experiment_summary_line(pre_comment, aft_comment, self.with_atoms, self.counter)
+        daily_experiment_comments = self.generate_experiment_summary_line(self.pre_comment, aft_comment, self.with_atoms, self.counter)
 
         # Save all results of experiment
         self.save_experiment_results(experiment_comment, daily_experiment_comments, for_analysis)
-
-        # End of Experiment! Ensure we turn the experiment flag off and return the MOT
-        self.updateValue("Experiment_Switch", False)
-        self.MOT_switch(with_atoms=True, update_parameters=True)
 
         return self.runs_status
 
@@ -2066,6 +2053,8 @@ class PNSAExperiment(BaseExperiment):
         if self.post_warm_up_completed:
             return False
 
+        self.logger.info(f'Running Warmup phase #{self.warm_up_cycles} (exp_flag: {self.exp_flag})')
+
         # Get data from OPX streams
         self.get_results_from_streams()
 
@@ -2087,21 +2076,18 @@ class PNSAExperiment(BaseExperiment):
         if warm_up_phase_complete:
             self.post_warm_up()
             self.post_warm_up_completed = True  # Mark the fact we are done
+            self.logger.info(f'Warmup phase completed.')
 
         return not warm_up_phase_complete
 
     def is_warm_up_phase_complete(self):
         """
         We are in warm-up if these conditions are met:
-        - We are in playback mode
         - We didn't complete already the warm-up post process
         - We haven't yet completed WARMUP_CYCLES
         - We haven't yet acquired a lock on resonance
         - We are in experiment, and the threshold is not yet filled
         """
-
-        if self.playback['active']:
-            return True
 
         # Did we finish going through all warm-up cycles? If not, we're still in warm-up -> return True
         if self.warm_up_cycles > 0:
@@ -2109,7 +2095,7 @@ class PNSAExperiment(BaseExperiment):
             return False
 
         # We stay in warm-up while we're not locked
-        if self.exp_flag and self.lock_err > self.lock_err_threshold:
+        if self.exp_flag and self.lock_err > self.lock_err_threshold and not self.playback['active']:
             return False
 
         # We stay in warm-up if we're not within threshold
@@ -2233,37 +2219,24 @@ class PNSAExperiment(BaseExperiment):
         suffix = ' with atoms' if run_parameters['with_atoms'] else ' without atoms'
         pre_comment = '' if 'pre_comment' not in run_parameters else run_parameters['pre_comment']
         run_parameters['pre_comment'] = pre_comment + suffix
+
+        # Turn Experiment flag on
+        self.Experiment_Switch(True)
+
+        # Turn MOT on/off according to parameter
+        self.MOT_switch(run_parameters['with_atoms'])
+
+        self.update_parameters()
         pass
 
-    def run(self, run_parameters):
-        rp = run_parameters  # Set so we can use in short - "rp", instead of "run_parameters"...
-
-        # Set switches
-        # TODO: Can we move here to Enums?
-        self.Experiment_Switch(True)
-        self.MOT_switch(rp['with_atoms'])
-        self.update_parameters()
-
-        # TODO: Q: Config.PNSA_Exp_Gaussian_samples_S is constructed in a function, using the parameter "sprint_pulse_len" - so why not use it here?
-        # TODO: Q: (a) we don't want to use duplicate variables holding the same value, (b) it mentions "samples_S" - but it's the same for "N" as well...
-        run_status = self.Save_SNSPDs_PNSA_Measurement_with_tt(N=rp['N'],
-                                                  sequence_len=len(Config.PNSA_Exp_Square_samples_Late),
-                                                  pre_comment=rp['pre_comment'],
-                                                  lock_err_threshold=rp['lock_err_threshold'],
-                                                  desired_k_ex=rp['desired_k_ex'],
-                                                  k_ex_err=rp['k_ex_err'],
-                                                  transit_condition=rp['transit_condition'],
-                                                  filter_delay=rp['filter_delay'],
-                                                  reflection_threshold=rp['reflection_threshold'],
-                                                  reflection_threshold_time=rp['reflection_threshold_time'],
-                                                  photons_per_det_pulse_threshold=rp['photons_per_det_pulse_threshold'],
-                                                  FLR_threshold=rp['FLR_threshold'],
-                                                  exp_flag=rp['Exp_flag'],
-                                                  with_atoms=rp['with_atoms'],
-                                                  MZ_infidelity_threshold=rp['MZ_infidelity_threshold'])
-        return run_status
-
     def post_run(self, run_parameters):
+
+        # The experiment is done - we turn the experiment flag off (for OPX code)
+        self.updateValue("Experiment_Switch", False)
+
+        # Ensure we turn the MOT back on
+        self.MOT_switch(with_atoms=True, update_parameters=True)
+
         pass
 
 
@@ -2276,6 +2249,7 @@ if __name__ == "__main__":
     # Playback definitions
     playback_parameters = {
         "active": False,
+        # "playback_files_path": "<put here path to folder where playback files reside"  # r'C:\temp\streams_raw_data'
         "save_results": False,
         "plot": "LIVE",  # "LIVE", "LAST", "NONE"
         "delay": -1,  # -1,  # 0.5,  # In seconds. Use -1 for not playback delay
@@ -2294,7 +2268,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 1.12,
         'photons_per_det_pulse_threshold': 12,
-        'Exp_flag': False,
+        'exp_flag': False,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')

@@ -23,7 +23,6 @@ class QRAMExperiment(BaseExperiment):
         pass
 
     def __del__(self):
-        print('**** SpectrumExperiment Destructor ****')
         super(type(self), self).__del__()
         pass
 
@@ -1690,8 +1689,6 @@ class QRAMExperiment(BaseExperiment):
             if self.pre_comment == None:
                 self.pre_comment = 'Ignore'
 
-        # set constant parameters for the function
-
         # TODO: Q: Are these just detector "names"/"Symbols"? And also used to define the number of detectors (e.g. 8)?
         self.Num_Of_dets = [1, 2, 3, 4, 5, 6, 7, 8]
         self.detectors_names = ['BP', 'BP', 'DP', 'DP', 'S', 'FS', 'FS', 'N']
@@ -2152,7 +2149,6 @@ class QRAMExperiment(BaseExperiment):
     def is_warm_up_phase_complete(self):
         """
         We are in warm-up if these conditions are met:
-        - We are in playback mode
         - We didn't complete already the warm-up post process
         - We haven't yet completed WARMUP_CYCLES
         - We haven't yet acquired a lock on resonance

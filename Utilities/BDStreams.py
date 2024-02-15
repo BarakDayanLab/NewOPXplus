@@ -96,9 +96,6 @@ class BDStreams:
                 bytes_unpacked = struct.unpack('>i', bytes)[0]
                 current_time = int(bytes_unpacked)
 
-                # Get the repetition we were at for this data
-                #repetition = int(struct.unpack('>H', file.read(2))[0])
-
                 number_of_streams = int(struct.unpack('>b', file.read(1))[0])
                 for i in range(0, number_of_streams):
 
@@ -192,7 +189,7 @@ class BDStreams:
             return [data]
         return data
 
-    def save_streams_enhanced(self, repetitions):
+    def save_streams_enhanced(self):
         """
 
                         +-----------------+-------------+
@@ -221,7 +218,6 @@ class BDStreams:
 
             # Start packing the data with 'b' (1-byte=unsigned-char) for number of streams
             bytes_array += struct.pack('>ib', int(current_time), len(streams_to_save))
-            #bytes_array += struct.pack('>iHb', int(current_time), repetitions, len(streams_to_save))
 
             # Iterate over all streams and pack their name and data
             for stream in streams_to_save:
