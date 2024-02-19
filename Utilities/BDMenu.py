@@ -70,7 +70,7 @@ class BDMenu:
 
         # If it is an exit function, then exit
         if func_name.lower() == 'exit':
-            sys.exit("User exited")
+            os._exit(0)
             return
 
         args = {}

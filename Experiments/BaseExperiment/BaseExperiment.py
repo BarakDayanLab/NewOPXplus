@@ -122,8 +122,12 @@ class BaseExperiment:
         self.batcher = BDBatch(json_map_path=self.paths_map['cwd'])
 
         # Initialize the BDStreams
+        self.playback_files_path = os.path.join(self.experiment_folder, 'playback')
+        if not os.path.exists(self.playback_files_path):
+            os.makedirs(self.playback_files_path, exist_ok=True)
+
         #self.bdstreams = BDStreams(save_path=self.bd_results.get_custom_root('temp_root'))
-        self.bdstreams = BDStreams(save_path=os.path.join(self.experiment_folder, 'playback'))
+        self.bdstreams = BDStreams(save_path=self.playback_files_path)
 
 
         # Load Initial Values and Default Values - merge them together (Default Values prevails!)
@@ -233,7 +237,7 @@ class BaseExperiment:
         # we hold this connection until update is finished, then we close the connection.
         # we do still hold the QuadRFController objects, for access to the table (read only!) when the experiment is running.
         qrfContr = QuadRFMOTController(initialValues=self.Exp_Values,
-                                       updateChannels=(1, 2, 4),
+                                       updateChannels=[1, 2, 4],
                                        # updateChannels=(1, 4),  # For constant Depump
                                        topticaLockWhenUpdating=False,
                                        debugging=True,
