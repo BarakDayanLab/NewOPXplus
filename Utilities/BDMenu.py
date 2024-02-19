@@ -86,15 +86,20 @@ class BDMenu:
                 if len(value_str) == 0:
                     value_str = default_values_str
                 value = self._convert_input(value_str, arg['type'])
-                args[arg['name']] = value
+
+                # Note - we always use lowercase for the arguments - so make sure the update function has lowercase args
+                args[arg['name'].lower()] = value
 
         # Invoke the method/action
         func = getattr(self.caller, func_name, self.func_not_found)
-
-        if len(args) == 0:
-            result = func()
-        else:
-            result = func(**args)
+        result = None
+        try:
+            if len(args) == 0:
+                result = func()
+            else:
+                result = func(**args)
+        except Exception as err:
+            print(f"Unable to invoke function {func} - {err}")
 
         return result
 
