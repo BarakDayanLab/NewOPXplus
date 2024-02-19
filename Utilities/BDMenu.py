@@ -99,7 +99,7 @@ class BDMenu:
             else:
                 result = func(**args)
         except Exception as err:
-            print(f"Unable to invoke function {func} - {err}")
+            print(f"Unable to invoke function {func} or failed during invocation - {err}")
 
         return result
 

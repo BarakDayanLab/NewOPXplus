@@ -51,6 +51,14 @@
       "spacer": true
     },
     {
+      "order": 6,
+      "display": "Open Windows Explorer on last Measurement folder",
+      "action": "open_windows_explorer"
+    },
+    {
+      "spacer": true
+    },
+    {
       "order": 9,
       "display": "Exit",
       "action": "exit"
