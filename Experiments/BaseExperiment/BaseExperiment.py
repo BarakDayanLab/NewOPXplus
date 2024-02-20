@@ -229,7 +229,7 @@ class BaseExperiment:
         # we hold this connection until update is finished, then we close the connection.
         # we do still hold the QuadRFController objects, for access to the table (read only!) when the experiment is running.
         qrfContr = QuadRFMOTController(initialValues=self.Exp_Values,
-                                       updateChannels=(1, 2, 4),
+                                       updateChannels=[1, 2, 4],
                                        # updateChannels=(1, 4),  # For constant Depump
                                        topticaLockWhenUpdating=False,
                                        debugging=True,

@@ -1502,6 +1502,8 @@ class PNSAExperiment(BaseExperiment):
             if self.new_timetags_detected(self.batcher['tt_FS_measure_batch'], self.tt_FS_measure):
                 break
 
+            self.info(f'Repetition #{self.repetitions}. Waiting for values from stream (wait_cycle: {count}). No new data coming from detectors (exp_flag = {self.exp_flag})')
+
             # Are we waiting too long?
             count += 1
             if TOO_MANY_WAITING_CYCLES != -1 and count > TOO_MANY_WAITING_CYCLES:
@@ -1620,7 +1622,7 @@ class PNSAExperiment(BaseExperiment):
 
         self.run_parameters = run_parameters
         self.N = run_parameters['N']
-        self.sequence_len = run_parameters['sequence_len'] if 'sequence_len' in run_parameters else len(Config.QRAM_Exp_Square_samples_Late)
+        self.sequence_len = run_parameters['sequence_len'] if 'sequence_len' in run_parameters else len(Config.PNSA_Exp_Square_samples_Late)
         self.pre_comment = run_parameters['pre_comment']
         self.lock_err_threshold = run_parameters['lock_err_threshold']
         self.desired_k_ex = run_parameters['desired_k_ex']
@@ -1635,6 +1637,7 @@ class PNSAExperiment(BaseExperiment):
         self.with_atoms = run_parameters['with_atoms']
         self.MZ_infidelity_threshold = run_parameters['MZ_infidelity_threshold']
 
+        # Handle pre-comment - keep what we got in parameters or prompt the user for a comment
         if not self.pre_comment:
             self.pre_comment = self.prompt(title='Pre Experiment Run', msg='Add pre-run comment to measurement (click Cancel for "Ignore")')
             if self.pre_comment == None:
@@ -1651,6 +1654,9 @@ class PNSAExperiment(BaseExperiment):
 
         self.sprint_pulse_len = Config.sprint_pulse_len + Config.num_between_zeros  # TODO: Q: what is num_between_zeros ?
 
+        # Flag used to hold the status of with/without atoms - operated by user
+        self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
+
         self.warm_up_cycles = 5  # Should also come as params, with some default. E.g. self.warm_up_cycles = 10 if 'warm_up_cycles' not in params else params['warm_up_cycles']
 
         # initialize parameters - set zeros vectors and empty lists
@@ -1664,7 +1670,7 @@ class PNSAExperiment(BaseExperiment):
         self.pulses_location_in_seq, self.filter_gen = self.get_pulses_location_in_seq(0,
                                                                                        Config.PNSA_Exp_Gaussian_samples_General,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
-        self.pulses_location_in_seq_S, self.filter_S = self.get_pulses_location_in_seq(filter_delay[0],
+        self.pulses_location_in_seq_S, self.filter_S = self.get_pulses_location_in_seq(self.filter_delay[0],
                                                                                        Config.PNSA_Exp_Gaussian_samples_S,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
         # TODO: Q: Why are we fixing the Gaussian here?
@@ -1676,10 +1682,10 @@ class PNSAExperiment(BaseExperiment):
         #      np.array(Config.PNSA_Exp_Gaussian_samples_General[
         #               self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]]) * \
         #      Config.sprint_pulse_amp_Early[0]).tolist()
-        self.pulses_location_in_seq_N, self.filter_N = self.get_pulses_location_in_seq(filter_delay[1],
+        self.pulses_location_in_seq_N, self.filter_N = self.get_pulses_location_in_seq(self.filter_delay[1],
                                                                                        self.PNSA_Exp_Gaussian_samples_N,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
-        self.pulses_location_in_seq_A, self.filter_A = self.get_pulses_location_in_seq(filter_delay[2],
+        self.pulses_location_in_seq_A, self.filter_A = self.get_pulses_location_in_seq(self.filter_delay[2],
                                                                                        Config.PNSA_Exp_Gaussian_samples_Ancilla,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
         # Get experiment type: (Added by Dor, Sorry for the mess)
@@ -1719,7 +1725,7 @@ class PNSAExperiment(BaseExperiment):
         self.logger.blue('Press ESC to stop measurement.')
 
         # Initialize the batcher
-        self.batcher.set_batch_size(N)
+        self.batcher.set_batch_size(self.N)
         self.batcher.empty_all()
 
         # Associate the streams filled in OPX (FPGA) code with result handles
@@ -1759,16 +1765,16 @@ class PNSAExperiment(BaseExperiment):
             if self.runs_status == TerminationReason.USER:
                 break
 
-            # Set lock error and kappa_ex
-            self.lock_err = None
-            self.k_i = 5  # [MHz
+            # Set lock error and kappa_ex as coming over communication line
+            self.lock_err = 99.9
+            self.k_i = 6  # [MHz
             self.k_ex = 99.9  # Dummy default value for a case we don't have it
             if 'cavity_lock' in self.comm_messages:
-                self.lock_err = self.comm_messages['cavity_lock']['lock_error'] if 'lock_error' in self.comm_messages['cavity_lock'] else None
+                self.lock_err = self.comm_messages['cavity_lock']['lock_error'] if 'lock_error' in self.comm_messages['cavity_lock'] else 99.9
                 self.k_ex = self.comm_messages['cavity_lock']['k_ex'] if 'k_ex' in self.comm_messages['cavity_lock'] else 99.9  # TODO: need to handle case where there's no Kappa Ex yet
 
             # Define efficiencies:
-            self.Cavity_transmission = Utils.cavity_transmission(0, self.k_ex, k_i=self.k_i, h=2.3)
+            self.Cavity_transmission = Utils.cavity_transmission(0, self.k_ex, k_i=self.k_i, h=0.5)
             self.Eff_from_taper_N = Config.Eff_from_taper_N * \
                                     (self.Cavity_transmission / 0.5)
             self.Eff_from_taper_S = Config.Eff_from_taper_S * \
@@ -2251,7 +2257,10 @@ if __name__ == "__main__":
     # Playback definitions
     playback_parameters = {
         "active": False,
-        # "playback_files_path": "<put here path to folder where playback files reside"  # r'C:\temp\streams_raw_data'
+        #"playback_files_path": "<put here path to folder where playback files reside"  # r'C:\temp\streams_raw_data'
+        'playback_files_path': r"C:\temp\refactor_debug\Experiment_results\QRAM\20240215\153533_Photon_TimeTags\playback",
+        #'playback_files_path': 'C:\\temp\\playback_data\\QRAM\\20240213-NEW\\run 2',
+        "old_format": False,
         "save_results": False,
         "plot": "LIVE",  # "LIVE", "LAST", "NONE"
         "delay": -1,  # -1,  # 0.5,  # In seconds. Use -1 for not playback delay
@@ -2261,9 +2270,9 @@ if __name__ == "__main__":
         'N': 500,  # 50,
         'transit_condition': [2, 1, 2],
         'pre_comment': '',  # Put 'None' or '' if you don't want pre-comment prompt
-        'lock_err_threshold': 2, # [Mhz]
-        'desired_k_ex': 36, # [Mhz]
-        'k_ex_err': 3,  # [Mhz]
+        'lock_err_threshold': 2,  # [Mhz]
+        'desired_k_ex': 25, # [Mhz]
+        'k_ex_err': 5,  # [Mhz]
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,
         'reflection_threshold_time': 9e6,
@@ -2287,8 +2296,8 @@ if __name__ == "__main__":
                 }
             },
             # {
-            #     'parameters': {
             #     'name': 'Without Atoms',
+            #     'parameters': {
             #         'N': 50,
             #         'with_atoms': False
             #     }
@@ -2296,7 +2305,7 @@ if __name__ == "__main__":
         ]
     }
 
-    experiment = PNSAExperiment(playback_parameters=playback_parameters, save_raw_data=False)
+    experiment = PNSAExperiment(playback_parameters=playback_parameters, save_raw_data=True)
     run_status = experiment.run_sequence(sequence_definitions, run_parameters)
 
     pass

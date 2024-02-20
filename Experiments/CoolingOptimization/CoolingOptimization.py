@@ -4,6 +4,7 @@ from Utilities.Utils import Utils
 import numpy as np
 from PIL import Image
 import time
+import subprocess
 import json
 import os
 from pathlib import Path
@@ -305,6 +306,25 @@ class CoolingSequenceOptimizer(BaseExperiment):
         for i in range(len(img_array)):
             out.write(img_array[i])
         out.release()
+
+    def open_windows_explorer(self):
+        """ Opens Windows Explorer at the folder of the last measurement """
+
+        # Get experiment folder
+        experiment_root_path = self.bd_results.get_custom_root('experiment_root')
+
+        # Get all folders in experiment folder and pick the most recent one
+        only_folders = [f for f in os.listdir(experiment_root_path) if not os.path.isfile(os.path.join(experiment_root_path, f))]
+        most_recent_folder = os.path.join(experiment_root_path, only_folders[-1], 'extra_files')
+        cmd = f'explorer /select,"{most_recent_folder}"'
+
+        try:
+            subprocess.Popen(cmd)
+            self.info(f'Opened Windows Explorer at {most_recent_folder}')
+        except Exception as err:
+            print(f'Failed to launch explorer. {err}')
+
+        pass
 
     def gaussian_fit_all_pictures_in_path(self, path, backgroundPath=None, saveFitsPath=None, imgBounds=None):
         if backgroundPath is None:
