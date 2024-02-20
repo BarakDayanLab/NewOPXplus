@@ -1826,11 +1826,11 @@ class QRAMExperiment(BaseExperiment):
                 break
 
             # Set lock error and kappa_ex as coming over communication line
-            self.lock_err = None
-            self.k_i = 5  # [MHz
+            self.lock_err = 99.9
+            self.k_i = 6  # [MHz]
             self.k_ex = 99.9  # Dummy default value for a case we don't have it
             if 'cavity_lock' in self.comm_messages:
-                self.lock_err = self.comm_messages['cavity_lock']['lock_error'] if 'lock_error' in self.comm_messages['cavity_lock'] else None
+                self.lock_err = self.comm_messages['cavity_lock']['lock_error'] if 'lock_error' in self.comm_messages['cavity_lock'] else 99.9
                 self.k_ex = self.comm_messages['cavity_lock']['k_ex'] if 'k_ex' in self.comm_messages['cavity_lock'] else 99.9  # TODO: need to handle case where there's no Kappa Ex yet
 
             # Define efficiencies:
@@ -2318,8 +2318,8 @@ if __name__ == "__main__":
     playback_parameters = {
         "active": False,
         #"playback_files_path": "<put here path to folder where playback files reside"  # r'C:\temp\streams_raw_data'
-        #'playback_files_path': 'C:\\temp\\streams_raw_data',
-        'playback_files_path': 'C:\\temp\\playback_data\\QRAM\\20240213-NEW\\run 2',
+        'playback_files_path': r"C:\temp\refactor_debug\Experiment_results\QRAM\20240215\153533_Photon_TimeTags\playback",
+        #'playback_files_path': 'C:\\temp\\playback_data\\QRAM\\20240213-NEW\\run 2',
         "old_format": False,
         "save_results": False,
         "plot": "LIVE",  # "LIVE", "LAST", "NONE"
