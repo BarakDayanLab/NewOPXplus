@@ -36,24 +36,31 @@ def opx_control(obj, qm):
         # g2_idx = declare(int)
         # g2_st = declare_stream()
 
-        measuring_time = Config.Measure_Time * 1e6
-        #measuring_time = 100 * 1e6  # [nsec]
+        # How often do we steam out the counts:
+        measuring_time = Config.Measure_Time * 1e6  # Convert from [ms] to [nsec]
+
+        # Define number of repetitions
         rep = int(measuring_time / m_window)
 
         with infinite_loop_():
+
+            # We run [rep] cycles of the pulses that are [MOT_pulse_len] long
             with for_(n, 0, n < rep, n + 1):
                 play("Const_open_triggered", "PULSER_N")
                 # play("Const_open", "PULSER_N")
                 # play("Const_open", "PULSER_S")
                 play("Const_open_triggered", "PULSER_S")
 
-                # playing early and late AOM's
+                # We play either early or late AOMs - to test different system paths efficiencies
                 play("Const_open", "PULSER_L")
                 # play("Const_high_open", "PULSER_E")
 
                 # play("Square_Pulse", "PULSER_LO")
                 # play("Const_open"*amp(0.7), "PULSER_LO")
-                play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
+
+                # TODO: We can remove this altogether
+                #play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
+
                 # play("Spectrum_pulse", "AOM_Spectrum")
                 # play("CRUS_pulse", "Pulser_CRUS")
 

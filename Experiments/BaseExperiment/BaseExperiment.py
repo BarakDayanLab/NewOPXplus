@@ -103,28 +103,24 @@ class BaseExperiment:
             if what_say_thou.lower() != 'yes':
                 sys.exit('Aborting. Do not want to run from private state on lab live.')
 
-
         if self.playback["active"]:
             self._opx_skip = True
             self._quadrf_skip = True
 
-
         # Initialize the BDResults helper - for saving experiment results
         self.bd_results = BDResults(json_map_path=self.paths_map['cwd'], version="0.1", logger=self.logger)
-        self.experiment_folder = self.bd_results.create_experiment_folder()
+        self.bd_results.create_experiment_run_folder()
 
         # Tell logger we want to save the log
-        self.logger.turn_save_on(log_path=self.experiment_folder)
+        self.logger.turn_save_on(log_path=self.bd_results.experiment_run_folder)
 
-        self.logger.info(f'Starting experiment. Experiment folder is here: {self.experiment_folder}')
+        self.logger.info(f'Starting experiment. Experiment folder is here: {self.bd_results.experiment_run_folder}')
 
         # Initialize the BDBatch helper - to serve us when batching experiment samples
         self.batcher = BDBatch(json_map_path=self.paths_map['cwd'])
 
         # Initialize the BDStreams
-        #self.bdstreams = BDStreams(save_path=self.bd_results.get_custom_root('temp_root'))
-        self.bdstreams = BDStreams(save_path=os.path.join(self.experiment_folder, 'playback'))
-
+        self.bdstreams = BDStreams(save_path=os.path.join(self.bd_results.experiment_run_folder, 'playback'), save_streams=save_raw_data)
 
         # Load Initial Values and Default Values - merge them together (Default Values prevails!)
         # These will be the experiment values

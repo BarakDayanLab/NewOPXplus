@@ -19,7 +19,6 @@ class SNSPDsCountExperiment(BaseExperiment):
         pass
 
     def __del__(self):
-        print('**** SpectrumExperiment Destructor ****')
         super(type(self), self).__del__()
         pass
 
@@ -31,6 +30,7 @@ class SNSPDsCountExperiment(BaseExperiment):
 
         self.QuadRFControllers = []
 
+        # Toptica F1 - double-pass
         qrfContr = QuadRFMOTController(initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
                             updateChannels=[3], debugging=False,
                             continuous=True)  # updates values on QuadRF (uploads table) #

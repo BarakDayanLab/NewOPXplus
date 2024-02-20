@@ -1,4 +1,5 @@
 from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
+from Utilities.Utils import Utils
 
 import numpy as np
 from PIL import Image
@@ -125,7 +126,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
         gaussianFitResult = self.gaussianFitAllPicturesInPath(path, backgroundPath=background_image_path, saveFitsPath=extra_files, imgBounds=self.imgBounds)
 
         if len(gaussianFitResult) == 0:
-            self.warn('No Guassian fit on images, not trying any fits. Skipping.')
+            self.warn('No Gaussian fit on images, not trying any fits. Skipping.')
             return
 
         # ---- Take Gaussian fit results and get temperature (x,y) and launch speed -----------
@@ -195,6 +196,11 @@ class CoolingSequenceOptimizer(BaseExperiment):
 
         background_image_path = os.path.join(extra_files, 'background.bmp')
         self.camera.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+
+        # Update back the pre_pulse_duration to the Config original value
+        ppd_at_start = float(self.Exp_Values['PrePulse_duration'])
+        self.info(f'Updating PrePulse Duration back to {ppd_at_start}')
+        self.updateValue("PrePulse_duration", float(ppd_at_start), update_parameters=True)
 
         # If required, create video from images
         if create_video:
@@ -300,6 +306,41 @@ class CoolingSequenceOptimizer(BaseExperiment):
             out.write(img_array[i])
         out.release()
 
+    def gaussian_fit_all_pictures_in_path(self, path, backgroundPath=None, saveFitsPath=None, imgBounds=None):
+        if backgroundPath is None:
+            backgroundPath = os.path.join(path, 'extra_files', 'background.bmp')
+
+        if imgBounds is None:
+            imgBounds = self.imgBounds
+
+        # Get all files in folder (except the 'background' file)
+        files = Utils.get_files_in_path(path, exclude_token='background', return_full_path=True)
+
+        res = []
+        for full_file_name in files:
+            try:
+                f = Path(full_file_name).stem.replace(',', ';')
+                fileRes = []
+                ## -- get x and y values from file name ----
+                keysAndValues = f.split(';')
+                keys = []
+                for key in keysAndValues:
+                    value = key[key.find('=') + 1:]
+                    only_key = key[:key.find('=')]
+                    fileRes.append(float(value))
+                    keys.append(only_key)
+                ## -- get z value from gaussian fit ----
+                gaussianFit = self.GaussianFit(full_file_name, background_file=backgroundPath, saveFitsPath=saveFitsPath, imgBounds=imgBounds)
+                if gaussianFit is None:
+                    continue  # if fit returned None, meaning the fit failed (sigma is out of self.sigma_bounds), discard this results and continue to the next fit
+                fileRes.append(keys)
+                fileRes.append(gaussianFit)
+                res.append(fileRes)
+            except Exception as e:
+                print(e)
+
+        pass
+
     def gaussianFitAllPicturesInPath(self, path, backgroundPath=None, saveFitsPath=None, imgBounds=None):
         if backgroundPath is None:
             backgroundPath = os.path.join(path, 'extra_files', 'background.bmp')
@@ -353,6 +394,15 @@ class CoolingSequenceOptimizer(BaseExperiment):
         if not imgBounds:
             h, w = ImgToFit.shape
             imgBounds = (0, 0, w, h)  # that is, don't crop image
+
+        # Show the img bounds on top of the image taken with atoms
+        if False:
+            line_thickness = 5
+            line_color = (0, 0, 255)
+            image_with_bounds = ImgToFit.copy()
+            cv2.rectangle(image_with_bounds, 0, 0, line_color, line_thickness)
+            cv2.imshow("Image Bounds", image_with_bounds)
+            cv2.waitKey(0)
 
         if imgBounds: ImgToFit = ImgToFit[imgBounds[1]:imgBounds[3], imgBounds[0]:imgBounds[2]]  #
         img_max_index = [np.argmax(np.sum(ImgToFit, axis=0)), np.argmax(np.sum(ImgToFit, axis=1))]
