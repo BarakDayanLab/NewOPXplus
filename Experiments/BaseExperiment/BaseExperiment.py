@@ -179,10 +179,7 @@ class BaseExperiment:
             self.bdsocket.run_server()
 
         # Attempt to initialize Camera functionality
-        self.connect_camera()
-
-        # TODO: What is this? Do we need this in BaseExperiment
-        #self.init_spectroscopy()
+        #self.connect_camera()
 
         # Setup keyboard listener
         self.listener = keyboard.Listener(on_press=self._on_press, on_release=self._on_release)
@@ -205,14 +202,6 @@ class BaseExperiment:
         if hasattr(self, 'qmm'):
             self.qmm.close()
         pass
-
-    def init_spectroscopy(self):
-        # Setup of MW spectroscopy
-        self.mws_logger = logging.getLogger("MWSpectroscopy")
-        self.mws_logger.setLevel(INFO)
-        handler = StreamHandler(sys.stdout)
-        handler.setFormatter(Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
-        self.mws_logger.addHandler(handler)
 
     # Initialize the Base-Experiment: QuadRF/MOT/PGC/FreeFall
     # (a) Initialize QuadRF (b) Set experiment related variables (c) Initialize OPX
@@ -678,12 +667,20 @@ class BaseExperiment:
 
             # Keep the current cycle, so pre_run, run, post_run can relate to it and do things once/first/last/etc.
             sequence_definitions['current_cycle'] = i
+            sequence_definitions['last_cycle'] = (i == num_cycles-1)
 
+            j = 0
             for sequence in sequence_definitions['sequence']:
                 # Modify params
                 merged_params = Utils.merge_jsons(run_parameters, sequence['parameters'])
 
                 sequence_definitions['sequence_name'] = sequence['name']
+                sequence_definitions['sequence_step'] = j
+
+                j += 1
+                sequence_definitions['last_sequence_step'] = (j == len(sequence_definitions['sequence']))
+
+                sequence_definitions['last_cycle_and_last_sequence'] = sequence_definitions['last_cycle'] and sequence_definitions['last_sequence_step']
 
                 self.pre_run(sequence_definitions, merged_params)
                 run_status = self.run(sequence_definitions, merged_params)

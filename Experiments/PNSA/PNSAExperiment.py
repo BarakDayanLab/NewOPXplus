@@ -426,7 +426,13 @@ class PNSAExperiment(BaseExperiment):
             # TODO: Q: I assume this is a time-window to ignore some time on start/end, how did we decide on this time?  TODO: Q: what us the meaning of this specific time-window?
             if (element > int(0.6e6)) and (element < int(self.M_time - 0.4e6)):
                 for indx, tup in enumerate(self.sorted_pulses):
-                    if (tt_inseq >= tup[0]) and (tt_inseq <= tup[1]):
+                    if all(x == 0 for x in Config.PNSA_Exp_Square_samples_Early[tup[0]:tup[1]]):
+                        start_pulse_time_in_seq = tup[0]
+                        end_pulse_time_in_seq = tup[1]
+                    else:
+                        start_pulse_time_in_seq = tup[0] + Config.MZ_delay
+                        end_pulse_time_in_seq = tup[1] + Config.MZ_delay
+                    if (tt_inseq >= start_pulse_time_in_seq) and (tt_inseq <= end_pulse_time_in_seq):
                         if indx < self.number_of_detection_pulses_per_seq:
                             if tup[2] == 'N':
                                 self.num_of_det_transmissions_per_seq_N_[seq_num][indx].append(element)
@@ -1799,8 +1805,8 @@ class PNSAExperiment(BaseExperiment):
             # Perform all analytics and calculations needed for display
             self.experiment_calculations()
 
-            # Plot figures
-            self.plot_figures()
+            # # Plot figures
+            # self.plot_figures()
 
             # Determine if we're "acquired" - e.g., worthy to save data :-)
             self.acquisition_flag = self.is_acquired()
@@ -1891,6 +1897,9 @@ class PNSAExperiment(BaseExperiment):
                 # Batch all data samples
                 self.batcher.batch_all(self)
 
+            # Plot figures
+            self.plot_figures()
+
             # Did user request we change with/without atoms state?
             self.handle_user_atoms_on_off_switch()
 
@@ -1904,7 +1913,7 @@ class PNSAExperiment(BaseExperiment):
         ############################################## END WHILE-LOOP #################################################
 
         if self.runs_status == TerminationReason.SUCCESS:
-            self.logger.info(f'Finished {N} Runs, {"with" if self.with_atoms else "without"} atoms')
+            self.logger.info(f'Finished {self.N} Runs, {"with" if self.with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.USER:
             self.logger.info(f'User Terminated the measurements after {self.counter} Runs, {"with" if self.with_atoms else "without"} atoms')
         elif self.runs_status == TerminationReason.ERROR:
@@ -1916,12 +1925,24 @@ class PNSAExperiment(BaseExperiment):
         aft_comment = 'Ignore'
         for_analysis = False
         if self.exp_flag:
-            bdd = BDDialog()
-            text_res, text_button = bdd.prompt(title='Experiment completed', message='Insert comment for experiment',
-                                               button1_text='Shager!', button2_text='Ignore')
-            aft_comment = ('Ignore. ' if text_button == 'Ignore' else '') + text_res
 
-            for_analysis = text_button == 'Shager!'
+            # Format the sequence-step message
+            num_sequence_steps = len(sequence_definitions['sequence'])
+            sequence_step_str = f'Sequence step #{sequence_definitions["sequence_step"] + 1}/{num_sequence_steps} - {sequence_definitions["sequence_name"]}'
+
+            dialog_str = ''
+
+            # Check if this is (A) The last sequence in the last cycle or (B) User Terminated
+            if sequence_definitions['last_cycle_and_last_sequence'] or self.runs_status == TerminationReason.USER:
+                bdd = BDDialog()
+                text_res, text_button = bdd.prompt(title='Experiment completed', message='Insert comment for experiment',
+                                                   button1_text='Shager!', button2_text='Ignore')
+                dialog_str = ('Ignore. ' if text_button == 'Ignore' else '') + text_res
+                for_analysis = text_button == 'Shager!'
+            else:
+                for_analysis = True
+
+            aft_comment = f'{sequence_step_str}. {dialog_str}'
 
             # if self.counter < N:
             #     aft_comment = self.prompt(title='Post Experiment Run', msg='Add post-run comment to measurement: (click Cancel for "Ignore") ', default='', timeout=int(30e3))
@@ -2271,15 +2292,15 @@ if __name__ == "__main__":
         'transit_condition': [2, 1, 2],
         'pre_comment': '',  # Put 'None' or '' if you don't want pre-comment prompt
         'lock_err_threshold': 2,  # [Mhz]
-        'desired_k_ex': 25, # [Mhz]
-        'k_ex_err': 5,  # [Mhz]
+        'desired_k_ex': 30, # [Mhz]
+        'k_ex_err': 3,  # [Mhz]
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,
         'reflection_threshold_time': 9e6,
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 1.12,
         'photons_per_det_pulse_threshold': 12,
-        'exp_flag': False,
+        'exp_flag': True,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2289,19 +2310,19 @@ if __name__ == "__main__":
         'delay_between_cycles': None,  # seconds
         'sequence': [
             {
+                'name': 'Without Atoms',
+                'parameters': {
+                    'N': 50,
+                    'with_atoms': False
+                }
+            },
+            {
                 'name': 'With Atoms',
                 'parameters': {
                     'N': 500,
                     'with_atoms': True
                 }
             },
-            # {
-            #     'name': 'Without Atoms',
-            #     'parameters': {
-            #         'N': 50,
-            #         'with_atoms': False
-            #     }
-            # }
         ]
     }
 
