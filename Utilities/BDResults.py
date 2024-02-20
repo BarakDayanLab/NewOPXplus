@@ -51,6 +51,8 @@ class BDResults:
         # invokes the create_folders() - so they are actually resolved and created.
         self.folders = None
 
+        self.experiment_run_folder = None
+
         # Perform version check
         if version is not None:
             if 'version' not in self.results_map:
@@ -236,20 +238,23 @@ class BDResults:
 
         return self.folders[name]
 
-    def create_experiment_folder(self):
+    def create_experiment_run_folder(self):
         """
-        Resolve the experiment folder and create it (if does not exist)
+        Resolve the SPECIFIC experiment RUN folder and create it (if does not exist)
+        This is the folder with the time-stamp
+        It uses the "root" entry in the results_map.json
         """
-        resolved_path = self._resolve_parameterized(self.results_map['root'])
+        self.experiment_run_folder = self._resolve_parameterized(self.results_map['root'])
 
-        if not os.path.exists(resolved_path):
-            os.makedirs(resolved_path, exist_ok=True)
+        if not os.path.exists(self.experiment_run_folder):
+            os.makedirs(self.experiment_run_folder, exist_ok=True)
 
-        return resolved_path
+        return self.experiment_run_folder
 
-    def save_results(self, data_pool, resolved_path=None):
+    def save_results(self, data_pool):
 
         # Resolve the root folder - with current time/date
+        resolved_path = self.experiment_run_folder
         if resolved_path is None:
             resolved_path = self._resolve_parameterized(self.results_map['root'])
 

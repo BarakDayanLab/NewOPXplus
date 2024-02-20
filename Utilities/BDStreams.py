@@ -20,9 +20,10 @@ from Utilities.Utils import Utils
 
 class BDStreams:
 
-    def __init__(self, streams=None, save_path=None):
+    def __init__(self, streams=None, save_path=None, save_streams=False):
         self.save_path = save_path
         self.save_name = os.path.join(self.save_path, 'raw_streams.dat')
+        self.save_streams = save_streams
 
         self.streams_defs = streams
         self.number_of_rows_saved = 0
@@ -205,6 +206,9 @@ class BDStreams:
         +-----------+-------------+---------------+---------------+-------+---------------+---------------+
 
         """
+        if not self.save_streams:
+            return
+
         if self.streams_defs is None:
             print('No streams defined - nothing to save! Ignoring')
             return

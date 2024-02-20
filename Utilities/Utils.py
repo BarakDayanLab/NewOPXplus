@@ -444,3 +444,25 @@ class Utils:
         r = np.power(np.abs(2 * k_ex * h /
                             (np.power((1j * f + (k_i + k_ex)), 2) + np.power(h, 2))), 2)
         return r
+
+    @staticmethod
+    def get_files_in_path(path, exclude_token=None, return_full_path=False):
+        """
+        Returns all files that are in a given path.
+        Exclude files that have the given exclude token
+        Return_Full_Path - full-path/file-name or only file-name
+        """
+        files = []
+        for f in os.listdir(path):
+            if os.path.isfile(os.path.join(path, f)):
+                if exclude_token is not None and exclude_token not in f:
+                    if return_full_path:
+                        files.append(os.path.join(path, f))
+                    else:
+                        files.append(f)
+        return files
+
+    @staticmethod
+    def get_folders_in_path(path):
+        folders = [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
+        return folders
