@@ -1556,9 +1556,9 @@ class PNSAExperiment(BaseExperiment):
              + np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A,
             self.tt_BP_measure + self.tt_DP_measure, self.Eff_from_taper_N)
         self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(
-            self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:], self.tt_BP_measure, self.Eff_from_taper_S)
+            self.folded_tt_BP_timebins, self.pulses_location_in_seq[-4:], self.tt_BP_measure, self.Eff_from_taper_S)
         self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(
-            self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:], self.tt_DP_measure, self.Eff_from_taper_S)
+            self.folded_tt_DP_timebins, self.pulses_location_in_seq[-4:], self.tt_DP_measure, self.Eff_from_taper_S)
         self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + \
                                                  self.avg_num_of_photons_per_pulse_N_live + \
                                                  self.avg_num_of_photons_per_pulse_A_live
@@ -1578,9 +1578,9 @@ class PNSAExperiment(BaseExperiment):
             (np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins) +
              np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A)
         self.max_value_per_pulse_BP_live = self.get_max_value_in_seq_pulses(
-            self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:])
+            self.folded_tt_BP_timebins, self.pulses_location_in_seq[-4:])
         self.max_value_per_pulse_DP_live = self.get_max_value_in_seq_pulses(
-            self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:])
+            self.folded_tt_DP_timebins, self.pulses_location_in_seq[-4:])
         self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + \
                                                  self.max_value_per_pulse_N_live + \
                                                  self.max_value_per_pulse_A_live
@@ -1713,7 +1713,7 @@ class PNSAExperiment(BaseExperiment):
              self.num_of_photons_txt_box_loc(self.pulses_location_in_seq_A)))
 
         self.Num_of_photons_txt_box_x_loc_for_MZ_ports = self.num_of_photons_txt_box_loc(
-            self.pulses_location_in_seq[-2:])
+            self.pulses_location_in_seq[-4:])
         self.num_of_detection_pulses = len(Config.det_pulse_amp_N)
 
         self.number_of_detection_pulses_per_seq, self.number_of_SPRINT_pulses_per_seq = self.number_of_pulses_per_seq()
@@ -1863,10 +1863,10 @@ class PNSAExperiment(BaseExperiment):
                      + np.array(self.folded_tt_DP_timebins_cumulative_avg)).tolist(), self.pulses_location_in_seq_A,
                     [], self.Eff_from_taper_N)
                 self.avg_num_of_photons_per_pulse_BP = self.get_avg_num_of_photons_in_seq_pulses(
-                    self.folded_tt_BP_timebins_cumulative_avg, self.pulses_location_in_seq[-2:], [],
+                    self.folded_tt_BP_timebins_cumulative_avg, self.pulses_location_in_seq[-4:], [],
                     self.Eff_from_taper_S)
                 self.avg_num_of_photons_per_pulse_DP = self.get_avg_num_of_photons_in_seq_pulses(
-                    self.folded_tt_DP_timebins_cumulative_avg, self.pulses_location_in_seq[-2:], [],
+                    self.folded_tt_DP_timebins_cumulative_avg, self.pulses_location_in_seq[-4:], [],
                     self.Eff_from_taper_S)
                 self.avg_num_of_photons_per_pulse = self.avg_num_of_photons_per_pulse_S + \
                                                     self.avg_num_of_photons_per_pulse_N + \
@@ -1885,9 +1885,9 @@ class PNSAExperiment(BaseExperiment):
                     (np.array(self.folded_tt_S_directional_cumulative_avg) + np.array(self.folded_tt_BP_timebins_cumulative_avg) +
                      np.array(self.folded_tt_DP_timebins_cumulative_avg)).tolist(), self.pulses_location_in_seq_A)
                 self.max_value_per_pulse_BP = self.get_max_value_in_seq_pulses(
-                    self.folded_tt_BP_timebins_cumulative_avg, self.pulses_location_in_seq[-2:])
+                    self.folded_tt_BP_timebins_cumulative_avg, self.pulses_location_in_seq[-4:])
                 self.max_value_per_pulse_DP = self.get_max_value_in_seq_pulses(
-                    self.folded_tt_DP_timebins_cumulative_avg, self.pulses_location_in_seq[-2:])
+                    self.folded_tt_DP_timebins_cumulative_avg, self.pulses_location_in_seq[-4:])
                 self.Num_of_photons_txt_box_y_loc = self.max_value_per_pulse_S + self.max_value_per_pulse_N + \
                                                     self.max_value_per_pulse_A
                 self.Num_of_photons_txt_box_y_loc_MZ = [[x] + [y] for x, y in zip(self.max_value_per_pulse_BP,
@@ -2175,8 +2175,8 @@ class PNSAExperiment(BaseExperiment):
         self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_S_directional, self.pulses_location_in_seq_S, self.tt_FS_measure, self.Eff_from_taper_S)
         self.avg_num_of_photons_per_pulse_N_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_N_directional, self.pulses_location_in_seq_N, self.tt_BP_measure + self.tt_DP_measure, self.Eff_from_taper_N)
         self.avg_num_of_photons_per_pulse_A_live = self.get_avg_num_of_photons_in_seq_pulses((np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins)+ np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A, self.tt_BP_measure + self.tt_DP_measure, self.Eff_from_taper_N)
-        self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:], self.tt_BP_measure, self.Eff_from_taper_S)
-        self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:], self.tt_DP_measure, self.Eff_from_taper_S)
+        self.avg_num_of_photons_per_pulse_BP_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_BP_timebins, self.pulses_location_in_seq[-4:], self.tt_BP_measure, self.Eff_from_taper_S)
+        self.avg_num_of_photons_per_pulse_DP_live = self.get_avg_num_of_photons_in_seq_pulses(self.folded_tt_DP_timebins, self.pulses_location_in_seq[-4:], self.tt_DP_measure, self.Eff_from_taper_S)
         self.avg_num_of_photons_per_pulse_live = self.avg_num_of_photons_per_pulse_S_live + self.avg_num_of_photons_per_pulse_N_live + self.avg_num_of_photons_per_pulse_A_live
         self.avg_num_of_photons_per_pulse_live_MZ = [[x]+[y] for x, y in zip(self.avg_num_of_photons_per_pulse_BP_live, self.avg_num_of_photons_per_pulse_DP_live)]
 
@@ -2187,8 +2187,8 @@ class PNSAExperiment(BaseExperiment):
         self.max_value_per_pulse_S_live = self.get_max_value_in_seq_pulses(self.folded_tt_S_directional, self.pulses_location_in_seq_S)
         self.max_value_per_pulse_N_live = self.get_max_value_in_seq_pulses(self.folded_tt_N_directional, self.pulses_location_in_seq_N)
         self.max_value_per_pulse_A_live = self.get_max_value_in_seq_pulses((np.array(self.folded_tt_S_directional) + np.array(self.folded_tt_BP_timebins) + np.array(self.folded_tt_DP_timebins)).tolist(), self.pulses_location_in_seq_A)
-        self.max_value_per_pulse_BP_live = self.get_max_value_in_seq_pulses(self.folded_tt_BP_timebins, self.pulses_location_in_seq[-2:])
-        self.max_value_per_pulse_DP_live = self.get_max_value_in_seq_pulses(self.folded_tt_DP_timebins, self.pulses_location_in_seq[-2:])
+        self.max_value_per_pulse_BP_live = self.get_max_value_in_seq_pulses(self.folded_tt_BP_timebins, self.pulses_location_in_seq[-4:])
+        self.max_value_per_pulse_DP_live = self.get_max_value_in_seq_pulses(self.folded_tt_DP_timebins, self.pulses_location_in_seq[-4:])
 
         self.Num_of_photons_txt_box_y_loc_live = self.max_value_per_pulse_S_live + self.max_value_per_pulse_N_live + self.max_value_per_pulse_A_live
         self.Num_of_photons_txt_box_y_loc_live_MZ = [[x]+[y] for x, y in zip(self.max_value_per_pulse_BP_live, self.max_value_per_pulse_DP_live)]
@@ -2282,9 +2282,8 @@ if __name__ == "__main__":
     playback_parameters = {
         "active": False,
         #"playback_files_path": "<put here path to folder where playback files reside"  # r'C:\temp\streams_raw_data'
-        #'playback_files_path': 'C:\\temp\\playback_data\\PNSA\\20240221\\103156_Photon_TimeTags\\playback',  # Nothing there
-        'playback_files_path': 'C:\\temp\\playback_data\\PNSA\\20240221\\102204_Photon_TimeTags\playback',
-        #'playback_files_path': 'C:\\temp\\playback_data\\QRAM\\20240213-NEW\\run 2',
+        #'playback_files_path': r"C:\temp\refactor_debug\Experiment_results\PNSA\20240221\102204_Photon_TimeTags\playback",
+        'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240221\122607_Photon_TimeTags\playback',
         "old_format": False,
         "save_results": False,
         "plot": "LIVE",  # "LIVE", "LAST", "NONE"
@@ -2304,7 +2303,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 1.12,
         'photons_per_det_pulse_threshold': 12,
-        'exp_flag': True,
+        'exp_flag': False,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
