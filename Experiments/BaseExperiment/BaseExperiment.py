@@ -678,6 +678,9 @@ class BaseExperiment:
 
                 sequence_definitions['last_iteration_and_last_sequence'] = sequence_definitions['last_iteration'] and sequence_definitions['last_sequence_step']
 
+                # TODO: Temp change - we may want to remove this - look the usage of it and also remove
+                self.sequence = sequence_definitions
+
                 self.pre_run(sequence_definitions, merged_params)
                 run_status = self.run(sequence_definitions, merged_params)
                 self.post_run(sequence_definitions, merged_params)
@@ -758,7 +761,7 @@ class BaseExperiment:
 
         # Save streams to file (self.bdstreams has a pointer to self.streams - so it saves it)
         if self.save_raw_data:
-            playback_files_path = os.path.join(self.bd_results.get_sequence_folder('@@@'), 'playback')
+            playback_files_path = os.path.join(self.bd_results.get_sequence_folder(self.sequence), 'playback')
             self.bdstreams.save_streams(playback_files_path)
 
         pass

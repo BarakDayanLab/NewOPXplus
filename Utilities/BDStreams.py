@@ -145,8 +145,6 @@ class BDStreams:
         +-----------+-------------+---------------+---------------+-------+---------------+---------------+
 
         """
-        Utils.ensure_folder_exists('@@@')
-
         if not self.save_raw_data:
             return
 
