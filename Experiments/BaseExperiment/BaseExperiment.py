@@ -111,16 +111,22 @@ class BaseExperiment:
         self.bd_results = BDResults(json_map_path=self.paths_map['cwd'], version="0.1", logger=self.logger)
         self.bd_results.create_experiment_run_folder()
 
+        # Check network driver availability
+        network_drive_available = self.bd_results.is_network_drive_available('U:\\Lab_2023')
+        if not network_drive_available:
+            self.logger.error('Network drive is not available/connected. PLEASE FIX.')
+            sys.exit(1)
+
         # Tell logger we want to save the log
         self.logger.turn_save_on(log_path=self.bd_results.experiment_run_folder)
 
-        self.logger.info(f'Starting experiment. Experiment folder is here: {self.bd_results.experiment_run_folder}')
+        self.logger.info(f'Starting experiment. Experiment root folder is here: {self.bd_results.experiment_run_folder}')
 
         # Initialize the BDBatch helper - to serve us when batching experiment samples
         self.batcher = BDBatch(json_map_path=self.paths_map['cwd'])
 
         # Initialize the BDStreams
-        self.bdstreams = BDStreams(save_path=os.path.join(self.bd_results.experiment_run_folder, 'playback'), save_raw_data=save_raw_data, logger=self.logger)
+        self.bdstreams = BDStreams(save_raw_data=save_raw_data, logger=self.logger)
 
         # Load Initial Values and Default Values - merge them together (Default Values prevails!)
         # These will be the experiment values
@@ -184,8 +190,6 @@ class BaseExperiment:
         self.initialize_experiment()
 
     def __del__(self):
-        print('**** BaseExperiment Destructor ****')
-
         # Close all OPX related instances
         #if hasattr(self,'job'):
         # self.job.halt()
@@ -633,7 +637,7 @@ class BaseExperiment:
         pre_comment = '' if 'pre_comment' not in run_parameters else run_parameters['pre_comment']
 
         # Prefix the pre_comment with the sequence number
-        run_parameters['pre_comment'] = f'Cycle #{sequence_definitions["current_cycle"]+1}, Sequence [{sequence_definitions["sequence_name"]}]: {pre_comment}'
+        run_parameters['pre_comment'] = f'Iteration #{sequence_definitions["current_iteration"]+1}, Sequence [{sequence_definitions["sequence_name"]}]: {pre_comment}'
 
 
     def run(self, sequence_definitions, run_parameters):
@@ -647,19 +651,19 @@ class BaseExperiment:
         # If there was no sequence defined, we create a fictatious sequence with a single iteration an no parameters
         if sequence_definitions is None:
             sequence_definitions = {
-                'total_cycles': 1,
-                'delay_between_cycles': None,  # seconds
+                'total_iterations': 1,
+                'delay_between_iterations': None,  # seconds
                 'sequence': [{}]
             }
 
         run_status = TerminationReason.SUCCESS
-        num_cycles = sequence_definitions['total_cycles']
-        for i in range(num_cycles):
-            self.info(f'Starting cycle sequence # {i+1} (out of {num_cycles})')
+        num_iterations = sequence_definitions['total_iterations']
+        for i in range(num_iterations):
+            self.info(f'Starting iteration {i+1} (out of {num_iterations})')
 
             # Keep the current cycle, so pre_run, run, post_run can relate to it and do things once/first/last/etc.
-            sequence_definitions['current_cycle'] = i
-            sequence_definitions['last_cycle'] = (i == num_cycles-1)
+            sequence_definitions['current_iteration'] = i
+            sequence_definitions['last_iteration'] = (i == num_iterations-1)
 
             j = 0
             for sequence in sequence_definitions['sequence']:
@@ -672,7 +676,7 @@ class BaseExperiment:
                 j += 1
                 sequence_definitions['last_sequence_step'] = (j == len(sequence_definitions['sequence']))
 
-                sequence_definitions['last_cycle_and_last_sequence'] = sequence_definitions['last_cycle'] and sequence_definitions['last_sequence_step']
+                sequence_definitions['last_iteration_and_last_sequence'] = sequence_definitions['last_iteration'] and sequence_definitions['last_sequence_step']
 
                 self.pre_run(sequence_definitions, merged_params)
                 run_status = self.run(sequence_definitions, merged_params)
@@ -683,11 +687,11 @@ class BaseExperiment:
             if run_status != TerminationReason.SUCCESS:
                 break
 
-            if sequence_definitions['delay_between_cycles']:
+            if sequence_definitions['delay_between_iterations']:
                 self.info(f'Sleeping')
-                time.sleep(sequence_definitions['delay_between_cycles'])
+                time.sleep(float(sequence_definitions['delay_between_iterations']))
 
-        self.info(f'Completed {num_cycles} cycles! Run status: {run_status}')
+        self.info(f'Completed {num_iterations} cycles! Run status: {run_status}')
         return run_status
 
     """
@@ -754,7 +758,8 @@ class BaseExperiment:
 
         # Save streams to file (self.bdstreams has a pointer to self.streams - so it saves it)
         if self.save_raw_data:
-            self.bdstreams.save_streams()
+            playback_files_path = os.path.join(self.bd_results.get_sequence_folder('@@@'), 'playback')
+            self.bdstreams.save_streams(playback_files_path)
 
         pass
 

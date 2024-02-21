@@ -20,13 +20,9 @@ from Utilities.Utils import Utils
 
 class BDStreams:
 
-    def __init__(self, streams=None, save_path=None, save_raw_data=False, logger=None):
+    def __init__(self, streams=None, save_raw_data=False, logger=None):
 
-        # Streams playback save path. Ensure it exists (create it if not)
-        self.save_path = save_path
-        Utils.ensure_folder_exists(self.save_path)
-
-        self.save_name = os.path.join(self.save_path, 'raw_streams.dat')
+        # Flag - whether we should save raw data or not
         self.save_raw_data = save_raw_data
 
         if logger is not None:
@@ -133,7 +129,7 @@ class BDStreams:
                 self.logger.warn(f'Failed to load playback data file "{data_file}". {err}')
         pass
 
-    def save_streams(self):
+    def save_streams(self, playback_files_path):
         """
 
                         +-----------------+-------------+
@@ -149,6 +145,8 @@ class BDStreams:
         +-----------+-------------+---------------+---------------+-------+---------------+---------------+
 
         """
+        Utils.ensure_folder_exists('@@@')
+
         if not self.save_raw_data:
             return
 
@@ -186,7 +184,7 @@ class BDStreams:
 
             # Format the file name for the playback
             time_formatted = time.strftime("%Y%m%d_%H%M%S")
-            save_name = os.path.join(self.save_path, f'{time_formatted}_streams.dat')
+            save_name = os.path.join(playback_files_path, f'{time_formatted}_streams.dat')
 
             # Save the file
             with open(save_name, "wb") as file:

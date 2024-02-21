@@ -2014,11 +2014,12 @@ class PNSAExperiment(BaseExperiment):
 
             "experiment_config_values": self.Exp_Values
         }
-        save_path = self.bd_results.save_results(results)
+        resolved_path = self.bd_results.get_sequence_folder(sequence_definitions)
+        self.bd_results.save_results(resolved_path)
 
         # If these results should be saved for analysis, copy them to analysis folder
         if for_analysis:
-            self.bd_results.copy_folder(source=save_path, destination=self.bd_results.get_custom_root('for_analysis'))
+            self.bd_results.copy_folder(source=resolved_path, destination=self.bd_results.get_custom_root('for_analysis'))
 
     def is_acquired(self):
 
@@ -2309,8 +2310,8 @@ if __name__ == "__main__":
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
     # The sequence_definitions params would replace parameters from run_parameters('N','with_atoms')
     sequence_definitions = {
-        'total_cycles': 1,
-        'delay_between_cycles': None,  # seconds
+        'total_iterations': 1,
+        'delay_between_iterations': None,  # seconds
         'sequence': [
             {
                 'name': 'Without Atoms',

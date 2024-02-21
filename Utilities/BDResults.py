@@ -238,6 +238,19 @@ class BDResults:
 
         return self.folders[name]
 
+    def get_sequence_folder(self, sequence):
+        """
+        Return the name of the folder according to the iteration and sequence-step
+        Example: 20240221_140500_Iteration 1_Sequence 1__No Atoms
+        """
+        current_date_time = time.strftime("%Y%m%d_%H%M%S")
+
+        iteration = sequence['current_iteration']+1
+        sequence_step = sequence['sequence_step']+1
+        name = sequence['name']
+        sequence_folder_path = f'{current_date_time}_Iter_{iteration}_Seq_{sequence_step}__{name}'
+        return sequence_folder_path
+
     def create_experiment_run_folder(self):
         """
         Resolve the SPECIFIC experiment RUN folder and create it (if does not exist)
@@ -251,12 +264,7 @@ class BDResults:
 
         return self.experiment_run_folder
 
-    def save_results(self, data_pool):
-
-        # Resolve the root folder - with current time/date
-        resolved_path = self.experiment_run_folder
-        if resolved_path is None:
-            resolved_path = self._resolve_parameterized(self.results_map['root'])
+    def save_results(self, data_pool, resolved_path):
 
         # Resolve the file names and folders in results map
         for entity in self.results_map['files']:
@@ -362,9 +370,24 @@ class BDResults:
         except OSError as err:
             # error caused if the source was not a directory
             if err.errno == errno.ENOTDIR:
-                self.logger.error(f'Error: {err}')  # shutil.copy2(src, dest)
+                self.logger.error(f'Destination {destination} is not a folder. {err}')  # shutil.copy2(src, dest)
             else:
-                self.logger.error("Error: % s" % err)
+                self.logger.error(f'Copy Folder failed (src: {source}, dst: {destination}). {err}')
+
+    def is_network_drive_available(self, network_path):
+        success = True
+
+        try:
+            network_file = os.path.join(network_path, '__test_file__.txt')
+            # Try to write a file
+            with open(network_file, "w") as file:
+                file.write("Test File - checking access to network drive")
+            # Remove the file
+            os.remove(network_file)
+        except Exception as err:
+            success = False
+
+        return success
 
     @staticmethod
     def unit_tests():
