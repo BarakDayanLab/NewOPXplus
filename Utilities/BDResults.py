@@ -9,12 +9,6 @@ from scipy.io import savemat
 import collections.abc
 import matplotlib.pyplot as plt
 
-"""
-TODO: Wishlist
---------------
-1) Add "allow_empty" flag (to ignore empty vectors, empty strings, etc.
-2) Add Example JSON here...
-"""
 
 class BDResults:
 
@@ -238,17 +232,25 @@ class BDResults:
 
         return self.folders[name]
 
-    def get_sequence_folder(self, sequence):
+    def get_experiment_run_folder(self):
+        return self.experiment_run_folder
+
+    def get_sequence_folder(self, sequence_definitions):
         """
         Return the name of the folder according to the iteration and sequence-step
         Example: 20240221_140500_Iteration 1_Sequence 1__No Atoms
         """
-        current_date_time = time.strftime("%Y%m%d_%H%M%S")
+        experiment_run_folder = self.get_experiment_run_folder()
 
-        iteration = sequence['current_iteration']+1
-        sequence_step = sequence['sequence_step']+1
-        name = sequence['name']
-        sequence_folder_path = f'{current_date_time}_Iter_{iteration}_Seq_{sequence_step}__{name}'
+        iteration = sequence_definitions['current_iteration']
+        sequence_step = sequence_definitions['sequence_step']
+        name = sequence_definitions['sequence'][sequence_step]['name']
+
+        sequence_folder_path = f'Iter_{iteration+1}_Seq_{sequence_step+1}__{name}'
+
+        # Construct base and the sequence
+        sequence_folder_path = os.path.join(experiment_run_folder, sequence_folder_path)
+
         return sequence_folder_path
 
     def create_experiment_run_folder(self):

@@ -648,7 +648,7 @@ class BaseExperiment:
 
     def run_sequence(self, sequence_definitions, run_parameters):
 
-        # If there was no sequence defined, we create a fictatious sequence with a single iteration an no parameters
+        # If there was no sequence defined, we create a fictitious sequence with a single iteration an no parameters
         if sequence_definitions is None:
             sequence_definitions = {
                 'total_iterations': 1,
@@ -762,6 +762,7 @@ class BaseExperiment:
         # Save streams to file (self.bdstreams has a pointer to self.streams - so it saves it)
         if self.save_raw_data:
             playback_files_path = os.path.join(self.bd_results.get_sequence_folder(self.sequence), 'playback')
+            Utils.ensure_folder_exists(playback_files_path)
             self.bdstreams.save_streams(playback_files_path)
 
         pass
