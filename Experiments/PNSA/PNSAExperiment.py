@@ -2015,7 +2015,7 @@ class PNSAExperiment(BaseExperiment):
             "experiment_config_values": self.Exp_Values
         }
         resolved_path = self.bd_results.get_sequence_folder(sequence_definitions)
-        self.bd_results.save_results(resolved_path)
+        self.bd_results.save_results(results, resolved_path)
 
         # If these results should be saved for analysis, copy them to analysis folder
         if for_analysis:
@@ -2310,20 +2310,20 @@ if __name__ == "__main__":
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
     # The sequence_definitions params would replace parameters from run_parameters('N','with_atoms')
     sequence_definitions = {
-        'total_iterations': 1,
+        'total_iterations': 2,
         'delay_between_iterations': None,  # seconds
         'sequence': [
             {
                 'name': 'Without Atoms',
                 'parameters': {
-                    'N': 50,
+                    'N': 5,
                     'with_atoms': False
                 }
             },
             {
                 'name': 'With Atoms',
                 'parameters': {
-                    'N': 500,
+                    'N': 7,
                     'with_atoms': True
                 }
             },
