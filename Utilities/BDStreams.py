@@ -20,10 +20,17 @@ from Utilities.Utils import Utils
 
 class BDStreams:
 
-    def __init__(self, streams=None, save_path=None, save_streams=False):
+    def __init__(self, streams=None, save_path=None, save_streams=False, logger=None):
+
+        # Streams playback save path. Ensure it exists (create it if not)
         self.save_path = save_path
+        Utils.ensure_folder_exists(self.save_path)
+
         self.save_name = os.path.join(self.save_path, 'raw_streams.dat')
         self.save_streams = save_streams
+
+        if logger is not None:
+            self.logger = logger
 
         self.streams_defs = streams
         self.number_of_rows_saved = 0
@@ -124,8 +131,7 @@ class BDStreams:
                     stream['timestamp'] = current_time
 
             except Exception as err:
-                print(err)
-                pass
+                self.logger.warn(f'Failed to load playback data file "{data_file}". {err}')
         pass
 
     def load_streams(self, data_file):
@@ -174,8 +180,7 @@ class BDStreams:
                     stream['all_rows'].append(results)
                     stream['timestamp'] = current_time
             except Exception as err:
-                print(err)
-                pass
+                self.logger.warn(f'Failed to load playback data file "{data_file}". {err}')
         pass
 
     def _data_to_list(self, data):
@@ -209,14 +214,14 @@ class BDStreams:
         if not self.save_streams:
             return
 
+        # If there are no streams defined, no playback data to save, ignore.
         if self.streams_defs is None:
-            print('No streams defined - nothing to save! Ignoring')
             return
 
-        current_time = time.time()
-        bytes_array = bytearray()
-
         try:
+            current_time = time.time()
+            bytes_array = bytearray()
+
             # Get only those streams that their configuration indicates they need to be saved
             streams_to_save = [s for s in self.streams_defs.values() if 'save_raw' in s and s['save_raw']]
 
@@ -241,18 +246,21 @@ class BDStreams:
                 np_bytes = np_bytes.getvalue()
                 bytes_array += (struct.pack(f'>I', len(np_bytes)) + np_bytes)
 
+            # Format the file name for the playback
+            time_formatted = time.strftime("%Y%m%d_%H%M%S")
+            save_name = os.path.join(self.save_path, f'{time_formatted}_streams.dat')
+
+            # Save the file
+            with open(save_name, "wb") as file:
+                file.write(bytes_array)
+
+            self.number_of_rows_saved += 1
+
+            total_prep_time = time.time() - current_time
+
         except Exception as err:
-            print(f'Failed to save raw data: {err}')
+            self.logger.warn(f'Failed to save raw data [{save_name}]: {err}. Skipping.')
 
-        time_formatted = time.strftime("%Y%m%d_%H%M%S")
-        save_name = os.path.join(self.save_path, f'{time_formatted}_streams.dat')
-
-        with open(save_name, "wb") as file:
-            file.write(bytes_array)
-
-        self.number_of_rows_saved += 1
-
-        total_prep_time = time.time() - current_time
         pass
 
     def save_streams(self):
@@ -270,7 +278,6 @@ class BDStreams:
 
         """
         if self.streams_defs is None:
-            print('No streams defined - nothing to save! Ignoring')
             return
 
         current_time = time.time()
@@ -295,7 +302,7 @@ class BDStreams:
                 bytes_array = bytes_array + data_packed
 
         except Exception as err:
-            print(f'Failed to save raw data: {err}')
+            self.logger.warn(f'Failed to save raw data: {err}')
 
         time_formatted = time.strftime("%Y%m%d_%H%M%S")
         save_name = os.path.join(self.save_path, f'{time_formatted}_streams.dat')

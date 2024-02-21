@@ -120,7 +120,7 @@ class BaseExperiment:
         self.batcher = BDBatch(json_map_path=self.paths_map['cwd'])
 
         # Initialize the BDStreams
-        self.bdstreams = BDStreams(save_path=os.path.join(self.bd_results.experiment_run_folder, 'playback'), save_streams=save_raw_data)
+        self.bdstreams = BDStreams(save_path=os.path.join(self.bd_results.experiment_run_folder, 'playback'), save_streams=save_raw_data, logger=self.logger)
 
         # Load Initial Values and Default Values - merge them together (Default Values prevails!)
         # These will be the experiment values
@@ -427,7 +427,7 @@ class BaseExperiment:
         """
         Handle cases where user pressed ESC to terminate or ALT_SPACE to pause/continue measurements
         """
-        if self.keyPress == 'ESC':
+        if self.keyPress == 'ESC' or self.keyPress == 'ALT_Q':
             self.logger.blue('ESC pressed. Stopping measurement.')
             self.updateValue("Experiment_Switch", False)
             self.MOT_switch(True)

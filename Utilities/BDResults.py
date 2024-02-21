@@ -301,7 +301,6 @@ class BDResults:
             # Add the file name
             file_path = os.path.join(path, entity['file_name'])
 
-            self.logger.info(f'Saving {file_path}...')
             start_save_time = time.time()
 
             # Save the file

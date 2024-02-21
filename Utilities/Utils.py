@@ -445,6 +445,23 @@ class Utils:
                             (np.power((1j * f + (k_i + k_ex)), 2) + np.power(h, 2))), 2)
         return r
 
+    # ---------------------------------------------------
+    # OS related utilities
+    # ---------------------------------------------------
+
+    @staticmethod
+    def ensure_folder_exists(folder_path):
+        """
+        Creates a folder if it doesn't exist. Returns a flag indicating if it existed before
+        :param folder_path: folder path to create/check
+        :return: The existence of the file before the action
+        """
+        existed = True
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path, exist_ok=True)
+            existed = False
+        return existed
+
     @staticmethod
     def get_files_in_path(path, exclude_token=None, return_full_path=False):
         """
