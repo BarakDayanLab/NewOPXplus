@@ -120,7 +120,7 @@ class BaseExperiment:
         self.batcher = BDBatch(json_map_path=self.paths_map['cwd'])
 
         # Initialize the BDStreams
-        self.bdstreams = BDStreams(save_path=os.path.join(self.bd_results.experiment_run_folder, 'playback'), save_streams=save_raw_data, logger=self.logger)
+        self.bdstreams = BDStreams(save_path=os.path.join(self.bd_results.experiment_run_folder, 'playback'), save_raw_data=save_raw_data, logger=self.logger)
 
         # Load Initial Values and Default Values - merge them together (Default Values prevails!)
         # These will be the experiment values

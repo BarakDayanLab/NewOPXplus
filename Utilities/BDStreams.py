@@ -20,14 +20,14 @@ from Utilities.Utils import Utils
 
 class BDStreams:
 
-    def __init__(self, streams=None, save_path=None, save_streams=False, logger=None):
+    def __init__(self, streams=None, save_path=None, save_raw_data=False, logger=None):
 
         # Streams playback save path. Ensure it exists (create it if not)
         self.save_path = save_path
         Utils.ensure_folder_exists(self.save_path)
 
         self.save_name = os.path.join(self.save_path, 'raw_streams.dat')
-        self.save_streams = save_streams
+        self.save_raw_data = save_raw_data
 
         if logger is not None:
             self.logger = logger
@@ -149,7 +149,7 @@ class BDStreams:
         +-----------+-------------+---------------+---------------+-------+---------------+---------------+
 
         """
-        if not self.save_streams:
+        if not self.save_raw_data:
             return
 
         # If there are no streams defined, no playback data to save, ignore.
