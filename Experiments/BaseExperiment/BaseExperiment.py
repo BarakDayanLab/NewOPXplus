@@ -754,7 +754,7 @@ class BaseExperiment:
 
         # Save streams to file (self.bdstreams has a pointer to self.streams - so it saves it)
         if self.save_raw_data:
-            self.bdstreams.save_streams_enhanced()
+            self.bdstreams.save_streams()
 
         pass
 
@@ -773,7 +773,6 @@ class BaseExperiment:
             if 'helm' in stream['name']:
                 continue
 
-            #if stream['save_raw'] and 'all_rows' in stream:
             if 'all_rows' in stream:
 
                 # If there's no more playback data on this stream, we request to terminate experiment

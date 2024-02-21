@@ -89,12 +89,11 @@ class BDStreams:
 
         # Iterate over all files in folder
         for playback_file in playback_files:
-            self.load_streams_enhanced(os.path.join(playback_files_path, playback_file))
-
+            self.load_streams(os.path.join(playback_files_path, playback_file))
 
         pass
 
-    def load_streams_enhanced(self, data_file):
+    def load_streams(self, data_file):
 
         # Open the binary file
         with open(data_file, 'rb') as file:
@@ -134,68 +133,7 @@ class BDStreams:
                 self.logger.warn(f'Failed to load playback data file "{data_file}". {err}')
         pass
 
-    def load_streams(self, data_file):
-
-        # Create an array of stream names (because we'll be working with indices)
-        #stream_names = list(self.streams_defs.keys())
-
-        # Get only those streams that their configuration indicates they need to be saved
-        streams_to_load = [s for s in self.streams_defs.values() if 'save_raw' in s and s['save_raw']]
-
-        # Open the binary file
-        with open(data_file, 'rb') as file:
-
-            try:
-                bytes = file.read(4)
-                bytes_unpacked = struct.unpack('>i', bytes)[0]
-                current_time = int(bytes_unpacked)
-                number_of_streams = int(struct.unpack('>b', file.read(1))[0])
-                for i in range(0, number_of_streams):
-                    if i == 8:
-                        stream_name = 'FLR_measure'
-                    else:
-                        stream_name = f'Detector_{i+1}_Timetags'  # TODO: need to do something smarter in the save - and then here
-
-                    stream = self.streams_defs[stream_name]
-                    #stream = self.streams_defs[stream_names[i]]
-                    stream_data_len = struct.unpack('>H', file.read(2))[0]
-                    type_func = Utils.type_string_to_type_function(stream['type'])
-
-                    # Read the data of stream
-                    results = []
-                    for j in range(0, stream_data_len):
-                        # Get the value
-                        sz = struct.calcsize(f'>{stream["binary"]}')
-                        val = struct.unpack(f'>{stream["binary"]}', file.read(sz))[0]
-                        # Cast it
-                        val = type_func(val)
-                        # Keep it
-                        results.append(val)
-
-                        # If it's the first results we're adding, create a new array
-                        if 'all_rows' not in stream:
-                            stream['all_rows'] = []
-
-                    # Append it to all rows
-                    stream['all_rows'].append(results)
-                    stream['timestamp'] = current_time
-            except Exception as err:
-                self.logger.warn(f'Failed to load playback data file "{data_file}". {err}')
-        pass
-
-    def _data_to_list(self, data):
-        """
-        If data is ndarray --> list
-        If data is int --> list
-        If data is list --> list
-        """
-        if type(data) is np.ndarray:
-            return data.tolist()
-        elif type(data) != list and (type(data) == int or type(data) == float):
-            return [data]
-        return data
-
-    def save_streams_enhanced(self):
+    def save_streams(self):
         """
 
                         +-----------------+-------------+
@@ -263,54 +201,3 @@ class BDStreams:
 
         pass
 
-    def save_streams(self):
-        """
-        Iterate over all streams and save to a file with time-stamp
-        Structure of binary file:
-        - Records, each holding the Number of Streams
-        - Then, for each stream, the size of it
-        - The stream data
-
-        The reasonable time for a single file save is 1-2 ms.
-        +-----------+-------------+--------------+---------------+-------+--------------+---------------+
-        + Timestamp + Num Streams | Stream-1 Len | Stream 1 Data | ..... | Stream-N Len | Stream-N Data |
-        +-----------+-------------+--------------+---------------+-------+--------------+---------------+
-
-        """
-        if self.streams_defs is None:
-            return
-
-        current_time = time.time()
-
-        try:
-            # Get only those streams that their configuration indicates they need to be saved
-            streams_to_save = [s for s in self.streams_defs.values() if 'save_raw' in s and s['save_raw']]
-
-            # Start packing the data with 'B'=1-byte for number of streams
-            bytes_array = struct.pack('>ib', int(current_time), len(streams_to_save))
-            for stream in streams_to_save:
-
-                data = [] if stream['handler'] is None else stream['results']
-
-                # TODO: when we save the data correctly, we should not need this, as everything will be arrays
-                # TODO: unlike now where FLR is saved as a single float value
-                data = self._data_to_list(data)
-
-                # Pack the data with: (a) 'H'=2-bytes-Unsigned Short for stream size (b) 'I'=4-bytes-Unsigned int for stream data
-                data = [len(data)] + data
-                data_packed = struct.pack(f'>H{len(data) - 1}{stream["binary"]}', *data)
-                bytes_array = bytes_array + data_packed
-
-        except Exception as err:
-            self.logger.warn(f'Failed to save raw data: {err}')
-
-        time_formatted = time.strftime("%Y%m%d_%H%M%S")
-        save_name = os.path.join(self.save_path, f'{time_formatted}_streams.dat')
-
-        with open(save_name, "wb") as file:
-            file.write(bytes_array)
-
-        self.number_of_rows_saved += 1
-
-        total_prep_time = time.time() - current_time
-        pass

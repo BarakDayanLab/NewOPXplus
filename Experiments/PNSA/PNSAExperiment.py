@@ -2084,6 +2084,9 @@ class PNSAExperiment(BaseExperiment):
 
         # Get data from OPX streams
         self.get_results_from_streams()
+        if self.runs_status != TerminationReason.SUCCESS:
+            self.post_warm_up_completed = True
+            return False
 
         # Make something out of the data we received on the streams
         self.ingest_time_tags()
@@ -2279,7 +2282,8 @@ if __name__ == "__main__":
     playback_parameters = {
         "active": False,
         #"playback_files_path": "<put here path to folder where playback files reside"  # r'C:\temp\streams_raw_data'
-        'playback_files_path': r"C:\temp\refactor_debug\Experiment_results\QRAM\20240215\153533_Photon_TimeTags\playback",
+        #'playback_files_path': 'C:\\temp\\playback_data\\PNSA\\20240221\\103156_Photon_TimeTags\\playback',  # Nothing there
+        'playback_files_path': 'C:\\temp\\playback_data\\PNSA\\20240221\\102204_Photon_TimeTags\playback',
         #'playback_files_path': 'C:\\temp\\playback_data\\QRAM\\20240213-NEW\\run 2',
         "old_format": False,
         "save_results": False,

@@ -92,6 +92,19 @@ class Utils:
         return 10**(dbm/10)  # return mW
 
     @staticmethod
+    def data_to_list(data):
+        """
+        If data is ndarray --> list
+        If data is int/float --> list
+        If data is list --> list
+        """
+        if type(data) is np.ndarray:
+            return data.tolist()
+        elif type(data) != list and (type(data) == int or type(data) == float):
+            return [data]
+        return data
+
+    @staticmethod
     def merge_jsons(json1, json2):
         """
         Merges json2 onto json1.

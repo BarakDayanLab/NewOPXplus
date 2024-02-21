@@ -1753,26 +1753,28 @@ streams = {
         "name": "Bright_Port_Counts",
         "type": "int",
         "playback": "Bright(1,2)\\Bright_timetags.npz",
-        "save_raw": False
+        "save_raw": True
 },
     "Dark_Port_Counts": {
         "name": "Dark_Port_Counts",
         "type": "int",
         "playback": "Dark(3,4)\\Bright_timetags.npz",
-        "save_raw": False
+        "save_raw": True
 },
     "Phase_Correction_array": {
         "name": "Phase_Correction_array",
-        #"type": "int",
-        "save_raw": False
+        "type": "int",
+        "binary": "I",  # Unsigned int
+        "save_raw": True
     },
     #"Phase_diff": {
     #     "name": "Phase_diff",
     # },
     "Max_counts": {
         "name": "Max_counts",
-        #"type": "int",
-        "save_raw": False
+        "type": "int",
+        "binary": "I",  # Unsigned int
+        "save_raw": True
     },
     #"Phase_Correction_for_min": {
     #     "name": "Phase_Correction_for_min",
@@ -1786,6 +1788,7 @@ streams = {
     },
     "antihelmholtz_on": {
         "name": "antihelmholtz_on",
+        "binary": "I",  # Unsigned int
         "save_raw": False
     }
 }
