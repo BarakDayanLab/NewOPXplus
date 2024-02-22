@@ -13,9 +13,9 @@ from Experiments.QuadRF.quadRFMOTController import QuadRFMOTController
 
 
 class SNSPDsCountExperiment(BaseExperiment):
-    def __init__(self, playback=False, save_raw_data=False):
+    def __init__(self, playback_parameters=None, save_raw_data=False):
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
-        super().__init__(playback, save_raw_data)
+        super().__init__(playback_parameters, save_raw_data)
         pass
 
     def __del__(self):
@@ -74,6 +74,10 @@ class SNSPDsCountExperiment(BaseExperiment):
                 stream['results'] = stream['handler'].fetch_all()
         pass
 
+    def keyboard_handler__stop_count(self, key):
+        self.logger.blue('ESC pressed. Stopping SNDSPDs counts measurement.')
+        self.runs_status = TerminationReason.USER
+
     def keyboard_handler__zoom_in(self, key):
         self.font_size += 10
         self.line_width += 1
@@ -81,25 +85,6 @@ class SNSPDsCountExperiment(BaseExperiment):
     def keyboard_handler__zoom_out(self, key):
         self.font_size -= 10
         self.line_width -= 1
-
-    def handle_user_events(self):
-        """
-        Handle cases where user pressed ESC to terminate or ALT_SPACE to pause/continue measurements
-        """
-        if self.keyPress == 'ESC':
-            self.logger.blue('ESC pressed. Stopping measurement.')
-            self.runs_status = TerminationReason.USER
-            self.keyPress = None
-        elif self.keyPress == '+' or self.keyPress == '=':
-            self.font_size += 10
-            self.line_width += 1
-            self.keyPress = None
-        elif self.keyPress == '-':
-            self.font_size -= 10
-            self.line_width -= 1
-            self.keyPress = None
-        else:
-            self.keyPress = None
 
     def print_experiment_information(self):
         """
@@ -112,10 +97,8 @@ class SNSPDsCountExperiment(BaseExperiment):
         Prepares the figure before the mainloop
         TODO: this should go into the BaseExperiment - for all experiments to enjoy
         """
-        # Create figure and set the time and date as its title
-        self.fig = plt.figure()
-        current_date_time = time.strftime("%H:%M:%S (%d/%m/%Y)")
-        self.fig.canvas.manager.set_window_title(current_date_time)
+
+        super().prepare_figures()
 
         # Set the font we want to use
         self.font_size = 16
@@ -123,9 +106,6 @@ class SNSPDsCountExperiment(BaseExperiment):
 
         # Set line_width of plots
         self.line_width = 2
-
-        self.plot_shown = False
-
         pass
 
     def _plot_figures(self):
@@ -216,7 +196,6 @@ class SNSPDsCountExperiment(BaseExperiment):
         while True:
 
             # Handle cases where user terminates or pauses experiment
-            self.handle_user_events()
             if self.runs_status == TerminationReason.USER:
                 break
 
@@ -259,6 +238,6 @@ if __name__ == "__main__":
           '(this is important as continuous laser beam tends to degrade by the shutters)' + '\033[0m')
     input()
 
-    experiment = SNSPDsCountExperiment(playback=False, save_raw_data=False)
+    experiment = SNSPDsCountExperiment(playback_parameters=None, save_raw_data=False)
     run_status = experiment.run_sequence(sequence_definitions=None, run_parameters={})
     pass

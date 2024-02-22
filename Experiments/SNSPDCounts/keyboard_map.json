@@ -1,4 +1,9 @@
 {
+    "exit": {
+        "description": "Stop the counts and exit",
+        "callback": "stop_count",
+        "keys": ["escape"]
+    },
     "zoom-in": {
         "description": "Zoom in on legend",
         "callback": "zoom_in",

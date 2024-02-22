@@ -682,7 +682,12 @@ class BaseExperiment:
             sequence_definitions = {
                 'total_iterations': 1,
                 'delay_between_iterations': None,  # seconds
-                'sequence': [{}]
+                'sequence': [
+                    {
+                        'name': 'SNSPDs Mainloop',
+                        'parameters': {}
+                    }
+                ]
             }
 
         # Notify we started iterations
