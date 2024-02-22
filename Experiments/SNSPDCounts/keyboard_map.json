@@ -1,0 +1,12 @@
+{
+    "zoom-in": {
+        "description": "Zoom in on legend",
+        "callback": "zoom_in",
+        "keys": ["+", "="]
+    },
+    "zoom-out": {
+        "description": "Zoom out on legend",
+        "callback": "zoom_out",
+        "keys": ["-"]
+    }
+}

@@ -567,9 +567,10 @@ class SpectrumExperiment(BaseExperiment):
             time.sleep(0.01)  # TODO: do we need this delay?
 
     def prepare_figures(self):
-        self.fig = plt.figure()
+
+        super().prepare_figures()
+
         self.subplots = []
-        self.plot_shown = False
 
         self.subplots.append(plt.subplot2grid((6, 2), (0, 0), colspan=1, rowspan=2))
         self.subplots.append(plt.subplot2grid((6, 2), (0, 1), colspan=1, rowspan=2))
@@ -774,6 +775,16 @@ class SpectrumExperiment(BaseExperiment):
         #new_timetags_found = np.sum(compare_values) < min_len / 2
         new_timetags_found = sum(compare_values) < min_len / 2
         return new_timetags_found
+
+    def should_terminate(self):
+        """
+        Decides if to terminate mainloop. Overrides BaseExperiment method.
+        Did we complete N successful iterations? (we check for N+1 because we started with 1)
+
+        Note we also consult with super() - if it tells us to terminate, we "listen" :-)
+        """
+        flag = super().should_terminate()
+        return flag or self.counter == self.N+1
 
     def await_for_values(self):
         """
@@ -1279,6 +1290,18 @@ class SpectrumExperiment(BaseExperiment):
 
 
 if __name__ == "__main__":
+
+    # Playback definitions
+    playback_parameters = {
+        "active": False,
+        'playback_files_path': r"C:\temp\playback_data\PNSA\165103_Photon_TimeTags\playback",
+        "old_format": False,
+        "save_results": True,
+        "save_results_path": 'C:\\temp\\playback_data',
+        "max_iterations": 5,  # -1 if you want playback to run through entire data
+        "plot": "LIVE",  # "LIVE", "LAST", "NONE"
+        "delay": -1,  # -1,  # 0.5,  # In seconds. Use -1 for not playback delay
+    }
 
     run_parameters = {
         'N': 500,

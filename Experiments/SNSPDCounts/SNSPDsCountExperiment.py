@@ -74,6 +74,14 @@ class SNSPDsCountExperiment(BaseExperiment):
                 stream['results'] = stream['handler'].fetch_all()
         pass
 
+    def keyboard_handler__zoom_in(self, key):
+        self.font_size += 10
+        self.line_width += 1
+
+    def keyboard_handler__zoom_out(self, key):
+        self.font_size -= 10
+        self.line_width -= 1
+
     def handle_user_events(self):
         """
         Handle cases where user pressed ESC to terminate or ALT_SPACE to pause/continue measurements

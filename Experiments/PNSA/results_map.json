@@ -69,6 +69,13 @@
 			"type": "plt",
 			"skip": false
 		},
+		{
+            "description": "The run parameters",
+			"data": "run_parameters",
+			"file_name": "run_parameters",
+			"folder": "meta_data",
+			"type": "json"
+		},
 
 		{
 			"# INPUT FILES": "-----------------------------------"
