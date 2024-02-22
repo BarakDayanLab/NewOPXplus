@@ -567,9 +567,10 @@ class SpectrumExperiment(BaseExperiment):
             time.sleep(0.01)  # TODO: do we need this delay?
 
     def prepare_figures(self):
-        self.fig = plt.figure()
+
+        super().prepare_figures()
+
         self.subplots = []
-        self.plot_shown = False
 
         self.subplots.append(plt.subplot2grid((6, 2), (0, 0), colspan=1, rowspan=2))
         self.subplots.append(plt.subplot2grid((6, 2), (0, 1), colspan=1, rowspan=2))

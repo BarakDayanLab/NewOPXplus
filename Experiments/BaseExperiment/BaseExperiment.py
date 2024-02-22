@@ -14,6 +14,7 @@ from Utilities.BDStreams import BDStreams
 from Utilities.BDBatch import BDBatch
 from Utilities.BDSound import BDSound
 from Utilities.BDSocket import BDSocket
+from Utilities.BDKeyboard import BDKeyboard
 
 from Experiments.Enums.TerminationReason import TerminationReason
 from Experiments.Enums.IOParameters import IOParameters as IOP
@@ -184,7 +185,8 @@ class BaseExperiment:
         self.listener.start()
         self.keyPress = None
 
-        # TODO: Listen to events - messages / keyboard
+        # Set keyboard handler
+        self.bdkeyboard = BDKeyboard()
 
         # (a) Initialize QuadRF (b) Set experiment related variables (c) Initialize OPX
         self.initialize_experiment()
@@ -425,6 +427,30 @@ class BaseExperiment:
             "root": str(pathlib.Path(__file__).parent.resolve())
         }
         self.experiment_name = os.path.basename(os.path.normpath(os.getcwd()))
+        pass
+
+    # ----------------------------------------------------------------------------
+    # Keyboard handler Functions
+    # ----------------------------------------------------------------------------
+
+    def keyboard_handler__pause_unpause(self, key):
+        str = 'Pausing' if not self.pause_flag else 'Continuing'
+        self.logger.blue(f'SPACE pressed. {str} measurement.')
+        self.pause_flag = not self.pause_flag
+        pass
+
+    def keyboard_handler__stop_experiment(self, key):
+        self.logger.blue('ESC pressed. Stopping measurement.')
+        self.updateValue("Experiment_Switch", False)
+        self.MOT_switch(True)
+        self.update_parameters()
+        self.runs_status = TerminationReason.USER
+
+    def keyboard_handler__turn_on_off_atoms(self, key):
+        # Turn on the "switch" indication, but putting an "_" as a prefix
+        # Note: user may have pressed A fast multiple times, so no need to add multiple "_" prefixes until the switch is handled
+        if self.switch_atom_no_atoms[0] != '_':
+            self.switch_atom_no_atoms = '_' + self.switch_atom_no_atoms
         pass
 
     def handle_user_events(self):
@@ -1038,6 +1064,27 @@ class BaseExperiment:
                 json.dump(save_data, file, indent=4)
         except Exception as err:
             self.logger.warn(f'Unable to open file {filename} for writing. {err}')
+        pass
+
+    # ------------------------------------------------------------
+    # Plot related Functions
+    # ------------------------------------------------------------
+
+    def prepare_figures(self):
+        """
+        Perform general preparations required for figure plotting
+        """
+        self.fig = plt.figure()
+
+        # Set figure title - current date and time
+        current_date_time = time.strftime("%H:%M:%S (%d/%m/%Y)")
+        self.fig.canvas.manager.set_window_title(current_date_time)
+
+        # Set keyboard listener
+        self.bdkeyboard.set_listener(self.fig, self)
+
+        self.plot_shown = False
+
         pass
 
     def _plot(self, sequence_or_sequences, clear=True):

@@ -1050,15 +1050,12 @@ class QRAMExperiment(BaseExperiment):
 
     def prepare_figures(self):
 
+        super().prepare_figures()
+
         matplotlib.mathtext.SHRINK_FACTOR = 0.4
         matplotlib.mathtext.GROW_FACTOR = 1 / 0.4
 
-        self.fig = plt.figure()
-        current_date_time = time.strftime("%H:%M:%S (%d/%m/%Y)")
-        self.fig.canvas.manager.set_window_title(current_date_time)
-
         self.subplots = []
-        self.plot_shown = False
 
         # Figure 0 - Top Left - Binned Time-Tags from All Detectors
         self.subplots.append(plt.subplot2grid((3, 4), (0, 0), colspan=2, rowspan=1))

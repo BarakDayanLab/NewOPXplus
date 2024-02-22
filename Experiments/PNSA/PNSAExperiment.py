@@ -1015,15 +1015,12 @@ class PNSAExperiment(BaseExperiment):
 
     def prepare_figures(self):
 
+        super().prepare_figures()
+
         matplotlib.mathtext.SHRINK_FACTOR = 0.4
         matplotlib.mathtext.GROW_FACTOR = 1 / 0.4
 
-        self.fig = plt.figure()
-        current_date_time = time.strftime("%H:%M:%S (%d/%m/%Y)")
-        self.fig.canvas.manager.set_window_title(current_date_time)
-
         self.subplots = []
-        self.plot_shown = False
 
         # Figure 0 - Top Left - Binned Time-Tags from All Detectors
         self.subplots.append(plt.subplot2grid((3, 4), (0, 0), colspan=2, rowspan=1))
@@ -2282,9 +2279,7 @@ if __name__ == "__main__":
     # Playback definitions
     playback_parameters = {
         "active": False,
-        #"playback_files_path": "<put here path to folder where playback files reside"  # r'C:\temp\streams_raw_data'
-        #'playback_files_path': r"C:\temp\refactor_debug\Experiment_results\PNSA\20240221\102204_Photon_TimeTags\playback",
-        'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240221\122607_Photon_TimeTags\playback',
+        'playback_files_path': r"C:\temp\playback_data\PNSA\165103_Photon_TimeTags\playback",
         "old_format": False,
         "save_results": False,
         "plot": "LIVE",  # "LIVE", "LAST", "NONE"

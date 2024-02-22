@@ -496,3 +496,14 @@ class Utils:
     def get_folders_in_path(path):
         folders = [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
         return folders
+
+    @staticmethod
+    def load_json_from_file(file_full_path):
+        try:
+            f = open(file_full_path)
+            json_obj = json.load(f)
+            f.close()
+            return json_obj
+        except Exception as err:
+            pass
+        return None
