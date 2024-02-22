@@ -251,11 +251,15 @@ class QuadRFController:
                 csv_line = f"{channel['Amplitude']},{channel['Durations']},{channel['Frequencies']}\n"
         return csv_line
 
-    def saveLinesAsCSV(self, path):
+    def saveLinesAsCSV(self, path, file_name):
+
+        # Ensure the save path exists (create it if not)
+        Utils.ensure_folder_exists(path)
+
         for i, channel in enumerate(self.lines):
             if channel != {'Amplitudes': [], 'Durations': [], 'Frequencies': []}:  # That is, if channel isn't empty
-                file_name = Path(path).stem
-                save_path = path.replace(file_name, f'{file_name}_ch{i + 1}')  # add channel to save path
+                file_name_with_channel = file_name.replace('.csv', f'_ch{i + 1}.csv')
+                save_path = os.path.join(path, file_name_with_channel)
                 try:
                     with open(save_path, "w") as outfile:
                         writer = csv.writer(outfile)

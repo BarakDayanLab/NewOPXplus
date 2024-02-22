@@ -661,11 +661,34 @@ class BaseExperiment:
         return self.camera is None
 
     # -------------------------------------------------------
-    # Experiment Management related methods
+    # Experiment Management - Iteration/Sequence/Run - related methods
     # -------------------------------------------------------
 
     def get_batcher_map(self):
         raise Exception("'get_batcher_map' method must be implemented in subclass!")
+
+    def sequence_started(self, sequence_definitions):
+        pass
+
+    def sequence_ended(self, sequence_definitions):
+        pass
+
+    def iterations_started(self, sequence_definitions):
+        # By default, the experiment results do not go into the "for_analysis" folder
+        # (unless the user prompts to do so at the end of all iterations)
+        self.save_results_for_analysis = False
+        pass
+
+    def iterations_ended(self, sequence_definitions):
+
+        # Get the root experiment path where all iteration/sequence data was saved locally
+        experiment_path = self.bd_results.get_experiment_run_folder()
+
+        # If these results should be saved for analysis, copy them to analysis folder in Network drive
+        if self.save_results_for_analysis and not self.playback['active']:
+            self.bd_results.copy_folder(source=experiment_path, destination=self.bd_results.get_custom_root('for_analysis'))
+
+        pass
 
     def pre_run(self, sequence_definitions, run_parameters):
         pre_comment = '' if 'pre_comment' not in run_parameters else run_parameters['pre_comment']
@@ -690,6 +713,9 @@ class BaseExperiment:
                 'sequence': [{}]
             }
 
+        # Notify we started iterations
+        self.iterations_started(sequence_definitions)
+
         run_status = TerminationReason.SUCCESS
         num_iterations = sequence_definitions['total_iterations']
         for i in range(num_iterations):
@@ -698,6 +724,9 @@ class BaseExperiment:
             # Keep the current cycle, so pre_run, run, post_run can relate to it and do things once/first/last/etc.
             sequence_definitions['current_iteration'] = i
             sequence_definitions['last_iteration'] = (i == num_iterations-1)
+
+            # Notify we started the sequence
+            self.sequence_started(sequence_definitions)
 
             j = 0
             for sequence in sequence_definitions['sequence']:
@@ -721,6 +750,9 @@ class BaseExperiment:
                 if run_status != TerminationReason.SUCCESS:
                     break
 
+            # Notify we finished the sequence
+            self.sequence_ended(sequence_definitions)
+
             if run_status != TerminationReason.SUCCESS:
                 break
 
@@ -728,7 +760,10 @@ class BaseExperiment:
                 self.info(f'Sleeping')
                 time.sleep(float(sequence_definitions['delay_between_iterations']))
 
-        self.info(f'Completed {num_iterations} cycles! Run status: {run_status}')
+        # Notify we finished running all iterations
+        self.iterations_ended(sequence_definitions)
+
+        self.info(f'Completed {num_iterations} iteration(s)! Run status: {run_status}')
         return run_status
 
     """
@@ -1075,6 +1110,14 @@ class BaseExperiment:
             self.logger.warn(f'Unable to open file {filename} for writing. {err}')
         pass
 
+    def format_iteration_and_sequence(self):
+        # Get the iteration/sequence/name
+        iteration = self.sequence['current_iteration']
+        sequence_step = self.sequence['sequence_step']
+        name = self.sequence['sequence'][sequence_step]['name']
+        str = f'Iteration {iteration+1} | Sequence {sequence_step+1} | {name}'
+        return str
+
     # ------------------------------------------------------------
     # Plot related Functions
     # ------------------------------------------------------------
@@ -1091,9 +1134,12 @@ class BaseExperiment:
 
         self.fig = plt.figure()
 
+        # Get Iteration and sequence
+        str = self.format_iteration_and_sequence()
+
         # Set figure title - current date and time
         current_date_time = time.strftime("%H:%M:%S (%d/%m/%Y)")
-        self.fig.canvas.manager.set_window_title(current_date_time)
+        self.fig.canvas.manager.set_window_title(f'{current_date_time} | {str}')
 
         # Set keyboard listener
         self.bdkeyboard.set_listener(self.fig, self)

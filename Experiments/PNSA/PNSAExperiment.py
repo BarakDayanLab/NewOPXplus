@@ -426,7 +426,9 @@ class PNSAExperiment(BaseExperiment):
             # TODO: Q: I assume this is a time-window to ignore some time on start/end, how did we decide on this time?  TODO: Q: what us the meaning of this specific time-window?
             if (element > int(0.6e6)) and (element < int(self.M_time - 0.4e6)):
                 for indx, tup in enumerate(self.sorted_pulses):
-                    if all(x == 0 for x in Config.PNSA_Exp_Square_samples_Early[tup[0]:tup[1]]):
+                    # if all(x == 0 for x in Config.PNSA_Exp_Square_samples_Early[tup[0]:tup[1]]):
+                    if (Config.PNSA_Exp_Square_samples_Early[tup[0]] == 0) or \
+                            (self.number_of_SPRINT_pulses_per_seq > 1):
                         start_pulse_time_in_seq = tup[0]
                         end_pulse_time_in_seq = tup[1]
                     else:
@@ -689,7 +691,7 @@ class PNSAExperiment(BaseExperiment):
                     self.all_transits_seq_indx = self.all_transits_seq_indx[:-1]
             self.all_transits_seq_indx.append(current_transit)
 
-    def analyze_SPRINT_data_points(self, all_transits_seq_indx, SPRINT_pulse_number=1, background=False):
+    def analyze_SPRINT_data_points(self, all_transits_seq_indx, SPRINT_pulse_number=[1], background=False):
         '''
         For a given vector of sequence indexes, find the relevant data points for SPRINT pulse and analyze results.
         :param all_transits_seq_indx: The vector of indexes of sequences that need to be analyzed.
@@ -710,21 +712,29 @@ class PNSAExperiment(BaseExperiment):
                     if self.sorted_pulses[self.number_of_detection_pulses_per_seq-1][2] == 'N' and \
                        len(self.num_of_det_reflections_per_seq_N_[seq_indx][-1]) >= 1:
                         potential_data = True
+                        # self.potential_data += 1
                     elif self.sorted_pulses[self.number_of_detection_pulses_per_seq-1][2] == 'S' and \
                             len(self.num_of_det_reflections_per_seq_S_[seq_indx][-1]) >= 1:
                         potential_data = True
+                        # self.potential_data += 1
                     # Getting SPRINT data if the SPRINT pulse has one photon in the reflection or transmission
                     if potential_data and len(self.sorted_pulses) > self.number_of_detection_pulses_per_seq:
-                        if self.sorted_pulses[self.number_of_detection_pulses_per_seq-1+SPRINT_pulse_number][2] == 'n':
-                            transmissions = len(self.num_of_SPRINT_transmissions_per_seq_N_[seq_indx][SPRINT_pulse_number-1])
-                            reflections = len(self.num_of_SPRINT_reflections_per_seq_N_[seq_indx][SPRINT_pulse_number-1])
+                        if self.sorted_pulses[self.number_of_detection_pulses_per_seq-1+SPRINT_pulse_number[0]][2] == 'n':
+                            transmissions = 0
+                            reflections = 0
+                            for sprint_pulse in SPRINT_pulse_number:
+                                transmissions += len(self.num_of_SPRINT_transmissions_per_seq_N_[seq_indx][sprint_pulse-1])
+                                reflections += len(self.num_of_SPRINT_reflections_per_seq_N_[seq_indx][sprint_pulse-1])
                             if (transmissions + reflections) == 1:
                                 seq_with_data_points.append(seq_indx)
                                 reflection_SPRINT_data.append(reflections)
                                 transmission_SPRINT_data.append(transmissions)
-                        elif self.sorted_pulses[self.number_of_detection_pulses_per_seq-1+SPRINT_pulse_number][2] == 's':
-                            transmissions = len(self.num_of_SPRINT_transmissions_per_seq_S_[seq_indx][SPRINT_pulse_number-1])
-                            reflections = len(self.num_of_SPRINT_reflections_per_seq_S_[seq_indx][SPRINT_pulse_number-1])
+                        elif self.sorted_pulses[self.number_of_detection_pulses_per_seq-1+SPRINT_pulse_number[0]][2] == 's':
+                            transmissions = 0
+                            reflections = 0
+                            for sprint_pulse in SPRINT_pulse_number:
+                                transmissions += len(self.num_of_SPRINT_transmissions_per_seq_S_[seq_indx][sprint_pulse-1])
+                                reflections += len(self.num_of_SPRINT_reflections_per_seq_S_[seq_indx][sprint_pulse-1])
                             if (transmissions + reflections) == 1:
                                 seq_with_data_points.append(seq_indx)
                                 reflection_SPRINT_data.append(reflections)
@@ -1751,6 +1761,7 @@ class PNSAExperiment(BaseExperiment):
         # Initialize the variables before loop starts
         self.counter = 1  # Total number of successful cycles
         self.repetitions = 1  # Total number of cycles
+        self.potential_data = 0
         self.acquisition_flag = True
         self.warm_up = True
         self.post_warm_up_completed = False  # Did we finish the post warm-up process
@@ -1835,16 +1846,16 @@ class PNSAExperiment(BaseExperiment):
 
                 # Analyze SPRINT data during transits:
                 self.seq_with_data_points, self.reflection_SPRINT_data, self.transmission_SPRINT_data = \
-                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=1,
+                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=[1],
                                                     background=False)  # Enter the index of the SPRINT pulse for which the data should be analyzed
-
+                # print(self.potential_data)
                 # Analyze SPRINT data when no transit occur:
                 self.all_seq_without_transits = [
                     np.delete(np.arange(0, self.number_of_PNSA_sequences, 1, dtype='int'),
                               sum(self.all_transits_seq_indx, [])).tolist()
                 ]
                 _, self.reflection_SPRINT_data_without_transits, self.transmission_SPRINT_data_without_transits = \
-                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=1,
+                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=[1],
                                                     background=True)  # Enter the index of the SPRINT pulse for which the data should be analyzed
 
                 self.num_of_total_SPRINT_reflections = sum(self.reflection_SPRINT_data_without_transits)
@@ -1924,7 +1935,6 @@ class PNSAExperiment(BaseExperiment):
 
         # Adding comment to measurement [prompt whether stopped or finished regularly]
         aft_comment = 'Ignore'
-        for_analysis = False
         if self.exp_flag:
 
             # Format the sequence-step message
@@ -1934,14 +1944,14 @@ class PNSAExperiment(BaseExperiment):
             dialog_str = ''
 
             # Check if this is (A) The last sequence in the last cycle or (B) User Terminated
-            if sequence_definitions['last_cycle_and_last_sequence'] or self.runs_status == TerminationReason.USER:
+            if sequence_definitions['last_iteration_and_last_sequence'] or self.runs_status == TerminationReason.USER:
                 bdd = BDDialog()
                 text_res, text_button = bdd.prompt(title='Experiment completed', message='Insert comment for experiment',
                                                    button1_text='Shager!', button2_text='Ignore')
                 dialog_str = ('Ignore. ' if text_button == 'Ignore' else '') + text_res
-                for_analysis = text_button == 'Shager!'
+                self.save_results_for_analysis = text_button == 'Shager!'
             else:
-                for_analysis = True
+                self.save_results_for_analysis = True
 
             aft_comment = f'{sequence_step_str}. {dialog_str}'
 
@@ -1956,11 +1966,11 @@ class PNSAExperiment(BaseExperiment):
         daily_experiment_comments = self.generate_experiment_summary_line(self.pre_comment, aft_comment, self.with_atoms, self.counter)
 
         # Save all results of experiment
-        self.save_experiment_results(experiment_comment, daily_experiment_comments, for_analysis)
+        self.save_experiment_results(experiment_comment, daily_experiment_comments)
 
         return self.runs_status
 
-    def save_experiment_results(self, experiment_comment, daily_experiment_comments, for_analysis=False):
+    def save_experiment_results(self, experiment_comment, daily_experiment_comments):
         """
         This method is responsible for saving all the results gathered in the experiment and required by analysis
         """
@@ -1972,9 +1982,9 @@ class PNSAExperiment(BaseExperiment):
         # Save Quad RF controllers commands
         # TODO: re-implement in QuadRF class - to get the data - and BDResults will save...
         if not self.playback['active']:
-            dirname = self.bd_results.get_root()
+            quadrf_files_folder = os.path.join(self.bd_results.get_sequence_folder(sequence_definitions), 'meta_data')
             for qrdCtrl in self.QuadRFControllers:
-                qrdCtrl.saveLinesAsCSV(f'{dirname}\\QuadRF_table.csv')
+                qrdCtrl.saveLinesAsCSV(path=quadrf_files_folder, file_name='QuadRF_table.csv')
 
         # Save all other files
         results = {
@@ -2023,10 +2033,6 @@ class PNSAExperiment(BaseExperiment):
             resolved_path = self.bd_results.get_sequence_folder(sequence_definitions)
         self.bd_results.save_results(results, resolved_path)
 
-        # If these results should be saved for analysis, copy them to analysis folder
-        if for_analysis and not self.playback['active']:
-            self.bd_results.copy_folder(source=resolved_path, destination=self.bd_results.get_custom_root('for_analysis'))
-
     def is_acquired(self):
 
         self.lock_err_flag = True
@@ -2071,6 +2077,10 @@ class PNSAExperiment(BaseExperiment):
             return False
 
         if self.saturated_detectors() and not playback:
+            return False
+
+        if (self.Infidelity_before > self.MZ_infidelity_threshold) or \
+           (self.Infidelity_after > self.MZ_infidelity_threshold):
             return False
 
         threshold_flag = (self.sum_for_threshold < self.reflection_threshold) and \
@@ -2300,13 +2310,13 @@ if __name__ == "__main__":
         'transit_condition': [2, 1, 2],
         'pre_comment': '',  # Put 'None' or '' if you don't want pre-comment prompt
         'lock_err_threshold': 2,  # [Mhz]
-        'desired_k_ex': 30, # [Mhz]
+        'desired_k_ex': 25, # [Mhz]
         'k_ex_err': 3,  # [Mhz]
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,
         'reflection_threshold_time': 9e6,
         'FLR_threshold': -0.01,
-        'MZ_infidelity_threshold': 1.12,
+        'MZ_infidelity_threshold': 0.97,
         'photons_per_det_pulse_threshold': 12,
         'exp_flag': False,
         'with_atoms': True
@@ -2320,14 +2330,14 @@ if __name__ == "__main__":
             {
                 'name': 'Without Atoms',
                 'parameters': {
-                    'N': 50,
+                    'N': 5,
                     'with_atoms': False
                 }
             },
             {
                 'name': 'With Atoms',
                 'parameters': {
-                    'N': 500,
+                    'N': 5,
                     'with_atoms': True
                 }
             },

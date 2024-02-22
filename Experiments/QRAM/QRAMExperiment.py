@@ -2011,9 +2011,9 @@ class QRAMExperiment(BaseExperiment):
         # Save Quad RF controllers commands
         # TODO: re-implement in QuadRF class - to get the data - and BDResults will save...
         if not self.playback['active']:
-            dirname = self.bd_results.get_root()
+            quadrf_files_folder = os.path.join(self.bd_results.get_sequence_folder(sequence_definitions), 'meta_data')
             for qrdCtrl in self.QuadRFControllers:
-                qrdCtrl.saveLinesAsCSV(f'{dirname}\\QuadRF_table.csv')
+                qrdCtrl.saveLinesAsCSV(path=quadrf_files_folder, file_name='QuadRF_table.csv')
 
         # Save all other files
         results = {
