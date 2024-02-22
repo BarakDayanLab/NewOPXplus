@@ -1493,7 +1493,7 @@ class PNSAExperiment(BaseExperiment):
         count = 1
         while True:
 
-            self.handle_user_events()
+            # Check if run should terminate (maybe ESC was pressed)
             if self.runs_status == TerminationReason.USER:
                 break
 
@@ -1778,8 +1778,7 @@ class PNSAExperiment(BaseExperiment):
         # ---------------------------------------------------------------------------------
         while True:
 
-            # Handle cases where user terminates or pauses experiment
-            self.handle_user_events()
+            # Check if user maybe terminated the experiment
             if self.runs_status == TerminationReason.USER:
                 break
 

@@ -182,9 +182,9 @@ class BaseExperiment:
         #self.connect_camera()
 
         # Setup keyboard listener
-        self.listener = keyboard.Listener(on_press=self._on_press, on_release=self._on_release)
-        self.listener.start()
-        self.keyPress = None
+        # self.listener = keyboard.Listener(on_press=self._on_press, on_release=self._on_release)
+        # self.listener.start()
+        # self.keyPress = None
 
         # Set keyboard handler
         self.bdkeyboard = BDKeyboard()
@@ -452,34 +452,6 @@ class BaseExperiment:
         # Note: user may have pressed A fast multiple times, so no need to add multiple "_" prefixes until the switch is handled
         if self.switch_atom_no_atoms[0] != '_':
             self.switch_atom_no_atoms = '_' + self.switch_atom_no_atoms
-        pass
-
-    def handle_user_events(self):
-        """
-        Handle cases where user pressed ESC to terminate or ALT_SPACE to pause/continue measurements
-        """
-        if self.keyPress == 'ESC' or self.keyPress == 'ALT_Q':
-            self.logger.blue('ESC pressed. Stopping measurement.')
-            self.updateValue("Experiment_Switch", False)
-            self.MOT_switch(True)
-            self.update_parameters()
-            self.runs_status = TerminationReason.USER
-            self.keyPress = None
-        elif self.keyPress == 'ALT_SPACE' and not self.pause_flag:
-            self.logger.blue('ALT SPACE pressed. Pausing measurement.')
-            self.pause_flag = True
-            self.keyPress = None
-        elif self.keyPress == 'ALT_SPACE' and self.pause_flag:
-            self.logger.blue('ALT SPACE pressed. Continuing measurement.')
-            self.pause_flag = False
-            self.keyPress = None
-        elif self.keyPress == 'ALT_A':
-            self.logger.blue('ALT A pressed. Switching atoms/no-atoms.')
-            # Turn on the "switch" indication, but putting an "_" as a prefix
-            # Note: user may have pressed A fast multiple times, so no need to add multiple "_" prefixes until the switch is handled
-            if self.switch_atom_no_atoms[0] != '_':
-                self.switch_atom_no_atoms = '_' + self.switch_atom_no_atoms
-            self.keyPress = None
         pass
 
     def should_terminate(self):

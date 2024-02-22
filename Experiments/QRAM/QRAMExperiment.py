@@ -1515,10 +1515,10 @@ class QRAMExperiment(BaseExperiment):
         #TOO_MANY_WAITING_CYCLES = WAIT_TIME*100*20  # 5 seconds. Make this -1 to wait indefinitely
         TOO_MANY_WAITING_CYCLES = -1
 
-        wait_cycle = 1
+        count = 1
         while True:
 
-            self.handle_user_events()
+            # Check if run should terminate (maybe ESC was pressed)
             if self.runs_status == TerminationReason.USER:
                 break
 
@@ -1544,11 +1544,11 @@ class QRAMExperiment(BaseExperiment):
             if self.new_timetags_detected(self.batcher['tt_FS_measure_batch'], self.tt_FS_measure):
                 break
 
-            self.info(f'Repetition #{self.repetitions}. Waiting for values from stream (wait_cycle: {wait_cycle}). No new data coming from detectors (exp_flag = {self.exp_flag})')
+            self.info(f'Repetition #{self.repetitions}. Waiting for values from stream (wait_cycle: {count}). No new data coming from detectors (exp_flag = {self.exp_flag})')
 
             # Are we waiting too long?
-            wait_cycle += 1
-            if TOO_MANY_WAITING_CYCLES != -1 and wait_cycle > TOO_MANY_WAITING_CYCLES:
+            count += 1
+            if TOO_MANY_WAITING_CYCLES != -1 and count > TOO_MANY_WAITING_CYCLES:
                 self.runs_status = TerminationReason.ERROR
                 break
 
@@ -1821,8 +1821,7 @@ class QRAMExperiment(BaseExperiment):
         # ---------------------------------------------------------------------------------
         while True:
 
-            # Handle cases where user terminates or pauses experiment
-            self.handle_user_events()
+            # Check if user maybe terminated the experiment
             if self.runs_status == TerminationReason.USER:
                 break
 

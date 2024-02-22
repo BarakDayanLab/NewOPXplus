@@ -33,7 +33,6 @@ class BDKeyboard:
         pass
 
     def set_listener(self, figure, listener):
-        return
         self.listener = listener
         figure.canvas.mpl_connect('key_press_event', self.on_press)
 
