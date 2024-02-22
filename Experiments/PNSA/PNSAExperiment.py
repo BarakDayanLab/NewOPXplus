@@ -1461,8 +1461,12 @@ class PNSAExperiment(BaseExperiment):
         """
         Decides if to terminate mainloop. Overrides BaseExperiment method.
         Did we complete N successful iterations? (we check for N+1 because we started with 1)
+
+        Note we also consult with super() - if it tells us to terminate, we "listen" :-)
         """
-        return self.counter == self.N+1
+
+        flag = super().should_terminate()
+        return flag or self.counter == self.N+1
 
     def await_for_values(self):
         """
@@ -2009,13 +2013,18 @@ class PNSAExperiment(BaseExperiment):
             "exp_comment": f'transit condition: {self.transit_condition}; reflection threshold: {self.reflection_threshold} @ {int(self.reflection_threshold_time / 1e6)} ms',
             "daily_experiment_comments": daily_experiment_comments,
 
-            "experiment_config_values": self.Exp_Values
+            "experiment_config_values": self.Exp_Values,
+
+            "run_parameters": self.run_parameters
         }
-        resolved_path = self.bd_results.get_sequence_folder(sequence_definitions)
-        self.bd_results.save_results(resolved_path)
+        if self.playback['active']:
+            resolved_path = self.playback['save_results_path']
+        else:
+            resolved_path = self.bd_results.get_sequence_folder(sequence_definitions)
+        self.bd_results.save_results(results, resolved_path)
 
         # If these results should be saved for analysis, copy them to analysis folder
-        if for_analysis:
+        if for_analysis and not self.playback['active']:
             self.bd_results.copy_folder(source=resolved_path, destination=self.bd_results.get_custom_root('for_analysis'))
 
     def is_acquired(self):
@@ -2272,16 +2281,14 @@ class PNSAExperiment(BaseExperiment):
 
 if __name__ == "__main__":
 
-    matplotlib_version = matplotlib.get_backend()
-    print(f'In use: {matplotlib_version}')
-    matplotlib.use("Qt5Agg")
-
     # Playback definitions
     playback_parameters = {
-        "active": False,
+        "active": True,
         'playback_files_path': r"C:\temp\playback_data\PNSA\165103_Photon_TimeTags\playback",
         "old_format": False,
         "save_results": False,
+        "save_results_path": 'C:\\temp\\playback_data',
+        "max_iterations": 5,  # -1 if you want playback to run through entire data
         "plot": "LIVE",  # "LIVE", "LAST", "NONE"
         "delay": -1,  # -1,  # 0.5,  # In seconds. Use -1 for not playback delay
     }

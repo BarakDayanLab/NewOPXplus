@@ -3,6 +3,7 @@ import sys
 import time
 import json
 import pathlib
+import matplotlib
 import matplotlib.pyplot as plt
 import os
 import importlib
@@ -486,6 +487,13 @@ class BaseExperiment:
         Decides if to terminate mainloop. By default, we return False, e.g. endless loop.
         Experiment class should override this if it has a different condition
         """
+
+        # If we're in playback mode, and we had max iterations defined, we check it
+        if self.playback['active'] and self.playback['max_iterations'] > 0:
+            self.playback['max_iterations'] -= 1
+            if self.playback['max_iterations'] == 0:
+                return True
+
         return False
 
     def _read_k_ex(self):
@@ -1074,6 +1082,12 @@ class BaseExperiment:
         """
         Perform general preparations required for figure plotting
         """
+
+        # Ensure the backend we need
+        matplotlib_version = matplotlib.get_backend()
+        self.logger.info(f'Matplotlib backend: {matplotlib_version}')
+        matplotlib.use("Qt5Agg")
+
         self.fig = plt.figure()
 
         # Set figure title - current date and time
