@@ -2330,14 +2330,14 @@ if __name__ == "__main__":
             {
                 'name': 'Without Atoms',
                 'parameters': {
-                    'N': 5,
+                    'N': 50,
                     'with_atoms': False
                 }
             },
             {
                 'name': 'With Atoms',
                 'parameters': {
-                    'N': 5,
+                    'N': 500,
                     'with_atoms': True
                 }
             },

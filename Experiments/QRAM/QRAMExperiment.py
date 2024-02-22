@@ -2354,19 +2354,19 @@ if __name__ == "__main__":
         'delay_between_iterations': None,  # seconds
         'sequence': [
             {
+                'name': 'Without Atoms',
+                'parameters': {
+                    'N': 50,
+                    'with_atoms': False
+                }
+            },
+            {
                 'name': 'With Atoms',
                 'parameters': {
                     'N': 500,
                     'with_atoms': True
                 }
             },
-            # {
-            #     'name': 'Without Atoms',
-            #     'parameters': {
-            #         'N': 50,
-            #         'with_atoms': False
-            #     }
-            # }
         ]
     }
 
