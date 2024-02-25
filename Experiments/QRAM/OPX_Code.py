@@ -188,8 +188,8 @@ def FreeFall(freefall_duration, coils_timing):
 
     ## Zeeman Coils turn-on sequence ##
     wait(coils_timing, "Zeeman_Coils")
-    play("ZeemanOFF", "Zeeman_Coils", duration=(freefall_duration - coils_timing))
-    # play("ZeemanSplit", "Zeeman_Coils", duration=(freefall_duration - coils_timing))
+    # play("ZeemanOFF", "Zeeman_Coils", duration=(freefall_duration - coils_timing))
+    play("ZeemanSplit", "Zeeman_Coils", duration=(freefall_duration - coils_timing))
 
 def Measure(measuring_duration):
     """

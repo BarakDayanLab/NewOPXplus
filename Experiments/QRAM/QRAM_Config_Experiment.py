@@ -23,7 +23,7 @@ from Utilities.Utils import Utils
 # sprint_pulse_amp_S = [0.105]
 # Reflection S:
 det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
-sprint_pulse_amp_N = [0, 0.195, 0, 0.195]
+sprint_pulse_amp_N = [0, 0.105, 0, 0]
 # sprint_pulse_amp_N = [0.005]
 det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.30]
 sprint_pulse_amp_S = [0, 0, 0, 0]
@@ -410,8 +410,8 @@ Pulses_Amp_Early = 0.495
 # |1c, (0 + 1)t>
 # det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 0, 0]
 det_pulse_amp_Early = [0, 0, 0, 0, 0, 0]
-sprint_pulse_amp_Early = [1, 1, 0, 0]
-# sprint_pulse_amp_Early = [0, 0, 0, 0]
+# sprint_pulse_amp_Early = [1, 1, 0, 0]
+sprint_pulse_amp_Early = [0, 0, 0, 0]
 # sprint_pulse_amp_Early = [0]
 
 
@@ -471,8 +471,8 @@ det_pulse_amp_Late = [1, 1, 1, 1, 1, 1]
 # sprint_pulse_amp_Late = [0, 0, 1, 1]
 # # |1c, (0 + 1)t>
 # det_pulse_amp_Late = [1, 1, 1, 1, 1, 1, 1, 1]
-sprint_pulse_amp_Late = [0, 0, 1, 1]
-# sprint_pulse_amp_Late = [1, 1, 1, 1]
+# sprint_pulse_amp_Late = [0, 0, 1, 1]
+sprint_pulse_amp_Late = [1, 1, 1, 1]
 
 QRAM_Exp_Square_samples_Late = QRAM_Exp_Square_samples(amp=Pulses_Amp_Late,
                                                        sprint_pulse_len=sprint_pulse_len,
@@ -739,8 +739,8 @@ config = {
                 },
             },
             'operations': {
-                # 'MOT': "MOT_lock",
-                'MOT': "MOT_with_Trigger",
+                'MOT': "MOT_lock",
+                # 'MOT': "MOT_with_Trigger",
                 'Linear': "Linear_pulse",
                 'Const': "Const_pulse",
             },

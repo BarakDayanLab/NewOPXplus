@@ -20,24 +20,98 @@ from Utilities.Utils import Utils
 # det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.45, 0]
 # sprint_pulse_amp_S = [0.105]
 # Reflection S:
-det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
-sprint_pulse_amp_N = [0, 0.115, 0, 0]
+# det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.27]
+# det_pulse_amp_N = [0.45, 0.45, 0.45, 0.45, 0.45, 0.30]
+# det_pulse_amp_N = [0, 0, 0, 0, 0, 0]
+# sprint_pulse_amp_N = [0, 0.115, 0, 0.115]
+# sprint_pulse_amp_N = [0, 0, 0, 0]
 # sprint_pulse_amp_N = [0.005]
-det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.30]
+# det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.24]
+# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
+# det_pulse_amp_S = [0.45, 0.45, 0.45, 0.45, 0.45, 0.25]
+# det_pulse_amp_S = [0, 0, 0, 0, 0, 0]
+# sprint_pulse_amp_S = [0, 0, 0, 0]
+# sprint_pulse_amp_S = [0, 0.09, 0, 0.09]
+
+
+
+# For PNSA experiment
+
+#### 1st set: ####
+# S reflection:
+det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
+det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.24]
+sprint_pulse_amp_N = [0, 0.08, 0, 0]
+# sprint_pulse_amp_N = [0, 0, 0, 0.115]
+# sprint_pulse_amp_N = [0, 0.095, 0, 0.095]
 sprint_pulse_amp_S = [0, 0, 0, 0]
 
+# N reflection:
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.265]
+# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
+# sprint_pulse_amp_N = [0, 0, 0, 0]
+# sprint_pulse_amp_S = [0, 0.073, 0, 0.073]
 
+#### 2nd set: ####
+# S reflection:
+# det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
+# det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.24]
+# sprint_pulse_amp_N = [0, 0.138, 0, 0]
+# sprint_pulse_amp_N = [0, 0, 0, 0.138]
+# sprint_pulse_amp_N = [0, 0.115, 0, 0.115]
+# sprint_pulse_amp_S = [0, 0, 0, 0]
 
-# For SPRINT experiment
-# Transmission N:
+# N reflection:
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.265]
+# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
+# sprint_pulse_amp_N = [0, 0, 0, 0]
+# sprint_pulse_amp_S = [0, 0.09, 0, 0.09]
 
-# Reflection N:
+#### 3rd set: ####
+# S reflection:
+# det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
+# det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.24]
+# sprint_pulse_amp_N = [0, 0.168, 0, 0]
+# sprint_pulse_amp_N = [0, 0, 0, 0.168]
+# sprint_pulse_amp_N = [0, 0.138, 0, 0.138]
+# sprint_pulse_amp_S = [0, 0, 0, 0]
 
-# Transmission S:
+# N reflection:
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.265]
+# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
+# sprint_pulse_amp_N = [0, 0, 0, 0]
+# sprint_pulse_amp_S = [0, 0.09, 0, 0.09]
 
-# Reflection S:
+#### 4th set: ####
+# S reflection:
+# det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
+# det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.24]
+# sprint_pulse_amp_N = [0, 0.19, 0, 0]
+# sprint_pulse_amp_N = [0, 0, 0, 0.19]
+# sprint_pulse_amp_N = [0, 0.152, 0, 0.152]
+# sprint_pulse_amp_S = [0, 0, 0, 0]
 
+# N reflection:
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.265]
+# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
+# sprint_pulse_amp_N = [0, 0, 0, 0]
+# sprint_pulse_amp_S = [0, 0.09, 0, 0.09]
 
+#### 5th set: ####
+# S reflection:
+# det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
+# det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.24]
+# sprint_pulse_amp_N = [0, 0.21, 0, 0]
+# sprint_pulse_amp_N = [0, 0, 0, 0.21]
+# sprint_pulse_amp_N = [0, 0.15, 0, 0.15]
+# sprint_pulse_amp_S = [0, 0, 0, 0]
+
+# N reflection:
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.265]
+# det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
+# sprint_pulse_amp_N = [0, 0, 0, 0]
+# sprint_pulse_amp_S = [0, 0.135, 0, 0.135]
 
 
 # route efficiency after tapered fiber - including 50% of overcoupling transmission loss
