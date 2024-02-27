@@ -280,7 +280,7 @@ def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
     # play("Const_open_triggered" * amp(0), "PULSER_ANCILLA", duration=shutter_open_time)
 
     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "PULSER_ANCILLA")
-    play("Const_open_triggered" * amp(0), "PULSER_ANCILLA", duration=m_time)
+    play("Const_open_triggered" * amp(0), "PULSER_ANCILLA", duration=(m_time-shutter_open_time))
 
     with for_each_(i, phase_scan):
         assign(phase_correction_per_scan, phase_correction * i)
@@ -292,8 +292,8 @@ def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
             assign(counts_B_sum, 0)
             assign(counts_D_sum, 0)
             with for_(k, 1, k <= points_for_sum, k + 1):
-                play("MZ_balancing_pulses_N", "PULSER_N")
-                play("MZ_balancing_pulses_N", "PULSER_S")
+                play("MZ_balancing_pulses_S", "PULSER_N")
+                play("MZ_balancing_pulses_S", "PULSER_S")
                 measure("MZ_balancing_pulses", "AOM_Early", None,
                         counting.digital(counts_B, m_window, element_outputs="OutBright1"))
                         # time_tagging.digital(tt_vec_B2, m_window, element_output="OutBright2", targetLen=counts_B2))
@@ -727,8 +727,10 @@ def MZ_balancing_check(m_time, m_window, rep,
     align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "PULSER_ANCILLA")
     # play("Const_open_triggered" * amp(0), "PULSER_ANCILLA", duration=m_time)
     with for_(t, 0, t < rep, t + 1):
-        play("MZ_balancing_pulses_N", "PULSER_N")
-        play("MZ_balancing_pulses_N", "PULSER_S")
+        # play("MZ_balancing_pulses_N", "PULSER_N")
+        # play("MZ_balancing_pulses_N", "PULSER_S")
+        play("MZ_balancing_pulses_S", "PULSER_N")
+        play("MZ_balancing_pulses_S", "PULSER_S")
         measure("MZ_balancing_pulses", "AOM_Early", None,
                 counting.digital(counts_B, m_window, element_outputs="OutBright1"))
         measure("MZ_balancing_pulses", "AOM_Late", None,

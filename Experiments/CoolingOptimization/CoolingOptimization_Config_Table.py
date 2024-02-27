@@ -7,7 +7,7 @@ Experiment_Values = {
     'Experiment_Name': 'CoolingOptimization',
     'Triggering_Phase': Phases.PULSE_1,
     'Phases_Order': [Phases.MOT, Phases.FOUNTAIN, Phases.PGC, Phases.FREE_FALL, Phases.PULSE_1, Phases.INTER_PULSES, Phases.PULSE_2, Phases.POST_PULSE],
-    'Fountain_final_Delta_freq': 0.37e6,
+    'Fountain_final_Delta_freq': 0.315e6, #0.37e6
     'PrePulse_CH2_freq': 70e6,  # Hz #Ziv Added for Cooling optimization
     'Pulse_1_CH1_Freq_f': Initial_Values['Flash_freq'],
     'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'],

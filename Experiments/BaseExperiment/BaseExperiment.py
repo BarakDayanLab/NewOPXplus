@@ -179,7 +179,7 @@ class BaseExperiment:
             self.bdsocket.run_server()
 
         # Attempt to initialize Camera functionality
-        #self.connect_camera()
+        self.connect_camera()
 
         # Setup keyboard listener
         # self.listener = keyboard.Listener(on_press=self._on_press, on_release=self._on_release)

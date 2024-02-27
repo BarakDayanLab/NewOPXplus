@@ -1784,7 +1784,7 @@ class PNSAExperiment(BaseExperiment):
 
             # Set lock error and kappa_ex as coming over communication line
             self.lock_err = 99.9
-            self.k_i = 6  # [MHz
+            self.k_i = 4.5  # [MHz
             self.k_ex = 99.9  # Dummy default value for a case we don't have it
             if 'cavity_lock' in self.comm_messages:
                 self.lock_err = self.comm_messages['cavity_lock']['lock_error'] if 'lock_error' in self.comm_messages['cavity_lock'] else 99.9
@@ -2309,15 +2309,15 @@ if __name__ == "__main__":
         'transit_condition': [2, 1, 2],
         'pre_comment': '',  # Put 'None' or '' if you don't want pre-comment prompt
         'lock_err_threshold': 2,  # [Mhz]
-        'desired_k_ex': 25, # [Mhz]
+        'desired_k_ex': 30, # [Mhz]
         'k_ex_err': 3,  # [Mhz]
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,
         'reflection_threshold_time': 9e6,
         'FLR_threshold': -0.01,
-        'MZ_infidelity_threshold': 0.97,
+        'MZ_infidelity_threshold': 0.87,
         'photons_per_det_pulse_threshold': 12,
-        'exp_flag': False,
+        'exp_flag': True,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2329,7 +2329,7 @@ if __name__ == "__main__":
             {
                 'name': 'Without Atoms',
                 'parameters': {
-                    'N': 50,
+                    'N': 5,
                     'with_atoms': False
                 }
             },
