@@ -114,9 +114,10 @@ class BaseExperiment:
         self.bd_results.create_experiment_run_folder()
 
         # Check network driver availability
-        network_drive_available = self.bd_results.is_network_drive_available('U:\\Lab_2023')
+        network_drive_letter = 'U'
+        network_drive_available = self.bd_results.is_network_drive_available(f'{network_drive_letter}:\\Lab_2023')
         if not network_drive_available:
-            self.logger.error('Network drive is not available/connected. PLEASE FIX.')
+            self.logger.error(f'Network drive {network_drive_letter} is not available/connected. PLEASE FIX.')
             sys.exit(1)
 
         # Tell logger we want to save the log
