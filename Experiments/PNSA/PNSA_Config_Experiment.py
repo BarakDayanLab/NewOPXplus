@@ -130,9 +130,9 @@ sprint_pulse_amp_S = [0, 0, 0, 0]
 # sprint_pulse_amp_S = [0, 0.073, 0, 0.073]
 
 # route efficiency after tapered fiber - including 50% of overcoupling transmission loss
-Eff_from_taper_S = 0.5*np.sqrt(0.8)*0.9*0.85*0.75 # over coupling - ~0.5, taper eff - ~0.8, table eff(launcher to lancher) - ~0.9
+Eff_from_taper_S = 0.5*np.sqrt(0.8)*0.73*0.85*0.75 # over coupling - ~0.5, taper eff - ~0.8, table eff(launcher to lancher) - ~0.9
                                                   # fiber route eff to detectors - ~0.85, detectors efficiency - ~0.75
-Eff_from_taper_N = 0.5*np.sqrt(0.8)*0.9*0.85*0.75*0.9 # over coupling - ~0.5, taper eff - ~0.8, table eff(launcher to lancher) - ~0.9
+Eff_from_taper_N = 0.5*np.sqrt(0.8)*0.7*0.85*0.75*0.9 # over coupling - ~0.5, taper eff - ~0.8, table eff(launcher to lancher) - ~0.9
                                                       # fiber route eff to detectors - ~0.85, detectors efficiency - ~0.75, 0.9 total efficiency difference from south
 
 

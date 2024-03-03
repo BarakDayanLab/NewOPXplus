@@ -165,6 +165,74 @@
 		},
 
 		{
+			"# OUTPUT FILES - DISPLAY VECTORS": "-----------------------------------"
+		},
+
+  		{
+			"data": "folded_tt_N_cumulative_avg",
+			"name": "folded_tt_N_cumulative_avg",
+			"file_name": "folded_tt_N_cumulative_avg",
+			"folder": "output\\Display_vectors",
+			"type": "npz"
+		},
+  		{
+			"data": "folded_tt_S_cumulative_avg",
+			"name": "folded_tt_S_cumulative_avg",
+			"file_name": "folded_tt_S_cumulative_avg",
+			"folder": "output\\Display_vectors",
+			"type": "npz"
+		},
+  		{
+			"data": "folded_tt_FS_cumulative_avg",
+			"name": "folded_tt_FS_cumulative_avg",
+			"file_name": "folded_tt_FS_cumulative_avg",
+			"folder": "output\\Display_vectors",
+			"type": "npz"
+		},
+   		{
+			"data": "folded_tt_BP_cumulative_avg",
+			"name": "folded_tt_BP_cumulative_avg",
+			"file_name": "folded_tt_BP_cumulative_avg",
+			"folder": "output\\Display_vectors",
+			"type": "npz"
+		},
+		{
+			"data": "folded_tt_DP_cumulative_avg",
+			"name": "folded_tt_DP_cumulative_avg",
+			"file_name": "folded_tt_DP_cumulative_avg",
+			"folder": "output\\Display_vectors",
+			"type": "npz"
+		},
+		{
+			"data": "folded_tt_S_directional_cumulative_avg",
+			"name": "folded_tt_S_directional_cumulative_avg",
+			"file_name": "folded_tt_S_directional_cumulative_avg",
+			"folder": "output\\Display_vectors",
+			"type": "npz"
+		},
+  		{
+			"data": "folded_tt_N_directional_cumulative_avg",
+			"name": "folded_tt_N_directional_cumulative_avg",
+			"file_name": "folded_tt_N_directional_cumulative_avg",
+			"folder": "output\\Display_vectors",
+			"type": "npz"
+		},
+   		{
+			"data": "folded_tt_BP_timebins_cumulative_avg",
+			"name": "folded_tt_BP_timebins_cumulative_avg",
+			"file_name": "folded_tt_BP_timebins_cumulative_avg",
+			"folder": "output\\Display_vectors",
+			"type": "npz"
+		},
+		{
+			"data": "folded_tt_DP_timebins_cumulative_avg",
+			"name": "folded_tt_DP_timebins_cumulative_avg",
+			"file_name": "folded_tt_DP_timebins_cumulative_avg",
+			"folder": "output\\Display_vectors",
+			"type": "npz"
+		},
+
+		{
 			"# OUTPUT FILES - SPRINT ANALYSIS": "-----------------------------------"
 		},
 
@@ -266,6 +334,13 @@
 			"data": "lock_error",
 			"name": "Cavity Lock Error",
 			"file_name": "Cavity_Lock_Error",
+			"folder": "Output",
+			"type": ["mat", "npz"]
+		},
+		{
+			"data": "interference_error",
+			"name": "interference error",
+			"file_name": "interference_error",
 			"folder": "Output",
 			"type": ["mat", "npz"]
 		},
