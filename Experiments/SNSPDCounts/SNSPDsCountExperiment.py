@@ -151,8 +151,8 @@ class SNSPDsCountExperiment(BaseExperiment):
         factor = int(1000 / Config.Measure_Time)
 
         # Format the N/S/SPCM counts. Multiply by factor to get to Hz
-        self.N_counts = "{:,}".format(self.south_avg_counts * factor)
-        self.S_counts = "{:,}".format(self.north_avg_counts * factor)
+        self.N_counts = "{:,}".format(self.north_avg_counts * factor)
+        self.S_counts = "{:,}".format(self.south_avg_counts * factor)
         self.SPCMs_counts = "{:,}".format(self.spcm_avg_counts * factor)
 
         pass

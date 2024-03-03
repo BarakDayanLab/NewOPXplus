@@ -11,6 +11,9 @@
     "k_ex_batch": {
         "value_name": "k_ex"
     },
+    "interference_error_batch": {
+        "value_name": "interference_error"
+    },
     "tt_measure_batch": {
         "value_name": "tt_measure"
     },

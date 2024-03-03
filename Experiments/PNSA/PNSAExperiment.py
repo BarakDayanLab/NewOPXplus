@@ -1453,7 +1453,11 @@ class PNSAExperiment(BaseExperiment):
             ax[4].axvline(len(self.MZ_DP_counts_res_value_1) / 2, linestyle='--', color='red')
             ax[4].set_title('MZ outputs around experiment', fontweight="bold")
             # ax[4].legend(loc='upper right')
-            ax[4].text(0.05, 0.6, textstr_BP_DP_BA, transform=ax[4].transAxes, fontsize=14, verticalalignment='top', bbox=props)
+            if self.MZ_infidelity_flag:
+                props_MZ = props
+            else:
+                props_MZ = props_thresholds
+            ax[4].text(0.05, 0.6, textstr_BP_DP_BA, transform=ax[4].transAxes, fontsize=14, verticalalignment='top', bbox=props_MZ)
 
         # MZ outputs during experiment
         if plot_switches['graph-7']:
@@ -1750,6 +1754,7 @@ class PNSAExperiment(BaseExperiment):
         self.sequence_len = run_parameters['sequence_len'] if 'sequence_len' in run_parameters else len(Config.PNSA_Exp_Square_samples_Late)
         self.pre_comment = run_parameters['pre_comment']
         self.lock_err_threshold = run_parameters['lock_err_threshold']
+        self.interference_error_threshold = run_parameters['interference_error_threshold']
         self.desired_k_ex = run_parameters['desired_k_ex']
         self.k_ex_err = run_parameters['k_ex_err']
         self.transit_condition = run_parameters['transit_condition']
@@ -1892,14 +1897,16 @@ class PNSAExperiment(BaseExperiment):
 
             # Set lock error and kappa_ex as coming over communication line
             self.lock_err = 99.9
-            self.k_i = 6  # [MHz
+            self.k_i = 12  # [MHz
             self.k_ex = 99.9  # Dummy default value for a case we don't have it
+            self.interference_error = 99.9
             if 'cavity_lock' in self.comm_messages:
                 self.lock_err = self.comm_messages['cavity_lock']['lock_error'] if 'lock_error' in self.comm_messages['cavity_lock'] else 99.9
                 self.k_ex = self.comm_messages['cavity_lock']['k_ex'] if 'k_ex' in self.comm_messages['cavity_lock'] else 99.9  # TODO: need to handle case where there's no Kappa Ex yet
+                self.interference_error = self.comm_messages['cavity_lock']['interference_error'] if 'interference_error' in self.comm_messages['cavity_lock'] else 99.9
 
             # Define efficiencies:
-            self.Cavity_transmission = Utils.cavity_transmission(0, self.k_ex, k_i=self.k_i, h=0.5)
+            self.Cavity_transmission = Utils.cavity_transmission(0, self.k_ex, k_i=self.k_i, h=1)
             self.Eff_from_taper_N = Config.Eff_from_taper_N * \
                                     (self.Cavity_transmission / 0.5)
             self.Eff_from_taper_S = Config.Eff_from_taper_S * \
@@ -2113,6 +2120,16 @@ class PNSAExperiment(BaseExperiment):
             "tt_BP_measure_batch": self.batcher['tt_BP_measure_batch'],
             "tt_DP_measure_batch": self.batcher['tt_DP_measure_batch'],
 
+            "folded_tt_S_cumulative_avg": self.folded_tt_S_cumulative_avg,
+            "folded_tt_N_cumulative_avg": self.folded_tt_N_cumulative_avg,
+            "folded_tt_BP_cumulative_avg": self.folded_tt_BP_cumulative_avg,
+            "folded_tt_DP_cumulative_avg": self.folded_tt_DP_cumulative_avg,
+            "folded_tt_FS_cumulative_avg": self.folded_tt_FS_cumulative_avg,
+            "folded_tt_S_directional_cumulative_avg": self.folded_tt_S_directional_cumulative_avg,
+            "folded_tt_N_directional_cumulative_avg": self.folded_tt_N_directional_cumulative_avg,
+            "folded_tt_BP_timebins_cumulative_avg": self.folded_tt_BP_timebins_cumulative_avg,
+            "folded_tt_DP_timebins_cumulative_avg": self.folded_tt_DP_timebins_cumulative_avg,
+
             "MZ_BP_counts_balancing_batch": self.batcher['MZ_BP_counts_balancing_batch'],
             "MZ_BP_counts_balancing_check_batch": self.batcher['MZ_BP_counts_balancing_check_batch'],
             "MZ_DP_counts_balancing_batch": self.batcher['MZ_DP_counts_balancing_batch'],
@@ -2131,6 +2148,7 @@ class PNSAExperiment(BaseExperiment):
             "FLR_measurement": self.batcher['flr_batch'],
             "lock_error": self.batcher['lock_err_batch'],
             "k_ex": self.batcher['k_ex_batch'],
+            "interference_error": self.batcher['interference_error_batch'],
             "exp_timestr": experiment_comment,
 
             "exp_comment": f'transit condition: {self.transit_condition}; reflection threshold: {self.reflection_threshold} @ {int(self.reflection_threshold_time / 1e6)} ms',
@@ -2151,6 +2169,7 @@ class PNSAExperiment(BaseExperiment):
         self.lock_err_flag = True
         self.k_ex_flag = True
         self.fluorescence_flag = True
+        self.MZ_infidelity_flag = True
 
         playback = self.playback['active']
 
@@ -2161,6 +2180,10 @@ class PNSAExperiment(BaseExperiment):
         # Are we properly locked on resonance?
         if self.lock_err is None and not playback:
             self.lock_err_flag = False
+            return False
+
+        if abs(self.interference_error) > self.interference_error_threshold and not playback:
+            print(self.interference_error)
             return False
 
         if abs(self.lock_err) > self.lock_err_threshold and not playback:
@@ -2194,6 +2217,7 @@ class PNSAExperiment(BaseExperiment):
 
         if (self.Infidelity_before > self.MZ_infidelity_threshold) or \
            (self.Infidelity_after > self.MZ_infidelity_threshold):
+            self.MZ_infidelity_flag = False
             return False
 
         threshold_flag = (self.sum_for_threshold < self.reflection_threshold) and \
@@ -2423,15 +2447,16 @@ if __name__ == "__main__":
         'transit_condition': [2, 1, 2],
         'pre_comment': '',  # Put 'None' or '' if you don't want pre-comment prompt
         'lock_err_threshold': 2,  # [Mhz]
-        'desired_k_ex': 25, # [Mhz]
+        'interference_error_threshold': 3,  # [MHz]
+        'desired_k_ex': 38, # [Mhz]
         'k_ex_err': 3,  # [Mhz]
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,
         'reflection_threshold_time': 9e6,
         'FLR_threshold': -0.01,
-        'MZ_infidelity_threshold': 0.97,
+        'MZ_infidelity_threshold': 0.87,
         'photons_per_det_pulse_threshold': 12,
-        'exp_flag': False,
+        'exp_flag': True,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2443,7 +2468,7 @@ if __name__ == "__main__":
             {
                 'name': 'Without Atoms',
                 'parameters': {
-                    'N': 50,
+                    'N': 5,
                     'with_atoms': False
                 }
             },
