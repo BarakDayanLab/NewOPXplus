@@ -409,21 +409,24 @@ class PNSAExperiment(BaseExperiment):
         self.num_of_SPRINT_reflections_per_seq_S_, \
         self.num_of_SPRINT_reflections_per_seq_N_, \
         self.num_of_SPRINT_transmissions_per_seq_S_, \
-        self.num_of_SPRINT_transmissions_per_seq_N_ = [
+        self.num_of_SPRINT_transmissions_per_seq_N_, \
+        self.num_of_BP_counts_per_seq_in_SPRINT_pulse, \
+        self.num_of_DP_counts_per_seq_in_SPRINT_pulse = [
             [
                 [
                     [] for _ in range(self.number_of_SPRINT_pulses_per_seq)
                 ]
                 for _ in range(self.number_of_PNSA_sequences)
-            ] for _ in range(4)
+            ] for _ in range(6)
         ]
 
-        # tt_small_perturb = []
-        self.N_tt = np.array(self.tt_N_measure + self.tt_BP_measure + self.tt_DP_measure)
+        # N direction:
+        self.N_tt = np.array(self.tt_N_measure)
         tt_inseq_ = self.N_tt % self.sequence_len
         seq_num_ = self.N_tt // self.sequence_len
         for (element, tt_inseq, seq_num) in zip(self.N_tt, tt_inseq_, seq_num_):
-            # TODO: Q: I assume this is a time-window to ignore some time on start/end, how did we decide on this time?  TODO: Q: what us the meaning of this specific time-window?
+            # TODO: Q: I assume this is a time-window to ignore some time on start/end, how did we decide on this time?
+            #  TODO: Q: what is the meaning of this specific time-window?
             if (element > int(0.6e6)) and (element < int(self.M_time - 0.4e6)):
                 for indx, tup in enumerate(self.sorted_pulses):
                     # if all(x == 0 for x in Config.PNSA_Exp_Square_samples_Early[tup[0]:tup[1]]):
@@ -446,6 +449,76 @@ class PNSAExperiment(BaseExperiment):
                                 self.num_of_SPRINT_transmissions_per_seq_N_[seq_num][ind].append(element)
                             if tup[2] == 's':
                                 self.num_of_SPRINT_reflections_per_seq_S_[seq_num][ind].append(element)
+
+                if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
+                    self.num_of_det_reflections_per_seq_S[seq_num] += self.filter_S[tt_inseq]
+                    self.num_of_det_transmissions_per_seq_N[seq_num] += self.filter_N[tt_inseq]
+
+        # Bright port direction:
+        self.BP_tt = np.array(self.tt_BP_measure)
+        tt_inseq_ = self.BP_tt % self.sequence_len
+        seq_num_ = self.BP_tt // self.sequence_len
+        for (element, tt_inseq, seq_num) in zip(self.BP_tt, tt_inseq_, seq_num_):
+            # TODO: Q: I assume this is a time-window to ignore some time on start/end, how did we decide on this time?
+            #  TODO: Q: what is the meaning of this specific time-window?
+            if (element > int(0.6e6)) and (element < int(self.M_time - 0.4e6)):
+                for indx, tup in enumerate(self.sorted_pulses):
+                    # if all(x == 0 for x in Config.PNSA_Exp_Square_samples_Early[tup[0]:tup[1]]):
+                    if (Config.PNSA_Exp_Square_samples_Early[tup[0]] == 0) or \
+                            (self.number_of_SPRINT_pulses_per_seq > 1):
+                        start_pulse_time_in_seq = tup[0]
+                        end_pulse_time_in_seq = tup[1]
+                    else:
+                        start_pulse_time_in_seq = tup[0] + Config.MZ_delay
+                        end_pulse_time_in_seq = tup[1] + Config.MZ_delay
+                    if (tt_inseq >= start_pulse_time_in_seq) and (tt_inseq <= end_pulse_time_in_seq):
+                        if indx < self.number_of_detection_pulses_per_seq:
+                            if tup[2] == 'N':
+                                self.num_of_det_transmissions_per_seq_N_[seq_num][indx].append(element)
+                            if tup[2] == 'S':
+                                self.num_of_det_reflections_per_seq_S_[seq_num][indx].append(element)
+                        else:
+                            ind = indx - self.number_of_detection_pulses_per_seq
+                            if tup[2] == 'n':
+                                self.num_of_SPRINT_transmissions_per_seq_N_[seq_num][ind].append(element)
+                            if tup[2] == 's':
+                                self.num_of_SPRINT_reflections_per_seq_S_[seq_num][ind].append(element)
+                            self.num_of_BP_counts_per_seq_in_SPRINT_pulse[seq_num][ind].append(element)
+
+                if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
+                    self.num_of_det_reflections_per_seq_S[seq_num] += self.filter_S[tt_inseq]
+                    self.num_of_det_transmissions_per_seq_N[seq_num] += self.filter_N[tt_inseq]
+
+        # Dark port direction:
+        self.DP_tt = np.array(self.tt_DP_measure)
+        tt_inseq_ = self.DP_tt % self.sequence_len
+        seq_num_ = self.DP_tt // self.sequence_len
+        for (element, tt_inseq, seq_num) in zip(self.DP_tt, tt_inseq_, seq_num_):
+            # TODO: Q: I assume this is a time-window to ignore some time on start/end, how did we decide on this time?
+            # TODO: Q: what is the meaning of this specific time-window?
+            if (element > int(0.6e6)) and (element < int(self.M_time - 0.4e6)):
+                for indx, tup in enumerate(self.sorted_pulses):
+                    # if all(x == 0 for x in Config.PNSA_Exp_Square_samples_Early[tup[0]:tup[1]]):
+                    if (Config.PNSA_Exp_Square_samples_Early[tup[0]] == 0) or \
+                            (self.number_of_SPRINT_pulses_per_seq > 1):
+                        start_pulse_time_in_seq = tup[0]
+                        end_pulse_time_in_seq = tup[1]
+                    else:
+                        start_pulse_time_in_seq = tup[0] + Config.MZ_delay
+                        end_pulse_time_in_seq = tup[1] + Config.MZ_delay
+                    if (tt_inseq >= start_pulse_time_in_seq) and (tt_inseq <= end_pulse_time_in_seq):
+                        if indx < self.number_of_detection_pulses_per_seq:
+                            if tup[2] == 'N':
+                                self.num_of_det_transmissions_per_seq_N_[seq_num][indx].append(element)
+                            if tup[2] == 'S':
+                                self.num_of_det_reflections_per_seq_S_[seq_num][indx].append(element)
+                        else:
+                            ind = indx - self.number_of_detection_pulses_per_seq
+                            if tup[2] == 'n':
+                                self.num_of_SPRINT_transmissions_per_seq_N_[seq_num][ind].append(element)
+                            if tup[2] == 's':
+                                self.num_of_SPRINT_reflections_per_seq_S_[seq_num][ind].append(element)
+                            self.num_of_DP_counts_per_seq_in_SPRINT_pulse[seq_num][ind].append(element)
 
                 if tt_inseq <= self.end_of_det_pulse_in_seq:  # The part of the detection pulses in the sequence
                     self.num_of_det_reflections_per_seq_S[seq_num] += self.filter_S[tt_inseq]
@@ -703,6 +776,8 @@ class PNSAExperiment(BaseExperiment):
         reflection_SPRINT_data = []  # Array of vectors with data on the number of reflections per SPRINT pulse in sequence.
         transmission_SPRINT_data = []  # Array of vectors with data on the number of transmissions per SPRINT pulse in sequence.
         seq_with_data_points = []
+        BP_counts_SPRINT_data = []
+        DP_counts_SPRINT_data = []
         if len(self.sorted_pulses) > 0:
             for transit in all_transits_seq_indx:
                 for seq_indx in transit[:-1]:
@@ -729,6 +804,8 @@ class PNSAExperiment(BaseExperiment):
                                 seq_with_data_points.append(seq_indx)
                                 reflection_SPRINT_data.append(reflections)
                                 transmission_SPRINT_data.append(transmissions)
+                                BP_counts_SPRINT_data.append(len(self.num_of_BP_counts_per_seq_in_SPRINT_pulse[seq_indx][SPRINT_pulse_number[-1]-1]))
+                                DP_counts_SPRINT_data.append(len(self.num_of_DP_counts_per_seq_in_SPRINT_pulse[seq_indx][SPRINT_pulse_number[-1]-1]))
                         elif self.sorted_pulses[self.number_of_detection_pulses_per_seq-1+SPRINT_pulse_number[0]][2] == 's':
                             transmissions = 0
                             reflections = 0
@@ -739,7 +816,9 @@ class PNSAExperiment(BaseExperiment):
                                 seq_with_data_points.append(seq_indx)
                                 reflection_SPRINT_data.append(reflections)
                                 transmission_SPRINT_data.append(transmissions)
-        return seq_with_data_points, reflection_SPRINT_data, transmission_SPRINT_data
+                                BP_counts_SPRINT_data.append(len(self.num_of_BP_counts_per_seq_in_SPRINT_pulse[seq_indx][SPRINT_pulse_number[-1]-1]))
+                                DP_counts_SPRINT_data.append(len(self.num_of_DP_counts_per_seq_in_SPRINT_pulse[seq_indx][SPRINT_pulse_number[-1]-1]))
+        return seq_with_data_points, reflection_SPRINT_data, transmission_SPRINT_data, BP_counts_SPRINT_data, DP_counts_SPRINT_data
 
 
     def get_pulses_location_in_seq(self, delay, seq, smearing):
@@ -1181,6 +1260,29 @@ class PNSAExperiment(BaseExperiment):
         SPRINT_text = f'{SPRINT_reflections_text} {SPRINT_reflections} - {SPRINT_transmissions} {SPRINT_transmissions_text}'
         props_SPRINT = dict(boxstyle='round', edgecolor='gray', linewidth=2, facecolor='gray', alpha=0.5)
 
+        # Coherence results box
+        if (sum(self.batcher['num_of_total_SPRINT_BP_counts_batch']) + sum(self.batcher['num_of_total_SPRINT_DP_counts_batch'])) > 0:
+            SPRINT_BP_percentage_without_transits = (
+                    '%.1f' % ((sum(self.batcher['num_of_total_SPRINT_BP_counts_batch']) * 100) /
+                              (sum(self.batcher['num_of_total_SPRINT_BP_counts_batch']) + sum(self.batcher['num_of_total_SPRINT_DP_counts_batch']))))
+            SPRINT_DP_percentage_without_transits = (
+                    '%.1f' % ((sum(self.batcher['num_of_total_SPRINT_DP_counts_batch']) * 100) /
+                              (sum(self.batcher['num_of_total_SPRINT_BP_counts_batch']) + sum(self.batcher['num_of_total_SPRINT_DP_counts_batch']))))
+        else:
+            SPRINT_BP_percentage_without_transits = '%.1f' % 0
+            SPRINT_DP_percentage_without_transits = '%.1f' % 0
+
+        SPRINT_BP_counts_with_transits = '%d' % sum(sum(self.batcher['BP_counts_SPRINT_data_batch'], []))
+        SPRINT_BP_counts = f'${SPRINT_BP_counts_with_transits}_{{({SPRINT_BP_percentage_without_transits}\%)}}$'
+        SPRINT_BP_counts_text = '$BP_{SPRINT}$'
+        SPRINT_DP_counts_with_transits = '%d' % sum(sum(self.batcher['DP_counts_SPRINT_data_batch'], []))
+        SPRINT_DP_counts = f'${SPRINT_DP_counts_with_transits}_{{({SPRINT_DP_percentage_without_transits}\%)}}$'
+        SPRINT_DP_counts_text = '$DP_{SPRINT}$'
+        SPRINT_Coherence_Score = f'{SPRINT_BP_counts} - {SPRINT_DP_counts}'
+        table_vals = [SPRINT_BP_counts_text, SPRINT_Coherence_Score, SPRINT_DP_counts_text]
+        SPRINT_text = f'{SPRINT_BP_counts_text} {SPRINT_BP_counts} - {SPRINT_DP_counts} {SPRINT_DP_counts_text}'
+        props_SPRINT_coherence = dict(boxstyle='round', edgecolor='gray', linewidth=2, facecolor='gray', alpha=0.5)
+
         # Threshold Box:
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
         flag_color = 'green' if self.acquisition_flag else 'red'
@@ -1365,6 +1467,8 @@ class PNSAExperiment(BaseExperiment):
             # ax[7].legend(loc='upper right')
             ax[7].text(0.05, 0.6, textstr_BP_DP, transform=ax[7].transAxes, fontsize=14,
                        verticalalignment='top', bbox=props)
+        ax[7].text(0.05, 0.05, SPRINT_text, transform=ax[7].transAxes, fontsize=14, verticalalignment='top',
+                   horizontalalignment='right', bbox=props_SPRINT_coherence)
 
         if self.number_of_transits_live:
             textstr_transit_counts = r'$N_{Transits} = %s $' % (self.number_of_transits_live,) + r'$[Counts]$'
@@ -1434,9 +1538,13 @@ class PNSAExperiment(BaseExperiment):
         self.seq_with_data_points = []
         self.reflection_SPRINT_data = []  # Array of vectors with data on the number of reflections per SPRINT pulse in sequence.
         self.transmission_SPRINT_data = []  # Array of vectors with data on the number of transmissions per SPRINT pulse in sequence.
+        self.BP_counts_SPRINT_data = []
+        self.DP_counts_SPRINT_data = []
 
         self.reflection_SPRINT_data_without_transits = []  # Array of vectors with data on the number of reflections per SPRINT pulse in sequence.
         self.transmission_SPRINT_data_without_transits = []  # Array of vectors with data on the number of transmissions per SPRINT pulse in sequence.
+        self.BP_counts_SPRINT_data_without_transits = []
+        self.DP_counts_SPRINT_data_without_transits = []
 
     def new_timetags_detected(self, prev_measures, curr_measure):
         """
@@ -1844,7 +1952,8 @@ class PNSAExperiment(BaseExperiment):
                 self.number_of_transits_total = len([vec for lst in self.batcher['all_transits_seq_indx_batch'] for vec in lst])
 
                 # Analyze SPRINT data during transits:
-                self.seq_with_data_points, self.reflection_SPRINT_data, self.transmission_SPRINT_data = \
+                (self.seq_with_data_points, self.reflection_SPRINT_data, self.transmission_SPRINT_data,
+                 self.BP_counts_SPRINT_data, self.DP_counts_SPRINT_data) = \
                     self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=[1],
                                                     background=False)  # Enter the index of the SPRINT pulse for which the data should be analyzed
                 # print(self.potential_data)
@@ -1853,12 +1962,15 @@ class PNSAExperiment(BaseExperiment):
                     np.delete(np.arange(0, self.number_of_PNSA_sequences, 1, dtype='int'),
                               sum(self.all_transits_seq_indx, [])).tolist()
                 ]
-                _, self.reflection_SPRINT_data_without_transits, self.transmission_SPRINT_data_without_transits = \
+                (_, self.reflection_SPRINT_data_without_transits, self.transmission_SPRINT_data_without_transits,
+                 self.BP_counts_SPRINT_data_without_transits, self.DP_counts_SPRINT_data_without_transits) = \
                     self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=[1],
                                                     background=True)  # Enter the index of the SPRINT pulse for which the data should be analyzed
 
                 self.num_of_total_SPRINT_reflections = sum(self.reflection_SPRINT_data_without_transits)
                 self.num_of_total_SPRINT_transmissions = sum(self.transmission_SPRINT_data_without_transits)
+                self.num_of_total_SPRINT_BP_counts = sum(self.BP_counts_SPRINT_data_without_transits)
+                self.num_of_total_SPRINT_DP_counts = sum(self.DP_counts_SPRINT_data_without_transits)
 
                 self.calculate_running_averages()
 
@@ -2013,6 +2125,8 @@ class PNSAExperiment(BaseExperiment):
             "Index_of_Sequences_with_data_points": self.batcher['seq_with_data_points_batch'],
             "Reflections_per_data_point": self.batcher['reflection_SPRINT_data_batch'],
             "Transmissions_per_data_point": self.batcher['transmission_SPRINT_data_batch'],
+            "Bright_port_counts_per_data_point": self.batcher['BP_counts_SPRINT_data_batch'],
+            "Dark_port_counts_per_data_point": self.batcher['DP_counts_SPRINT_data_batch'],
 
             "FLR_measurement": self.batcher['flr_batch'],
             "lock_error": self.batcher['lock_err_batch'],

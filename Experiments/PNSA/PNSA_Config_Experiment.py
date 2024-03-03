@@ -168,9 +168,9 @@ def PNSA_Exp_Gaussian_samples(sprint_pulse_len=110, det_pulse_len=30, det_pulses
     #     pnsa_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len), std=((sprint_pulse_len) / 2.355)) * m).tolist() + [0] * (num_between_zeros)
     for indx, m in enumerate(sprint_pulses_amp):
         if (indx == 2) and COW:
-            pnsa_exp_gaussian_samples += [0] * (num_between_zeros-10) + (signal.gaussian((sprint_pulse_len-2*num_between_zeros-20),
-                                                          std=((sprint_pulse_len-2*num_between_zeros-20) / 2.355)) * m).tolist() + [0] * (
-                                             num_between_zeros * 2 - 10)
+            pnsa_exp_gaussian_samples += [0] * (num_between_zeros + 10) + (signal.gaussian((sprint_pulse_len - 2*num_between_zeros - 20),
+                                                          std=((sprint_pulse_len - 2*num_between_zeros - 20) / 2.355)) * m).tolist() + [0] * (
+                                             num_between_zeros * 2 + 10)
         else:
             pnsa_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len),
                                                           std=((sprint_pulse_len) / 2.355)) * m).tolist() + [0] * (

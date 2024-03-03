@@ -189,6 +189,20 @@
 			"folder": "output\\SPRINT_results",
 			"type": "npz"
 		},
+		{
+			"data": "Bright_port_counts_per_data_point",
+			"name": "Array of number of clicks from BP (bright port) in sequences with data points",
+			"file_name": "Bright_port_counts_per_data_point",
+			"folder": "output\\SPRINT_results",
+			"type": "npz"
+		},
+		{
+			"data": "Dark_port_counts_per_data_point",
+			"name": "Array of number of clicks from DP (dark port) in sequences with data points",
+			"file_name": "Dark_port_counts_per_data_point",
+			"folder": "output\\SPRINT_results",
+			"type": "npz"
+		},
 
 		{
 			"# OUTPUT FILES - MZ BALANCING": "-----------------------------------"

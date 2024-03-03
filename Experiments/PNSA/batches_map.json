@@ -61,20 +61,31 @@
     "all_transits_seq_indx_batch": {
         "value_name": "all_transits_seq_indx"
     },
-
+    "seq_with_data_points_batch": {
+        "value_name": "seq_with_data_points"
+    },
     "reflection_SPRINT_data_batch": {
         "value_name": "reflection_SPRINT_data"
     },
     "transmission_SPRINT_data_batch": {
         "value_name": "transmission_SPRINT_data"
     },
-    "seq_with_data_points_batch": {
-        "value_name": "seq_with_data_points"
+    "BP_counts_SPRINT_data_batch": {
+        "value_name": "BP_counts_SPRINT_data"
+    },
+    "DP_counts_SPRINT_data_batch": {
+        "value_name": "DP_counts_SPRINT_data"
     },
     "num_of_total_SPRINT_reflections_batch": {
         "value_name": "num_of_total_SPRINT_reflections"
     },
     "num_of_total_SPRINT_transmissions_batch": {
         "value_name": "num_of_total_SPRINT_transmissions"
+    },
+    "num_of_total_SPRINT_BP_counts_batch": {
+        "value_name": "num_of_total_SPRINT_BP_counts"
+    },
+    "num_of_total_SPRINT_DP_counts_batch": {
+        "value_name": "num_of_total_SPRINT_DP_counts"
     }
 }

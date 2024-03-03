@@ -114,7 +114,6 @@ def Pulse_with_prep(total_pulse_duration, prep_duration, zero_pulse_duration, pl
         play("Const" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+",
              duration=(total_pulse_duration - prep_duration))
 
-
 def Pulse_with_prep_with_chirp(total_pulse_duration, prep_duration, zero_pulse_duration, plus_pulse_duration,
                                minus_pulse_duration, aom_chirp_rate, delta_f):
     """
