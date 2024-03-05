@@ -1,0 +1,38 @@
+{
+    "batches": {},
+    "connections": {},
+    "keyboard": {},
+    "files": {},
+    "save_dialog": {
+        "title": "Experiment Completed",
+        "geometry": "500x270",
+        "message": "Enter the comment to save with experiment data",
+        "buttons": [
+            {
+                "description": "Saves results that are required for analysis",
+                "button_id": 1,
+                "button_name": "Analysis",
+                "folder_name": "for_analysis"
+            },
+            {
+                "description": "Saves results the are required for optimization",
+                "button_id": 2,
+                "button_name": "Optimization",
+                "folder_name": "for_optimization"
+            },
+            {
+                "description": "Ignore results",
+                "button_id": 3,
+                "button_name": "Ignore",
+                "folder_name": "n/a"
+            },
+            {
+                "description": "Allows generic save location",
+                "button_id": 9,
+                "button_name": "Choose Folder...",
+                "pad": 40,
+                "explorer": true
+            }
+        ]
+    }
+}
