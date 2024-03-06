@@ -80,7 +80,7 @@ class BDStreams:
         self.clean_streams()
 
         # Get all files in playback folder (ignore Python source files and directories)
-        playback_files = Utils.get_files_in_path(path=playback_files_path, exclude_token='.py')
+        playback_files = Utils.get_files_in_path(path=playback_files_path, opt_out_filter='.py')
 
         # Take time
         load_time_start = time.time()

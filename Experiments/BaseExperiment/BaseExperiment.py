@@ -655,6 +655,11 @@ class BaseExperiment:
         pass
 
     def sequence_ended(self, sequence_definitions):
+        # Copy experiment Python source files (*.py) into playback folder
+        python_source_files_path = self.paths_map['cwd']
+        playback_files_path = os.path.join(self.bd_results.get_sequence_folder(sequence_definitions), 'playback', 'Source Files')
+        self.bd_results.copy_files(source=python_source_files_path, destination=playback_files_path, opt_in_filter='.py', create_folder=True)
+        self.info(f'Copied all Python source and config files from {python_source_files_path} into playback folder ({playback_files_path})')
         pass
 
     def iterations_started(self, sequence_definitions):
@@ -1129,6 +1134,19 @@ class BaseExperiment:
         name = self.sequence['sequence'][sequence_step]['name']
         str = f'Iteration {iteration+1} | Sequence {sequence_step+1} | {name}'
         return str
+
+    def experiment_mainloop_delay(self):
+        """
+        Handles the delay of the experiment mainloop
+        By default, we have a very short delay of few milli-seconds
+        If we're in playback mode, the playback parameters prevail
+        """
+        if self.playback['active']:
+            if self.playback['delay'] != -1:
+                time.sleep(self.playback['delay'])
+        else:
+            time.sleep(0.01)
+        pass
 
     # ------------------------------------------------------------
     # Plot related Functions

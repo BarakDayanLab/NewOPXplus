@@ -334,7 +334,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
             imgBounds = self.imgBounds
 
         # Get all files in folder (except the 'background' file)
-        files = Utils.get_files_in_path(path, exclude_token='background', return_full_path=True)
+        files = Utils.get_files_in_path(path, opt_out_filter='background', return_full_path=True)
 
         res = []
         for full_file_name in files:

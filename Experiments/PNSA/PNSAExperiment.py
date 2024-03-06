@@ -1113,11 +1113,8 @@ class PNSAExperiment(BaseExperiment):
         self.logger.info(f'{time_formatted}: {self.experiment_type} {status_str}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}{photons_str}')
 
     def experiment_mainloop_delay(self):
-        if self.playback['active']:
-            if self.playback['delay'] != -1:
-                time.sleep(self.playback['delay'])
-        else:
-            time.sleep(0.01)  # TODO: do we need this delay?
+        super().experiment_mainloop_delay()
+        pass
 
     def prepare_figures(self):
 
@@ -2088,13 +2085,16 @@ class PNSAExperiment(BaseExperiment):
         daily_experiment_comments = self.generate_experiment_summary_line(self.pre_comment, aft_comment, self.with_atoms, self.counter)
 
         # Save all results of experiment
+        # TODO: should move invocation of this to after end of Run by manager, not from here
         self.save_experiment_results(experiment_comment, daily_experiment_comments)
 
         return self.runs_status
 
     def save_experiment_results(self, experiment_comment, daily_experiment_comments):
         """
-        This method is responsible for saving all the results gathered in the experiment and required by analysis
+        Responsible for saving all the results gathered in the experiment and required by analysis
+        Return a flag telling if save should occur at all.
+        TODO: add 'save_experiment_results' to BaseExperiment, Make 'run' method invoke it at the end
         """
 
         # If we're in playback mode and we don't want to keep results, exit function
@@ -2162,6 +2162,8 @@ class PNSAExperiment(BaseExperiment):
 
             "run_parameters": self.run_parameters
         }
+
+        # Save the results
         if self.playback['active']:
             resolved_path = self.playback['save_results_path']
         else:
