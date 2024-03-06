@@ -12,13 +12,7 @@
 	"experiment_root": "C:\\temp\\refactor_debug\\Experiment_results\\PNSA",
 	"root": "C:\\temp\\refactor_debug\\Experiment_results\\PNSA\\{current_date}\\{current_time}_Photon_TimeTags",
 
-	"for_analysis": "U:\\Lab_2023\\Experiment_results\\PNSA\\for_analysis\\{current_date}\\{current_time}_Photon_TimeTags",
-	"for_analysis_113": "C:\\temp\\for_analysis\\{current_date}\\{current_time}_Photon_TimeTags",
-
-	"locking_error_root": "U:\\Lab_2023\\Experiment_results\\PNSA\\Locking_PID_Error",
-	"locking_error_root_LAB": "C:\\temp\\refactor_debug\\Experiment_results\\PNSA\\resonance_params",
-	"locking_error_root_113": "C:\\temp\\refactor_debug\\Experiment_results\\_Fake LockErr File_",
-	"locking_error_root_HOME": "F:\\temp\\Weizmann\\Experiments\\Locking_PID_Error",
+	"network_root": "U:\\Lab_2023\\Experiment_results\\PNSA\\{analysis_type}\\{current_date}\\{current_time}_Photon_TimeTags",
 
 	"calibration_folder__DO_WE_NEED__": "U:\\Lab_2023\\Experiment_results\\PNSA\\20231116\\133237_Photon_TimeTags",
 

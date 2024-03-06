@@ -1974,21 +1974,26 @@ class QRAMExperiment(BaseExperiment):
 
         # Adding comment to measurement [prompt whether stopped or finished regularly]
         aft_comment = 'Ignore'
-        for_analysis = False
         if self.exp_flag:
-            bdd = BDDialog()
-            text_res, text_button = bdd.prompt(title='Experiment completed', message='Insert comment for experiment',
-                                               button1_text='Shager!', button2_text='Ignore')
-            aft_comment = ('Ignore. ' if text_button == 'Ignore' else '') + text_res
 
-            for_analysis = text_button == 'Shager!'
+            # Format the sequence-step message
+            num_sequence_steps = len(sequence_definitions['sequence'])
+            sequence_step_str = f'Sequence step #{sequence_definitions["sequence_step"] + 1}/{num_sequence_steps} - {sequence_definitions["sequence_name"]}'
+            self.save_results_for_analysis = None  # By default, do not save for analysis
 
-            # if self.counter < N:
-            #     aft_comment = self.prompt(title='Post Experiment Run', msg='Add post-run comment to measurement: (click Cancel for "Ignore") ', default='', timeout=int(30e3))
-            #     if aft_comment == None:
-            #         aft_comment = 'Ignore'
-            # else:
-            #     aft_comment = ''
+            dialog_str = ''
+
+            # Check if this is (A) The last sequence in the last cycle or (B) User Terminated
+            if sequence_definitions['last_iteration_and_last_sequence'] or self.runs_status == TerminationReason.USER:
+                bdd = BDDialog()
+                text_res, button = bdd.prompt(self.settings['save_dialog'])
+                if button['button_name'] == 'Ignore':
+                    dialog_str = 'Ignore. ' + text_res
+                else:
+                    dialog_str = text_res
+                    self.save_results_for_analysis = button['folder_name']
+
+            aft_comment = f'{sequence_step_str}. {dialog_str}'
 
         experiment_comment = f'Transit condition: {self.transit_condition}\nReflection threshold {self.reflection_threshold} @ {int(self.reflection_threshold_time/1e6)} ms'
         daily_experiment_comments = self.generate_experiment_summary_line(self.pre_comment, aft_comment, self.with_atoms, self.counter)

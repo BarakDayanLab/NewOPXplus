@@ -143,6 +143,9 @@ class BaseExperiment:
         except Exception as err:
             self.info(f'Unable to import Config file ({err}). Loading *BaseExperiment* config files instead.')
 
+        # Load the settings file
+        self.settings = Utils.load_json_from_file('./settings.json')
+
         # Get the opx-control method from the OPX-Code file in the BaseExperiment
         opx_control = OPX_Code.opx_control
 
@@ -659,7 +662,13 @@ class BaseExperiment:
 
         # If these results should be saved for analysis, copy them to analysis folder in Network drive
         if self.save_results_for_analysis and not self.playback['active']:
-            self.bd_results.copy_folder(source=experiment_path, destination=self.bd_results.get_custom_root('for_analysis'))
+            if ':\\' in self.save_results_for_analysis or ':/' in self.save_results_for_analysis:
+                dst = self.save_results_for_analysis
+            else:
+                dst = self.bd_results.get_custom_root('network_root')
+                dst = dst.replace('{analysis_type}', self.save_results_for_analysis)
+
+            self.bd_results.copy_folder(source=experiment_path, destination=dst)
 
         pass
 
@@ -679,7 +688,7 @@ class BaseExperiment:
     def run_sequence(self, sequence_definitions, run_parameters):
 
         # If there was no sequence defined, we create a fictitious sequence with a single iteration an no parameters
-        if sequence_definitions is None:
+        if sequence_definitions is None or self.playback['active']:
             sequence_definitions = {
                 'total_iterations': 1,
                 'delay_between_iterations': None,  # seconds
