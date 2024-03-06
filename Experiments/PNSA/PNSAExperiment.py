@@ -430,13 +430,13 @@ class PNSAExperiment(BaseExperiment):
             if (element > int(0.6e6)) and (element < int(self.M_time - 0.4e6)):
                 for indx, tup in enumerate(self.sorted_pulses):
                     # if all(x == 0 for x in Config.PNSA_Exp_Square_samples_Early[tup[0]:tup[1]]):
-                    if (Config.PNSA_Exp_Square_samples_Early[tup[0]] == 0) or \
-                            (self.number_of_SPRINT_pulses_per_seq > 1):
-                        start_pulse_time_in_seq = tup[0]
-                        end_pulse_time_in_seq = tup[1]
-                    else:
-                        start_pulse_time_in_seq = tup[0] + Config.MZ_delay
-                        end_pulse_time_in_seq = tup[1] + Config.MZ_delay
+                    # if (Config.PNSA_Exp_Square_samples_Early[tup[0]] == 0) or \
+                    #         (self.number_of_SPRINT_pulses_per_seq > 1):
+                    start_pulse_time_in_seq = tup[0]
+                    end_pulse_time_in_seq = tup[1]
+                    # else:
+                    #     start_pulse_time_in_seq = tup[0] + Config.MZ_delay
+                    #     end_pulse_time_in_seq = tup[1] + Config.MZ_delay
                     if (tt_inseq >= start_pulse_time_in_seq) and (tt_inseq <= end_pulse_time_in_seq):
                         if indx < self.number_of_detection_pulses_per_seq:
                             if tup[2] == 'N':
@@ -804,6 +804,7 @@ class PNSAExperiment(BaseExperiment):
                                 seq_with_data_points.append(seq_indx)
                                 reflection_SPRINT_data.append(reflections)
                                 transmission_SPRINT_data.append(transmissions)
+                            if (transmissions + reflections) > 0:
                                 BP_counts_SPRINT_data.append(len(self.num_of_BP_counts_per_seq_in_SPRINT_pulse[seq_indx][SPRINT_pulse_number[-1]-1]))
                                 DP_counts_SPRINT_data.append(len(self.num_of_DP_counts_per_seq_in_SPRINT_pulse[seq_indx][SPRINT_pulse_number[-1]-1]))
                         elif self.sorted_pulses[self.number_of_detection_pulses_per_seq-1+SPRINT_pulse_number[0]][2] == 's':
@@ -816,6 +817,7 @@ class PNSAExperiment(BaseExperiment):
                                 seq_with_data_points.append(seq_indx)
                                 reflection_SPRINT_data.append(reflections)
                                 transmission_SPRINT_data.append(transmissions)
+                            if (transmissions + reflections) > 0:
                                 BP_counts_SPRINT_data.append(len(self.num_of_BP_counts_per_seq_in_SPRINT_pulse[seq_indx][SPRINT_pulse_number[-1]-1]))
                                 DP_counts_SPRINT_data.append(len(self.num_of_DP_counts_per_seq_in_SPRINT_pulse[seq_indx][SPRINT_pulse_number[-1]-1]))
         return seq_with_data_points, reflection_SPRINT_data, transmission_SPRINT_data, BP_counts_SPRINT_data, DP_counts_SPRINT_data
@@ -1280,7 +1282,7 @@ class PNSAExperiment(BaseExperiment):
         SPRINT_DP_counts_text = '$DP_{SPRINT}$'
         SPRINT_Coherence_Score = f'{SPRINT_BP_counts} - {SPRINT_DP_counts}'
         table_vals = [SPRINT_BP_counts_text, SPRINT_Coherence_Score, SPRINT_DP_counts_text]
-        SPRINT_text = f'{SPRINT_BP_counts_text} {SPRINT_BP_counts} - {SPRINT_DP_counts} {SPRINT_DP_counts_text}'
+        SPRINT_Coherence_text = f'{SPRINT_BP_counts_text} {SPRINT_BP_counts} - {SPRINT_DP_counts} {SPRINT_DP_counts_text}'
         props_SPRINT_coherence = dict(boxstyle='round', edgecolor='gray', linewidth=2, facecolor='gray', alpha=0.5)
 
         # Threshold Box:
@@ -1471,8 +1473,8 @@ class PNSAExperiment(BaseExperiment):
             # ax[7].legend(loc='upper right')
             ax[7].text(0.05, 0.6, textstr_BP_DP, transform=ax[7].transAxes, fontsize=14,
                        verticalalignment='top', bbox=props)
-        ax[7].text(0.05, 0.05, SPRINT_text, transform=ax[7].transAxes, fontsize=14, verticalalignment='top',
-                   horizontalalignment='right', bbox=props_SPRINT_coherence)
+        ax[7].text(0.05, 0.9, SPRINT_Coherence_text, transform=ax[7].transAxes, fontsize=18, verticalalignment='top',
+                   bbox=props_SPRINT_coherence)
 
         if self.number_of_transits_live:
             textstr_transit_counts = r'$N_{Transits} = %s $' % (self.number_of_transits_live,) + r'$[Counts]$'
@@ -1961,7 +1963,7 @@ class PNSAExperiment(BaseExperiment):
                 # Analyze SPRINT data during transits:
                 (self.seq_with_data_points, self.reflection_SPRINT_data, self.transmission_SPRINT_data,
                  self.BP_counts_SPRINT_data, self.DP_counts_SPRINT_data) = \
-                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=[1],
+                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=[1,2],
                                                     background=False)  # Enter the index of the SPRINT pulse for which the data should be analyzed
                 # print(self.potential_data)
                 # Analyze SPRINT data when no transit occur:
@@ -1971,7 +1973,7 @@ class PNSAExperiment(BaseExperiment):
                 ]
                 (_, self.reflection_SPRINT_data_without_transits, self.transmission_SPRINT_data_without_transits,
                  self.BP_counts_SPRINT_data_without_transits, self.DP_counts_SPRINT_data_without_transits) = \
-                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=[1],
+                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=[1,2],
                                                     background=True)  # Enter the index of the SPRINT pulse for which the data should be analyzed
 
                 self.num_of_total_SPRINT_reflections = sum(self.reflection_SPRINT_data_without_transits)
@@ -2448,13 +2450,13 @@ if __name__ == "__main__":
         'pre_comment': '',  # Put 'None' or '' if you don't want pre-comment prompt
         'lock_err_threshold': 2,  # [Mhz]
         'interference_error_threshold': 3,  # [MHz]
-        'desired_k_ex': 38, # [Mhz]
+        'desired_k_ex': 30, # [Mhz]
         'k_ex_err': 3,  # [Mhz]
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,
         'reflection_threshold_time': 9e6,
         'FLR_threshold': -0.01,
-        'MZ_infidelity_threshold': 0.87,
+        'MZ_infidelity_threshold': 0.1,
         'photons_per_det_pulse_threshold': 12,
         'exp_flag': True,
         'with_atoms': True
@@ -2468,7 +2470,7 @@ if __name__ == "__main__":
             {
                 'name': 'Without Atoms',
                 'parameters': {
-                    'N': 5,
+                    'N': 50,
                     'with_atoms': False
                 }
             },

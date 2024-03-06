@@ -38,12 +38,16 @@ from Utilities.Utils import Utils
 
 # For PNSA experiment
 #T exp
-det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
-det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.24]
-sprint_pulse_amp_N = [0, 0.115, 0, 0]
+# det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
+# det_pulse_amp_N = [0.45, 0, 0, 0, 0, 0]
+# det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.24]
+# det_pulse_amp_S = [0, 0, 0, 0, 0, 0]
+# sprint_pulse_amp_N = [0, 0.95, 0, 0]
+# sprint_pulse_amp_N = [0, 0, 0, 0]
 # sprint_pulse_amp_N = [0, 0, 0, 0.115]
 # sprint_pulse_amp_N = [0, 0.095, 0, 0.095]
-sprint_pulse_amp_S = [0, 0, 0, 0]
+# sprint_pulse_amp_S = [0, 0, 0, 0]
+# sprint_pulse_amp_S = [0, 0.06, 0, 0.06]
 
 
 #### 1st set: ####
@@ -56,10 +60,11 @@ sprint_pulse_amp_S = [0, 0, 0, 0]
 # sprint_pulse_amp_S = [0, 0, 0, 0]
 
 # N reflection:
-# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.265]
+det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.265]
 # det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
-# sprint_pulse_amp_N = [0, 0, 0, 0]
-# sprint_pulse_amp_S = [0, 0.073, 0, 0.073]
+det_pulse_amp_S = [0.095, 0, 0.095, 0, 0.095, 0]
+sprint_pulse_amp_N = [0, 0, 0, 0]
+sprint_pulse_amp_S = [0, 0.021, 0, 0.021]
 
 #### 2nd set: ####
 # S reflection:
@@ -141,14 +146,14 @@ def PNSA_Exp_Gaussian_samples(sprint_pulse_len=110, det_pulse_len=30, det_pulses
                               num_between_zeros=10, num_init_zeros=12, num_mid_zeros=12, num_fin_zeros=0):
 
     # TODO: Dor - wtf are all of this numbers?
-    pnsa_exp_gaussian_samples = [0] * (num_init_zeros + 9)
+    pnsa_exp_gaussian_samples = [0] * (num_init_zeros + 10)
     for n in det_pulses_amp[:-1]:
         pnsa_exp_gaussian_samples += (signal.gaussian(det_pulse_len, std=(det_pulse_len * 0.5 / 2.355)) * n).tolist() + [0] * (num_between_zeros) # -3 for echos from south
     pnsa_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len-2), std=((sprint_pulse_len-2) * 0.5 / 2.355)) * det_pulses_amp[-1]).tolist() + [0] * (num_between_zeros)  # -3 for echos from south
     # pnsa_exp_gaussian_samples += [0] * (num_mid_zeros - 10) # due to unresolved reflections +40 for S echos
     pnsa_exp_gaussian_samples = pnsa_exp_gaussian_samples[:-(num_between_zeros)] + [0] * (num_between_zeros + num_mid_zeros - 2) # - 16 - 12) # due to unresolved reflections +40 for S echos
     for m in sprint_pulses_amp:
-        pnsa_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len), std=((sprint_pulse_len) / 2.355)) * m).tolist() + [0] * (num_between_zeros)
+        pnsa_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len), std=((sprint_pulse_len) / 2.355)) * m).tolist() + [0] # + [0] * (num_between_zeros)
     # for indx, m in enumerate(sprint_pulses_amp):
     #     if (indx == 2) and COW:
     #         pnsa_exp_gaussian_samples += [0] * (num_between_zeros + 10) + (signal.gaussian((sprint_pulse_len-2*num_between_zeros-20),
@@ -160,14 +165,14 @@ def PNSA_Exp_Gaussian_samples(sprint_pulse_len=110, det_pulse_len=30, det_pulses
     #                                          num_between_zeros)
     # pnsa_exp_gaussian_samples += [0] * num_fin_zeros
     # pnsa_exp_gaussian_samples = pnsa_exp_gaussian_samples[:-(num_between_zeros + 4)] + [0] * (num_between_zeros + 4 + num_fin_zeros - 16) # -14 due to S echos
-    pnsa_exp_gaussian_samples = pnsa_exp_gaussian_samples[:-(num_between_zeros)] + [0] * (num_between_zeros + num_fin_zeros)
+    # pnsa_exp_gaussian_samples = pnsa_exp_gaussian_samples[:-(num_between_zeros)] + [0] * (num_between_zeros + num_fin_zeros)
     return pnsa_exp_gaussian_samples
 
 
 def PNSA_Exp_Square_samples(amp=0.45, sprint_pulse_len=110, det_pulse_len=30, det_pulses_amp=[0.4]*6, sprint_pulses_amp=[0.4]*4,
                             num_between_vals=0, num_init_val=12, num_mid_val=0, num_fin_val=0):
 
-    pnsa_exp_gaussian_samples = [det_pulses_amp[0] * amp] * (num_init_zeros + 9)
+    pnsa_exp_gaussian_samples = [det_pulses_amp[0] * amp] * (num_init_zeros + 10)
 
     for n in range(len(det_pulses_amp)-1):
         pnsa_exp_gaussian_samples += [det_pulses_amp[n] * amp] * det_pulse_len + \
@@ -178,12 +183,12 @@ def PNSA_Exp_Square_samples(amp=0.45, sprint_pulse_len=110, det_pulse_len=30, de
     pnsa_exp_gaussian_samples += [sprint_pulses_amp[0] * amp] * (num_mid_val - 2)  # due to unresolved reflections
 
     for m in range(len(sprint_pulses_amp)-1):
-        pnsa_exp_gaussian_samples += [sprint_pulses_amp[m] * amp] * (sprint_pulse_len) + \
-                                     [sprint_pulses_amp[m] * sprint_pulses_amp[m + 1] * amp] * (num_between_vals)
-    pnsa_exp_gaussian_samples += [sprint_pulses_amp[-1] * amp] * (sprint_pulse_len) + \
-                                 [sprint_pulses_amp[-1] * det_pulses_amp[0] * amp] * (num_between_vals)
+        pnsa_exp_gaussian_samples += [sprint_pulses_amp[m] * amp] * (sprint_pulse_len)\
+                                     + [sprint_pulses_amp[m] * sprint_pulses_amp[m + 1] * amp]# * (num_between_vals)
+    pnsa_exp_gaussian_samples += [sprint_pulses_amp[-1] * amp] * (sprint_pulse_len)\
+                                 + [sprint_pulses_amp[-1] * det_pulses_amp[0] * amp]# * (num_between_vals)
 
-    pnsa_exp_gaussian_samples += [det_pulses_amp[0] * amp] * num_fin_val
+    #pnsa_exp_gaussian_samples += [det_pulses_amp[0] * amp] * num_fin_val
 
     return pnsa_exp_gaussian_samples
 
@@ -330,8 +335,9 @@ num_of_photons_per_sequence_N = num_of_photons_det_pulses * num_of_det_pulses_N 
 
 
 # det_pulse_len = 40
+MZ_delay = 250
 det_pulse_len = 50
-sprint_pulse_len = 105
+sprint_pulse_len = 124
 num_between_zeros = 20
 
 # For general sequence pulses shape
@@ -506,8 +512,8 @@ Pulses_Amp_Early = 0.495
 # |1c, (0 + 1)t>
 # det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 0, 0]
 det_pulse_amp_Early = [0, 0, 0, 0, 0, 0]
-# sprint_pulse_amp_Early = [1, 1, 0, 0]
-sprint_pulse_amp_Early = [0, 0, 0, 0]
+sprint_pulse_amp_Early = [1, 1, 0, 0]
+# sprint_pulse_amp_Early = [0, 0, 0, 0]
 # sprint_pulse_amp_Early = [0]
 
 
@@ -550,7 +556,8 @@ num_init_val_Late = 10  # For only det pulses sequence
 num_mid_val_Late = 10
 num_fin_val_Late = 0  # For only det pulses sequence
 # Pulses_Amp_Late = 0.35  # For balancing with AOM Early (since added the switch)
-Pulses_Amp_Late = 0.29  # For balancing with AOM Early @ 08.02.24
+Pulses_Amp_Late = 0.38  # For balancing with AOM Early @ 05.03.24
+# Pulses_Amp_Late = 0.29  # For balancing with AOM Early @ 08.02.24
 # Pulses_Amp_Late = 0.45  # For balancing with AOM Early (since added the switch)
 # For pulse sync
 # det_pulse_amp_Late = [1, 1, 1, 1, 1, 1, 1, 1]
@@ -567,8 +574,8 @@ det_pulse_amp_Late = [1, 1, 1, 1, 1, 1]
 # sprint_pulse_amp_Late = [0, 0, 1, 1]
 # # |1c, (0 + 1)t>
 # det_pulse_amp_Late = [1, 1, 1, 1, 1, 1, 1, 1]
-# sprint_pulse_amp_Late = [0, 0, 1, 1]
-sprint_pulse_amp_Late = [1, 1, 1, 1]
+sprint_pulse_amp_Late = [0, 0, 1, 1]
+# sprint_pulse_amp_Late = [1, 1, 1, 1]
 
 PNSA_Exp_Square_samples_Late = PNSA_Exp_Square_samples(amp=Pulses_Amp_Late,
                                                        sprint_pulse_len=sprint_pulse_len,
@@ -635,11 +642,11 @@ PNSA_MZ_balance_pulse_South = ([0] * AOM_risetime + [0] * (MZ_delay - AOM_riseti
                                + [0] * AOM_risetime + [0] * (MZ_delay - AOM_risetime - AOM_risetime_pulsers) + [0] * AOM_risetime_pulsers) * \
                               MZ_balancing_seq_rep
 PNSA_MZ_balance_pulse_Early = ([Pulses_Amp_Early] * MZ_delay + [0] * MZ_delay) * MZ_balancing_seq_rep
-# PNSA_MZ_balance_pulse_Early_delayed = np.roll(PNSA_MZ_balance_pulse_Early, AOM_Early_delay-10)
-PNSA_MZ_balance_pulse_Early_delayed = np.roll(PNSA_MZ_balance_pulse_Early, AOM_Early_delay-10+AOM_S_to_N_delay)
+PNSA_MZ_balance_pulse_Early_delayed = np.roll(PNSA_MZ_balance_pulse_Early, AOM_Early_delay-10)
+# PNSA_MZ_balance_pulse_Early_delayed = np.roll(PNSA_MZ_balance_pulse_Early, AOM_Early_delay-10+AOM_S_to_N_delay)
 PNSA_MZ_balance_pulse_Late = ([0] * MZ_delay + [Pulses_Amp_Late] * MZ_delay) * MZ_balancing_seq_rep
-# PNSA_MZ_balance_pulse_Late_delayed = np.roll(PNSA_MZ_balance_pulse_Late, AOM_Late_delay-10)
-PNSA_MZ_balance_pulse_Late_delayed = np.roll(PNSA_MZ_balance_pulse_Late, AOM_Late_delay-10+AOM_S_to_N_delay)
+PNSA_MZ_balance_pulse_Late_delayed = np.roll(PNSA_MZ_balance_pulse_Late, AOM_Late_delay-10)
+# PNSA_MZ_balance_pulse_Late_delayed = np.roll(PNSA_MZ_balance_pulse_Late, AOM_Late_delay-10+AOM_S_to_N_delay)
 
 ################### Synchronization bullshit, one big mess!: ###########################################################
 # PNSA_Exp_Gaussian_samples_S = ([0] * AOM_risetime + [0] * (MZ_delay - AOM_risetime - AOM_risetime_pulsers) + [0] * AOM_risetime_pulsers
