@@ -467,7 +467,7 @@ config = {
         'const_wf': {
             'type': 'constant',
             # 'sample': 0.1
-            'sample': 0.35
+            'sample': 0.38
         },
         'const_high_wf': {
             'type': 'constant',
