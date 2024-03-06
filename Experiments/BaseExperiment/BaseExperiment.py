@@ -7,6 +7,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import os
 import importlib
+from importlib.machinery import SourceFileLoader
 
 from Utilities.Utils import Utils
 from Utilities.BDLogger import BDLogger
@@ -137,8 +138,15 @@ class BaseExperiment:
 
         # Dynamically import the config-experiment and config-table and merge the values
         try:
-            Config = importlib.import_module(f'{self.experiment_name}_Config_Experiment')
-            ConfigTable = importlib.import_module(f'{self.experiment_name}_Config_Table')
+            # If we're in playback mode, we load the config files from the playback folder
+            if self.playback['active']:
+                the_path = os.path.join(self.playback['playback_files_path'], 'Source Files', 'PNSA_Config_Experiment.py')
+                Config = SourceFileLoader("PNSA_Config_Experiment", the_path).load_module()
+                the_path = os.path.join(self.playback['playback_files_path'], 'Source Files', 'PNSA_Config_Table.py')
+                ConfigTable = SourceFileLoader("PNSA_Config_Table", the_path).load_module()
+            else:
+                Config = importlib.import_module(f'{self.experiment_name}_Config_Experiment')
+                ConfigTable = importlib.import_module(f'{self.experiment_name}_Config_Table')
             self.Exp_Values = Utils.merge_multiple_jsons([self.Exp_Values, ConfigTable.Experiment_Values])
         except Exception as err:
             self.info(f'Unable to import Config file ({err}). Loading *BaseExperiment* config files instead.')
@@ -1096,6 +1104,23 @@ class BaseExperiment:
         except Exception as err:
             self.logger.warn(f'Unable to open file {filename} for writing. {err}')
         pass
+
+    def construct_pulses_sequence(self, pulse_seq_N, pulse_seq_S, pulse_len):
+        """
+        Given the pulses time-bins from North and South, and the Pulse Length:
+        - Constructs an array of tuples of the form (Start-tim, End-Time, Direction)
+        - Constructs a string representing the pulse sequence (e.g. 'N-S-N-S-N-S-s-s')
+        """
+
+        N_detection_pulses_locations = [tup + ('N',) for tup in pulse_seq_N if (tup[1] - tup[0]) < pulse_len]
+        n_sprint_pulses_locations = [tup + ('n',) for tup in pulse_seq_N if (tup[1] - tup[0]) >= pulse_len]
+        S_detection_pulses_locations = [tup + ('S',) for tup in pulse_seq_S if (tup[1] - tup[0]) < pulse_len]
+        s_sprint_pulses_locations = [tup + ('s',) for tup in pulse_seq_S if (tup[1] - tup[0]) >= pulse_len]
+        all_pulses = N_detection_pulses_locations + n_sprint_pulses_locations + S_detection_pulses_locations + s_sprint_pulses_locations
+        all_pulses = sorted(all_pulses, key=lambda tup: tup[1])
+
+        str = '-'.join(tup[2] for tup in all_pulses)
+        return all_pulses, str
 
     def format_iteration_and_sequence(self):
         # Get the iteration/sequence/name

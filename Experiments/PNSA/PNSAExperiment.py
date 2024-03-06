@@ -8,8 +8,8 @@ import numpy as np
 import os
 import time
 import math
-import pymsgbox
 import traceback
+from importlib.machinery import SourceFileLoader
 
 from Utilities.BDSound import SOUNDS
 from Utilities.BDDialog import BDDialog
@@ -18,8 +18,23 @@ from Utilities.Utils import Utils
 
 class PNSAExperiment(BaseExperiment):
     def __init__(self, playback_parameters=None, save_raw_data=False):
+
+        # ------------------------------------------------------------------------------------------------------------
+        # If we are in playback mode, we load the PNSA_Config_Experiment.py file that was running during the recording
+        #
+        # Note:
+        # - We do this BEFORE calling super().__init__ as it may invoke methods in this file - and we want the
+        #   playback Config to be used!
+        # - We use "global" to override the Config that was used in the import statement
+        # ------------------------------------------------------------------------------------------------------------
+        global Config
+        if playback_parameters['active']:
+            the_path = os.path.join(playback_parameters['playback_files_path'], 'Source Files', 'PNSA_Config_Experiment.py')
+            Config = SourceFileLoader("PNSA_Config_Experiment", the_path).load_module()
+
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
         super().__init__(playback_parameters, save_raw_data)
+
         pass
 
     def __del__(self):
@@ -1174,7 +1189,7 @@ class PNSAExperiment(BaseExperiment):
         }
 
         # Take time
-        start_plot_time = time.time()
+        plot_start_time = time.time()
 
         # Used mainly as a shortcut for shorter lines
         ax = self.subplots
@@ -1494,7 +1509,7 @@ class PNSAExperiment(BaseExperiment):
                        verticalalignment='top', bbox=props)
 
         # End timer
-        total_prep_time = time.time() - start_plot_time
+        total_prep_time = time.time() - plot_start_time
 
         # plt.tight_layout()
         plt.pause(0.2)
@@ -1818,17 +1833,10 @@ class PNSAExperiment(BaseExperiment):
         self.pulses_location_in_seq_A, self.filter_A = self.get_pulses_location_in_seq(self.filter_delay[2],
                                                                                        Config.PNSA_Exp_Gaussian_samples_Ancilla,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
-        # Get experiment type: (Added by Dor, Sorry for the mess)
-        self.sorted_pulses = sorted([tup + ('N',) for tup in self.pulses_location_in_seq_N if
-                                     (tup[1] - tup[0]) < Config.sprint_pulse_len] +
-                                    [tup + ('n',) for tup in self.pulses_location_in_seq_N if
-                                     (tup[1] - tup[0]) >= Config.sprint_pulse_len] +
-                                    [tup + ('S',) for tup in self.pulses_location_in_seq_S if
-                                     (tup[1] - tup[0]) < Config.sprint_pulse_len] +
-                                    [tup + ('s',) for tup in self.pulses_location_in_seq_S if
-                                     (tup[1] - tup[0]) >= Config.sprint_pulse_len],
-                                    key=lambda tup: tup[1])
-        self.experiment_type = '-'.join(tup[2] for tup in self.sorted_pulses)
+
+        # Construct the pulses sequence and representing string for it (e.g. 'N-S-N-S-N-S-s-s')
+        self.sorted_pulses, self.experiment_type = self.construct_pulses_sequence(self.pulses_location_in_seq_N, self.pulses_location_in_seq_S, Config.sprint_pulse_len)
+
         # Find the center indices of the pulses and concatenate them to one list - to be used to put text boxes in figures
         # TODO: this can be moved/calculated later when we're doing the figure work...
         self.Num_of_photons_txt_box_x_loc = np.concatenate(
@@ -2425,7 +2433,7 @@ if __name__ == "__main__":
     # Playback definitions
     playback_parameters = {
         "active": False,
-        'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240225\173049_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
+        'playback_files_path': r'C:\temp\playback_data\PNSA\173049_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
         "old_format": False,
         "save_results": False,
         "save_results_path": 'C:\\temp\\playback_data',
