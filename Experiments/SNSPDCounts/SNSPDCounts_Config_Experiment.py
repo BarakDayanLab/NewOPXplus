@@ -262,7 +262,7 @@ config = {
             },
             'operations': {
                 'Const_open': "Pulser_ON",
-                'Const_high_open': "Pulser_ON_high",
+                'Const_early_open': "Pulser_ON_early",
                 'Square_Pulse': "square_pulse",
             },
             # 'intermediate_frequency': IF_AOM_LO,
@@ -285,7 +285,7 @@ config = {
             },
             'operations': {
                 'Const_open': "Pulser_ON",
-                'Const_high_open': "Pulser_ON_high",
+                'Const_late_open': "Pulser_ON_late",
                 'Square_Pulse': "square_pulse",
             },
             # 'intermediate_frequency': IF_AOM_LO,
@@ -399,11 +399,19 @@ config = {
             # 'digital_marker': 'ON',
             'digital_marker': 'Trig_EOM_MZ'
         },
-        "Pulser_ON_high": {
+        "Pulser_ON_early": {
             'operation': 'control',
             'length': MOT_pulse_len,
             'waveforms': {
-                'single': 'const_high_wf'
+                'single': 'const_early_wf'
+            },
+            'digital_marker': 'ON',
+        },
+        "Pulser_ON_late": {
+            'operation': 'control',
+            'length': MOT_pulse_len,
+            'waveforms': {
+                'single': 'const_late_wf'
             },
             'digital_marker': 'ON',
         },
@@ -467,9 +475,15 @@ config = {
         'const_wf': {
             'type': 'constant',
             # 'sample': 0.1
-            'sample': 0.38
+            'sample': 0.35
         },
-        'const_high_wf': {
+        'const_late_wf': {
+            'type': 'constant',
+            # 'sample': 0.1
+            'sample': 0.4
+            # 'sample': 0.29
+        },
+        'const_early_wf': {
             'type': 'constant',
             # 'sample': 0.1
             'sample': 0.49

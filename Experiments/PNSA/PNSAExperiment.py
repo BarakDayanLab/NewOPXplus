@@ -19,7 +19,7 @@ from Utilities.Utils import Utils
 class PNSAExperiment(BaseExperiment):
     def __init__(self, playback_parameters=None, save_raw_data=False):
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
-        super().__init__(playback_parameters, save_raw_data)
+        super().__init__(playback_parameters=playback_parameters, save_raw_data=save_raw_data, connect_to_camera=False)
         pass
 
     def __del__(self):
@@ -1346,17 +1346,17 @@ class PNSAExperiment(BaseExperiment):
                        '--b', label='Filter "N"')
             for i in range(len(self.Num_of_photons_txt_box_y_loc)):
                 ax[1].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc[i],
-                           '%.2f' % self.avg_num_of_photons_per_pulse[i],
+                           '%.3f' % self.avg_num_of_photons_per_pulse[i],
                            horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
             for j in range(len(self.Num_of_photons_txt_box_y_loc_MZ)):
                 ax[1].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j],
                            self.Num_of_photons_txt_box_y_loc_MZ[j][0],
-                           '%.2f' % self.avg_num_of_photons_per_pulse_MZ[j][0],
+                           '%.3f' % self.avg_num_of_photons_per_pulse_MZ[j][0],
                            horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
                            color='#2ca02c')
                 ax[1].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j],
                            self.Num_of_photons_txt_box_y_loc_MZ[j][1],
-                           '%.2f' % self.avg_num_of_photons_per_pulse_MZ[j][1],
+                           '%.3f' % self.avg_num_of_photons_per_pulse_MZ[j][1],
                            horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
                            color='#d62728')
             # ax[1].set_ylim(0, 0.3)
@@ -1513,7 +1513,7 @@ class PNSAExperiment(BaseExperiment):
         }
         self.number_of_detection_pulses_per_seq = sum((np.array(Config.det_pulse_amp_S) != 0) |
                                                       (np.array(Config.det_pulse_amp_N) != 0))
-        self.number_of_SPRINT_pulses_per_seq = sum((np.array(Config.sprint_pulse_amp_S) != 0) |
+        self.number_of_SPRINT_pulses_per_seq = sum((np.array(Config.sprint_pulse_amp_S) != 0) +
                                                    (np.array(Config.sprint_pulse_amp_N) != 0))
 
         # TODO: Do we need these?
@@ -1842,7 +1842,7 @@ class PNSAExperiment(BaseExperiment):
             self.pulses_location_in_seq[-4:])
         self.num_of_detection_pulses = len(Config.det_pulse_amp_N)
 
-        self.number_of_detection_pulses_per_seq, self.number_of_SPRINT_pulses_per_seq = self.number_of_pulses_per_seq()
+        # self.number_of_detection_pulses_per_seq, self.number_of_SPRINT_pulses_per_seq = self.number_of_pulses_per_seq()
 
         # Take the 2nd number in the last tuple (which is the time of the last pulse)
         # TODO: uncomment this for PNSA
@@ -1963,7 +1963,7 @@ class PNSAExperiment(BaseExperiment):
                 # Analyze SPRINT data during transits:
                 (self.seq_with_data_points, self.reflection_SPRINT_data, self.transmission_SPRINT_data,
                  self.BP_counts_SPRINT_data, self.DP_counts_SPRINT_data) = \
-                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=[1,2],
+                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=[1, 3],
                                                     background=False)  # Enter the index of the SPRINT pulse for which the data should be analyzed
                 # print(self.potential_data)
                 # Analyze SPRINT data when no transit occur:
@@ -1973,7 +1973,7 @@ class PNSAExperiment(BaseExperiment):
                 ]
                 (_, self.reflection_SPRINT_data_without_transits, self.transmission_SPRINT_data_without_transits,
                  self.BP_counts_SPRINT_data_without_transits, self.DP_counts_SPRINT_data_without_transits) = \
-                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=[1,2],
+                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=[1, 3],
                                                     background=True)  # Enter the index of the SPRINT pulse for which the data should be analyzed
 
                 self.num_of_total_SPRINT_reflections = sum(self.reflection_SPRINT_data_without_transits)
@@ -2382,6 +2382,7 @@ class PNSAExperiment(BaseExperiment):
             figure_manager.frame.Maximize(True)
         else:
             self.logger.warn(f'Unknown matplotlib backend ({backend_name}). Cannot maximize figure')
+
     def generate_experiment_summary_line(self, pre_comment, aft_comment, with_atoms, counter):
         time_str = time.strftime("%H%M%S")
         date_str = time.strftime("%Y%m%d")
@@ -2442,7 +2443,7 @@ if __name__ == "__main__":
         'pre_comment': '',  # Put 'None' or '' if you don't want pre-comment prompt
         'lock_err_threshold': 2,  # [Mhz]
         'interference_error_threshold': 3,  # [MHz]
-        'desired_k_ex': 30, # [Mhz]
+        'desired_k_ex': 32, # [Mhz]
         'k_ex_err': 3,  # [Mhz]
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,
@@ -2450,7 +2451,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 0.1,
         'photons_per_det_pulse_threshold': 12,
-        'exp_flag': False,
+        'exp_flag': True,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2462,7 +2463,7 @@ if __name__ == "__main__":
             {
                 'name': 'Without Atoms',
                 'parameters': {
-                    'N': 50,
+                    'N': 25,
                     'with_atoms': False
                 }
             },

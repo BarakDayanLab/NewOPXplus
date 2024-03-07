@@ -46,14 +46,14 @@ def opx_control(obj, qm):
 
             # We run [rep] cycles of the pulses that are [MOT_pulse_len] long
             with for_(n, 0, n < rep, n + 1):
-                play("Const_open_triggered", "PULSER_N")
+                play("Const_open_triggered" * amp(0.4), "PULSER_N")
                 # play("Const_open", "PULSER_N")
                 # play("Const_open", "PULSER_S")
-                play("Const_open_triggered", "PULSER_S")
+                play("Const_open_triggered" * amp(0), "PULSER_S")
 
                 # We play either early or late AOMs - to test different system paths efficiencies
-                # play("Const_open", "PULSER_L")
-                play("Const_high_open", "PULSER_E")
+                play("Const_late_open", "PULSER_L")
+                # play("Const_early_open", "PULSER_E")
 
                 # play("Square_Pulse", "PULSER_LO")
                 # play("Const_open"*amp(0.7), "PULSER_LO")

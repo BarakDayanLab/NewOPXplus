@@ -37,11 +37,12 @@ from Utilities.Utils import Utils
 
 
 # For PNSA experiment
+COW = False
 #T exp
 # det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
-# det_pulse_amp_N = [0.45, 0, 0, 0, 0, 0]
+det_pulse_amp_N = [0, 0, 0, 0, 0, 0]
 # det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.24]
-# det_pulse_amp_S = [0, 0, 0, 0, 0, 0]
+det_pulse_amp_S = [0, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_N = [0, 0.95, 0, 0]
 # sprint_pulse_amp_N = [0, 0, 0, 0]
 # sprint_pulse_amp_N = [0, 0, 0, 0.115]
@@ -55,16 +56,16 @@ from Utilities.Utils import Utils
 # det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
 # det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.24]
 # sprint_pulse_amp_N = [0, 0.115, 0, 0]
-# # sprint_pulse_amp_N = [0, 0, 0, 0.115]
-# # sprint_pulse_amp_N = [0, 0.095, 0, 0.095]
+# sprint_pulse_amp_N = [0, 0, 0, 0.115]
+# sprint_pulse_amp_N = [0, 0.095, 0, 0.095]
 # sprint_pulse_amp_S = [0, 0, 0, 0]
 
 # N reflection:
-det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.265]
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.265]
 # det_pulse_amp_S = [0.45, 0, 0.45, 0, 0.45, 0]
-det_pulse_amp_S = [0.095, 0, 0.095, 0, 0.095, 0]
-sprint_pulse_amp_N = [0, 0, 0, 0]
-sprint_pulse_amp_S = [0, 0.021, 0, 0.021]
+# det_pulse_amp_S = [0.095, 0, 0.095, 0, 0.095, 0]
+# sprint_pulse_amp_N = [0, 0, 0, 0]
+# sprint_pulse_amp_S = [0, 0.021, 0, 0.021]
 
 #### 2nd set: ####
 # S reflection:
@@ -128,11 +129,12 @@ sprint_pulse_amp_S = [0, 0.021, 0, 0.021]
 
 #### COW set: ###
 # N reflection:
-# COW = True
-# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.265]
+COW = True
+det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.265]
 # det_pulse_amp_S = [0, 0, 0.45, 0, 0.45, 0]
-# sprint_pulse_amp_N = [0, 0, 0.315, 0]
-# sprint_pulse_amp_S = [0, 0.073, 0, 0.073]
+det_pulse_amp_S = [0, 0, 0.095, 0, 0.095, 0]
+sprint_pulse_amp_N = [0, 0, 0.315, 0]
+sprint_pulse_amp_S = [0, 0.035, 0, 0.035]
 
 # route efficiency after tapered fiber - including 50% of overcoupling transmission loss
 Eff_from_taper_S = 0.5*np.sqrt(0.8)*0.73*0.85*0.75 # over coupling - ~0.5, taper eff - ~0.8, table eff(launcher to lancher) - ~0.9
@@ -152,17 +154,16 @@ def PNSA_Exp_Gaussian_samples(sprint_pulse_len=110, det_pulse_len=30, det_pulses
     pnsa_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len-2), std=((sprint_pulse_len-2) * 0.5 / 2.355)) * det_pulses_amp[-1]).tolist() + [0] * (num_between_zeros)  # -3 for echos from south
     # pnsa_exp_gaussian_samples += [0] * (num_mid_zeros - 10) # due to unresolved reflections +40 for S echos
     pnsa_exp_gaussian_samples = pnsa_exp_gaussian_samples[:-(num_between_zeros)] + [0] * (num_between_zeros + num_mid_zeros - 2) # - 16 - 12) # due to unresolved reflections +40 for S echos
-    for m in sprint_pulses_amp:
-        pnsa_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len), std=((sprint_pulse_len) / 2.355)) * m).tolist() + [0] # + [0] * (num_between_zeros)
-    # for indx, m in enumerate(sprint_pulses_amp):
-    #     if (indx == 2) and COW:
-    #         pnsa_exp_gaussian_samples += [0] * (num_between_zeros + 10) + (signal.gaussian((sprint_pulse_len-2*num_between_zeros-20),
-    #                                                       std=((sprint_pulse_len-2*num_between_zeros-20) / 2.355)) * m).tolist() + [0] * (
-    #                                          num_between_zeros * 2 + 10)
-    #     else:
-    #         pnsa_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len),
-    #                                                       std=((sprint_pulse_len) / 2.355)) * m).tolist() + [0] * (
-    #                                          num_between_zeros)
+    # for m in sprint_pulses_amp:
+    #     pnsa_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len), std=((sprint_pulse_len) / 2.355)) * m).tolist() + [0] # + [0] * (num_between_zeros)
+    for indx, m in enumerate(sprint_pulses_amp):
+        if (indx == 2) and COW:
+            pnsa_exp_gaussian_samples += [0] * (num_between_zeros + 10) + (signal.gaussian((sprint_pulse_len-2*num_between_zeros-19),
+                                                          std=((sprint_pulse_len-2*num_between_zeros-19) / 2.355)) * m).tolist() + [0] * (
+                                             num_between_zeros + 10)
+        else:
+            pnsa_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len),
+                                                          std=((sprint_pulse_len) / 2.355)) * m).tolist() + [0]
     # pnsa_exp_gaussian_samples += [0] * num_fin_zeros
     # pnsa_exp_gaussian_samples = pnsa_exp_gaussian_samples[:-(num_between_zeros + 4)] + [0] * (num_between_zeros + 4 + num_fin_zeros - 16) # -14 due to S echos
     # pnsa_exp_gaussian_samples = pnsa_exp_gaussian_samples[:-(num_between_zeros)] + [0] * (num_between_zeros + num_fin_zeros)
@@ -556,7 +557,8 @@ num_init_val_Late = 10  # For only det pulses sequence
 num_mid_val_Late = 10
 num_fin_val_Late = 0  # For only det pulses sequence
 # Pulses_Amp_Late = 0.35  # For balancing with AOM Early (since added the switch)
-Pulses_Amp_Late = 0.38  # For balancing with AOM Early @ 05.03.24
+# Pulses_Amp_Late = 0.38  # For balancing with AOM Early @ 05.03.24
+Pulses_Amp_Late = 0.4  # For balancing with AOM Early @ 06.03.24
 # Pulses_Amp_Late = 0.29  # For balancing with AOM Early @ 08.02.24
 # Pulses_Amp_Late = 0.45  # For balancing with AOM Early (since added the switch)
 # For pulse sync

@@ -23,7 +23,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
 
     def __init__(self, playback=False, save_raw_data=False):
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
-        super().__init__(playback, save_raw_data)
+        super().__init__(playback_parameters=playback, save_raw_data=save_raw_data, connect_to_camera=True)
         pass
 
     def initialize_experiment_variables(self):

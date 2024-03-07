@@ -18,7 +18,7 @@ Experiment_Values = {
     'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],  # (QuadRF - AOM - Top F2)
     'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'] + 30e6,  # (QuadRF - Repump)
     'Pulse_1_Repump_amp': 1e-6,  # This value is translated to dB and is added to the amplitude of the channel meaning: Ch_Amp = Ch_Amp + 10 * np.log10('Pulse_1_Repump_amp')
-    'Pulse_1_Depump_amp': 1e-3,  # This value is translated to dB and is added to the amplitude of the channel meaning: Ch_Amp = Ch_Amp + 10 * np.log10('Pulse_1_Depump_amp')
+    'Pulse_1_Depump_amp': 1e-6,  # This value is translated to dB and is added to the amplitude of the channel meaning: Ch_Amp = Ch_Amp + 10 * np.log10('Pulse_1_Depump_amp')
     'N_Snaps': 1,
     'Buffer_Cycles': 0,
     'Imaging_Phase': Phases.PULSE_1,

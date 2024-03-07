@@ -65,7 +65,7 @@ class BaseExperiment:
         - Updating IO Parameters
     """
 
-    def __init__(self, playback_parameters=None, save_raw_data=False):
+    def __init__(self, playback_parameters=None, save_raw_data=False, connect_to_camera=False):
 
         # Setup console logger. We do this first, so rest of code can use logging functions.
         self.logger = BDLogger()
@@ -183,7 +183,10 @@ class BaseExperiment:
             self.bdsocket.run_server()
 
         # Attempt to initialize Camera functionality
-        self.connect_camera()
+        if connect_to_camera:
+            self.connect_camera()
+        else:
+            self.info('Not connecting to camera. Not required for this experiment.')
 
         # Setup keyboard listener
         # self.listener = keyboard.Listener(on_press=self._on_press, on_release=self._on_release)
