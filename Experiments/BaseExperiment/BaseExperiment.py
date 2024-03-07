@@ -46,7 +46,7 @@ class BaseExperiment:
         - BDLogger - Logger
         - Keyboard handlers
         - BDSound - Sounds player
-        - Camera usage
+        - Camera Connectivity
         - Identifier for computer (use self.login)
         - Sequence/Automation running activity with different parameters (pre_run, run, post_run, run_sequence)
         - Plot/Debugging <TBD>
