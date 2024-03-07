@@ -8,8 +8,8 @@ import numpy as np
 import os
 import time
 import math
-import pymsgbox
 import traceback
+from importlib.machinery import SourceFileLoader
 
 from Utilities.BDSound import SOUNDS
 from Utilities.BDDialog import BDDialog
@@ -18,8 +18,23 @@ from Utilities.Utils import Utils
 
 class PNSAExperiment(BaseExperiment):
     def __init__(self, playback_parameters=None, save_raw_data=False):
+
+        # ------------------------------------------------------------------------------------------------------------
+        # If we are in playback mode, we load the PNSA_Config_Experiment.py file that was running during the recording
+        #
+        # Note:
+        # - We do this BEFORE calling super().__init__ as it may invoke methods in this file - and we want the
+        #   playback Config to be used!
+        # - We use "global" to override the Config that was used in the import statement
+        # ------------------------------------------------------------------------------------------------------------
+        global Config
+        if playback_parameters['active']:
+            the_path = os.path.join(playback_parameters['playback_files_path'], 'Source Files', 'PNSA_Config_Experiment.py')
+            Config = SourceFileLoader("PNSA_Config_Experiment", the_path).load_module()
+
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
-        super().__init__(playback_parameters=playback_parameters, save_raw_data=save_raw_data, connect_to_camera=False)
+        super().__init__(playback_parameters, save_raw_data)
+
         pass
 
     def __del__(self):
@@ -1098,11 +1113,8 @@ class PNSAExperiment(BaseExperiment):
         self.logger.info(f'{time_formatted}: {self.experiment_type} {status_str}, Eff: {locking_efficiency_str}, Flr: {fluorescence_str}{photons_str}')
 
     def experiment_mainloop_delay(self):
-        if self.playback['active']:
-            if self.playback['delay'] != -1:
-                time.sleep(self.playback['delay'])
-        else:
-            time.sleep(0.01)  # TODO: do we need this delay?
+        super().experiment_mainloop_delay()
+        pass
 
     def prepare_figures(self):
 
@@ -1176,7 +1188,7 @@ class PNSAExperiment(BaseExperiment):
         }
 
         # Take time
-        start_plot_time = time.time()
+        plot_start_time = time.time()
 
         # Used mainly as a shortcut for shorter lines
         ax = self.subplots
@@ -1346,17 +1358,17 @@ class PNSAExperiment(BaseExperiment):
                        '--b', label='Filter "N"')
             for i in range(len(self.Num_of_photons_txt_box_y_loc)):
                 ax[1].text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc[i],
-                           '%.3f' % self.avg_num_of_photons_per_pulse[i],
+                           '%.2f' % self.avg_num_of_photons_per_pulse[i],
                            horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
             for j in range(len(self.Num_of_photons_txt_box_y_loc_MZ)):
                 ax[1].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j],
                            self.Num_of_photons_txt_box_y_loc_MZ[j][0],
-                           '%.3f' % self.avg_num_of_photons_per_pulse_MZ[j][0],
+                           '%.2f' % self.avg_num_of_photons_per_pulse_MZ[j][0],
                            horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
                            color='#2ca02c')
                 ax[1].text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j],
                            self.Num_of_photons_txt_box_y_loc_MZ[j][1],
-                           '%.3f' % self.avg_num_of_photons_per_pulse_MZ[j][1],
+                           '%.2f' % self.avg_num_of_photons_per_pulse_MZ[j][1],
                            horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
                            color='#d62728')
             # ax[1].set_ylim(0, 0.3)
@@ -1496,7 +1508,7 @@ class PNSAExperiment(BaseExperiment):
                        verticalalignment='top', bbox=props)
 
         # End timer
-        total_prep_time = time.time() - start_plot_time
+        total_prep_time = time.time() - plot_start_time
 
         # plt.tight_layout()
         plt.pause(0.2)
@@ -1820,17 +1832,10 @@ class PNSAExperiment(BaseExperiment):
         self.pulses_location_in_seq_A, self.filter_A = self.get_pulses_location_in_seq(self.filter_delay[2],
                                                                                        Config.PNSA_Exp_Gaussian_samples_Ancilla,
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
-        # Get experiment type: (Added by Dor, Sorry for the mess)
-        self.sorted_pulses = sorted([tup + ('N',) for tup in self.pulses_location_in_seq_N if
-                                     (tup[1] - tup[0]) < Config.sprint_pulse_len] +
-                                    [tup + ('n',) for tup in self.pulses_location_in_seq_N if
-                                     (tup[1] - tup[0]) >= Config.sprint_pulse_len] +
-                                    [tup + ('S',) for tup in self.pulses_location_in_seq_S if
-                                     (tup[1] - tup[0]) < Config.sprint_pulse_len] +
-                                    [tup + ('s',) for tup in self.pulses_location_in_seq_S if
-                                     (tup[1] - tup[0]) >= Config.sprint_pulse_len],
-                                    key=lambda tup: tup[1])
-        self.experiment_type = '-'.join(tup[2] for tup in self.sorted_pulses)
+
+        # Construct the pulses sequence and representing string for it (e.g. 'N-S-N-S-N-S-s-s')
+        self.sorted_pulses, self.experiment_type = self.construct_pulses_sequence(self.pulses_location_in_seq_N, self.pulses_location_in_seq_S, Config.sprint_pulse_len)
+
         # Find the center indices of the pulses and concatenate them to one list - to be used to put text boxes in figures
         # TODO: this can be moved/calculated later when we're doing the figure work...
         self.Num_of_photons_txt_box_x_loc = np.concatenate(
@@ -1842,7 +1847,7 @@ class PNSAExperiment(BaseExperiment):
             self.pulses_location_in_seq[-4:])
         self.num_of_detection_pulses = len(Config.det_pulse_amp_N)
 
-        # self.number_of_detection_pulses_per_seq, self.number_of_SPRINT_pulses_per_seq = self.number_of_pulses_per_seq()
+        self.number_of_detection_pulses_per_seq, self.number_of_SPRINT_pulses_per_seq = self.number_of_pulses_per_seq()
 
         # Take the 2nd number in the last tuple (which is the time of the last pulse)
         # TODO: uncomment this for PNSA
@@ -1963,7 +1968,7 @@ class PNSAExperiment(BaseExperiment):
                 # Analyze SPRINT data during transits:
                 (self.seq_with_data_points, self.reflection_SPRINT_data, self.transmission_SPRINT_data,
                  self.BP_counts_SPRINT_data, self.DP_counts_SPRINT_data) = \
-                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=[1, 3],
+                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=[1,2],
                                                     background=False)  # Enter the index of the SPRINT pulse for which the data should be analyzed
                 # print(self.potential_data)
                 # Analyze SPRINT data when no transit occur:
@@ -1973,7 +1978,7 @@ class PNSAExperiment(BaseExperiment):
                 ]
                 (_, self.reflection_SPRINT_data_without_transits, self.transmission_SPRINT_data_without_transits,
                  self.BP_counts_SPRINT_data_without_transits, self.DP_counts_SPRINT_data_without_transits) = \
-                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=[1, 3],
+                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=[1,2],
                                                     background=True)  # Enter the index of the SPRINT pulse for which the data should be analyzed
 
                 self.num_of_total_SPRINT_reflections = sum(self.reflection_SPRINT_data_without_transits)
@@ -2080,13 +2085,16 @@ class PNSAExperiment(BaseExperiment):
         daily_experiment_comments = self.generate_experiment_summary_line(self.pre_comment, aft_comment, self.with_atoms, self.counter)
 
         # Save all results of experiment
+        # TODO: should move invocation of this to after end of Run by manager, not from here
         self.save_experiment_results(experiment_comment, daily_experiment_comments)
 
         return self.runs_status
 
     def save_experiment_results(self, experiment_comment, daily_experiment_comments):
         """
-        This method is responsible for saving all the results gathered in the experiment and required by analysis
+        Responsible for saving all the results gathered in the experiment and required by analysis
+        Return a flag telling if save should occur at all.
+        TODO: add 'save_experiment_results' to BaseExperiment, Make 'run' method invoke it at the end
         """
 
         # If we're in playback mode and we don't want to keep results, exit function
@@ -2154,6 +2162,8 @@ class PNSAExperiment(BaseExperiment):
 
             "run_parameters": self.run_parameters
         }
+
+        # Save the results
         if self.playback['active']:
             resolved_path = self.playback['save_results_path']
         else:
@@ -2443,7 +2453,7 @@ if __name__ == "__main__":
         'pre_comment': '',  # Put 'None' or '' if you don't want pre-comment prompt
         'lock_err_threshold': 2,  # [Mhz]
         'interference_error_threshold': 3,  # [MHz]
-        'desired_k_ex': 32, # [Mhz]
+        'desired_k_ex': 30, # [Mhz]
         'k_ex_err': 3,  # [Mhz]
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,
@@ -2463,7 +2473,7 @@ if __name__ == "__main__":
             {
                 'name': 'Without Atoms',
                 'parameters': {
-                    'N': 25,
+                    'N': 50,
                     'with_atoms': False
                 }
             },

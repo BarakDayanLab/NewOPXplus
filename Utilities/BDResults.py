@@ -8,6 +8,7 @@ import shutil
 from scipy.io import savemat
 import collections.abc
 import matplotlib.pyplot as plt
+from Utilities.Utils import Utils
 
 
 class BDResults:
@@ -354,6 +355,34 @@ class BDResults:
 
         pass
 
+    def copy_files(self, source, destination, opt_in_filter=None, opt_out_filter=None, create_folder=False):
+        """
+        Copy files from source to destination
+        - source - source folder of files
+        - destination - destination folder to copy files
+        - opt_in_filter - Only include files that contain this filter
+        - opt_out_filter - Exclude files that contain this filter
+        - create_folder - if source/destination folders do not exist, create them
+        """
+
+        # Create folders if they do not exist
+        if create_folder:
+            if not os.path.exists(source):
+                os.makedirs(source)
+            if not os.path.exists(destination):
+                os.makedirs(destination)
+
+        try:
+            files_to_copy = Utils.get_files_in_path(source, opt_in_filter=opt_in_filter, opt_out_filter=opt_out_filter, return_full_path=False)
+            for file in files_to_copy:
+                src = os.path.join(source, file)
+                dst = os.path.join(destination, file)
+                shutil.copy2(src, dst)
+        except Exception as err:
+            self.logger.error(f'Failed to copy files from {source} to {destination}. {err}')
+
+        pass
+
     def copy_folder(self, source, destination, create_destination_folder=False):
         """
         Copy recursively entire folder from source to destination. Resolve destination before copy.
@@ -372,7 +401,7 @@ class BDResults:
         except OSError as err:
             # error caused if the source was not a directory
             if err.errno == errno.ENOTDIR:
-                self.logger.error(f'Destination {destination} is not a folder. {err}')  # shutil.copy2(src, dest)
+                self.logger.error(f'Destination {destination} is not a folder. {err}')
             else:
                 self.logger.error(f'Copy Folder failed (src: {source}, dst: {destination}). {err}')
 

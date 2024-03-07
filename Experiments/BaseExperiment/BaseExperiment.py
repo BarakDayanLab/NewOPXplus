@@ -7,6 +7,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import os
 import importlib
+from importlib.machinery import SourceFileLoader
 
 from Utilities.Utils import Utils
 from Utilities.BDLogger import BDLogger
@@ -137,8 +138,15 @@ class BaseExperiment:
 
         # Dynamically import the config-experiment and config-table and merge the values
         try:
-            Config = importlib.import_module(f'{self.experiment_name}_Config_Experiment')
-            ConfigTable = importlib.import_module(f'{self.experiment_name}_Config_Table')
+            # If we're in playback mode, we load the config files from the playback folder
+            if self.playback['active']:
+                the_path = os.path.join(self.playback['playback_files_path'], 'Source Files', 'PNSA_Config_Experiment.py')
+                Config = SourceFileLoader("PNSA_Config_Experiment", the_path).load_module()
+                the_path = os.path.join(self.playback['playback_files_path'], 'Source Files', 'PNSA_Config_Table.py')
+                ConfigTable = SourceFileLoader("PNSA_Config_Table", the_path).load_module()
+            else:
+                Config = importlib.import_module(f'{self.experiment_name}_Config_Experiment')
+                ConfigTable = importlib.import_module(f'{self.experiment_name}_Config_Table')
             self.Exp_Values = Utils.merge_multiple_jsons([self.Exp_Values, ConfigTable.Experiment_Values])
         except Exception as err:
             self.info(f'Unable to import Config file ({err}). Loading *BaseExperiment* config files instead.')
@@ -650,6 +658,11 @@ class BaseExperiment:
         pass
 
     def sequence_ended(self, sequence_definitions):
+        # Copy experiment Python source files (*.py) into playback folder
+        python_source_files_path = self.paths_map['cwd']
+        playback_files_path = os.path.join(self.bd_results.get_sequence_folder(sequence_definitions), 'playback', 'Source Files')
+        self.bd_results.copy_files(source=python_source_files_path, destination=playback_files_path, opt_in_filter='.py', create_folder=True)
+        self.info(f'Copied all Python source and config files from {python_source_files_path} into playback folder ({playback_files_path})')
         pass
 
     def iterations_started(self, sequence_definitions):
@@ -1100,6 +1113,23 @@ class BaseExperiment:
             self.logger.warn(f'Unable to open file {filename} for writing. {err}')
         pass
 
+    def construct_pulses_sequence(self, pulse_seq_N, pulse_seq_S, pulse_len):
+        """
+        Given the pulses time-bins from North and South, and the Pulse Length:
+        - Constructs an array of tuples of the form (Start-tim, End-Time, Direction)
+        - Constructs a string representing the pulse sequence (e.g. 'N-S-N-S-N-S-s-s')
+        """
+
+        N_detection_pulses_locations = [tup + ('N',) for tup in pulse_seq_N if (tup[1] - tup[0]) < pulse_len]
+        n_sprint_pulses_locations = [tup + ('n',) for tup in pulse_seq_N if (tup[1] - tup[0]) >= pulse_len]
+        S_detection_pulses_locations = [tup + ('S',) for tup in pulse_seq_S if (tup[1] - tup[0]) < pulse_len]
+        s_sprint_pulses_locations = [tup + ('s',) for tup in pulse_seq_S if (tup[1] - tup[0]) >= pulse_len]
+        all_pulses = N_detection_pulses_locations + n_sprint_pulses_locations + S_detection_pulses_locations + s_sprint_pulses_locations
+        all_pulses = sorted(all_pulses, key=lambda tup: tup[1])
+
+        str = '-'.join(tup[2] for tup in all_pulses)
+        return all_pulses, str
+
     def format_iteration_and_sequence(self):
         # Get the iteration/sequence/name
         iteration = self.sequence['current_iteration']
@@ -1107,6 +1137,19 @@ class BaseExperiment:
         name = self.sequence['sequence'][sequence_step]['name']
         str = f'Iteration {iteration+1} | Sequence {sequence_step+1} | {name}'
         return str
+
+    def experiment_mainloop_delay(self):
+        """
+        Handles the delay of the experiment mainloop
+        By default, we have a very short delay of few milli-seconds
+        If we're in playback mode, the playback parameters prevail
+        """
+        if self.playback['active']:
+            if self.playback['delay'] != -1:
+                time.sleep(self.playback['delay'])
+        else:
+            time.sleep(0.01)
+        pass
 
     # ------------------------------------------------------------
     # Plot related Functions

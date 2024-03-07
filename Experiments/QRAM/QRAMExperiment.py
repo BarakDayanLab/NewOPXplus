@@ -8,8 +8,8 @@ import numpy as np
 import os
 import time
 import math
-import pymsgbox
 import traceback
+from importlib.machinery import SourceFileLoader
 
 from Utilities.BDSound import SOUNDS
 from Utilities.BDDialog import BDDialog
@@ -18,6 +18,20 @@ from Utilities.Utils import Utils
 
 class QRAMExperiment(BaseExperiment):
     def __init__(self, playback_parameters=None, save_raw_data=False):
+
+        # ------------------------------------------------------------------------------------------------------------
+        # If we are in playback mode, we load the PNSA_Config_Experiment.py file that was running during the recording
+        #
+        # Note:
+        # - We do this BEFORE calling super().__init__ as it may invoke methods in this file - and we want the
+        #   playback Config to be used!
+        # - We use "global" to override the Config that was used in the import statement
+        # ------------------------------------------------------------------------------------------------------------
+        global Config
+        if playback_parameters['active']:
+            the_path = os.path.join(playback_parameters['playback_files_path'], 'Source Files', 'PNSA_Config_Experiment.py')
+            Config = SourceFileLoader("QRAM_Config_Experiment", the_path).load_module()
+
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
         super().__init__(playback_parameters, save_raw_data)
         pass

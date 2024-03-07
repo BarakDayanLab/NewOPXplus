@@ -476,16 +476,19 @@ class Utils:
         return existed
 
     @staticmethod
-    def get_files_in_path(path, exclude_token=None, return_full_path=False):
+    def get_files_in_path(path, opt_in_filter=None, opt_out_filter=None, return_full_path=False):
         """
         Returns all files that are in a given path.
-        Exclude files that have the given exclude token
-        Return_Full_Path - full-path/file-name or only file-name
+        - opt_out_filter - Exclude files that have the given token
+        - opt_in_filter - Include only files that have the given token
+        - return_full_path - full-path/file-name or only file-name
         """
         files = []
         for f in os.listdir(path):
             if os.path.isfile(os.path.join(path, f)):
-                if exclude_token is not None and exclude_token not in f:
+                if opt_out_filter is not None and opt_out_filter in f:
+                    continue
+                if opt_in_filter is None or (opt_in_filter is not None and opt_in_filter in f):
                     if return_full_path:
                         files.append(os.path.join(path, f))
                     else:

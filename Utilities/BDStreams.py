@@ -71,22 +71,25 @@ class BDStreams:
             stream['all_rows'] = []
             stream['results'] = []
 
-    # TODO: complete this:
     def load_entire_folder(self, playback_files_path):
         """
-        Iterates over all files in folder and loads them
+        Iterates over all playback files in folder and loads them into memory (streams object)
         """
 
         # Clean all streams
         self.clean_streams()
 
-        # Get all files in playback folder
-        playback_files = [f for f in os.listdir(playback_files_path) if os.path.isfile(os.path.join(playback_files_path, f))]
+        # Get all files in playback folder (ignore Python source files and directories)
+        playback_files = Utils.get_files_in_path(path=playback_files_path, opt_out_filter='.py')
+
+        # Take time
+        load_time_start = time.time()
 
         # Iterate over all files in folder
         for playback_file in playback_files:
             self.load_streams(os.path.join(playback_files_path, playback_file))
 
+        self.logger.info(f'Finished loading {len(playback_files)} playback files. Took {time.time() - load_time_start} secs')
         pass
 
     def load_streams(self, data_file):
