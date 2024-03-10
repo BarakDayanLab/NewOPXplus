@@ -20,7 +20,8 @@ class NumpyEncoder(json.JSONEncoder):
 
     def default(self, obj):
         # If input object is a ndarray it will be converted into a dict holding the nparray bytes
-        if isinstance(obj, np.ndarray):
+        # TODO: do we want to handle individually np.ndarray/np.void/np.int64/np.float64 ? via isinstance(obj, nd,void)
+        if hasattr(obj, 'dtype'):
             np_bytes = BytesIO()
             np.save(np_bytes, obj.data, allow_pickle=True)
             base64_bytes = base64.b64encode(np_bytes.getvalue())
@@ -28,7 +29,8 @@ class NumpyEncoder(json.JSONEncoder):
             return dict(__nparray__=True, __base64__=base64_string)
 
         # Let the base class default method work on the obj
-        return json.JSONEncoder.default(self, obj)
+        return super().default(obj)
+        #return json.JSONEncoder.default(self, obj)
 
 def json_numpy_obj_hook(dct):
     """
