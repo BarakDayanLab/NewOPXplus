@@ -658,11 +658,12 @@ class BaseExperiment:
         pass
 
     def sequence_ended(self, sequence_definitions):
-        # Copy experiment Python source files (*.py) into playback folder
-        python_source_files_path = self.paths_map['cwd']
-        playback_files_path = os.path.join(self.bd_results.get_sequence_folder(sequence_definitions), 'playback', 'Source Files')
-        self.bd_results.copy_files(source=python_source_files_path, destination=playback_files_path, opt_in_filter='.py', create_folder=True)
-        self.info(f'Copied all Python source and config files from {python_source_files_path} into playback folder ({playback_files_path})')
+        if not self.playback['active']:
+            # Copy experiment Python source files (*.py) into playback folder
+            python_source_files_path = self.paths_map['cwd']
+            playback_files_path = os.path.join(self.bd_results.get_sequence_folder(sequence_definitions), 'playback', 'Source Files')
+            self.bd_results.copy_files(source=python_source_files_path, destination=playback_files_path, opt_in_filter='.py', create_folder=True)
+            self.info(f'Copied all Python source and config files from {python_source_files_path} into playback folder ({playback_files_path})')
         pass
 
     def iterations_started(self, sequence_definitions):
