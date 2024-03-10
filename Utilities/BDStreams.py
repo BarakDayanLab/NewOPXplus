@@ -86,7 +86,11 @@ class BDStreams:
         load_time_start = time.time()
 
         # Iterate over all files in folder
+        i = 1
         for playback_file in playback_files:
+            if i % 100 == 0:
+                self.logger.info(f'Loading playback files ({i}/{len(playback_files)})')
+            i += 1
             self.load_streams(os.path.join(playback_files_path, playback_file))
 
         self.logger.info(f'Finished loading {len(playback_files)} playback files. Took {time.time() - load_time_start} secs')
