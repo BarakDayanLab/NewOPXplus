@@ -101,7 +101,7 @@ class BaseExperiment:
             self.playback['streams'] = {}
 
         # Insert a prompt to check we're not running on live lab devices (OPX, QuadRF)
-        if not self.playback["active"] and self.login == 'drorg':
+        if not self.playback["active"] and (self.login == 'drorg' or self.login == 'dork'):
             what_say_thou = self.prompt(title='LIVE run on local', msg='You are about to run LIVE from your workstation. Continue? (type YES)', default='', timeout=int(30e3))
             if what_say_thou.lower() != 'yes':
                 sys.exit('Aborting. Do not want to run from private state on lab live.')
@@ -658,11 +658,12 @@ class BaseExperiment:
         pass
 
     def sequence_ended(self, sequence_definitions):
-        # Copy experiment Python source files (*.py) into playback folder
-        python_source_files_path = self.paths_map['cwd']
-        playback_files_path = os.path.join(self.bd_results.get_sequence_folder(sequence_definitions), 'playback', 'Source Files')
-        self.bd_results.copy_files(source=python_source_files_path, destination=playback_files_path, opt_in_filter='.py', create_folder=True)
-        self.info(f'Copied all Python source and config files from {python_source_files_path} into playback folder ({playback_files_path})')
+        if not self.playback['active']:
+            # Copy experiment Python source files (*.py) into playback folder
+            python_source_files_path = self.paths_map['cwd']
+            playback_files_path = os.path.join(self.bd_results.get_sequence_folder(sequence_definitions), 'playback', 'Source Files')
+            self.bd_results.copy_files(source=python_source_files_path, destination=playback_files_path, opt_in_filter='.py', create_folder=True)
+            self.info(f'Copied all Python source and config files from {python_source_files_path} into playback folder ({playback_files_path})')
         pass
 
     def iterations_started(self, sequence_definitions):
