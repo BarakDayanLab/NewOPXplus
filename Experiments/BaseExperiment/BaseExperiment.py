@@ -101,7 +101,7 @@ class BaseExperiment:
             self.playback['streams'] = {}
 
         # Insert a prompt to check we're not running on live lab devices (OPX, QuadRF)
-        if not self.playback["active"] and self.login == 'drorg':
+        if not self.playback["active"] and (self.login == 'drorg' or self.login == 'dork'):
             what_say_thou = self.prompt(title='LIVE run on local', msg='You are about to run LIVE from your workstation. Continue? (type YES)', default='', timeout=int(30e3))
             if what_say_thou.lower() != 'yes':
                 sys.exit('Aborting. Do not want to run from private state on lab live.')
