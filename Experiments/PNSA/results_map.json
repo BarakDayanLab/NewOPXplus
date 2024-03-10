@@ -116,7 +116,7 @@
 			"type": ["mat", "npz"]
 		},
 		{
-			"data": "sorted_pulses",
+			"data": "pulses_location",
 			"description": "pulses location",
 			"name": "pulses_location",
 			"file_name": "Pulses_location_in_seq",

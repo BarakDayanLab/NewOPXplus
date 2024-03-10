@@ -2,6 +2,7 @@ import numpy as np
 from scipy import signal
 import math
 from Utilities.Utils import Utils
+from matplotlib import pyplot as plt
 
 # For SPRINT experiment:
 # Transmission N:
@@ -40,9 +41,9 @@ from Utilities.Utils import Utils
 COW = False
 #T exp
 # det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
-det_pulse_amp_N = [0, 0, 0, 0, 0, 0]
+# det_pulse_amp_N = [0, 0, 0, 0, 0, 0]
 # det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.24]
-det_pulse_amp_S = [0, 0, 0, 0, 0, 0]
+# det_pulse_amp_S = [0, 0, 0, 0, 0, 0]
 # sprint_pulse_amp_N = [0, 0.95, 0, 0]
 # sprint_pulse_amp_N = [0, 0, 0, 0]
 # sprint_pulse_amp_N = [0, 0, 0, 0.115]
@@ -53,12 +54,17 @@ det_pulse_amp_S = [0, 0, 0, 0, 0, 0]
 
 #### 1st set: ####
 # S reflection:
-# det_pulse_amp_N = [0.45, 0, 0.45, 0, 0.45, 0]
+det_pulse_amp_N = [0.28, 0, 0.28, 0, 0.28, 0]
+# det_pulse_amp_N = [0, 0.28, 0, 0.28, 0, 0.18] # Transmission fidelity check
 # det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.24]
+det_pulse_amp_S = [0, 0.095, 0, 0.095, 0, 0.06]
+# det_pulse_amp_S = [0.095, 0, 0.095, 0, 0.095, 0] # Transmission fidelity check
 # sprint_pulse_amp_N = [0, 0.115, 0, 0]
 # sprint_pulse_amp_N = [0, 0, 0, 0.115]
-# sprint_pulse_amp_N = [0, 0.095, 0, 0.095]
+# sprint_pulse_amp_N = [0, 0.065, 0, 0.065]
 # sprint_pulse_amp_S = [0, 0, 0, 0]
+sprint_pulse_amp_N = [0.065, 0.065]
+sprint_pulse_amp_S = [0, 0]
 
 # N reflection:
 # det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.265]
@@ -73,7 +79,7 @@ det_pulse_amp_S = [0, 0, 0, 0, 0, 0]
 # det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.24]
 # sprint_pulse_amp_N = [0, 0.138, 0, 0]
 # sprint_pulse_amp_N = [0, 0, 0, 0.138]
-# sprint_pulse_amp_N = [0, 0.115, 0, 0.115]
+# sprint_pulse_amp_N = [0, 0.08, 0, 0.08]
 # sprint_pulse_amp_S = [0, 0, 0, 0]
 
 # N reflection:
@@ -88,7 +94,7 @@ det_pulse_amp_S = [0, 0, 0, 0, 0, 0]
 # det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.24]
 # sprint_pulse_amp_N = [0, 0.168, 0, 0]
 # sprint_pulse_amp_N = [0, 0, 0, 0.168]
-# sprint_pulse_amp_N = [0, 0.138, 0, 0.138]
+# sprint_pulse_amp_N = [0, 0.095, 0, 0.095]
 # sprint_pulse_amp_S = [0, 0, 0, 0]
 
 # N reflection:
@@ -103,7 +109,7 @@ det_pulse_amp_S = [0, 0, 0, 0, 0, 0]
 # det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.24]
 # sprint_pulse_amp_N = [0, 0.19, 0, 0]
 # sprint_pulse_amp_N = [0, 0, 0, 0.19]
-# sprint_pulse_amp_N = [0, 0.152, 0, 0.152]
+# sprint_pulse_amp_N = [0, 0.105, 0, 0.105]
 # sprint_pulse_amp_S = [0, 0, 0, 0]
 
 # N reflection:
@@ -118,7 +124,7 @@ det_pulse_amp_S = [0, 0, 0, 0, 0, 0]
 # det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.24]
 # sprint_pulse_amp_N = [0, 0.21, 0, 0]
 # sprint_pulse_amp_N = [0, 0, 0, 0.21]
-# sprint_pulse_amp_N = [0, 0.15, 0, 0.15]
+# sprint_pulse_amp_N = [0, 0.115, 0, 0.115]
 # sprint_pulse_amp_S = [0, 0, 0, 0]
 
 # N reflection:
@@ -129,12 +135,12 @@ det_pulse_amp_S = [0, 0, 0, 0, 0, 0]
 
 #### COW set: ###
 # N reflection:
-COW = True
-det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.265]
-# det_pulse_amp_S = [0, 0, 0.45, 0, 0.45, 0]
-det_pulse_amp_S = [0, 0, 0.095, 0, 0.095, 0]
-sprint_pulse_amp_N = [0, 0, 0.315, 0]
-sprint_pulse_amp_S = [0, 0.035, 0, 0.035]
+# COW = True
+# det_pulse_amp_N = [0, 0.45, 0, 0.45, 0, 0.265]
+# # det_pulse_amp_S = [0, 0, 0.45, 0, 0.45, 0]
+# det_pulse_amp_S = [0, 0, 0.095, 0, 0.095, 0]
+# sprint_pulse_amp_N = [0, 0, 0.315, 0]
+# sprint_pulse_amp_S = [0, 0.035, 0, 0.035]
 
 # route efficiency after tapered fiber - including 50% of overcoupling transmission loss
 Eff_from_taper_S = 0.5*np.sqrt(0.8)*0.73*0.85*0.75 # over coupling - ~0.5, taper eff - ~0.8, table eff(launcher to lancher) - ~0.9
@@ -151,9 +157,9 @@ def PNSA_Exp_Gaussian_samples(sprint_pulse_len=110, det_pulse_len=30, det_pulses
     pnsa_exp_gaussian_samples = [0] * (num_init_zeros + 10)
     for n in det_pulses_amp[:-1]:
         pnsa_exp_gaussian_samples += (signal.gaussian(det_pulse_len, std=(det_pulse_len * 0.5 / 2.355)) * n).tolist() + [0] * (num_between_zeros) # -3 for echos from south
-    pnsa_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len-2), std=((sprint_pulse_len-2) * 0.5 / 2.355)) * det_pulses_amp[-1]).tolist() + [0] * (num_between_zeros)  # -3 for echos from south
+    pnsa_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len - 120-2), std=((sprint_pulse_len - 120 - 2) * 0.5 / 2.355)) * det_pulses_amp[-1]).tolist() + [0] * (num_between_zeros)  # -3 for echos from south
     # pnsa_exp_gaussian_samples += [0] * (num_mid_zeros - 10) # due to unresolved reflections +40 for S echos
-    pnsa_exp_gaussian_samples = pnsa_exp_gaussian_samples[:-(num_between_zeros)] + [0] * (num_between_zeros + num_mid_zeros - 2) # - 16 - 12) # due to unresolved reflections +40 for S echos
+    pnsa_exp_gaussian_samples = pnsa_exp_gaussian_samples[:-(num_between_zeros)] + [0] * (num_between_zeros + num_mid_zeros) # - 16 - 12) # due to unresolved reflections +40 for S echos
     # for m in sprint_pulses_amp:
     #     pnsa_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len), std=((sprint_pulse_len) / 2.355)) * m).tolist() + [0] # + [0] * (num_between_zeros)
     for indx, m in enumerate(sprint_pulses_amp):
@@ -162,8 +168,11 @@ def PNSA_Exp_Gaussian_samples(sprint_pulse_len=110, det_pulse_len=30, det_pulses
                                                           std=((sprint_pulse_len-2*num_between_zeros-19) / 2.355)) * m).tolist() + [0] * (
                                              num_between_zeros + 10)
         else:
-            pnsa_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len),
-                                                          std=((sprint_pulse_len) / 2.355)) * m).tolist() + [0]
+            # pnsa_exp_gaussian_samples += (signal.gaussian((sprint_pulse_len),
+            #                                               std=((sprint_pulse_len) / 2.355)) * m).tolist() + [0]
+            # TODO: Checking long pulses for SPRINT
+            pnsa_exp_gaussian_samples += [0] * (num_between_zeros-10) + (signal.gaussian((sprint_pulse_len),
+                                                          std=((sprint_pulse_len) / 2.355)) * m).tolist() + [0] * (num_between_zeros-10)
     # pnsa_exp_gaussian_samples += [0] * num_fin_zeros
     # pnsa_exp_gaussian_samples = pnsa_exp_gaussian_samples[:-(num_between_zeros + 4)] + [0] * (num_between_zeros + 4 + num_fin_zeros - 16) # -14 due to S echos
     # pnsa_exp_gaussian_samples = pnsa_exp_gaussian_samples[:-(num_between_zeros)] + [0] * (num_between_zeros + num_fin_zeros)
@@ -178,16 +187,18 @@ def PNSA_Exp_Square_samples(amp=0.45, sprint_pulse_len=110, det_pulse_len=30, de
     for n in range(len(det_pulses_amp)-1):
         pnsa_exp_gaussian_samples += [det_pulses_amp[n] * amp] * det_pulse_len + \
                                      [det_pulses_amp[n] * det_pulses_amp[n+1] * amp] * (num_between_vals)
-    pnsa_exp_gaussian_samples += [det_pulses_amp[-1] * amp] * (sprint_pulse_len - 2) + \
+    pnsa_exp_gaussian_samples += [det_pulses_amp[-1] * amp] * (sprint_pulse_len - 60 - 2) + \
                                  [det_pulses_amp[-1] * sprint_pulses_amp[0] * amp] * (num_between_vals)
 
-    pnsa_exp_gaussian_samples += [sprint_pulses_amp[0] * amp] * (num_mid_val - 2)  # due to unresolved reflections
+    pnsa_exp_gaussian_samples += [0] * 55  # due to unresolved reflections
+
+    pnsa_exp_gaussian_samples += [sprint_pulses_amp[0] * amp] * (num_mid_val-10)  # due to unresolved reflections
 
     for m in range(len(sprint_pulses_amp)-1):
         pnsa_exp_gaussian_samples += [sprint_pulses_amp[m] * amp] * (sprint_pulse_len)\
-                                     + [sprint_pulses_amp[m] * sprint_pulses_amp[m + 1] * amp]# * (num_between_vals)
+                                     # + [sprint_pulses_amp[m] * sprint_pulses_amp[m + 1] * amp] * (num_between_vals)
     pnsa_exp_gaussian_samples += [sprint_pulses_amp[-1] * amp] * (sprint_pulse_len)\
-                                 + [sprint_pulses_amp[-1] * det_pulses_amp[0] * amp]# * (num_between_vals)
+                                 # + [sprint_pulses_amp[-1] * det_pulses_amp[0] * amp] * (num_between_vals)
 
     #pnsa_exp_gaussian_samples += [det_pulses_amp[0] * amp] * num_fin_val
 
@@ -338,7 +349,7 @@ num_of_photons_per_sequence_N = num_of_photons_det_pulses * num_of_det_pulses_N 
 # det_pulse_len = 40
 MZ_delay = 250
 det_pulse_len = 50
-sprint_pulse_len = 124
+sprint_pulse_len = 230
 num_between_zeros = 20
 
 # For general sequence pulses shape
@@ -348,7 +359,8 @@ num_fin_zeros = 0  # For only det pulses sequence
 # det_pulse_amp_General = [1, 1, 1, 1, 1, 1, 1, 1]
 det_pulse_amp_General = [1, 1, 1, 1, 1, 1]
 # sprint_pulse_amp_General = [1, 1, 1, 1]
-sprint_pulse_amp_General = [1, 1, 1, 1]
+# sprint_pulse_amp_General = [1, 1, 1, 1]
+sprint_pulse_amp_General = [1, 1]
 
 
 num_init_zeros_S = 10  # For only det pulses sequence
@@ -454,7 +466,8 @@ num_fin_zeros_Ancilla = 0  # For only det pulses sequence
 # # |1c, (0 + 1)t>
 # det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0, 0, 0]
 det_pulse_amp_Ancilla = [0, 0, 0, 0, 0, 0]
-sprint_pulse_amp_Ancilla = [0, 0, 0, 0]
+# sprint_pulse_amp_Ancilla = [0, 0, 0, 0]
+sprint_pulse_amp_Ancilla = [0, 0]
 # sprint_pulse_amp_Ancilla = [0]
 
 #
@@ -513,7 +526,7 @@ Pulses_Amp_Early = 0.495
 # |1c, (0 + 1)t>
 # det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 0, 0]
 det_pulse_amp_Early = [0, 0, 0, 0, 0, 0]
-sprint_pulse_amp_Early = [1, 1, 0, 0]
+sprint_pulse_amp_Early = [1, 0, 0, 0]
 # sprint_pulse_amp_Early = [0, 0, 0, 0]
 # sprint_pulse_amp_Early = [0]
 
@@ -543,7 +556,7 @@ sprint_pulse_amp_Early = [1, 1, 0, 0]
 #                                                       num_fin_val=num_fin_val_Early)
 
 PNSA_Exp_Square_samples_Early = PNSA_Exp_Square_samples(amp=Pulses_Amp_Early,
-                                                        sprint_pulse_len=sprint_pulse_len,
+                                                        sprint_pulse_len=int(MZ_delay/2),
                                                         det_pulse_len=det_pulse_len,
                                                         det_pulses_amp=det_pulse_amp_Early,
                                                         sprint_pulses_amp=sprint_pulse_amp_Early,
@@ -580,7 +593,7 @@ sprint_pulse_amp_Late = [0, 0, 1, 1]
 # sprint_pulse_amp_Late = [1, 1, 1, 1]
 
 PNSA_Exp_Square_samples_Late = PNSA_Exp_Square_samples(amp=Pulses_Amp_Late,
-                                                       sprint_pulse_len=sprint_pulse_len,
+                                                       sprint_pulse_len=int(MZ_delay/2),
                                                        det_pulse_len=det_pulse_len,
                                                        det_pulses_amp=det_pulse_amp_Late,
                                                        sprint_pulses_amp=sprint_pulse_amp_Late,
@@ -609,7 +622,7 @@ det_pulse_amp_FS = [1, 1, 1, 1, 1, 1]
 # sprint_pulse_FS = [1]
 
 PNSA_Exp_Square_samples_FS = PNSA_Exp_Square_samples(amp=Pulses_Amp,
-                                                     sprint_pulse_len=sprint_pulse_len,
+                                                     sprint_pulse_len=sprint_pulse_len-105,
                                                      det_pulse_len=det_pulse_len,
                                                      det_pulses_amp=det_pulse_amp_FS,
                                                      sprint_pulses_amp=sprint_pulse_FS,
@@ -623,7 +636,7 @@ PNSA_Exp_digital_samples_FS = get_pulses_location_in_seq(delay=0,
                                                          smearing=0)
 
 
-MZ_delay = int(len(PNSA_Exp_Gaussian_samples_N) / 4)
+# MZ_delay = int(len(PNSA_Exp_Gaussian_samples_N) / 4)
 # Pulses_Amp_balance = 0.18
 Pulses_Amp_balance = 0.4
 AOM_risetime = 150 # True at 08.02.24
@@ -722,6 +735,11 @@ AOM_Minus_Attenuation = 1 # 0.85 seems to be about right, for 0.8 the slopes are
 ## For Homodyne ##
 LO_pulse_samples = ([0.4] * 20) + [0] * 100
 
+plt.plot(PNSA_Exp_Gaussian_samples_N)
+plt.plot(PNSA_Exp_Gaussian_samples_S)
+plt.plot(PNSA_Exp_Square_samples_Early)
+plt.plot(PNSA_Exp_Square_samples_Late)
+
 # with open('conf_args.json', 'r') as fp:
 #     confargs = json.load(fp)
 # dc_i = confargs['offsets']['I']
@@ -741,6 +759,7 @@ LO_pulse_samples = ([0.4] * 20) + [0] * 100
 # - Pulses: must be a multiplication of 4
 # - Waveforms: sample (amplitude) must not exceed 0.5 v (OPX will not alert, but perform modulu)
 #------------------------------------------------------
+
 config = {
 
     'version': 1,

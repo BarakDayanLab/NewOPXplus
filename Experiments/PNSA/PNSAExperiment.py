@@ -1851,9 +1851,9 @@ class PNSAExperiment(BaseExperiment):
 
         # Take the 2nd number in the last tuple (which is the time of the last pulse)
         # TODO: uncomment this for PNSA
-        # self.end_of_det_pulse_in_seq = self.pulses_location_in_seq[self.num_of_detection_pulses - 1][1]
+        self.end_of_det_pulse_in_seq = self.pulses_location_in_seq[self.num_of_detection_pulses - 1][1]
         # TODO: give dor box babeten - and then go back to the commented line
-        self.end_of_det_pulse_in_seq = self.pulses_location_in_seq[self.num_of_detection_pulses - 1][1]+6 # 6 only relevant for sprint - not PNSA!
+        # self.end_of_det_pulse_in_seq = self.pulses_location_in_seq[self.num_of_detection_pulses - 1][1]+6 # 6 only relevant for sprint - not PNSA!
 
         # Start experiment flag and set MOT according to flag
         self.updateValue("Experiment_Switch", True)
@@ -1968,7 +1968,7 @@ class PNSAExperiment(BaseExperiment):
                 # Analyze SPRINT data during transits:
                 (self.seq_with_data_points, self.reflection_SPRINT_data, self.transmission_SPRINT_data,
                  self.BP_counts_SPRINT_data, self.DP_counts_SPRINT_data) = \
-                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=[1,2],
+                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=[1, 2],
                                                     background=False)  # Enter the index of the SPRINT pulse for which the data should be analyzed
                 # print(self.potential_data)
                 # Analyze SPRINT data when no transit occur:
@@ -1978,7 +1978,7 @@ class PNSAExperiment(BaseExperiment):
                 ]
                 (_, self.reflection_SPRINT_data_without_transits, self.transmission_SPRINT_data_without_transits,
                  self.BP_counts_SPRINT_data_without_transits, self.DP_counts_SPRINT_data_without_transits) = \
-                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=[1,2],
+                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=[1, 2],
                                                     background=True)  # Enter the index of the SPRINT pulse for which the data should be analyzed
 
                 self.num_of_total_SPRINT_reflections = sum(self.reflection_SPRINT_data_without_transits)
@@ -2452,7 +2452,7 @@ if __name__ == "__main__":
         'transit_condition': [2, 1, 2],
         'pre_comment': '',  # Put 'None' or '' if you don't want pre-comment prompt
         'lock_err_threshold': 2,  # [Mhz]
-        'interference_error_threshold': 3,  # [MHz]
+        'interference_error_threshold': 2,  # [MHz]
         'desired_k_ex': 30, # [Mhz]
         'k_ex_err': 3,  # [Mhz]
         'filter_delay': [0, 0, 0],
