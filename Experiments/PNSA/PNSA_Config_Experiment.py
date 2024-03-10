@@ -1796,7 +1796,6 @@ streams = {
         "number": 1,
         "name": "Detector_1_Timetags",
         "type": "int",
-        "binary": "I",  # Unsigned int
         "playback": "Det1_timetags.npz",
         "save_raw": True
     },
@@ -1804,7 +1803,6 @@ streams = {
         "number": 2,
         "name": "Detector_2_Timetags",
         "type": "int",
-        "binary": "I",  # Unsigned int
         "playback": "Det2_timetags.npz",
         "save_raw": True
     },
@@ -1812,7 +1810,6 @@ streams = {
         "number": 3,
         "name": "Detector_3_Timetags",
         "type": "int",
-        "binary": "I",  # Unsigned int
         "playback": "Det3_timetags.npz",
         "save_raw": True
     },
@@ -1820,7 +1817,6 @@ streams = {
         "number": 4,
         "name": "Detector_4_Timetags",
         "type": "int",
-        "binary": "I",  # Unsigned int
         "playback": "Det4_timetags.npz",
         "save_raw": True
     },
@@ -1828,7 +1824,6 @@ streams = {
         "number": 5,
         "name": "Detector_5_Timetags",
         "type": "int",
-        "binary": "I",  # Unsigned int
         "playback": "Det5_timetags.npz",
         "save_raw": True
     },
@@ -1836,7 +1831,6 @@ streams = {
         "number": 6,
         "name": "Detector_6_Timetags",
         "type": "int",
-        "binary": "I",  # Unsigned int
         "playback": "Det6_timetags.npz",
         "save_raw": True
     },
@@ -1844,7 +1838,6 @@ streams = {
         "number": 7,
         "name": "Detector_7_Timetags",
         "type": "int",
-        "binary": "I",  # Unsigned int
         "playback": "Det7_timetags.npz",
         "save_raw": True
     },
@@ -1852,7 +1845,6 @@ streams = {
         "number": 8,
         "name": "Detector_8_Timetags",
         "type": "int",
-        "binary": "I",  # Unsigned int
         "playback": "Det8_timetags.npz",
         "save_raw": True
     },
@@ -1861,17 +1853,16 @@ streams = {
         "type": "int",
         "playback": "Bright(1,2)\\Bright_timetags.npz",
         "save_raw": True
-},
+    },
     "Dark_Port_Counts": {
         "name": "Dark_Port_Counts",
         "type": "int",
         "playback": "Dark(3,4)\\Bright_timetags.npz",
         "save_raw": True
-},
+    },
     "Phase_Correction_array": {
         "name": "Phase_Correction_array",
         "type": "int",
-        "binary": "I",  # Unsigned int
         "save_raw": True
     },
     #"Phase_diff": {
@@ -1880,7 +1871,6 @@ streams = {
     "Max_counts": {
         "name": "Max_counts",
         "type": "int",
-        "binary": "I",  # Unsigned int
         "save_raw": True
     },
     #"Phase_Correction_for_min": {
@@ -1889,13 +1879,11 @@ streams = {
     "FLR_measure": {
         "name": "FLR_measure",
         "type": "float",
-        "binary": "d",  # double
         "playback": "Flouresence.npz",
         "save_raw": True
     },
     "antihelmholtz_on": {
         "name": "antihelmholtz_on",
-        "binary": "I",  # Unsigned int
         "save_raw": False
     }
 }

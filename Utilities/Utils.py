@@ -1,12 +1,14 @@
 import os
 import math
 import json
+import cv2, glob
 import numpy as np
 import itertools
 from pkgutil import iter_modules
 import pathlib
 import collections.abc
 import inspect
+import subprocess
 
 
 class Utils:
@@ -382,6 +384,10 @@ class Utils:
 
         pass
 
+    # ---------------------------------------------------
+    # Python Code Inspection related utilities
+    # ---------------------------------------------------
+
     @staticmethod
     def type_string_to_type_function(type_str):
         if type_str == 'int' or type_str == 'integer':
@@ -446,6 +452,10 @@ class Utils:
 
         return modules
 
+    # ---------------------------------------------------
+    # Cavity related utilities
+    # ---------------------------------------------------
+
     @staticmethod
     def cavity_transmission(f, k_ex, k_i, h):
         t = np.power(np.abs(1 + 2 * 1j * k_ex * (f - 1j * (k_i + k_ex)) /
@@ -459,8 +469,49 @@ class Utils:
         return r
 
     # ---------------------------------------------------
+    # Image/Video utilities
+    # ---------------------------------------------------
+
+    def create_video_from_path(self, path, save_file_path=None):
+        """
+        Creates a video from .bmp files in a given path
+        - path - where the .bmp files are
+        - save_file_path - Full path with name - where to save the generated video.
+                           (if not provided, video is saved where the input images are as "video.avi")
+
+        - Taken from: https://theailearner.com/2018/10/15/creating-video-from-images-using-opencv-python/
+        """
+        if save_file_path is None:
+            save_file_path = os.path.join(path, 'video.avi')
+        img_array = []
+        file_names = glob.glob(os.path.join(path, '*.bmp'))
+        file_names.sort()
+        for filename in file_names:
+            img = cv2.imread(filename)
+            height, width, layers = img.shape
+            size = (width, height)
+            img_array.append(img)
+
+        out = cv2.VideoWriter(filename=save_file_path, fourcc=cv2.VideoWriter_fourcc(*'DIVX'), fps=3, frameSize=size)
+        for i in range(len(img_array)):
+            out.write(img_array[i])
+        out.release()
+
+    # ---------------------------------------------------
     # OS related utilities
     # ---------------------------------------------------
+
+    @staticmethod
+    def open_windows_explorer(folder):
+        """
+        Opens windows explorer at a given path
+        """
+        cmd = f'explorer /select,"{folder}"'
+        try:
+            subprocess.Popen(cmd)
+        except Exception as err:
+            print(f'Failed to launch explorer at path {folder}. {err}')
+        pass
 
     @staticmethod
     def ensure_folder_exists(folder_path):

@@ -710,7 +710,7 @@ class BaseExperiment:
                 'delay_between_iterations': None,  # seconds
                 'sequence': [
                     {
-                        'name': 'SNSPDs Mainloop',
+                        'name': 'Mainloop',
                         'parameters': {}
                     }
                 ]
