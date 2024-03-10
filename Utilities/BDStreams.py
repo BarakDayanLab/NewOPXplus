@@ -1,21 +1,51 @@
 import os
+import re
 import time
+import json
+import base64
 import struct
 import numpy as np
 from io import BytesIO
 from Utilities.Utils import Utils
 
-# -------------------------------------------------------------------------------------------------------
-# TODO:
-# -------------------------------------------------------------------------------------------------------
-# 1. Write the file in a more compact way - the len numbers can be 4 bytes and not 8 (int and not float)
-# 2. In the detectors data, we can write integers instead of doubles. Not so in the Flr data
-# 3. The read process can also probably be done faster - instead of reading each value and appending it
-# 4. Write timestamps at the beginning of each save
-# 5. Add "Seek" method - to seek to a specific time stamp
-# 6. Make this class a generic one for all stream purposes - fetching from OPX, etc.
-# 7. At the end of experiment - copy it from local to experiment folder
-# -------------------------------------------------------------------------------------------------------
+
+class NumpyEncoder(json.JSONEncoder):
+    """
+    The class is used upon json.dump and json.dumps functions to encode an object member.
+    If it is a numpy object we need to encode, we will do it using numpy 'save', otherwise we return the object to let
+    the standard decoder open it
+
+    Encoding: (1) Numpy save is used to create bytes (2) Decode bytes to utf-8 (3) Encode to Base64
+    """
+
+    def default(self, obj):
+        # If input object is a ndarray it will be converted into a dict holding the nparray bytes
+        if isinstance(obj, np.ndarray):
+            np_bytes = BytesIO()
+            np.save(np_bytes, obj.data, allow_pickle=True)
+            base64_bytes = base64.b64encode(np_bytes.getvalue())
+            base64_string = base64_bytes.decode('utf-8')
+            return dict(__nparray__=True, __base64__=base64_string)
+
+        # Let the base class default method work on the obj
+        return json.JSONEncoder.default(self, obj)
+
+def json_numpy_obj_hook(dct):
+    """
+    Function is used upon json.load and json.loads functions to decode an object member.
+    If it is a numpy object we decoded, we will open it using numpy 'load', otherwise we return the object to let
+    the standard decoder open it
+
+    Decoding: (1) Encode bytes from utf-8 (2) Decode from Base64 (3) Numpy load will reconstruct it
+    """
+    # Is this is a numpy object we encoded (e.g. has __nparray__ attribute), we need to open the bytes
+    if isinstance(dct, dict) and '__nparray__' in dct:
+        base64_bytes = dct['__base64__'].encode('utf-8')
+        data = base64.b64decode(base64_bytes)
+        loaded_np = np.load(BytesIO(data), allow_pickle=True)
+        return loaded_np
+
+    return dct
 
 
 class BDStreams:
@@ -86,13 +116,42 @@ class BDStreams:
         load_time_start = time.time()
 
         # Iterate over all files in folder
+        i = 1
         for playback_file in playback_files:
+            if i % 100 == 0:
+                self.logger.info(f'Loading playback files ({i}/{len(playback_files)})')
+            i += 1
             self.load_streams(os.path.join(playback_files_path, playback_file))
 
         self.logger.info(f'Finished loading {len(playback_files)} playback files. Took {time.time() - load_time_start} secs')
         pass
 
     def load_streams(self, data_file):
+
+        try:
+            # Load the json from file
+            with open(data_file, 'r') as file:
+                loaded_json = json.load(file, object_hook=json_numpy_obj_hook)
+
+            # Populate streams with the data loaded
+            for stream_data in loaded_json['streams_data'].values():
+                name = stream_data['name']
+                results = stream_data['data']
+                stream = self.streams_defs[name]
+                if 'all_rows' not in stream:  # If it's the first results we're adding, create a new array
+                    stream['all_rows'] = [results]
+                else:
+                    stream['all_rows'].append(results)
+
+                # TODO: we should have an individual timestamp per stream
+                stream['timestamp'] = loaded_json['timestamp']
+
+        except Exception as err:
+            self.logger.warn(f'Failed to load playback data file "{data_file}". {err}')
+
+        pass
+
+    def load_streams_DEP(self, data_file):
 
         # Open the binary file
         with open(data_file, 'rb') as file:
@@ -132,7 +191,57 @@ class BDStreams:
                 self.logger.warn(f'Failed to load playback data file "{data_file}". {err}')
         pass
 
+    def construct_streams_data_as_json(self):
+
+        # Construct the data to save
+        streams_as_json = {}
+
+        # Iterate over all streams and pack their name and data
+        for name, stream in self.streams_defs.items():
+            if 'save_raw' not in stream or not stream['save_raw']:
+                continue
+            streams_as_json[name] = {
+                "name": name,
+                "data": stream['results']
+            }
+
+        return streams_as_json
+
     def save_streams(self, playback_files_path):
+
+        # Do we need to save raw data at all?
+        if not self.save_raw_data:
+            return
+
+        # If there are no streams defined, no playback data to save, ignore.
+        if self.streams_defs is None:
+            return
+
+        # Format the file name for the playback
+        time_formatted = time.strftime("%Y%m%d_%H%M%S")
+        save_name = os.path.join(playback_files_path, f'{time_formatted}_streams.json')
+
+        # Construct the data to save
+        streams_data = self.construct_streams_data_as_json()
+        data_to_save = {
+            "timestamp": time_formatted,
+            "streams_data": streams_data
+        }
+
+        try:
+            current_time = time.time()
+
+            # Save the file
+            with open(save_name, "w") as file:
+                json.dump(data_to_save, file, indent=4, cls=NumpyEncoder)
+
+            self.number_of_rows_saved += 1
+
+            total_prep_time = time.time() - current_time
+        except Exception as err:
+            self.logger.warn(f'Failed to save raw data [{save_name}]: {err}. Skipping.')
+
+    def save_streams_DEP(self, playback_files_path):
         """
 
                         +-----------------+-------------+
