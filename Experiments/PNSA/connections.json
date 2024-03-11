@@ -1,7 +1,0 @@
-{
-    "cavity_lock": {
-        "description": "Kappa Ex and lock error values as calculated from auto fit process",
-        "value_name": "cavity_lock",
-        "trusted_IP": ["*"]
-    }
-}

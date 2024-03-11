@@ -22,7 +22,7 @@ class BDSocket:
 
     PORT = 5050  # server port number
 
-    def __init__(self, writeable):
+    def __init__(self, connections_map, writeable):
 
         self.logger = BDLogger()
 
@@ -31,15 +31,7 @@ class BDSocket:
         self.hostname = socket.gethostname()
         self.my_ip_address = socket.gethostbyname(self.hostname)
 
-        # Load the connection definitions into map
-        try:
-            the_path = '.'
-            the_file = os.path.join(the_path, 'connections.json')
-            f = open(the_file)
-            self.connections_map = json.load(f)
-            f.close()
-        except Exception as err:
-            self.logger.error(f'Unable to open/read connections.json. Reason: {err}')
+        self.connections_map = connections_map
         pass
 
     def handle_client(self, client_socket, addr, connection_name, writeable):

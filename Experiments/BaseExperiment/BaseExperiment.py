@@ -68,6 +68,9 @@ class BaseExperiment:
 
     def __init__(self, playback_parameters=None, save_raw_data=False, connect_to_camera=False):
 
+        # Load the settings file
+        self.settings = Utils.load_json_from_file('./settings.json')
+
         # Setup console logger. We do this first, so rest of code can use logging functions.
         self.logger = BDLogger()
 
@@ -151,9 +154,6 @@ class BaseExperiment:
         except Exception as err:
             self.info(f'Unable to import Config file ({err}). Loading *BaseExperiment* config files instead.')
 
-        # Load the settings file
-        self.settings = Utils.load_json_from_file('./settings.json')
-
         # Get the opx-control method from the OPX-Code file in the BaseExperiment
         opx_control = OPX_Code.opx_control
 
@@ -187,7 +187,7 @@ class BaseExperiment:
         # Start listening on sockets (except when in playback mode)
         self.comm_messages = {}
         if not self.playback["active"]:
-            self.bdsocket = BDSocket(self.comm_messages)
+            self.bdsocket = BDSocket(self.settings['connections'], self.comm_messages)
             self.bdsocket.run_server()
 
         # Attempt to initialize Camera functionality
