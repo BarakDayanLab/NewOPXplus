@@ -1909,10 +1909,10 @@ class PNSAExperiment(BaseExperiment):
             self.k_i = 12  # [MHz
             self.k_ex = 99.9  # Dummy default value for a case we don't have it
             self.interference_error = 99.9
-            if 'cavity_lock' in self.comm_messages:
-                self.lock_err = self.comm_messages['cavity_lock']['lock_error'] if 'lock_error' in self.comm_messages['cavity_lock'] else 99.9
-                self.k_ex = self.comm_messages['cavity_lock']['k_ex'] if 'k_ex' in self.comm_messages['cavity_lock'] else 99.9  # TODO: need to handle case where there's no Kappa Ex yet
-                self.interference_error = self.comm_messages['cavity_lock']['interference_error'] if 'interference_error' in self.comm_messages['cavity_lock'] else 99.9
+            if 'results' in self.bdstreams.streams['Lock_Error']:
+                self.lock_err = self.bdstreams.streams['Lock_Error']['results']
+                self.k_ex = self.bdstreams.streams['Kappa_Ex']['results']
+                self.interference_error = self.bdstreams.streams['Interference']['results']
 
             # Define efficiencies:
             self.Cavity_transmission = Utils.cavity_transmission(0, self.k_ex, k_i=self.k_i, h=1)
@@ -2463,7 +2463,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 0.8,
         'photons_per_det_pulse_threshold': 12,
-        'exp_flag': True,
+        'exp_flag': False,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')

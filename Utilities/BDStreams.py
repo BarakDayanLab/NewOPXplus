@@ -72,6 +72,37 @@ class BDStreams:
         self.streams = streams
         pass
 
+    def get_results_from_comm_channels(self, comm_messages):
+
+        for stream in self.streams.values():
+            if 'source' in stream and stream['source'] == 'comm':
+                comm_name = stream['name'].lower()
+                channel = stream['channel']
+                value = stream['default']
+                if comm_messages != {} and comm_name in comm_messages[channel] and comm_messages[channel][comm_name] is not None:
+                    value = comm_messages[channel][comm_name]
+                stream['results'] = value
+        pass
+
+    def get_results_from_opx_streams(self):
+        """
+        Read all data from OPX streams
+        """
+        if self.streams is None:
+            return
+
+        for stream in self.streams.values():
+            if 'handler' in stream and stream['handler'] is not None:
+                stream['handler'].wait_for_values(1)
+
+        for stream in self.streams.values():
+            if 'handler' in stream and stream['handler'] is not None:
+                stream['results'] = stream['handler'].fetch_all()
+            else:
+                stream['results'] = None
+
+        pass
+
     def set_opx_handlers(self, opx_job, playback=False):
 
         # Get a Handler for all the opx-related streams
@@ -83,6 +114,30 @@ class BDStreams:
                     value['handler'] = opx_job.result_handles.get(key)
 
         return self.streams
+
+    """
+        There are two vectors we get from the OPX/OPD: Counts and Time-Tags
+        For each "cycle", we get two outputs:
+
+        +---------------+------------------+
+        +  Counts       |  Time-Tags Array |
+        +---------------+------------------+
+
+        Counts:
+        +------+------+------+------+------+------+
+        +  12  |  9   |   1  |  23  |  54  | ...  +
+        +------+------+------+------+------+------+
+
+        Timetags:
+        +------+------+------+------+------+------+
+        +  23  |  79  |  91  | 1023 | 2354 | ...  +
+        +------+------+------+------+------+------+
+
+        For example: the photon at position 0 was received at time 23ns on a time-window of 10e7 nano seconds
+        The size of this array is dynamic - it holds values as the number of counts received
+
+        NOTE: we have today an issue that the stream may still hold values from the previous detections        
+    """
 
     def normalize_stream(self, stream_data, detector_index, detector_delays, M_window):
         """
@@ -204,21 +259,23 @@ class BDStreams:
                 self.logger.warn(f'Failed to load playback data file "{data_file}". {err}')
         pass
 
-    def construct_streams_data_as_json(self):
+    def construct_streams_data_as_json(self, time_formatted):
 
-        # Construct the data to save
-        streams_as_json = {}
+        # Set the global data for all streams
+        data_to_save = {
+            "timestamp": time_formatted,
+            "streams_data": {}
+        }
 
-        # Iterate over all streams and pack their name and data
+        # Iterate over all streams and add their name and data to the json
         for name, stream in self.streams.items():
-            if 'save_raw' not in stream or not stream['save_raw']:
-                continue
-            streams_as_json[name] = {
-                "name": name,
-                "data": stream['results']
-            }
+            if 'save_raw' in stream and stream['save_raw']:
+                data_to_save['streams_data'][name] = {
+                    "name": name,
+                    "data": stream['results']
+                }
 
-        return streams_as_json
+        return data_to_save
 
     def save_streams(self, playback_files_path):
 
@@ -235,11 +292,7 @@ class BDStreams:
         save_name = os.path.join(playback_files_path, f'{time_formatted}_streams.json')
 
         # Construct the data to save
-        streams_data = self.construct_streams_data_as_json()
-        data_to_save = {
-            "timestamp": time_formatted,
-            "streams_data": streams_data
-        }
+        data_to_save = self.construct_streams_data_as_json(time_formatted)
 
         try:
             current_time = time.time()

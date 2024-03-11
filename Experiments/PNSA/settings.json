@@ -107,6 +107,24 @@
             "name": "Lock_Error",
             "type": "float",
             "save_raw": true,
+            "channel": "cavity_lock",
+            "default": 99.9,
+            "source": "comm"
+        },
+        "Kappa_Ex": {
+            "name": "Kappa_Ex",
+            "type": "float",
+            "save_raw": true,
+            "channel": "cavity_lock",
+            "default": 99.9,
+            "source": "comm"
+        },
+        "Interference": {
+            "name": "Interference",
+            "type": "float",
+            "save_raw": true,
+            "channel": "cavity_lock",
+            "default": 99.9,
             "source": "comm"
         }
     },

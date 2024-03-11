@@ -240,7 +240,7 @@ class BaseExperiment:
                                        updateChannels=[1, 2, 4],
                                        # updateChannels=(1, 4),  # For constant Depump
                                        topticaLockWhenUpdating=False,
-                                       debugging=True,
+                                       debugging=False,  # True,
                                        continuous=False)
         self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
 
@@ -250,7 +250,7 @@ class BaseExperiment:
                                         #initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
                                         initialValues={'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
                                         updateChannels=[3],
-                                        debugging=True,
+                                        debugging=False,  # True,
                                         continuous=True)  # updates values on QuadRF (uploads table)
         self.QuadRFControllers.append(qrfContr2)  # updates values on QuadRF (uploads table)
 
@@ -716,76 +716,6 @@ class BaseExperiment:
         self.info(f'Completed {num_iterations} iteration(s)! Run status: {run_status}')
         return run_status
 
-    """
-        There are two vectors we get from the OPX/OPD: Counts and Time-Tags
-        For each "cycle", we get two outputs:
-
-        +---------------+------------------+
-        +  Counts       |  Time-Tags Array |
-        +---------------+------------------+
-
-        Counts:
-        +------+------+------+------+------+------+
-        +  12  |  9   |   1  |  23  |  54  | ...  +
-        +------+------+------+------+------+------+
-
-        Timetags:
-        +------+------+------+------+------+------+
-        +  23  |  79  |  91  | 1023 | 2354 | ...  +
-        +------+------+------+------+------+------+
-
-        For example: the photon at position 0 was received at time 23ns on a time-window of 10e7 nano seconds
-        The size of this array is dynamic - it holds values as the number of counts received
-
-        NOTE: we have today an issue that the stream may still hold values from the previous detections        
-    """
-
-    # def get_handles_from_OPX_server_DEP(self):
-    #     """
-    #     Given the streams' config, get the handles from OPX
-    #     Usually called from the Python code before we want to get the data values in the stream
-    #     """
-    #     if 'streams' not in self.opx_definitions or self.opx_definitions['streams'] == {}:
-    #         return
-    #
-    #     self.streams = self.opx_definitions['streams']
-    #
-    #     for key, value in self.streams.items():
-    #         if self.playback["active"]:
-    #             value['handler'] = "playback: data not loaded yet..."
-    #         else:
-    #             value['handler'] = self.job.result_handles.get(key)
-
-    def _get_results_from_opx_streams(self):
-        """
-        Given the streams config and handles, wait and fetch the values from OPX
-        """
-        if self.streams is None:
-            return
-
-        # TODO: Currently, self.bdstreams has a pointer to self.streams - so it can save it
-        # TODO: It makes more sense to work ONLY through self.bdstreams and not self.streams
-        # TODO: this method should go into bdstreams class and code should call "self.bdstreams.get_results_from_opx"
-
-        # TODO: Should we first "wait_for_values" on all and only then "fetch_all"?
-        for stream in self.streams.values():
-            if stream['handler'] is not None:
-                stream['handler'].wait_for_values(1)
-
-        for stream in self.streams.values():
-            if stream['handler'] is not None:
-                stream['results'] = stream['handler'].fetch_all()
-            else:
-                stream['results'] = None
-
-        # Save streams to file (self.bdstreams has a pointer to self.streams - so it saves it)
-        if self.save_raw_data:
-            playback_files_path = os.path.join(self.bd_results.get_sequence_folder(self.sequence), 'playback')
-            Utils.ensure_folder_exists(playback_files_path)
-            self.bdstreams.save_streams(playback_files_path)
-
-        pass
-
     def _get_results_from_files(self):
 
         # If this is the first time this is called, load the data from the files
@@ -848,8 +778,20 @@ class BaseExperiment:
 
         if self.playback['active']:
             self._get_results_from_files()
-        else:
-            self._get_results_from_opx_streams()
+            return
+
+        # Get results from OPX streams
+        self.bdstreams.get_results_from_opx_streams()
+
+        # Get results from COMM streams
+        self.bdstreams.get_results_from_comm_channels(self.comm_messages)
+
+        # Save streams to file
+        if self.save_raw_data:
+            playback_files_path = os.path.join(self.bd_results.get_sequence_folder(self.sequence), 'playback')
+            Utils.ensure_folder_exists(playback_files_path)
+            self.bdstreams.save_streams(playback_files_path)
+
         pass
 
     def handle_user_atoms_on_off_switch(self):
