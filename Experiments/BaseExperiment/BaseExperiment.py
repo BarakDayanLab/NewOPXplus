@@ -196,13 +196,8 @@ class BaseExperiment:
         else:
             self.info('Not connecting to camera. Not required for this experiment.')
 
-        # Setup keyboard listener
-        # self.listener = keyboard.Listener(on_press=self._on_press, on_release=self._on_release)
-        # self.listener.start()
-        # self.keyPress = None
-
         # Set keyboard handler
-        self.bdkeyboard = BDKeyboard()
+        self.bdkeyboard = BDKeyboard(self.settings['keyboard'])
 
         # (a) Initialize QuadRF (b) Set experiment related variables (c) Initialize OPX
         self.initialize_experiment()
@@ -537,60 +532,6 @@ class BaseExperiment:
             self.logger.error(f'Unable to find/load lock-error file.')
 
         return lock_err
-
-    # -------------------------------------------------------
-    # Keyboard related methods
-    # -------------------------------------------------------
-
-    def _on_press(self, key):
-        self.alt_modifier = ''
-        if key == keyboard.Key.ctrl_l or key == keyboard.Key.ctrl_r:
-            self.alt_modifier = self.alt_modifier + 'CTRL_'
-        if key == keyboard.Key.alt or key == keyboard.Key.alt_l or key == keyboard.Key.alt_r or key == keyboard.Key.alt_gr:
-            self.alt_modifier = self.alt_modifier + 'ALT_'
-        if key == keyboard.Key.shift:
-            self.alt_modifier = self.alt_modifier + 'SHIFT_'
-        if len(self.alt_modifier) > 0:
-            self.alt_modifier = self.alt_modifier[0:-1]
-        else:
-            self.alt_modifier = None
-
-    def _is_modifier_key(self, key):
-        if key == keyboard.Key.shift or \
-                key == keyboard.Key.ctrl_l or key == keyboard.Key.ctrl_r or \
-                key == keyboard.Key.alt or key == keyboard.Key.alt_l or key == keyboard.Key.alt_r or key == keyboard.Key.alt_gr:
-            return True
-        return False
-
-    def _on_release(self, key):
-        self.ignore_data = False
-
-        if str(key) == "'q'" or str(key) == "'Q'":
-            self.keyPress = 'Q'
-
-        if str(key) == "'A'" and self.alt_modifier == 'ALT':
-            self.keyPress = 'ALT_A'
-
-        if str(key) == "'='":
-            self.keyPress = '='
-
-        if str(key) == "'+'":
-            self.keyPress = '+'
-
-        if str(key) == "'-'":
-            self.keyPress = '-'
-
-        if key == keyboard.Key.esc:
-            self.keyPress = 'ESC'
-
-        # TODO: Generalize it to be in the form of "ALT-SPACE" or "CTRL-SPACE" or "SHIFT-ESC"
-        if key == keyboard.Key.space and self.alt_modifier == 'ALT':
-            self.ignore_data = True
-            # print('Alt-Space released')
-            self.keyPress = 'ALT_SPACE'
-
-        if not self._is_modifier_key(key):
-            self.alt_modifier = False
 
     # -------------------------------------------------------
     # Logger related methods

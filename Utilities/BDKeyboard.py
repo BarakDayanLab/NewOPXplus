@@ -4,12 +4,12 @@ from Utilities.Utils import Utils
 
 class BDKeyboard:
 
-    def __init__(self):
+    def __init__(self, keyboard_mapping):
 
         self.listener = None
 
-        # Read keyboard definitions
-        self.keyboard_mapping = Utils.load_json_from_file('./keyboard_map.json')
+        # Set keyboard definitions
+        self.keyboard_mapping = keyboard_mapping
 
         # Convert it to a map of entries by keystrokes
         self.callbacks = {}

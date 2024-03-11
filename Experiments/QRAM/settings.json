@@ -12,7 +12,23 @@
             "trusted_IP": ["", ""]
         }
     },
-    "keyboard": {},
+    "keyboard": {
+        "stop_experiment": {
+            "description": "Stops experiment",
+            "callback": "stop_experiment",
+            "keys": ["escape", "Q", "q", "ctrl+q"]
+        },
+        "pause_unpause": {
+            "description": "Toggles Pauses/Unpause, for taking of measurements",
+            "callback": "pause_unpause",
+            "keys": [" "]
+        },
+        "atoms_on_off": {
+            "description": "Toggles atoms cloud on/off",
+            "callback": "turn_on_off_atoms",
+            "keys": ["A", "a"]
+        }
+    },
     "files": {},
     "save_dialog": {
         "title": "Experiment Completed",
