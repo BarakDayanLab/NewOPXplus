@@ -60,7 +60,7 @@ class BDStreams:
         if logger is not None:
             self.logger = logger
 
-        self.streams_defs = streams
+        self.streams = streams
         self.number_of_rows_saved = 0
 
         pass
@@ -69,9 +69,20 @@ class BDStreams:
         pass
 
     def set_streams_definitions(self, streams):
-        self.streams_defs = streams
+        self.streams = streams
         pass
 
+    def set_opx_handlers(self, opx_job, playback=False):
+
+        # Get a Handler for all the opx-related streams
+        for key, value in self.streams.items():
+            if value['source'] == "opx":
+                if playback:
+                    value['handler'] = "playback: data not loaded yet..."
+                else:
+                    value['handler'] = opx_job.result_handles.get(key)
+
+        return self.streams
 
     def normalize_stream(self, stream_data, detector_index, detector_delays, M_window):
         """
@@ -99,7 +110,7 @@ class BDStreams:
         return normalized
 
     def clean_streams(self):
-        for stream in self.streams_defs.values():
+        for stream in self.streams.values():
             stream['all_rows'] = []
             stream['results'] = []
 
@@ -139,7 +150,7 @@ class BDStreams:
             for stream_data in loaded_json['streams_data'].values():
                 name = stream_data['name']
                 results = stream_data['data']
-                stream = self.streams_defs[name]
+                stream = self.streams[name]
                 if 'all_rows' not in stream:  # If it's the first results we're adding, create a new array
                     stream['all_rows'] = [results]
                 else:
@@ -180,7 +191,7 @@ class BDStreams:
                     loaded_np = np.load(load_bytes, allow_pickle=True)
 
                     # Append the data we got to all rows
-                    stream = self.streams_defs[name]
+                    stream = self.streams[name]
                     if 'all_rows' not in stream:  # If it's the first results we're adding, create a new array
                         stream['all_rows'] = [loaded_np]
                     else:
@@ -199,7 +210,7 @@ class BDStreams:
         streams_as_json = {}
 
         # Iterate over all streams and pack their name and data
-        for name, stream in self.streams_defs.items():
+        for name, stream in self.streams.items():
             if 'save_raw' not in stream or not stream['save_raw']:
                 continue
             streams_as_json[name] = {
@@ -216,7 +227,7 @@ class BDStreams:
             return
 
         # If there are no streams defined, no playback data to save, ignore.
-        if self.streams_defs is None:
+        if self.streams is None:
             return
 
         # Format the file name for the playback
@@ -263,7 +274,7 @@ class BDStreams:
             return
 
         # If there are no streams defined, no playback data to save, ignore.
-        if self.streams_defs is None:
+        if self.streams is None:
             return
 
         try:
@@ -271,7 +282,7 @@ class BDStreams:
             bytes_array = bytearray()
 
             # Get only those streams that their configuration indicates they need to be saved
-            streams_to_save = [s for s in self.streams_defs.values() if 'save_raw' in s and s['save_raw']]
+            streams_to_save = [s for s in self.streams.values() if 'save_raw' in s and s['save_raw']]
 
             # Start packing the data with 'b' (1-byte=unsigned-char) for number of streams
             bytes_array += struct.pack('>ib', int(current_time), len(streams_to_save))

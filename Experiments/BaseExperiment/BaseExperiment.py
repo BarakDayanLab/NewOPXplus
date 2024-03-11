@@ -173,12 +173,14 @@ class BaseExperiment:
         self.opx_definitions = {
             'connection': {'host': '132.77.54.230', 'port': '80'},  # Connection details
             'config': Config.config,  # OPX Configuration
-            'streams': Config.streams,  # OPX streams we're using
+            #'streams': Config.streams,  # OPX streams we're using
+            'streams': self.settings['streams'],
             'control': opx_control  # OPX Control code
         }
 
         # Set the streams in the bdstreams - so it can write them to disk
         self.bdstreams.set_streams_definitions(self.opx_definitions['streams'])
+        self.streams = self.opx_definitions['streams']
 
         # Set mainloop flags
         self.ignore_data = False
@@ -297,6 +299,9 @@ class BaseExperiment:
 
         self.io1_list = []
         self.io2_list = []
+
+        self.bdstreams.set_opx_handlers(opx_job=self.job, playback=self.playback['active'])
+        pass
 
     def close_opx(self):
         if hasattr(self, 'job'):
@@ -735,21 +740,21 @@ class BaseExperiment:
         NOTE: we have today an issue that the stream may still hold values from the previous detections        
     """
 
-    def get_handles_from_OPX_server(self):
-        """
-        Given the streams' config, get the handles from OPX
-        Usually called from the Python code before we want to get the data values in the stream
-        """
-        if 'streams' not in self.opx_definitions or self.opx_definitions['streams'] == {}:
-            return
-
-        self.streams = self.opx_definitions['streams']
-
-        for key, value in self.streams.items():
-            if self.playback["active"]:
-                value['handler'] = "playback: data not loaded yet..."
-            else:
-                value['handler'] = self.job.result_handles.get(key)
+    # def get_handles_from_OPX_server_DEP(self):
+    #     """
+    #     Given the streams' config, get the handles from OPX
+    #     Usually called from the Python code before we want to get the data values in the stream
+    #     """
+    #     if 'streams' not in self.opx_definitions or self.opx_definitions['streams'] == {}:
+    #         return
+    #
+    #     self.streams = self.opx_definitions['streams']
+    #
+    #     for key, value in self.streams.items():
+    #         if self.playback["active"]:
+    #             value['handler'] = "playback: data not loaded yet..."
+    #         else:
+    #             value['handler'] = self.job.result_handles.get(key)
 
     def _get_results_from_opx_streams(self):
         """
@@ -793,7 +798,7 @@ class BaseExperiment:
         row = self.playback['row_count']
         for stream in self.streams.values():
 
-            if 'helm' in stream['name']:
+            if 'skip' in stream and stream['skip']:
                 continue
 
             if 'all_rows' in stream:
@@ -801,6 +806,7 @@ class BaseExperiment:
                 # If there's no more playback data on this stream, we request to terminate experiment
                 if row == len(stream['all_rows']):
                     self.runs_status = TerminationReason.PLAYBACK_END
+                    self.info(f'No more data on stream {stream["name"]}. Ending playback.')
                     return
 
                 # Ensure we eventually have nparray data

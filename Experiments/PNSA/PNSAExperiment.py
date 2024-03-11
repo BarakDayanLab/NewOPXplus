@@ -1866,7 +1866,9 @@ class PNSAExperiment(BaseExperiment):
         self.batcher.empty_all()
 
         # Associate the streams filled in OPX (FPGA) code with result handles
-        self.get_handles_from_OPX_server()
+        # TODO: (a) why are we doing this every "run" - can we do it per sequence?
+        # TODO: (b) replace the self.streams with self.bdstreams.stream_data('name')
+        #self.get_handles_from_OPX_server()
 
         # Initialize thresholds and flags before we start
         self.sum_for_threshold = self.reflection_threshold
