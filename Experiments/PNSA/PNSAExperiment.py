@@ -1968,7 +1968,7 @@ class PNSAExperiment(BaseExperiment):
                 # Analyze SPRINT data during transits:
                 (self.seq_with_data_points, self.reflection_SPRINT_data, self.transmission_SPRINT_data,
                  self.BP_counts_SPRINT_data, self.DP_counts_SPRINT_data) = \
-                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=[1, 2],
+                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=list(range(1, self.number_of_SPRINT_pulses_per_seq+1)),
                                                     background=False)  # Enter the index of the SPRINT pulse for which the data should be analyzed
                 # print(self.potential_data)
                 # Analyze SPRINT data when no transit occur:
@@ -1978,7 +1978,7 @@ class PNSAExperiment(BaseExperiment):
                 ]
                 (_, self.reflection_SPRINT_data_without_transits, self.transmission_SPRINT_data_without_transits,
                  self.BP_counts_SPRINT_data_without_transits, self.DP_counts_SPRINT_data_without_transits) = \
-                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=[1, 2],
+                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=list(range(1, self.number_of_SPRINT_pulses_per_seq+1)),
                                                     background=True)  # Enter the index of the SPRINT pulse for which the data should be analyzed
 
                 self.num_of_total_SPRINT_reflections = sum(self.reflection_SPRINT_data_without_transits)
@@ -2442,7 +2442,7 @@ if __name__ == "__main__":
         "old_format": False,
         "save_results": False,
         "save_results_path": 'C:\\temp\\playback_data',
-        "max_iterations": 5,  # -1 if you want playback to run through entire data
+        "max_iterations": -1,  # -1 if you want playback to run through entire data
         "plot": "LIVE",  # "LIVE", "LAST", "NONE"
         "delay": -1,  # -1,  # 0.5,  # In seconds. Use -1 for not playback delay
     }
@@ -2453,13 +2453,13 @@ if __name__ == "__main__":
         'pre_comment': '',  # Put 'None' or '' if you don't want pre-comment prompt
         'lock_err_threshold': 2,  # [Mhz]
         'interference_error_threshold': 2,  # [MHz]
-        'desired_k_ex': 30, # [Mhz]
+        'desired_k_ex': 37, # [Mhz]
         'k_ex_err': 3,  # [Mhz]
         'filter_delay': [0, 0, 0],
         'reflection_threshold': 2550,
         'reflection_threshold_time': 9e6,
         'FLR_threshold': -0.01,
-        'MZ_infidelity_threshold': 0.1,
+        'MZ_infidelity_threshold': 0.8,
         'photons_per_det_pulse_threshold': 12,
         'exp_flag': True,
         'with_atoms': True
