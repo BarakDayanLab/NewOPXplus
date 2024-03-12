@@ -1,4 +1,133 @@
 {
+    "streams": {
+        "Detector_1_Timetags": {
+            "number": 1,
+            "name": "Detector_1_Timetags",
+            "type": "int",
+            "playback": "Det1_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_2_Timetags": {
+            "number": 2,
+            "name": "Detector_2_Timetags",
+            "type": "int",
+            "playback": "Det2_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_3_Timetags": {
+            "number": 3,
+            "name": "Detector_3_Timetags",
+            "type": "int",
+            "playback": "Det3_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_4_Timetags": {
+            "number": 4,
+            "name": "Detector_4_Timetags",
+            "type": "int",
+            "playback": "Det4_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_5_Timetags": {
+            "number": 5,
+            "name": "Detector_5_Timetags",
+            "type": "int",
+            "playback": "Det5_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_6_Timetags": {
+            "number": 6,
+            "name": "Detector_6_Timetags",
+            "type": "int",
+            "playback": "Det6_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_7_Timetags": {
+            "number": 7,
+            "name": "Detector_7_Timetags",
+            "type": "int",
+            "playback": "Det7_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_8_Timetags": {
+            "number": 8,
+            "name": "Detector_8_Timetags",
+            "type": "int",
+            "playback": "Det8_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Bright_Port_Counts": {
+            "name": "Bright_Port_Counts",
+            "type": "int",
+            "playback": "Bright(1,2)\\Bright_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Dark_Port_Counts": {
+            "name": "Dark_Port_Counts",
+            "type": "int",
+            "playback": "Dark(3,4)\\Bright_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Phase_Correction_array": {
+            "name": "Phase_Correction_array",
+            "type": "int",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Max_counts": {
+            "name": "Max_counts",
+            "type": "int",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "FLR_measure": {
+            "name": "FLR_measure",
+            "type": "float",
+            "playback": "Flouresence.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "antihelmholtz_on": {
+            "name": "antihelmholtz_on",
+            "save_raw": false,
+            "source": "opx",
+            "skip": true
+        },
+        "Lock_Error": {
+            "name": "Lock_Error",
+            "type": "float",
+            "save_raw": true,
+            "channel": "cavity_lock",
+            "default": 99.9,
+            "source": "comm"
+        },
+        "Kappa_Ex": {
+            "name": "K_Ex",
+            "type": "float",
+            "save_raw": true,
+            "channel": "cavity_lock",
+            "default": 99.9,
+            "source": "comm"
+        },
+        "Interference": {
+            "name": "Interference_Error",
+            "type": "float",
+            "save_raw": true,
+            "channel": "cavity_lock",
+            "default": 99.9,
+            "source": "comm"
+        }
+    },
     "batches": {},
     "connections": {
         "cavity_lock": {
