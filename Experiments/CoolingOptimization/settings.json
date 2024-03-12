@@ -112,7 +112,7 @@
             "source": "comm"
         },
         "Kappa_Ex": {
-            "name": "K_Ex",
+            "name": "Kappa_Ex",
             "type": "float",
             "save_raw": true,
             "channel": "cavity_lock",
@@ -120,7 +120,7 @@
             "source": "comm"
         },
         "Interference": {
-            "name": "Interference_Error",
+            "name": "Interference",
             "type": "float",
             "save_raw": true,
             "channel": "cavity_lock",
