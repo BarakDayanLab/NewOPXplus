@@ -1,6 +1,7 @@
 import os
 import math
 import json
+import uuid
 import cv2, glob
 import numpy as np
 import itertools
@@ -561,3 +562,12 @@ class Utils:
         except Exception as err:
             pass
         return None
+
+    # ---------------------------------------------------
+    # Other Utilities
+    # ---------------------------------------------------
+
+    @staticmethod
+    def generate_UUID():
+        myuuid = uuid.uuid4()
+        return myuuid

@@ -22,9 +22,11 @@ class BDSocket:
 
     PORT = 5050  # server port number
 
-    def __init__(self, connections_map, writeable):
+    def __init__(self, connections_map, writeable, server_id):
 
         self.logger = BDLogger()
+
+        self.server_id = server_id
 
         self.writeable = writeable
 
@@ -58,7 +60,7 @@ class BDSocket:
                     writeable[connection['value_name']] = request_object
 
                 # Send a message back to the client
-                response_message = "accepted"
+                response_message = f"accepted:{self.server_id}"
                 response_message = json.dumps(response_message)
                 response_message = response_message.encode('utf-8')
                 data_size = len(response_message)

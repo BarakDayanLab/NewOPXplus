@@ -74,6 +74,9 @@ class BaseExperiment:
         # Setup console logger. We do this first, so rest of code can use logging functions.
         self.logger = BDLogger()
 
+        # Generate UUID
+        self.UUID = Utils.generate_UUID()
+
         # Get login - to understand on what computer we are running
         self.login = os.getlogin()
 
@@ -189,7 +192,7 @@ class BaseExperiment:
         # Start listening on sockets (except when in playback mode)
         self.comm_messages = {}
         if not self.playback["active"]:
-            self.bdsocket = BDSocket(self.settings['connections'], self.comm_messages)
+            self.bdsocket = BDSocket(connections_map=self.settings['connections'], writeable=self.comm_messages, server_id=self.UUID)
             self.bdsocket.run_server()
 
         # Attempt to initialize Camera functionality
@@ -1062,7 +1065,7 @@ class BaseExperiment:
 
         # Set figure title - current date and time
         current_date_time = time.strftime("%H:%M:%S (%d/%m/%Y)")
-        self.fig.canvas.manager.set_window_title(f'{current_date_time} | {str}')
+        self.fig.canvas.manager.set_window_title(f'{current_date_time} | {str} | {self.UUID}')
 
         # Set keyboard listener
         self.bdkeyboard.set_listener(self.fig, self)
@@ -1072,6 +1075,15 @@ class BaseExperiment:
         pass
 
     def _plot(self, sequence_or_sequences, clear=True):
+        """
+        Debug method for fast plotting of one or more sequences of data
+
+        - sequence_or_sequences - the data
+        - clear - clear the existing figure or overlay
+
+        Usage:
+               self._plot(np.array[1, 3, 4, 9, 2], True)
+        """
         if len(sequence_or_sequences) == 0:
             return
 
