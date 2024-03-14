@@ -290,22 +290,8 @@ class CoolingSequenceOptimizer(BaseExperiment):
 
     # TODO: we may want to move this to Utils - so everyone can enjoy :-)
     def create_video_from_path(self, path, save_file_path=None):
-        # Taken from: https://theailearner.com/2018/10/15/creating-video-from-images-using-opencv-python/
-        if not save_file_path:
-            save_file_path = os.path.join(path, 'video.avi')
-        img_array = []
-        file_names = glob.glob(os.path.join(path, '*.bmp'))
-        file_names.sort()
-        for filename in file_names:
-            img = cv2.imread(filename)
-            height, width, layers = img.shape
-            size = (width, height)
-            img_array.append(img)
-
-        out = cv2.VideoWriter(filename=save_file_path, fourcc=cv2.VideoWriter_fourcc(*'DIVX'), fps=3, frameSize=size)
-        for i in range(len(img_array)):
-            out.write(img_array[i])
-        out.release()
+        Utils.create_video_from_path(path, save_file_path)
+        pass
 
     def open_windows_explorer(self):
         """ Opens Windows Explorer at the folder of the last measurement """
@@ -316,14 +302,8 @@ class CoolingSequenceOptimizer(BaseExperiment):
         # Get all folders in experiment folder and pick the most recent one
         only_folders = [f for f in os.listdir(experiment_root_path) if not os.path.isfile(os.path.join(experiment_root_path, f))]
         most_recent_folder = os.path.join(experiment_root_path, only_folders[-1], 'extra_files')
-        cmd = f'explorer /select,"{most_recent_folder}"'
-
-        try:
-            subprocess.Popen(cmd)
-            self.info(f'Opened Windows Explorer at {most_recent_folder}')
-        except Exception as err:
-            print(f'Failed to launch explorer. {err}')
-
+        Utils.open_windows_explorer(most_recent_folder)
+        self.info(f'Opened Windows Explorer at {most_recent_folder}')
         pass
 
     def gaussian_fit_all_pictures_in_path(self, path, backgroundPath=None, saveFitsPath=None, imgBounds=None):
