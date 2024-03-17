@@ -1,4 +1,86 @@
 {
+    "streams": {
+        "Detector_1_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_1_Avg_Counts",
+            "type": "int",
+            "playback": "Det1_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_2_Avg_Counts": {
+            "number": 2,
+            "name": "Detector_2_Avg_Counts",
+            "type": "int",
+            "playback": "Det2_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_3_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_3_Avg_Counts",
+            "type": "int",
+            "playback": "Det3_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_4_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_4_Avg_Counts",
+            "type": "int",
+            "playback": "Det4_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_5_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_5_Avg_Counts",
+            "type": "int",
+            "playback": "Det5_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_6_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_6_Avg_Counts",
+            "type": "int",
+            "playback": "Det6_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_7_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_7_Avg_Counts",
+            "type": "int",
+            "playback": "Det7_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_8_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_8_Avg_Counts",
+            "type": "int",
+            "playback": "Det8_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_9_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_9_Avg_Counts",
+            "type": "int",
+            "playback": "Det9_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_10_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_10_Avg_Counts",
+            "type": "int",
+            "playback": "Det10_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        }
+    },
     "batches": {},
     "connections": {},
     "keyboard": {
@@ -18,6 +100,7 @@
             "keys": ["-"]
         }
     },
+    "menus": {},
     "files": {},
     "save_dialog": {},
     "permissions": {

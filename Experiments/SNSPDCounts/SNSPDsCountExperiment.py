@@ -162,9 +162,6 @@ class SNSPDsCountExperiment(BaseExperiment):
 
     def pre_run(self, sequence_definitions, run_parameters):
 
-        # Associate the streams filled in OPX (FPGA) code with result handles
-        self.get_handles_from_OPX_server()
-
         # Await for values
         self.wait_for_values_from_opx_streams()
         pass
@@ -172,9 +169,7 @@ class SNSPDsCountExperiment(BaseExperiment):
     def run(self, sequence_definitions, run_parameters):
         """
         Main executing function - performs pre-mainloop stuff and then runs the mainloop
-        TODO: should eventually go into BaseExperiment - also for QRAM and Sprint
         """
-        rp = run_parameters  # Set so we can use in short - "rp", instead of "run_parameters"...
         run_status = TerminationReason.SUCCESS
 
         self.logger.blue('Press ESC to terminate.')
@@ -182,9 +177,6 @@ class SNSPDsCountExperiment(BaseExperiment):
         # Initialize the batcher
         self.batcher.set_batch_size(100)
         self.batcher.empty_all()
-
-        # Associate the streams filled in OPX (FPGA) code with result handles
-        self.get_handles_from_OPX_server()
 
         # Prepare the figures for the experiment
         self.prepare_figures()
