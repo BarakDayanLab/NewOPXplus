@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import cv2, glob
 import scipy.optimize as opt
+import matplotlib
 import matplotlib.pyplot as mtl
 import pylab as plt
 from Utilities.BDMenu import BDMenu
@@ -85,10 +86,16 @@ class CoolingSequenceOptimizer(BaseExperiment):
         v_launch_popt, v_launch_cov = opt.curve_fit(fitFunc, time_vector, y_position_vector, bounds=bounds)
         alpha = 9.8e-6 / 2 / v_launch_popt[0] * 1e3 if fit_for_alpha else self.mm_to_pxl  # mm/pixel
         v_launch = v_launch_popt[0] * self.mm_to_pxl  # mm/ms = m/s
+        y_position_vector_mm = y_position_vector * self.mm_to_pxl - (y_position_vector[0] - 10) * self.mm_to_pxl  # -10 due to resonator position
 
         if plotResults:
+            titlestr_v = r'Y position fit \n $v_0 = %.2f$' % v_launch + r'[cm/s]; $\alpha = %.3f$' % alpha + '[mm/pixel]'
+            resstr_v = r'$v_0 = %.2f$' % v_launch + r'[cm/s]; $\alpha = %.3f$' % alpha
             self.plotDataAndFit(time_vector, y_position_vector, fitFunc=fitFunc, fitParams=v_launch_popt,
-                                title=f'Y position fit \n V_launch = {v_launch}; alpha = {alpha}', ylabel='Y_center [px]',
+            # self.plotDataAndFit(time_vector, y_position_vector_mm, fitFunc=fitFunc, fitParams=v_launch_popt,
+                                # title=f'Y position fit \n V_launch = {v_launch}; alpha = {alpha}', ylabel='Y_center [px]',
+                                title=titlestr_v, props_str=resstr_v, ylabel='$Y_{center} [px]$',
+                                # title=titlestr_v, props_str=resstr_v, ylabel='$Y_{center} [mm]$',
                                 saveFilePath=os.path.join(extraFilesPath, 'Y_position.png'), show=False)
         return (v_launch, alpha, v_launch_popt, v_launch_cov)
 
@@ -107,15 +114,24 @@ class CoolingSequenceOptimizer(BaseExperiment):
         x_temp_popt, x_temp_cov = opt.curve_fit(tempFromSigmaFunc, time_vector, sigma_x_vector, bounds=(0, np.inf))
         y_temp_popt, y_temp_cov = opt.curve_fit(tempFromSigmaFunc, time_vector, sigma_y_vector, bounds=(0, np.inf))
         T_x, T_y = x_temp_popt[1] * _m / _Kb * 1e6, y_temp_popt[1] * _m / _Kb * 1e6  # [uK]
+        std_x, std_y = np.sqrt(np.diag(x_temp_cov))[1] * _m / _Kb * 1e6, np.sqrt(np.diag(x_temp_cov))[1] * _m / _Kb * 1e6
 
         if plotResults:
+            titlestr_x = '$T_x$ fit, $\sigma_x$[mm]  vs. Time [ms]\n $T_x$ = %.2f' % T_x  + '$\pm %.2f[uK]$' % std_x
+            titlestr_y = '$T_y$ fit, $\sigma_y$[mm]  vs. Time [ms]\n $T_y$ = %.2f' % T_y  + '$\pm %.2f[uK]$' % std_y
+            resstr_x = '$T_x$ = %.2f' % T_y + '$\pm %.2f[uK]$' % std_y
+            resstr_y = '$T_x$ = %.2f' % T_y + '$\pm %.2f[uK]$' % std_y
             self.plotDataAndFit(time_vector, sigma_x_vector, fitFunc=tempFromSigmaFunc, fitParams=x_temp_popt,
-                                title=f'X Temperature fit, Sigma_x[mm]  vs. Time [ms]\n T_x = {T_x} [uK]',
-                                ylabel=f'Sigma_x [mm]', saveFilePath=os.path.join(extraFilesPath, 'X_temp_fit.png'), show=False)
+                                # title=f'X Temperature fit, Sigma_x[mm]  vs. Time [ms]\n %T_x% = {T_x} [uK]',
+                                # ylabel=f'Sigma_x [mm]', saveFilePath=os.path.join(extraFilesPath, 'X_temp_fit.png'), show=False)
+                                title=titlestr_x, props_str=resstr_x,
+                                ylabel=f'$\sigma_x$ [mm]', saveFilePath=os.path.join(extraFilesPath, 'X_temp_fit.png'), show=False)
             self.plotDataAndFit(time_vector, sigma_y_vector, fitFunc=tempFromSigmaFunc, fitParams=y_temp_popt,
-                                title=f'Y Temperature fit, Sigma_y[mm]  vs. Time [ms]\n T_y = {T_y} [uK]',
-                                ylabel=f'Sigma_y [mm]', saveFilePath=os.path.join(extraFilesPath, 'Y_temp_fit.png'), show=False)
-        return (T_x, T_y)
+                                # title=f'Y Temperature fit, Sigma_y[mm]  vs. Time [ms]\n %T_y% = {T_y} [uK]',
+                                # ylabel=f'Sigma_y [mm]', saveFilePath=os.path.join(extraFilesPath, 'Y_temp_fit.png'), show=False)
+                                title=titlestr_y, props_str=resstr_y,
+                                ylabel=f'$\sigma_y$ [mm]', saveFilePath=os.path.join(extraFilesPath, 'Y_temp_fit.png'), show=False)
+        return T_x, T_y
 
     def perform_fit(self, path, fit_for_alpha=False):
         """
@@ -617,15 +633,17 @@ class CoolingSequenceOptimizer(BaseExperiment):
         # Plot the surface
         ax.plot_trisurf(xs, ys, zs)
 
-    def plotDataAndFit(self, x_data, y_data, fitFunc,fitParams,title='', ylabel='', xlabel='Time [ms]', saveFilePath=None, show=False):
+    def plotDataAndFit(self, x_data, y_data, fitFunc, fitParams, title='', props_str='', ylabel='', xlabel='Time [ms]',
+                       saveFilePath=None, show=False):
         x_vector_for_fit = np.linspace(min(x_data), max(x_data), 100)
-        plt.figure()
-        plt.plot(x_data,y_data,'x', label='Data')
-        plt.plot(x_vector_for_fit, fitFunc(x_vector_for_fit, *fitParams), '-', label='Fit')
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.title(title)
-        plt.legend()
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+        fig, ax = plt.subplots()
+        ax.plot(x_data, y_data, 'x', label='Data')
+        ax.plot(x_vector_for_fit, fitFunc(x_vector_for_fit, *fitParams), '-', label='Fit')
+        ax.set(xlabel=xlabel, ylabel=ylabel)
+        ax.set_title(title)
+        ax.legend()
+        ax.text(0.5, 0.95, props_str, transform=ax.transAxes, fontsize=18, horizontalalignment='center',  verticalalignment='top')
         if saveFilePath:
             plt.savefig(saveFilePath)
         if show:
@@ -642,7 +660,7 @@ if __name__ == "__main__":
 
     # Initiate the experiment
     # Change to ExperimentMode.OFFLINE if you wish to run outside the lab
-    experiment = CoolingSequenceOptimizer(experiment_mode=ExperimentMode.LIVE)
+    experiment = CoolingSequenceOptimizer(experiment_mode=ExperimentMode.OFFLINE)
 
     # Display menu to get action
     settings = Utils.load_json_from_file(r'./settings.json')
