@@ -124,7 +124,7 @@ class BaseExperiment:
                 sys.exit('Aborting. Do not want to run from private state on lab live.')
 
         # If we're in playback mode, ensure we do not connect to OPX/Quad
-        if experiment_mode != ExperimentMode.LIVE:
+        if self.experiment_mode != ExperimentMode.LIVE:
             self._opx_skip = True
             self._quadrf_skip = True
 
