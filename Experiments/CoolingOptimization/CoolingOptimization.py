@@ -1,4 +1,6 @@
 from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
+from Experiments.Enums.ExperimentMode import ExperimentMode as ExperimentMode
+
 from Utilities.Utils import Utils
 
 import numpy as np
@@ -21,9 +23,9 @@ _m = 1.443e-25  #[Kg] of Rb87
 
 class CoolingSequenceOptimizer(BaseExperiment):
 
-    def __init__(self, playback=False, save_raw_data=False):
+    def __init__(self, experiment_mode=ExperimentMode.LIVE):
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
-        super().__init__(playback_parameters=playback, save_raw_data=save_raw_data, connect_to_camera=True)
+        super().__init__(playback_parameters=None, save_raw_data=False, connect_to_camera=True, experiment_mode=experiment_mode)
         pass
 
     def initialize_experiment_variables(self):
@@ -160,6 +162,123 @@ class CoolingSequenceOptimizer(BaseExperiment):
 
         plt.close('all')
         return d
+
+    def nothing(self, val):
+        pass
+
+    def compare_clouds(self):
+
+        folder1 = r'C:\temp\playback_data\Temperature\20240314_143258'
+        files1 = Utils.get_files_in_path(folder1, opt_in_filter='.bmp', return_full_path=True)
+        file_name = files1[7]
+
+        win_name = 'image'  # tup[0]
+        cv2.namedWindow(win_name, cv2.WND_PROP_FULLSCREEN)
+
+        cv2.createTrackbar('min', 'image', 0, 255, self.nothing)
+        cv2.createTrackbar('max', 'image', 0, 255, self.nothing)
+
+        cv2.createTrackbar('x', 'image', 0, 2000, self.nothing)
+        cv2.createTrackbar('y', 'image', 0, 2000, self.nothing)
+        cv2.setWindowProperty(win_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
+
+        loaded_img = cv2.imread(file_name, cv2.IMREAD_ANYCOLOR)
+        loaded_img = cv2.cvtColor(loaded_img, cv2.COLOR_BGR2RGB)
+
+        line_thickness = 2
+        line_color = (250, 150, 50)
+
+        height = 150
+        width = 10
+
+        while True:
+
+            min = cv2.getTrackbarPos('min', 'image')
+            max = cv2.getTrackbarPos('max', 'image')
+
+            x = cv2.getTrackbarPos('x', 'image')
+            y = cv2.getTrackbarPos('y', 'image')
+
+            img = loaded_img.copy()
+
+            alpha = 3.9  # Contrast control (1.0-3.0)
+            beta = 0  # Brightness control (0-100)
+            img = cv2.convertScaleAbs(img, alpha=alpha, beta=beta)
+
+            img = img[y:y + height, x:x + width]
+
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            ret, thresh = cv2.threshold(img, min, max, cv2.THRESH_BINARY)  # cv2.THRESH_BINARY
+            non_zero = cv2.countNonZero(thresh)
+            print(f'Non-zero: {non_zero}')
+
+            display_img = loaded_img.copy()
+            display_img = cv2.rectangle(display_img, (x,y), (x+width, y+height), line_color, line_thickness)
+
+            cv2.imshow(win_name, display_img)
+            k = cv2.waitKey(10) & 0xFF
+            if k == 27:
+                break
+
+        cv2.destroyAllWindows()
+
+        pass
+
+    def compare_clouds_DEP(self):
+
+        win_name = "Success!"
+
+        folder1 = r'C:\temp\playback_data\Temperature\20240314_121527'
+        #folder2 = r'C:\temp\playback_data\Temperature\20240314_122553'
+        folder2 = r'C:\temp\playback_data\Temperature\20240314_143258'
+
+        files1 = Utils.get_files_in_path(folder1, opt_in_filter='.bmp', return_full_path=True)
+        files2 = Utils.get_files_in_path(folder2, opt_in_filter='.bmp', return_full_path=True)
+        zipped = zip(files1, files2)
+
+        height = 600  # 300
+        width = 500
+        line_thickness = 3
+        #line_color = (255, 255, 255)
+        line_color = (250, 150, 50)
+        x = 900
+        y = 300  # 550
+
+        for tup in zipped:
+            # Load images from folder 1 and folder 2
+            image1 = cv2.imread(tup[0], cv2.IMREAD_ANYCOLOR)  #cv2.IMREAD_COLOR)
+            image2 = cv2.imread(tup[1], cv2.IMREAD_ANYCOLOR)
+
+            img = cv2.subtract(image1, image2)
+
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+            alpha = 3.9  # Contrast control (1.0-3.0)
+            beta = 0  # Brightness control (0-100)
+            img = cv2.convertScaleAbs(img, alpha=alpha, beta=beta)
+
+            top_left_point = (x, y)
+            bottom_right = (x+width, y+height)
+            img = cv2.rectangle(img, top_left_point, bottom_right, line_color, line_thickness)
+
+            #img = img[y:y + height, x:x + width]
+
+            # xxx = cv2.GaussianBlur(adjusted, (7,7), 0)
+            # zzz = cv2.Laplacian(xxx, -1, ksize=3, scale=1, delta=0, borderType=cv2.BORDER_DEFAULT)
+
+            win_name = 'image'  # tup[0]
+            cv2.namedWindow(win_name, cv2.WND_PROP_FULLSCREEN)
+            cv2.createTrackbar('min', 'image', 0, 255, self.nothing)
+            cv2.createTrackbar('max', 'image', 0, 255, self.nothing)
+            cv2.setWindowProperty(win_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
+
+            cv2.imshow(win_name, img)
+
+            cv2.waitKey(0)
+
+            #cv2.destroyAllWindows()
+            cv2.destroyWindow(win_name)
+        pass
 
     def measure_temperature(self, pre_pulse_durations=np.arange(1, 9), create_video=False, perform_fit=True):
         """
@@ -377,7 +496,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
         return (res)
 
 
-    def GaussianFit(self, file_name_for_fit, background_file, saveFitsPath=None, imgBounds=None, X_PIXEL_LEN=1544, Y_PIXEL_LEN=2064, CROP_IMG_SIZE=180 ,PLOT_IMG=False, PLOT_SLICE=False):
+    def GaussianFit(self, file_name_for_fit, background_file, saveFitsPath=None, imgBounds=None, X_PIXEL_LEN=1544, Y_PIXEL_LEN=2064, CROP_IMG_SIZE=180 ,PLOT_IMG=False, PLOT_SLICE=False, SHOW_CROP=False):
         """
         Fit a gaussian to subtracted images
          INPUT:
@@ -396,12 +515,14 @@ class CoolingSequenceOptimizer(BaseExperiment):
             imgBounds = (0, 0, w, h)  # that is, don't crop image
 
         # Show the img bounds on top of the image taken with atoms
-        if False:
-            line_thickness = 5
-            line_color = (0, 0, 255)
+        if SHOW_CROP:
+            line_thickness = 3
+            line_color = (255, 255, 255)  # White
             image_with_bounds = ImgToFit.copy()
-            cv2.rectangle(image_with_bounds, 0, 0, line_color, line_thickness)
-            cv2.imshow("Image Bounds", image_with_bounds)
+            top_left_point = (imgBounds[0], imgBounds[1])
+            bottom_right_point = (imgBounds[2], imgBounds[3])
+            image_with_bounds = cv2.rectangle(image_with_bounds, top_left_point, bottom_right_point, line_color, line_thickness)
+            cv2.imshow("Fit Crop Bounds", image_with_bounds)
             cv2.waitKey(0)
 
         if imgBounds: ImgToFit = ImgToFit[imgBounds[1]:imgBounds[3], imgBounds[0]:imgBounds[2]]  #
@@ -457,7 +578,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
             plt.text(0.88, 0.95, '\u03C3_x =' + '%.2f' % sigma[0] + '\n' + '\u03C3_y = ' + '%.2f' % sigma[1], color='white',
                  fontsize=16, style='italic', weight='bold', horizontalalignment='center', verticalalignment='center',
                  transform=ax.transAxes, bbox=dict(facecolor='gray', alpha=0.5))
-            ax.imshow(data_noisy.reshape(EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN), cmap=plt.cm.jet, origin='bottom',
+            ax.imshow(data_noisy.reshape(EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN), cmap=plt.cm.jet, origin='lower',
                   extent=(x.min(), x.max(), y.min(), y.max()))
             ax.contour(x, y, data_fitted.reshape(EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN), 8, colors='w')
             plt.savefig(os.path.join(saveFitsPath, fileName + '.png'))
@@ -520,11 +641,15 @@ class CoolingSequenceOptimizer(BaseExperiment):
 if __name__ == "__main__":
 
     # Initiate the experiment
-    experiment = CoolingSequenceOptimizer(playback=None)
+    # Change to ExperimentMode.OFFLINE if you wish to run outside the lab
+    experiment = CoolingSequenceOptimizer(experiment_mode=ExperimentMode.LIVE)
 
     # Display menu to get action
-    selection = BDMenu(experiment, r'./menu.json', None).display()
+    settings = Utils.load_json_from_file(r'./settings.json')
+    selection = BDMenu(caller=experiment, menu_file=None, menu_json=settings['menus']).display()
 
     # TODO: insert this into the cycles/runs schema
-    # experiment.measureTemperature()
+    #experiment.measureTemperature()
     #experiment.optimizePGC()
+
+    pass

@@ -38,8 +38,11 @@ class BDMenu:
     def display(self):
 
         while True:
+            # Display Menu options and get User's input
             self._display()
-            if "infinite" not in self.menu_data or self.menu_data['infinite']==False:
+
+            # Does setting indicate we run the menu in infinite loop?
+            if "infinite" not in self.menu_data or self.menu_data['infinite'] == False:
                 break
         print('Bye!')
 
@@ -59,6 +62,11 @@ class BDMenu:
 
         # Wait for input
         selection = input(">> ")
+
+        if not selection.isnumeric():
+            print('>>> Please choose one of the menu options.')
+            return None
+
         selection = int(selection)
 
         # Sanity check

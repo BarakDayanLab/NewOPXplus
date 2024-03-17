@@ -19,5 +19,8 @@
         }
     },
     "files": {},
-    "save_dialog": {}
+    "save_dialog": {},
+    "permissions": {
+        "allowed_offline": ["drorg", "dork"]
+    }
 }

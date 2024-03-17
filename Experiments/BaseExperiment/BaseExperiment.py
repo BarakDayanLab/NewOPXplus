@@ -21,6 +21,8 @@ from Utilities.BDKeyboard import BDKeyboard
 from Experiments.Enums.TerminationReason import TerminationReason
 from Experiments.Enums.IOParameters import IOParameters as IOP
 from Experiments.Enums.KeyToChannel import KeyToChannel as K2C
+from Experiments.Enums.ExperimentMode import ExperimentMode as ExperimentMode
+
 
 from Experiments.BaseExperiment import Config_Table
 from Experiments.BaseExperiment import Config_Experiment as Config  # Attempt to load the default config (may be overriden later)
@@ -35,7 +37,6 @@ from logging import StreamHandler, Formatter, INFO
 from qm.QuantumMachinesManager import QuantumMachinesManager
 from qm.qua import *
 import pymsgbox
-from pynput import keyboard
 
 
 class BaseExperiment:
@@ -58,18 +59,27 @@ class BaseExperiment:
         - Initializes OPX
         - Handles streams
         - Runs the following: MOT, PGC, Fountain, FreeFall
-        - Handles Lock Error coming from Cavity Lock application
+        - Handles Lock Error, Kappa_Ex and other params coming from Cavity Lock application and outer processes
 
     OPX Functionality:
         - Initializing
         - Updating Parameters
         - Updating IO Parameters
+
+    Experiment Mode:
+        - Live - experiment runs with all devices connected (OPX, Quad, Camera, etc.)
+        - Offline - does not connect to lab infrastructure - Quad, OPX, Camera, etc.
+        - Playback - allows to replay a set of pre-recorded playback data (does not connect to OPX/Quad)
+
     """
 
-    def __init__(self, playback_parameters=None, save_raw_data=False, connect_to_camera=False):
+    def __init__(self, playback_parameters=None, save_raw_data=False, connect_to_camera=False, experiment_mode=ExperimentMode.LIVE):
 
         # Load the settings file
         self.settings = Utils.load_json_from_file('./settings.json')
+
+        # Set experiment-mode
+        self.experiment_mode = experiment_mode
 
         # Setup console logger. We do this first, so rest of code can use logging functions.
         self.logger = BDLogger()
@@ -101,18 +111,20 @@ class BaseExperiment:
         if playback_parameters is None:
             self.playback = {'active': False}
         else:
+            self.experiment_mode = ExperimentMode.PLAYBACK
             self.playback = playback_parameters
             self.playback['data_loaded'] = False
             self.playback['row_count'] = 0
             self.playback['streams'] = {}
 
         # Insert a prompt to check we're not running on live lab devices (OPX, QuadRF)
-        if not self.playback["active"] and (self.login == 'drorg' or self.login == 'dork'):
+        if self.attempt_live_run_outside_lab():
             what_say_thou = self.prompt(title='LIVE run on local', msg='You are about to run LIVE from your workstation. Continue? (type YES)', default='', timeout=int(30e3))
             if what_say_thou.lower() != 'yes':
                 sys.exit('Aborting. Do not want to run from private state on lab live.')
 
-        if self.playback["active"]:
+        # If we're in playback mode, ensure we do not connect to OPX/Quad
+        if experiment_mode != ExperimentMode.LIVE:
             self._opx_skip = True
             self._quadrf_skip = True
 
@@ -176,7 +188,6 @@ class BaseExperiment:
         self.opx_definitions = {
             'connection': {'host': '132.77.54.230', 'port': '80'},  # Connection details
             'config': Config.config,  # OPX Configuration
-            #'streams': Config.streams,  # OPX streams we're using
             'streams': self.settings['streams'],
             'control': opx_control  # OPX Control code
         }
@@ -191,12 +202,12 @@ class BaseExperiment:
 
         # Start listening on sockets (except when in playback mode)
         self.comm_messages = {}
-        if not self.playback["active"]:
+        if self.experiment_mode == ExperimentMode.LIVE:
             self.bdsocket = BDSocket(connections_map=self.settings['connections'], writeable=self.comm_messages, server_id=self.UUID)
             self.bdsocket.run_server()
 
         # Attempt to initialize Camera functionality
-        if connect_to_camera:
+        if self.experiment_mode == ExperimentMode.LIVE and connect_to_camera:
             self.connect_camera()
         else:
             self.info('Not connecting to camera. Not required for this experiment.')
@@ -216,6 +227,16 @@ class BaseExperiment:
         if hasattr(self, 'qmm'):
             self.qmm.close()
         pass
+
+    def attempt_live_run_outside_lab(self):
+        """ Checks if a non-lab user is attempting to run a live-run """
+
+        non_lab_user = self.login in self.settings['permissions']['allowed_offline']
+
+        if self.experiment_mode == ExperimentMode.LIVE and not self.playback['active'] and non_lab_user:
+            return True
+
+        return False
 
     # Initialize the Base-Experiment: QuadRF/MOT/PGC/FreeFall
     # (a) Initialize QuadRF (b) Set experiment related variables (c) Initialize OPX

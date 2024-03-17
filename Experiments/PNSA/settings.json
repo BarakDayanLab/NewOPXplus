@@ -153,6 +153,7 @@
             "keys": ["A", "a"]
         }
     },
+    "menus": {},
     "files": {},
     "save_dialog": {
         "title": "Experiment Completed",
@@ -185,5 +186,8 @@
                 "explorer": true
             }
         ]
+    },
+    "permissions": {
+        "allowed_offline": ["drorg", "dork"]
     }
 }
