@@ -204,9 +204,14 @@
             },
             {
               "order": 6,
-              "display": "Compare Clouds (from files in folder)",
-              "action": "compare_clouds",
+              "display": "Image Density Check",
+              "action": "density_check",
               "args": [
+                {
+                  "name": "folder",
+                  "type": "string",
+                  "default": "Most recent snapshots"
+                }
               ]
             },
             {

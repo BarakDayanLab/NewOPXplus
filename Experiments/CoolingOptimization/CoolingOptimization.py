@@ -182,21 +182,49 @@ class CoolingSequenceOptimizer(BaseExperiment):
     def nothing(self, val):
         pass
 
-    def compare_clouds(self):
+    def locate_funnel_in_image(self, image):
+        pass
 
-        folder1 = r'C:\temp\playback_data\Temperature\20240314_143258'
-        files1 = Utils.get_files_in_path(folder1, opt_in_filter='.bmp', return_full_path=True)
-        file_name = files1[7]
+    def locate_chip_in_image(self, image):
+        """
+        We scan with a moving window from top of image downwards, looking for density change
+        """
+        chip_y = self.scan_for_density_change(image=image, direction='vertical', offset=0,
+                                     frame_width=1300, frame_height=7,
+                                     threshold_min=100, threshold_max=130)
+        return chip_y
 
-        win_name = 'image'  # tup[0]
+    def locate_fork_in_image(self, image):
+
+        # TODO: Need to complete the work on this. Not working properly yet.
+        # TODO: Complete finding of right_bar_2
+
+        left_bar_1 = self.scan_for_density_change(image=image, direction='horizontal', offset=0,
+                                     frame_width=7, frame_height=1200,
+                                     threshold_min=100, threshold_max=130)
+
+        left_bar_2 = self.scan_for_density_change(image=image, direction='horizontal', offset=left_bar_1,
+                                     frame_width=7, frame_height=1200,
+                                     threshold_min=100, threshold_max=130)
+
+        right_bar_1 = self.scan_for_density_change(image=image, direction='horizontal', offset=left_bar_2+50,
+                                     frame_width=7, frame_height=1200,
+                                     threshold_min=100, threshold_max=130)
+
+        right_bar_2 = 99
+
+        print(f'left_bar_start={left_bar_1}, left_bar_end={left_bar_2}')
+        print(f'right_bar_start={right_bar_1}, right_bar_end={right_bar_2}')
+
+        pass
+
+    def density_check(self, folder):
+
+        files = Utils.get_files_in_path(folder, opt_in_filter='.bmp', return_full_path=True)
+        file_name = files[1]  # Taking 2nd image, but can be any of them
+
+        win_name = 'image'
         cv2.namedWindow(win_name, cv2.WND_PROP_FULLSCREEN)
-
-        cv2.createTrackbar('min', 'image', 0, 255, self.nothing)
-        cv2.createTrackbar('max', 'image', 0, 255, self.nothing)
-
-        cv2.createTrackbar('x', 'image', 0, 2000, self.nothing)
-        cv2.createTrackbar('y', 'image', 0, 2000, self.nothing)
-        cv2.setWindowProperty(win_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
 
         loaded_img = cv2.imread(file_name, cv2.IMREAD_ANYCOLOR)
         loaded_img = cv2.cvtColor(loaded_img, cv2.COLOR_BGR2RGB)
@@ -204,10 +232,27 @@ class CoolingSequenceOptimizer(BaseExperiment):
         line_thickness = 2
         line_color = (250, 150, 50)
 
-        height = 150
-        width = 10
+        image_height = loaded_img.shape[0]
+        image_width = loaded_img.shape[1]
+
+        cv2.createTrackbar('width', 'image', 0, image_height, self.nothing)
+        cv2.createTrackbar('height', 'image', 0, image_width, self.nothing)
+        cv2.setTrackbarPos('width', 'image', 10)
+        cv2.setTrackbarPos('height', 'image', 150)
+
+        cv2.createTrackbar('min', 'image', 0, 255, self.nothing)
+        cv2.createTrackbar('max', 'image', 0, 255, self.nothing)
+        cv2.setTrackbarPos('min', 'image', 100)
+        cv2.setTrackbarPos('max', 'image', 130)
+
+        cv2.createTrackbar('x', 'image', 0, 2000, self.nothing)
+        cv2.createTrackbar('y', 'image', 0, 2000, self.nothing)
+        cv2.setWindowProperty(win_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
 
         while True:
+
+            width = cv2.getTrackbarPos('width', 'image')
+            height = cv2.getTrackbarPos('height', 'image')
 
             min = cv2.getTrackbarPos('min', 'image')
             max = cv2.getTrackbarPos('max', 'image')
@@ -225,11 +270,12 @@ class CoolingSequenceOptimizer(BaseExperiment):
 
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             ret, thresh = cv2.threshold(img, min, max, cv2.THRESH_BINARY)  # cv2.THRESH_BINARY
-            non_zero = cv2.countNonZero(thresh)
-            print(f'Non-zero: {non_zero}')
+            density = cv2.countNonZero(thresh)
 
             display_img = loaded_img.copy()
             display_img = cv2.rectangle(display_img, (x,y), (x+width, y+height), line_color, line_thickness)
+
+            cv2.putText(display_img, str(density), (150,150), cv2.FONT_HERSHEY_SIMPLEX, 2, (180, 180, 180), 3, 1)
 
             cv2.imshow(win_name, display_img)
             k = cv2.waitKey(10) & 0xFF
@@ -648,6 +694,88 @@ class CoolingSequenceOptimizer(BaseExperiment):
             plt.savefig(saveFilePath)
         if show:
             plt.show()
+
+    def _scan_vertically_for_density_change(self, image, offset, frame_width, frame_height, threshold_min, threshold_max):
+        image_shape = image.shape
+        image_height = image_shape[0]
+        image_width = image_shape[1]
+
+        t = None
+        densities = np.array([])
+        center_x = int(image_width / 2)
+        half_width = int(frame_width / 2)
+        for y in range(0, image_height-frame_height):
+            crop = image[y:y + frame_height, (center_x-half_width):(center_x+half_width)]
+
+            ret, thresh = cv2.threshold(crop, threshold_min, threshold_max, cv2.THRESH_BINARY)  # cv2.THRESH_BINARY
+            density = cv2.countNonZero(thresh)
+            densities = np.append(densities, density)
+
+            print(f'y={y} -> density={density}')
+
+            if density < (np.average(densities) / 5):
+                t = y
+                break
+
+        # If we couldn't find any density change in image, we return None
+        if not t:
+            return None
+
+        # We return the y of the change
+        y_change = t - int(frame_height/2)
+        return y_change
+
+    def _scan_horizontally_for_density_change(self, image, offset, frame_width, frame_height, threshold_min, threshold_max):
+
+        image_shape = image.shape
+        image_height = image_shape[0]
+        image_width = image_shape[1]
+
+        t = None
+        densities = np.array([])
+        center_y = int(image_height / 2)
+        half_height = int(frame_height / 2)
+        for x in range(offset, image_width-frame_width):
+            crop = image[(center_y-half_height):(center_y+half_height), x:x + frame_width]
+
+            ret, thresh = cv2.threshold(crop, threshold_min, threshold_max, cv2.THRESH_BINARY)  # cv2.THRESH_BINARY
+            density = cv2.countNonZero(thresh)
+            densities = np.append(densities, density)
+
+            print(f'x={x} -> density={density}')
+
+            if density != 0 and density < (np.average(densities) / 5):  # Moved from Bright to Dark
+                t = x
+                break
+            elif density > 4000 and density/5 > np.average(densities):  # Moved from Dark to Bright
+                t = x
+                break
+
+        # If we couldn't find any density change in image, we return None
+        if not t:
+            return None
+
+        # We return the y of the change
+        x_change = t - int(frame_width/2)
+        return x_change
+
+    def scan_for_density_change(self, image, direction, offset, frame_width, frame_height, threshold_min, threshold_max):
+
+        # Increase Contrast
+        alpha = 3.9  # Contrast control (1.0-3.0)
+        beta = 0  # Brightness control (0-100)
+        image = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        if direction=='vertical':
+            coor = self._scan_vertically_for_density_change(image, offset, frame_width, frame_height, threshold_min, threshold_max)
+        elif direction=='horizontal':
+            coor = self._scan_horizontally_for_density_change(image, offset,  frame_width, frame_height, threshold_min, threshold_max)
+        else:
+            print(f'Direction {direction} not supported')
+            return None
+
+        return coor
 
     def update_value_in_opx(self, prepulse_duration):
         """
