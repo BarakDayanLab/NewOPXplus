@@ -4,6 +4,7 @@ from Experiments.Enums.ExperimentMode import ExperimentMode as ExperimentMode
 from Utilities.Utils import Utils
 
 import numpy as np
+import math
 from PIL import Image
 import time
 import subprocess
@@ -14,6 +15,7 @@ import cv2, glob
 import scipy.optimize as opt
 import matplotlib
 import matplotlib.pyplot as mtl
+from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
 import pylab as plt
 from Utilities.BDMenu import BDMenu
 from mpl_toolkits.mplot3d import Axes3D
@@ -29,6 +31,20 @@ class CoolingSequenceOptimizer(BaseExperiment):
         super().__init__(playback_parameters=None, save_raw_data=False, connect_to_camera=True, experiment_mode=experiment_mode)
         pass
 
+    def solve_quad_eq(self, a, b, c):
+
+        d = b ** 2 - 4 * a * c  # discriminant
+
+        if d < 0:
+            return None
+        elif d == 0:
+            x = (-b + math.sqrt(b ** 2 - 4 * a * c)) / 2 * a
+            return np.array(x)
+        else:
+            x1 = (-b + math.sqrt((b ** 2) - (4 * (a * c)))) / (2 * a)
+            x2 = (-b - math.sqrt((b ** 2) - (4 * (a * c)))) / (2 * a)
+            return np.array([x1, x2])
+
     def initialize_experiment_variables(self):
 
         # Ensure we initialize the basic OPX experiment variables (required for standard MOT)
@@ -43,6 +59,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
         # self.mm_to_pxl = 8.5/(830-56)  # measured using ruler in focus 13/11/2022
         self.mm_to_pxl = 11/(1228-232)  # measured using ruler in focus 15/01/2024
         self.sigma_bounds = (15, 100)  # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
+        self.resonator_pxl_position = 20 # TODO: create function for finding the position.
 
     def connect_disconnect_camera(self):
         if self.camera:
@@ -77,6 +94,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
 
         mm_to_pxl = self.mm_to_pxl
         linearFreeFall = lambda t, b, c: 9.8e-6 / 2 / mm_to_pxl * 1e3 * t ** 2 + b * t + c
+        linearFreeFall_mm = lambda t, b, c: -(9.8e-6 / 2 / mm_to_pxl * 1e3 * t ** 2 + b * t + c-self.resonator_pxl_position) * mm_to_pxl  # -1 due to resonator position
         quadraticFunc = lambda t, a, b, c: a * t ** 2 + b * t + c
         fitFunc = quadraticFunc if fit_for_alpha else linearFreeFall
         bounds = (-np.inf, np.inf)
@@ -85,19 +103,30 @@ class CoolingSequenceOptimizer(BaseExperiment):
 
         v_launch_popt, v_launch_cov = opt.curve_fit(fitFunc, time_vector, y_position_vector, bounds=bounds)
         alpha = 9.8e-6 / 2 / v_launch_popt[0] * 1e3 if fit_for_alpha else self.mm_to_pxl  # mm/pixel
-        v_launch = v_launch_popt[0] * self.mm_to_pxl  # mm/ms = m/s
-        y_position_vector_mm = y_position_vector * self.mm_to_pxl - (y_position_vector[0] - 10) * self.mm_to_pxl  # -10 due to resonator position
+        v_launch = v_launch_popt[0] * self.mm_to_pxl # mm/ms = m/s
+        v_launch_std = np.sqrt(np.diag(v_launch_cov))[0] * self.mm_to_pxl
+        y_position_vector_mm = -(y_position_vector - self.resonator_pxl_position) * self.mm_to_pxl  # -10 due to resonator position
+
+        h_1ms = y_position_vector_mm[0]
+        v_1ms = (-v_launch * 1000) - 9.81 * 1000 * 1e-3
+        # solving quadratic equation 0 = h_1ms + v_1ms*t - g*t^2/2: a=-g/2[mm/s^2], b=v_1ms[mm/s], c=h_1ms[mm]
+        t_arrival = self.solve_quad_eq((-9.81 * 1000 / 2), v_1ms, h_1ms)
+        if t_arrival.any():
+            t_arrival_str = '%.1f' % (t_arrival.min() * 1e3)
+        else:
+            t_arrival_str = '$ \infty $'
 
         if plotResults:
-            titlestr_v = r'Y position fit \n $v_0 = %.2f$' % v_launch + r'[cm/s]; $\alpha = %.3f$' % alpha + '[mm/pixel]'
-            resstr_v = r'$v_0 = %.2f$' % v_launch + r'[cm/s]; $\alpha = %.3f$' % alpha
-            self.plotDataAndFit(time_vector, y_position_vector, fitFunc=fitFunc, fitParams=v_launch_popt,
-            # self.plotDataAndFit(time_vector, y_position_vector_mm, fitFunc=fitFunc, fitParams=v_launch_popt,
+            titlestr_v = r'Y position fit;' + r' $\alpha = %.3f$' % alpha + '[mm/pixel]' #+ '\n $v_0 = %.1f$' % v_launch * 100 + r'[cm/s]; $\alpha = %.3f$' % alpha + '[mm/pixel]'
+            resstr_v = r'$v_0 = %.1f$' % (-v_launch * 100) + r'$\pm$ %.1f[cm/s]' % (v_launch_std * 100) + '\n' +\
+                       '$t_{arrival} = $' + t_arrival_str + '[ms]'
+            # self.plotDataAndFit(time_vector, y_position_vector, fitFunc=fitFunc, fitParams=v_launch_popt,
+            self.plotDataAndFit(time_vector, y_position_vector_mm, fitFunc=linearFreeFall_mm, fitParams=v_launch_popt,
                                 # title=f'Y position fit \n V_launch = {v_launch}; alpha = {alpha}', ylabel='Y_center [px]',
-                                title=titlestr_v, props_str=resstr_v, ylabel='$Y_{center} [px]$',
-                                # title=titlestr_v, props_str=resstr_v, ylabel='$Y_{center} [mm]$',
+                                # title=titlestr_v, props_str=resstr_v, ylabel='$Y_{center} [px]$',
+                                title=titlestr_v, props_str=resstr_v, ylabel='$Y_{center} [mm]$',
                                 saveFilePath=os.path.join(extraFilesPath, 'Y_position.png'), show=False)
-        return (v_launch, alpha, v_launch_popt, v_launch_cov)
+        return (v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str)
 
     def fitTemperaturesFromGaussianFitResults(self, gaussianFitResult, alpha=None, extraFilesPath=None, plotResults=True):
         if alpha is None: alpha = self.mm_to_pxl
@@ -117,10 +146,10 @@ class CoolingSequenceOptimizer(BaseExperiment):
         std_x, std_y = np.sqrt(np.diag(x_temp_cov))[1] * _m / _Kb * 1e6, np.sqrt(np.diag(x_temp_cov))[1] * _m / _Kb * 1e6
 
         if plotResults:
-            titlestr_x = '$T_x$ fit, $\sigma_x$[mm]  vs. Time [ms]\n $T_x$ = %.2f' % T_x  + '$\pm %.2f[uK]$' % std_x
-            titlestr_y = '$T_y$ fit, $\sigma_y$[mm]  vs. Time [ms]\n $T_y$ = %.2f' % T_y  + '$\pm %.2f[uK]$' % std_y
-            resstr_x = '$T_x$ = %.2f' % T_y + '$\pm %.2f[uK]$' % std_y
-            resstr_y = '$T_x$ = %.2f' % T_y + '$\pm %.2f[uK]$' % std_y
+            titlestr_x = '$T_x$ fit, $\sigma_x$[mm]  vs. Time [ms]'  # + '\n$T_x$ = %.2f' % T_x + '$\pm %.2f[uK]$' % std_x
+            titlestr_y = '$T_y$ fit, $\sigma_y$[mm]  vs. Time [ms]'  # + '\n$T_y$ = %.2f' % T_y + '$\pm %.2f[uK]$' % std_y
+            resstr_x = '$T_x$ = %.2f' % T_x + '$\pm %.2f[\mu K]$' % std_x
+            resstr_y = '$T_y$ = %.2f' % T_y + '$\pm %.2f[\mu K]$' % std_y
             self.plotDataAndFit(time_vector, sigma_x_vector, fitFunc=tempFromSigmaFunc, fitParams=x_temp_popt,
                                 # title=f'X Temperature fit, Sigma_x[mm]  vs. Time [ms]\n %T_x% = {T_x} [uK]',
                                 # ylabel=f'Sigma_x [mm]', saveFilePath=os.path.join(extraFilesPath, 'X_temp_fit.png'), show=False)
@@ -149,7 +178,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
             return
 
         # ---- Take Gaussian fit results and get temperature (x,y) and launch speed -----------
-        v_launch, alpha, v_launch_popt, v_launch_cov = self.fitVy_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult, extraFilesPath=extra_files, plotResults=True)
+        v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival = self.fitVy_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult, extraFilesPath=extra_files, plotResults=True)
         time_vector = np.array([res[0] for res in gaussianFitResult])
         y_position_vector = np.array([res[-1][2] for res in gaussianFitResult])
 
@@ -164,10 +193,11 @@ class CoolingSequenceOptimizer(BaseExperiment):
         T_x, T_y = self.fitTemperaturesFromGaussianFitResults(gaussianFitResult, alpha, extra_files, plotResults=True)
 
         d = {
-            'V_y Launch': v_launch,
-            'T_x': T_x,
-            'T_y': T_y,
-            'alpha': alpha
+            'V_y Launch': -v_launch*100,  # [cm/s]
+            'T_x': T_x,  # [K]
+            'T_y': T_y,  # [K]
+            't_arrival': t_arrival,  # [ms]
+            'alpha': alpha  # [mm/pxl]
         }
         print(d)
         try:
@@ -590,13 +620,25 @@ class CoolingSequenceOptimizer(BaseExperiment):
 
         if PLOT_IMG or saveFitsPath:
             fig, ax = plt.subplots(1, 1)
-            plt.title(fileName)
-            plt.text(0.88, 0.95, '\u03C3_x =' + '%.2f' % sigma[0] + '\n' + '\u03C3_y = ' + '%.2f' % sigma[1], color='white',
-                 fontsize=16, style='italic', weight='bold', horizontalalignment='center', verticalalignment='center',
-                 transform=ax.transAxes, bbox=dict(facecolor='gray', alpha=0.5))
+            # plt.title(fileName)
+            ax.set_title('Free-fall duration = ' + fileName.split('=')[1] + '[ms]', fontsize=16, fontweight='bold')
+            plt.text(0.95, 0.95, r'$\sigma_x$ = %.2f[mm]' % (sigma[0] * self.mm_to_pxl) + '\n' +
+                     r'$\sigma_y$ = %.2f[mm]' % (sigma[1] * self.mm_to_pxl), color='white',
+                     fontsize=16, horizontalalignment='right', verticalalignment='top',
+                     transform=ax.transAxes, bbox=dict(facecolor='gray', alpha=0.5))
             ax.imshow(data_noisy.reshape(EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN), cmap=plt.cm.jet, origin='lower',
-                  extent=(x.min(), x.max(), y.min(), y.max()))
+                      extent=(x.min(), x.max(), y.min(), y.max()))
             ax.contour(x, y, data_fitted.reshape(EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN), 8, colors='w')
+            plt.xticks(np.arange(((x.min() * self.mm_to_pxl)//0.5) * 0.5, x.max() * self.mm_to_pxl, 0.5, dtype=float) /
+                       self.mm_to_pxl, np.arange(((x.min() * self.mm_to_pxl)//0.5) * 0.5, x.max() * self.mm_to_pxl, 0.5,
+                                                 dtype=float))
+            plt.yticks(np.arange(((y.min() * self.mm_to_pxl)//0.5) * 0.5, y.max() * self.mm_to_pxl, 0.5, dtype=float) /
+                       self.mm_to_pxl, np.arange(((y.min() * self.mm_to_pxl)//0.5) * 0.5, y.max() * self.mm_to_pxl, 0.5,
+                                                 dtype=float))
+            ax.set_xlabel('X [mm]', fontsize=12, fontweight='bold')
+            ax.set_ylabel('Y [mm]', fontsize=12, fontweight='bold')
+            ax.xaxis.set_minor_locator(AutoMinorLocator())
+            ax.yaxis.set_minor_locator(AutoMinorLocator())
             plt.savefig(os.path.join(saveFitsPath, fileName + '.png'))
             if PLOT_IMG: plt.show()
 
@@ -640,8 +682,9 @@ class CoolingSequenceOptimizer(BaseExperiment):
         fig, ax = plt.subplots()
         ax.plot(x_data, y_data, 'x', label='Data')
         ax.plot(x_vector_for_fit, fitFunc(x_vector_for_fit, *fitParams), '-', label='Fit')
-        ax.set(xlabel=xlabel, ylabel=ylabel)
-        ax.set_title(title)
+        ax.set_xlabel(xlabel, fontsize=12, fontweight='bold')
+        ax.set_ylabel(ylabel, fontsize=12, fontweight='bold')
+        ax.set_title(title, fontsize=18, fontweight='bold')
         ax.legend()
         ax.text(0.5, 0.95, props_str, transform=ax.transAxes, fontsize=18, horizontalalignment='center',  verticalalignment='top')
         if saveFilePath:
