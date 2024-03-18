@@ -17,6 +17,7 @@ from Utilities.BDBatch import BDBatch
 from Utilities.BDSound import BDSound
 from Utilities.BDSocket import BDSocket
 from Utilities.BDKeyboard import BDKeyboard
+from Utilities.BDDialog import BDDialog
 
 from Experiments.Enums.TerminationReason import TerminationReason
 from Experiments.Enums.IOParameters import IOParameters as IOP
@@ -76,7 +77,9 @@ class BaseExperiment:
     def __init__(self, playback_parameters=None, save_raw_data=False, connect_to_camera=False, experiment_mode=ExperimentMode.LIVE):
 
         # Load the settings file
-        self.settings = Utils.load_json_from_file('./settings.json')
+        self.base_settings = Utils.load_json_from_file('../BaseExperiment/settings.json')
+        self.experiment_settings = Utils.load_json_from_file('./settings.json')
+        self.settings = Utils.merge_jsons(self.base_settings, self.experiment_settings)
 
         # Set experiment-mode
         self.experiment_mode = experiment_mode
@@ -87,8 +90,9 @@ class BaseExperiment:
         # Generate UUID
         self.UUID = Utils.generate_UUID()
 
-        # Get login - to understand on what computer we are running
+        # Get login and MAC address (used later to know if we're running in lab or locally)
         self.login = os.getlogin()
+        self.mac_address = Utils.get_mac_address()
 
         # Initialize sound player
         self.bdsound = BDSound()
@@ -104,9 +108,6 @@ class BaseExperiment:
 
         self.transformer = ValuesTransformer()
 
-        self._opx_skip = False
-        self._quadrf_skip = False
-
         # Set playback definitions and initialize it
         if playback_parameters is None:
             self.playback = {'active': False}
@@ -118,15 +119,22 @@ class BaseExperiment:
             self.playback['streams'] = {}
 
         # Insert a prompt to check we're not running on live lab devices (OPX, QuadRF)
-        if self.attempt_live_run_outside_lab():
-            what_say_thou = self.prompt(title='LIVE run on local', msg='You are about to run LIVE from your workstation. Continue? (type YES)', default='', timeout=int(30e3))
-            if what_say_thou.lower() != 'yes':
-                sys.exit('Aborting. Do not want to run from private state on lab live.')
+        non_lab_user = self.login in self.settings['permissions']['allowed_offline']
+        if self.experiment_mode == ExperimentMode.LIVE and non_lab_user:
+            bdd = BDDialog()
+            text_res, button = bdd.prompt(self.settings['dialogs']['live_dialog'])
+            if (button['button_name'] == 'Continue' and text_res.lower() != 'confirm') or (button['button_name']=='Exit'):
+                sys.exit('Aborting.')
+            if button['button_name'] == 'Offline':
+                self.experiment_mode = ExperimentMode.OFFLINE
 
         # If we're in playback mode, ensure we do not connect to OPX/Quad
         if self.experiment_mode != ExperimentMode.LIVE:
             self._opx_skip = True
             self._quadrf_skip = True
+        else:
+            self._opx_skip = False
+            self._quadrf_skip = False
 
         # Initialize the BDResults helper - for saving experiment results
         self.bd_results = BDResults(json_map_path=self.paths_map['cwd'], version="0.1", logger=self.logger)
@@ -227,16 +235,6 @@ class BaseExperiment:
         if hasattr(self, 'qmm'):
             self.qmm.close()
         pass
-
-    def attempt_live_run_outside_lab(self):
-        """ Checks if a non-lab user is attempting to run a live-run """
-
-        non_lab_user = self.login in self.settings['permissions']['allowed_offline']
-
-        if self.experiment_mode == ExperimentMode.LIVE and not self.playback['active'] and non_lab_user:
-            return True
-
-        return False
 
     # Initialize the Base-Experiment: QuadRF/MOT/PGC/FreeFall
     # (a) Initialize QuadRF (b) Set experiment related variables (c) Initialize OPX

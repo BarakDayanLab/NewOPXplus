@@ -112,7 +112,7 @@ class Utils:
         """
         Merges json2 onto json1.
         - If keys are in json2 and missing in json1, they will be added
-        - If keys exist in json1 and exist in json2, they will be overriden
+        - If keys exist in json1 and exist in json2, they will be overridden
         :param json1: Target Json
         :param json2: Source Json
         :return: the merged dictionary
@@ -470,10 +470,22 @@ class Utils:
         return r
 
     # ---------------------------------------------------
+    # Network Related Utilities
+    # ---------------------------------------------------
+
+    @staticmethod
+    def get_mac_address():
+        node = uuid.getnode()
+        arr = ['{:02x}'.format((node >> ele) & 0xff) for ele in range(0, 8 * 6, 8)][::-1]
+        mac_str = ':'.join(arr)
+        return mac_str
+
+    # ---------------------------------------------------
     # Image/Video utilities
     # ---------------------------------------------------
 
-    def create_video_from_path(self, path, save_file_path=None):
+    @staticmethod
+    def create_video_from_path(path, save_file_path=None):
         """
         Creates a video from .bmp files in a given path
         - path - where the .bmp files are

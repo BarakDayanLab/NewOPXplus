@@ -660,7 +660,7 @@ if __name__ == "__main__":
 
     # Initiate the experiment
     # Change to ExperimentMode.OFFLINE if you wish to run outside the lab
-    experiment = CoolingSequenceOptimizer(experiment_mode=ExperimentMode.OFFLINE)
+    experiment = CoolingSequenceOptimizer()
 
     # Display menu to get action
     settings = Utils.load_json_from_file(r'./settings.json')
