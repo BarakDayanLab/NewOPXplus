@@ -2074,7 +2074,7 @@ class PNSAExperiment(BaseExperiment):
             # Check if this is (A) The last sequence in the last cycle or (B) User Terminated
             if sequence_definitions['last_iteration_and_last_sequence'] or self.runs_status == TerminationReason.USER:
                 bdd = BDDialog()
-                text_res, button = bdd.prompt(self.settings['save_dialog'])
+                text_res, button = bdd.prompt(self.settings['dialogs']['save_dialog'])
                 if button['button_name'] == 'Ignore':
                     dialog_str = 'Ignore. ' + text_res
                 else:
@@ -2440,7 +2440,8 @@ if __name__ == "__main__":
     # Playback definitions
     playback_parameters = {
         "active": False,
-        'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240225\173049_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
+        #'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240225\173049_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
+        'playback_files_path': r'C:\temp\playback_data\PNSA\20240312\121917_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
         "old_format": False,
         "save_results": False,
         "save_results_path": 'C:\\temp\\playback_data',
@@ -2463,7 +2464,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 0.8,
         'photons_per_det_pulse_threshold': 12,
-        'exp_flag': False,
+        'exp_flag': True,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')

@@ -2000,7 +2000,7 @@ class QRAMExperiment(BaseExperiment):
             # Check if this is (A) The last sequence in the last cycle or (B) User Terminated
             if sequence_definitions['last_iteration_and_last_sequence'] or self.runs_status == TerminationReason.USER:
                 bdd = BDDialog()
-                text_res, button = bdd.prompt(self.settings['save_dialog'])
+                text_res, button = bdd.prompt(self.settings['dialogs']['save_dialog'])
                 if button['button_name'] == 'Ignore':
                     dialog_str = 'Ignore. ' + text_res
                 else:
