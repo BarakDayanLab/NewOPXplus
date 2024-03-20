@@ -221,12 +221,15 @@ class CoolingSequenceOptimizer(BaseExperiment):
     def density_check(self, folder):
 
         files = Utils.get_files_in_path(folder, opt_in_filter='.bmp', return_full_path=True)
-        file_name = files[1]  # Taking 2nd image, but can be any of them
+        file_name = files[4]  # Taking 2nd image, but can be any of them
 
         win_name = 'image'
-        cv2.namedWindow(win_name, cv2.WND_PROP_FULLSCREEN)
+        cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)  # cv2.WND_PROP_FULLSCREEN)
 
-        loaded_img = cv2.imread(file_name, cv2.IMREAD_ANYCOLOR)
+        #loaded_img = cv2.imread(file_name, cv2.IMREAD_ANYCOLOR) # IMREAD_GRAYSCALE
+        #loaded_img = cv2.imread(file_name, cv2.IMREAD_GRAYSCALE)
+        loaded_img = cv2.imread(file_name, cv2.IMREAD_UNCHANGED)
+
         loaded_img = cv2.cvtColor(loaded_img, cv2.COLOR_BGR2RGB)
 
         line_thickness = 2
@@ -234,6 +237,10 @@ class CoolingSequenceOptimizer(BaseExperiment):
 
         image_height = loaded_img.shape[0]
         image_width = loaded_img.shape[1]
+
+        cv2.createTrackbar('contrast', 'image', 0, 500, self.nothing)
+        cv2.createTrackbar('brightness', 'image', 0, 100, self.nothing)
+
 
         cv2.createTrackbar('width', 'image', 0, image_height, self.nothing)
         cv2.createTrackbar('height', 'image', 0, image_width, self.nothing)
@@ -260,11 +267,17 @@ class CoolingSequenceOptimizer(BaseExperiment):
             x = cv2.getTrackbarPos('x', 'image')
             y = cv2.getTrackbarPos('y', 'image')
 
+            brightness = cv2.getTrackbarPos('brightness', 'image')
+            contrast = cv2.getTrackbarPos('contrast', 'image')
+            contrast = 1.0 + (contrast / 100 * 2)
+
             img = loaded_img.copy()
 
-            alpha = 3.9  # Contrast control (1.0-3.0)
-            beta = 0  # Brightness control (0-100)
-            img = cv2.convertScaleAbs(img, alpha=alpha, beta=beta)
+            if True:
+                # alpha = 3.9  # Contrast control (1.0-3.0)
+                alpha = contrast
+                beta = brightness  # 0  # Brightness control (0-100)
+                img = cv2.convertScaleAbs(img, alpha=alpha, beta=beta)
 
             img = img[y:y + height, x:x + width]
 
@@ -273,6 +286,17 @@ class CoolingSequenceOptimizer(BaseExperiment):
             density = cv2.countNonZero(thresh)
 
             display_img = loaded_img.copy()
+
+            # Change color of pixels in threshold window
+            for x0 in range(0, width-1):
+                for y0 in range(0, height-1):
+                    if thresh[y0, x0] >= max:
+                        p = display_img[y0+y, x0+x]
+                        p[0] = 0
+                        p[1] = 0
+                        display_img[y0+y, x0+x] = p
+                        pass
+
             display_img = cv2.rectangle(display_img, (x,y), (x+width, y+height), line_color, line_thickness)
 
             cv2.putText(display_img, str(density), (150,150), cv2.FONT_HERSHEY_SIMPLEX, 2, (180, 180, 180), 3, 1)
