@@ -41,7 +41,7 @@ def MOT(mot_repetitions):
 
 def Pulse_const(total_pulse_duration):
     """
-    This pulse id devided to two parts:
+    This pulse id divided to two parts:
         1) Preparation sequence where different parameters changes such as the RF amplitudes to the 0 - + AOMs (scan each separately)
         2) Part where we keep the different values constant for the 0 - + AOMs
 
@@ -70,7 +70,7 @@ def Pulse_const(total_pulse_duration):
 def Pulse_with_prep(total_pulse_duration, prep_duration, zero_pulse_duration, plus_pulse_duration,
                     minus_pulse_duration):
     """
-    This pulse id devided to two parts:
+    This pulse id divided to two parts:
         1) Preparation sequence where different parameters changes such as the RF amplitudes to the 0 - + AOMs (scan each separately)
         2) Part where we keep the different values constant for the 0 - + AOMs
 
@@ -115,7 +115,7 @@ def Pulse_with_prep(total_pulse_duration, prep_duration, zero_pulse_duration, pl
 def Pulse_with_prep_with_chirp(total_pulse_duration, prep_duration, zero_pulse_duration, plus_pulse_duration,
                                minus_pulse_duration, aom_chirp_rate, delta_f):
     """
-    This pulse id devided to two parts:
+    This pulse id divided to two parts:
         1) Preparation sequence where different parameters changes such as amplitudes and frequencies of the 0 - + AOMs (scan each separately)
         2) Part where we keep the different values constant for the 0 - + AOMs
 
@@ -212,6 +212,13 @@ def opx_control_dbg(obj, qm):
     job = qm.execute(opx_control_prog, flags=['auto-element-thread'])
 
     return job
+
+def ms(val):
+    return ms(val*1000)
+def us(val):
+    return ns(val*1000)
+def ns(val):
+    return val >> 2  # divide by 4
 
 def opx_control(obj, qm):
     with program() as opx_control_prog:
@@ -368,7 +375,9 @@ def opx_control(obj, qm):
 
             # TODO: make the opx_quadrf_misalignment_delay a parameter
             # FreeFall sequence:
-            assign(x, (0 - obj.Exp_Values['OPX_Quad_Misalignment_Delay']) // 4)
+            misalignment_delay = 0 - obj.Exp_Values['OPX_Quad_Misalignment_Delay']
+            assign(x, ns(misalignment_delay))
+            #assign(x, (0 - obj.Exp_Values['OPX_Quad_Misalignment_Delay']) // 4)
             FreeFall(FreeFall_duration - x, coils_timing)
 
             ##########################
@@ -377,15 +386,15 @@ def opx_control(obj, qm):
 
             with if_(Trigger_Phase == Phases.FREE_FALL):  # when trigger on PrePulse
                 ## Trigger QuadRF Sequence #####################
-                play("C_Seq", "Cooling_Sequence", duration=2500)
+                play("C_Seq", "Cooling_Sequence", duration=us(10))
                 ################################################
 
             wait(PrePulse_duration, "Cooling_Sequence")
-            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "Dig_detectors") # , "Dig_detectors"
+            align(*all_elements, "AOM_2-2/3'", "AOM_2-2'", "Dig_detectors")  # , "Dig_detectors"
 
             with if_(Trigger_Phase == Phases.PULSE_1):  # when trigger on pulse 1
                 ## Trigger QuadRF Sequence #####################
-                play("C_Seq", "Cooling_Sequence", duration=2500)
+                play("C_Seq", "Cooling_Sequence", duration=us(10))
                 ################################################
 
             ## For taking an image:

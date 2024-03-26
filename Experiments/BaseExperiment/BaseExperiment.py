@@ -112,11 +112,14 @@ class BaseExperiment:
         if playback_parameters is None:
             self.playback = {'active': False}
         else:
-            self.experiment_mode = ExperimentMode.PLAYBACK
             self.playback = playback_parameters
             self.playback['data_loaded'] = False
             self.playback['row_count'] = 0
             self.playback['streams'] = {}
+
+        # If the 'active' param is set to True, this means we're in Playback mode
+        if self.playback['active']:
+            self.experiment_mode = ExperimentMode.PLAYBACK
 
         # Insert a prompt to check we're not running on live lab devices (OPX, QuadRF)
         non_lab_user = self.login in self.settings['permissions']['allowed_offline']
@@ -622,6 +625,12 @@ class BaseExperiment:
     def get_batcher_map(self):
         raise Exception("'get_batcher_map' method must be implemented in subclass!")
 
+    def experiment_analysis_subfolder(self):
+        """
+        If the experiment does not define any, we are not creating any subfolders
+        """
+        return ''
+
     def sequence_started(self, sequence_definitions):
         pass
 
@@ -652,6 +661,9 @@ class BaseExperiment:
             else:
                 dst = self.bd_results.get_custom_root('network_root')
                 dst = dst.replace('{analysis_type}', self.save_results_for_analysis)
+                subfolder = self.experiment_analysis_subfolder()
+                if subfolder != '':
+                    dst = os.path.join(dst, subfolder)
 
             self.bd_results.copy_folder(source=experiment_path, destination=dst)
 
@@ -1024,23 +1036,6 @@ class BaseExperiment:
         except Exception as err:
             self.logger.warn(f'Unable to open file {filename} for writing. {err}')
         pass
-
-    def construct_pulses_sequence(self, pulse_seq_N, pulse_seq_S, pulse_len):
-        """
-        Given the pulses time-bins from North and South, and the Pulse Length:
-        - Constructs an array of tuples of the form (Start-tim, End-Time, Direction)
-        - Constructs a string representing the pulse sequence (e.g. 'N-S-N-S-N-S-s-s')
-        """
-
-        N_detection_pulses_locations = [tup + ('N',) for tup in pulse_seq_N if (tup[1] - tup[0]) < pulse_len]
-        n_sprint_pulses_locations = [tup + ('n',) for tup in pulse_seq_N if (tup[1] - tup[0]) >= pulse_len]
-        S_detection_pulses_locations = [tup + ('S',) for tup in pulse_seq_S if (tup[1] - tup[0]) < pulse_len]
-        s_sprint_pulses_locations = [tup + ('s',) for tup in pulse_seq_S if (tup[1] - tup[0]) >= pulse_len]
-        all_pulses = N_detection_pulses_locations + n_sprint_pulses_locations + S_detection_pulses_locations + s_sprint_pulses_locations
-        all_pulses = sorted(all_pulses, key=lambda tup: tup[1])
-
-        str = '-'.join(tup[2] for tup in all_pulses)
-        return all_pulses, str
 
     def format_iteration_and_sequence(self):
         # Get the iteration/sequence/name

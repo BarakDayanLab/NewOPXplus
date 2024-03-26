@@ -210,7 +210,7 @@
                 {
                   "name": "folder",
                   "type": "string",
-                  "default": "Most recent snapshots"
+                  "default": "C:\\temp\\playback_data\\Temperature\\20240314_143258"
                 }
               ]
             },

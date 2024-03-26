@@ -1746,6 +1746,81 @@ class PNSAExperiment(BaseExperiment):
         self.folded_tt_DP_timebins_cumulative_avg = Utils.running_average(self.folded_tt_DP_timebins_cumulative_avg, self.folded_tt_DP_timebins, self.counter)
         pass
 
+    def construct_pulses_sequence_only_from_config(self):
+        """
+        Construct the pulses string representing what happened in the experiment.
+        It relies on these configurations
+
+            det_pulse_amp_N = [0.28, 0, 0.28, 0, 0.28, 0]  ==> "N_N_N_"
+            det_pulse_amp_S = [0, 0.095, 0, 0.095, 0, 0.06]  ==> "_S_S_S"
+
+            sprint_pulse_amp_N = [0.06, 0.06]
+            sprint_pulse_amp_S = [0, 0]
+
+            det_pulse_amp_Early = [0, 0, 0, 0, 0, 0]
+            sprint_pulse_amp_Early = [0, 0, 0, 0]
+
+            det_pulse_amp_Late = [1, 1, 1, 1, 1, 1]
+            sprint_pulse_amp_Late = [1, 1, 1, 1]
+
+        """
+
+        str = ''
+        for i in range(0, len(Config.det_pulse_amp_N)):
+            if Config.det_pulse_amp_N[i] > 0:
+                str += 'N'
+            elif Config.det_pulse_amp_S[i] > 0:
+                str += 'S'
+            else:
+                str += '_'
+        for i in range(0, len(Config.sprint_pulse_amp_N)):
+            if Config.sprint_pulse_amp_N[i] > 0:
+                str += 'n'
+            elif Config.sprint_pulse_amp_S[i] > 0:
+                str += 's'
+            else:
+                str += '_'
+        return str
+
+    def construct_pulses_sequence(self, pulse_seq_N, pulse_seq_S, pulse_len):
+        """
+        Given the pulses time-bins from North and South, and the Pulse Length:
+        - Constructs an array of tuples of the form (Start-tim, End-Time, Direction)
+        - Constructs a string representing the pulse sequence (e.g. 'N-S-N-S-N-S-s-s')
+        """
+
+        N_detection_pulses_locations = [tup + ('N',) for tup in pulse_seq_N if (tup[1] - tup[0]) < pulse_len]
+        n_sprint_pulses_locations = [tup + ('n',) for tup in pulse_seq_N if (tup[1] - tup[0]) >= pulse_len]
+        S_detection_pulses_locations = [tup + ('S',) for tup in pulse_seq_S if (tup[1] - tup[0]) < pulse_len]
+        s_sprint_pulses_locations = [tup + ('s',) for tup in pulse_seq_S if (tup[1] - tup[0]) >= pulse_len]
+        all_pulses = N_detection_pulses_locations + n_sprint_pulses_locations + S_detection_pulses_locations + s_sprint_pulses_locations
+        all_pulses = sorted(all_pulses, key=lambda tup: tup[1])
+
+        str = '-'.join(tup[2] for tup in all_pulses)
+
+        # Iterate over all pulses - if one of them is sprint pulse and the Early AOM is open,
+        # this means we're "redirecting" the photon to do an "X" measurement.
+        measurement_direction = 'Z'
+        for tup in all_pulses:
+            # if all(x == 0 for x in Config.PNSA_Exp_Square_samples_Early[tup[0]:tup[1]]):
+            if tup[2] in 'ns' and Config.PNSA_Exp_Square_samples_Early[tup[0]] > 0:
+                measurement_direction = 'X'
+                break
+
+        return all_pulses, str, measurement_direction
+
+    def experiment_analysis_subfolder(self):
+        """
+        This overrides the BaseExperiment method and returns a string which encapsulates
+        the Detection pulses, the SPRINT pulse and the Measurement direction
+
+
+        Examples: "NSNSNSn-Z" or "SNSNSNSNs-X"
+        """
+        experiment_pulses_str = self.construct_pulses_sequence_only_from_config()
+        subfolder = f'{experiment_pulses_str}-{self.measurement_direction}'
+        return subfolder
+
     def run(self, sequence_definitions, run_parameters):
         """
         Function for analyzing, saving and displaying data from SPRINT experiment.
@@ -1834,7 +1909,7 @@ class PNSAExperiment(BaseExperiment):
                                                                                        smearing=0)  # smearing=int(Config.num_between_zeros/2))
 
         # Construct the pulses sequence and representing string for it (e.g. 'N-S-N-S-N-S-s-s')
-        self.sorted_pulses, self.experiment_type = self.construct_pulses_sequence(self.pulses_location_in_seq_N, self.pulses_location_in_seq_S, Config.sprint_pulse_len)
+        self.sorted_pulses, self.experiment_type, self.measurement_direction = self.construct_pulses_sequence(self.pulses_location_in_seq_N, self.pulses_location_in_seq_S, Config.sprint_pulse_len)
 
         # Find the center indices of the pulses and concatenate them to one list - to be used to put text boxes in figures
         # TODO: this can be moved/calculated later when we're doing the figure work...

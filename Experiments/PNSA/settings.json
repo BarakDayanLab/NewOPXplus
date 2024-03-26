@@ -187,6 +187,28 @@
                     "explorer": true
                 }
             ]
+        },
+        "live_dialog": {
+            "title": "LIVE on local",
+            "geometry": "600x270",
+            "message": "You are about to run LIVE from your workstation. Continue? (type CONFIRM)",
+            "buttons": [
+                {
+                    "description": "Continue live",
+                    "button_id": 1,
+                    "button_name": "Continue"
+                },
+                {
+                    "description": "Go offline",
+                    "button_id": 2,
+                    "button_name": "Offline"
+                },
+                {
+                    "description": "Exit code",
+                    "button_id": 3,
+                    "button_name": "Exit"
+                }
+            ]
         }
     },
     "permissions": {
