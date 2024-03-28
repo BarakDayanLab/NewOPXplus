@@ -6,9 +6,10 @@ import time
 
 class BDWebCam:
 
-    def __init__(self, device_index=0):
+    def __init__(self, folder, device_index=0):
         self.device_index = device_index  # the camera device index (they may be more than one connected
         self.webcam = None
+        self.folder = folder
         pass
 
     def connect(self):
@@ -22,7 +23,9 @@ class BDWebCam:
         self.webcam = None
         pass
 
-    def start_live_stream(self):
+    def start_live_stream(self, save_images, delay):
+
+        last_snapshot = int(time.time())
 
         while True:
             # Capture the video frame by frame
@@ -30,6 +33,13 @@ class BDWebCam:
 
             # Display the resulting frame
             cv2.imshow('Live Stream (press q to quit)', frame)
+
+            # Check if we should save the
+            if save_images:
+                now_epoch = int(time.time())
+                if (now_epoch - last_snapshot) > delay:
+                    last_snapshot = now_epoch
+                    self.save_image(frame)
 
             # the 'q' button is set as the
             # quitting button you may use any
@@ -42,7 +52,7 @@ class BDWebCam:
         check, frame = self.webcam.read()
         return check, frame
 
-    def timelapse(self, folder, delay=1, number_of_frames=-1):
+    def timelapse(self, delay=1, number_of_frames=-1):
         """
         Takes consequent images from webcam.
 
@@ -57,29 +67,35 @@ class BDWebCam:
             ret, frame = self.webcam.read()
 
             # Save image to folder
-            current_date_time = time.strftime("%Y%m%d_%H%M%S")
-            file_name = f'{current_date_time}_{count+1}.jpg'
-            full_path = os.path.join(folder, file_name)
-            cv2.imwrite(filename=full_path, img=frame)
+            self.save_image(image=frame)
 
-            print(f'Took snapshot - {full_path}')
             count += 1
             time.sleep(delay)
 
         pass
 
+    def save_image(self, image):
+        # Save image to folder
+        current_date_time = time.strftime("%Y%m%d_%H%M%S")
+        file_name = f'{current_date_time}.jpg'
+        full_path = os.path.join(self.folder, file_name)
+        cv2.imwrite(filename=full_path, img=image)
+        print(f'Took snapshot - {full_path}')
+
     @staticmethod
     def test():
 
-        webcam = BDWebCam()
+        save_path = r'C:\temp\GaussMeter'
+
+        webcam = BDWebCam(folder=save_path)
         webcam.connect()
 
-        mode = 'TIMELAPSE'
+        mode = 'LIVE'
 
         if mode == 'LIVE':
-            webcam.start_live_stream()
+            webcam.start_live_stream(save_images=True, delay=60*5)
         elif mode == 'TIMELAPSE':
-            webcam.timelapse(folder=r'C:\temp\timelapse', delay=10, number_of_frames=50)
+            webcam.timelapse(delay=60*5, number_of_frames=-1)  # Every 5 minutes
         elif mode == 'SNAP':
             check, frame = webcam.snap()
             cv2.imshow("Image", frame)
