@@ -1,6 +1,6 @@
 from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
 from Experiments.BaseExperiment.BaseExperiment import TerminationReason
-from Experiments.PNSA import PNSA_Config_Experiment as Config
+from Experiments.MWSpectroscopy import MWSpectroscopy_Config_Experiment as Config
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -16,11 +16,11 @@ from Utilities.BDDialog import BDDialog
 from Utilities.Utils import Utils
 
 
-class PNSAExperiment(BaseExperiment):
+class MWSpectroscopyExperiment(BaseExperiment):
     def __init__(self, playback_parameters=None, save_raw_data=False):
 
         # ------------------------------------------------------------------------------------------------------------
-        # If we are in playback mode, we load the PNSA_Config_Experiment.py file that was running during the recording
+        # If we are in playback mode, we load the <Experiment>_Config_Experiment.py file that was running during the recording
         #
         # Note:
         # - We do this BEFORE calling super().__init__ as it may invoke methods in this file - and we want the
@@ -29,8 +29,8 @@ class PNSAExperiment(BaseExperiment):
         # ------------------------------------------------------------------------------------------------------------
         global Config
         if playback_parameters['active']:
-            the_path = os.path.join(playback_parameters['playback_files_path'], 'Source Files', 'PNSA_Config_Experiment.py')
-            Config = SourceFileLoader("PNSA_Config_Experiment", the_path).load_module()
+            the_path = os.path.join(playback_parameters['playback_files_path'], 'Source Files', 'MWSpectroscopy_Config_Experiment.py')
+            Config = SourceFileLoader("MWSpectroscopy_Config_Experiment", the_path).load_module()
 
         # Invoking BaseClass constructor. It will initiate OPX, QuadRF, BDLogger, Camera, BDResults, KeyEvents etc.
         super().__init__(playback_parameters, save_raw_data)
@@ -183,6 +183,12 @@ class PNSAExperiment(BaseExperiment):
         self.total_phase_rep_MZ = int(2 * self.phase_rep_MZ)
         self.total_phase_rep_MZ_scan = 2 * self.phase_rep_MZ_fast_scan + self.phase_rep_MZ_slow_scan
         self.rep_MZ_check = int(self.Balancing_check_window * 1e6 / len(Config.PNSA_MZ_balance_pulse_North))
+
+        # MW spectroscopy parameters:
+        self.MW_start_frequency = int(100e6)  # [Hz]
+        # TODO: what are the increments of the scan? The end frequency?
+        self.Pulse_Length_MW = 400  # [usec]
+        self.Pulse_Length_OD = 20  # [usec]
 
         # Main Experiment:
         self.TOP2_pulse_len = int(Config.Probe_pulse_len / 4)  # [nsec]
@@ -2510,8 +2516,8 @@ if __name__ == "__main__":
     # Playback definitions
     playback_parameters = {
         "active": False,
-        #'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240225\173049_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
-        'playback_files_path': r'C:\temp\playback_data\PNSA\20240312\121917_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
+        #'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\MWSpectroscopy\20240225\173049_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
+        'playback_files_path': r'C:\temp\playback_data\MWSpectroscopy\20240312\121917_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
         "old_format": False,
         "save_results": False,
         "save_results_path": 'C:\\temp\\playback_data',
@@ -2560,7 +2566,7 @@ if __name__ == "__main__":
         ]
     }
 
-    experiment = PNSAExperiment(playback_parameters=playback_parameters, save_raw_data=True)
+    experiment = MWSpectroscopyExperiment(playback_parameters=playback_parameters, save_raw_data=True)
     run_status = experiment.run_sequence(sequence_definitions, run_parameters)
 
     pass

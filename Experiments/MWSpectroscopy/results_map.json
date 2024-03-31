@@ -1,0 +1,12 @@
+{
+  "env": "LAB",
+  "version": "0.1",
+  "strict": false,
+  "all_experiments_root": "C:\\temp\\refactor_debug\\Experiment_results",
+  "experiment_root": "C:\\temp\\refactor_debug\\Experiment_results\\MWSpectroscopy",
+  "root": "C:\\temp\\refactor_debug\\Experiment_results\\MWSpectroscopy\\{current_date}\\{current_time}_Photon_TimeTags",
+  "network_root": "U:\\Lab_2023\\Experiment_results\\MWSpectroscopy\\{analysis_type}\\{current_date}\\{current_time}_Photon_TimeTags",
+  "playback_data": "C:\\temp\\refactor_debug\\Experiment_results\\MWSpectroscopy\\20240107\\183329_Photon_TimeTags\\output",
+  "files": [
+  ]
+}
