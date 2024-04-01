@@ -1,4 +1,5 @@
 import inspect
+import json
 from qm.qua import *
 from Experiments.Enums.IOParameters import IOParameters as IOP
 
@@ -7,6 +8,24 @@ from Experiments.Enums.IOParameters import IOParameters as IOP
 # OPX Stuff - can be used from different OPX_Code in all experiments
 # -------------------------------------------------------------------
 
+def ms(val):
+    return ms(val*1000)
+def us(val):
+    return ns(val*1000)
+def ns(val):
+    return val >> 2  # divide by 4 - as the OPX clock is 4ns per cycle
+
+def Hz(val):
+    return val
+
+def KHz(val):
+    return val*1e3
+
+def MHz(val):
+    return val*1e6
+
+def GHz(val):
+    return val*1e9
 
 class OPX_Utils:
 
@@ -54,6 +73,19 @@ class OPX_Utils:
     @staticmethod
     def parameters_update(param):
         return
+
+    @staticmethod
+    def load_config(config_path):
+        """
+        Given a path to a json file ('.json' extenstion should be included), the configuration is loaded and returned
+        """
+        with open(config_path, 'r') as fp:
+           config = json.load(fp)
+        return config
+
+    def plot_pulses(self):
+        # TODO: implement
+        pass
 
     # TODO: Q:
     # TODO: Need to check what this does. It seems to do nothing as it multiplies by ZERO.

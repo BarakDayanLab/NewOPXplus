@@ -740,25 +740,15 @@ plt.plot(PNSA_Exp_Gaussian_samples_S)
 plt.plot(PNSA_Exp_Square_samples_Early)
 plt.plot(PNSA_Exp_Square_samples_Late)
 
-# with open('conf_args.json', 'r') as fp:
-#     confargs = json.load(fp)
-# dc_i = confargs['offsets']['I']
-# dc_q = confargs['offsets']['Q']
-# i_port = confargs['ports']['I']
-# q_port = confargs['ports']['Q']
-# lo_freq = confargs['lo_frequency']
-# im_freq = confargs['im_frequency']
-# wf_samples = [confargs['wf_samples']['wf1'], confargs['wf_samples']['wf2']]
-# correction_matrix = Utils.calc_cmat([confargs['correction_vars']['theta'], confargs['correction_vars']['k']])
-# pulse_time = confargs['pulse_time']
-
-#------------------------------------------------------
+# ------------------------------------------------------------------
+# OPX Elements Configuration
+# ------------------------------------------------------------------
 # NOTES - OPX Limitations:
 # - In 'elements', OPX allows only N intermediate channels
 # - Elements: avoid having multiple elements playing on the same port at the same time - may cause problems to the OPX
 # - Pulses: must be a multiplication of 4
 # - Waveforms: sample (amplitude) must not exceed 0.5 v (OPX will not alert, but perform modulu)
-#------------------------------------------------------
+# ------------------------------------------------------------------
 
 config = {
 
@@ -1605,16 +1595,6 @@ config = {
             'digital_marker': 'Trig_EOM_MZ'
             # 'digital_marker': 'ON'
         },
-
-        # TODO: Remove? Belongs to MW Spectroscopy
-        # 'pulse1_in': {
-        #     'operation': 'control',
-        #     'length': pulse_time,
-        #     'waveforms': {
-        #         'I': 'wf1',
-        #         'Q': 'wf2'
-        #     },
-        # },
     },
 
     'integration_weights': {
@@ -1739,16 +1719,6 @@ config = {
             'type': 'arbitrary',
             'samples': Depump_pulse_samples
         },
-        # TODO: Remove? Belongs to MW Spectroscopy
-        # 'wf1': {
-        #     'type': 'constant',
-        #     'sample': wf_samples[0]
-        # },
-        # TODO: Remove? Belongs to MW Spectroscopy
-        # 'wf2': {
-        #     'type': 'constant',
-        #     'sample': wf_samples[1]
-        # },
         'wf_gaus': {
             'type': 'arbitrary',
             'samples': Gaussian_pulse_samples

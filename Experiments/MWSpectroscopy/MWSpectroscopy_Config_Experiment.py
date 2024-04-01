@@ -2,8 +2,9 @@ import numpy as np
 from scipy import signal
 import math
 from Utilities.Utils import Utils
+from Utilities.OPX_Utils import ms, us, ns, GHz, MHz, KHz, Hz
+
 from matplotlib import pyplot as plt
-import json
 
 
 # For SPRINT experiment:
@@ -754,30 +755,48 @@ AOM_Minus_Attenuation = 1 # 0.85 seems to be about right, for 0.8 the slopes are
 ## For Homodyne ##
 LO_pulse_samples = ([0.4] * 20) + [0] * 100
 
-plt.plot(PNSA_Exp_Gaussian_samples_N)
-plt.plot(PNSA_Exp_Gaussian_samples_S)
-plt.plot(PNSA_Exp_Square_samples_Early)
-plt.plot(PNSA_Exp_Square_samples_Late)
+if False:
+    plt.plot(PNSA_Exp_Gaussian_samples_N)
+    plt.plot(PNSA_Exp_Gaussian_samples_S)
+    plt.plot(PNSA_Exp_Square_samples_Early)
+    plt.plot(PNSA_Exp_Square_samples_Late)
 
-with open('conf_args.json', 'r') as fp:
-    confargs = json.load(fp)
-dc_i = confargs['offsets']['I']
-dc_q = confargs['offsets']['Q']
-i_port = confargs['ports']['I']
-q_port = confargs['ports']['Q']
-lo_freq = confargs['lo_frequency']
-im_freq = confargs['im_frequency']
-wf_samples = [confargs['wf_samples']['wf1'], confargs['wf_samples']['wf2']]
-correction_matrix = Utils.calc_cmat([confargs['correction_vars']['theta'], confargs['correction_vars']['k']])
-pulse_time = confargs['pulse_time']
+# ------------------------------------------------------------------
+# MW Spectroscopy configuration
+# ------------------------------------------------------------------
 
-#------------------------------------------------------
+mw_config = {
+    "ports": {
+        "I": 7,
+        "Q": 8
+    },
+    "offsets": {
+        "I": 0.0006035864721154951,
+        "Q": 0.028084350276634855
+    },
+    "correction_vars": {
+        "theta": 0.010063361569762792,
+        "k": 0.7803900886139732
+    },
+    "lo_frequency": GHz(6.7346826),  # Local Oscillator: ~6.73 GHz
+    "im_frequency": MHz(100.0),  # Intermediate Freq: 100 MHz
+    "wf_samples": {
+        "in_phase_wf": 0.2,
+        "quadrature_wf": 0.2
+    },
+    "pulse_time": us(2)
+}
+correction_matrix = Utils.calc_cmat([mw_config['correction_vars']['theta'], mw_config['correction_vars']['k']])
+
+# ------------------------------------------------------------------
+# OPX Elements Configuration
+# ------------------------------------------------------------------
 # NOTES - OPX Limitations:
 # - In 'elements', OPX allows only N intermediate channels
 # - Elements: avoid having multiple elements playing on the same port at the same time - may cause problems to the OPX
-# - Pulses: must be a multiplication of 4
+# - Pulses: must be a multiplication of 4 (e.g 1 OPX cycle is 4 ns)
 # - Waveforms: sample (amplitude) must not exceed 0.5 v (OPX will not alert, but perform modulu)
-#------------------------------------------------------
+# ------------------------------------------------------------------
 
 config = {
 
@@ -934,7 +953,7 @@ config = {
             },
             'operations': {
                 'OD': "OD_pulse",
-                'OD_FS': "OD_FS_pulse",
+                'OD_FS': "OD_FS_pulse",  # TODO: Q: What is FS Pulse?
                 'Depump': "Depump_pulse",
             },
             'intermediate_frequency': IF_AOM_OD,
@@ -943,15 +962,15 @@ config = {
         "MW_Antenna": {
             "thread": "j",
             'mixInputs': {
-                'I': ('con1', i_port),
-                'Q': ('con1', q_port),
-                'mixer': 'my_mixer',
-                'lo_frequency': lo_freq
+                'I': ('con1', mw_config['ports']['I']),
+                'Q': ('con1', mw_config['ports']['Q']),
+                'mixer': 'mw_mixer',
+                'lo_frequency': mw_config['lo_frequency']
             },
-            'intermediate_frequency': im_freq,
+            'intermediate_frequency': mw_config['im_frequency'],  # MHz
             'operations': {
                 # 'pulse1': 'pulse1_in',
-                'gaus': 'pulse_gaus',
+                'gauss': 'pulse_gauss',
             }
         },
 
@@ -1462,7 +1481,7 @@ config = {
             'length': len(Gaussian_pulse_samples),
             'waveforms': {
                 # 'single': 'const_wf'
-                'single': 'wf_gaus'
+                'single': 'wf_gauss'
             },
         },
 
@@ -1471,7 +1490,7 @@ config = {
             'length': len(Gaussian_pulse_samples),
             'waveforms': {
                 # 'single': 'const_wf'
-                'single': 'wf_gaus2'
+                'single': 'wf_gauss2'
             },
         },
 
@@ -1640,20 +1659,23 @@ config = {
             # 'digital_marker': 'ON'
         },
 
-        # TODO: Remove? Belongs to MW Spectroscopy
-        # 'pulse1_in': {
-        #     'operation': 'control',
-        #     'length': pulse_time,
-        #     'waveforms': {
-        #         'I': 'wf1',
-        #         'Q': 'wf2'
-        #     },
-        # },
-        'pulse_gaus': {
+        # -------------------------------------------------
+        # MW Spectroscopy - pulses for the IQ mixer
+        # -------------------------------------------------
+
+        'pulse1_in': {
+            'operation': 'control',
+            'length': mw_config['pulse_time'],
+            'waveforms': {
+                'I': 'in_phase_wf',
+                'Q': 'quadrature_wf'
+            },
+        },
+        'pulse_gauss': {
             'operation': 'control',
             'length': len(Gaussian_pulse_samples),
             'waveforms': {
-                'I': 'wf_gaus',
+                'I': 'wf_gauss',
                 'Q': 'wf_0'
             }
         }
@@ -1781,21 +1803,19 @@ config = {
             'type': 'arbitrary',
             'samples': Depump_pulse_samples
         },
-        # TODO: Remove? Belongs to MW Spectroscopy
-        # 'wf1': {
-        #     'type': 'constant',
-        #     'sample': wf_samples[0]
-        # },
-        # TODO: Remove? Belongs to MW Spectroscopy
-        # 'wf2': {
-        #     'type': 'constant',
-        #     'sample': wf_samples[1]
-        # },
-        'wf_gaus': {
+        'in_phase_wf': {
+            'type': 'constant',
+            'sample': mw_config['wf_samples']['in_phase_wf']
+        },
+        'quadrature_wf': {
+            'type': 'constant',
+            'sample': mw_config['wf_samples']['quadrature_wf']
+        },
+        'wf_gauss': {
             'type': 'arbitrary',
             'samples': Gaussian_pulse_samples
         },
-        'wf_gaus2': {
+        'wf_gauss2': {
             'type': 'arbitrary',
             'samples': Gaussian_pulse_samples2
         },
@@ -1842,5 +1862,15 @@ config = {
         "FS_North": {
             "samples": PNSA_Exp_digital_samples_FS
         }
+    },
+
+    "mixers": {
+        "mw_mixer": [
+            {
+                "intermediate_frequency": mw_config['im_frequency'],
+                "lo_frequency": mw_config['lo_frequency'],
+                "correction": correction_matrix
+            }
+        ]
     }
 }

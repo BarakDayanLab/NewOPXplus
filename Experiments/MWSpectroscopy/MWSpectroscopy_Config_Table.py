@@ -35,7 +35,7 @@ Experiment_Values = {
     # Pulse_length[nsec] * 1000 repetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
     'M_off_time': 1.5,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
 
-    # TODO: we should have a differnt value here - and fix opx code to use this value
+    # TODO: we should have a different value here - and fix opx code to use this value
     'OPX_Quad_Misalignment_Delay': 4000  # = 4us [ns]
 
     # mw spectroscopy - if added

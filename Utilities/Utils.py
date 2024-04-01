@@ -52,7 +52,8 @@ class Utils:
     @staticmethod
     def calc_cmat(correction_vars):
         """
-        calculating the correction matrix required for IQ mixer using the variable \theta   k
+        Calculating the correction matrix required for IQ mixer using the variable \theta   k
+
         :param correction_vars: array of correction variables
         theta = correction_vars[0]
         theta = correction_vars[1]

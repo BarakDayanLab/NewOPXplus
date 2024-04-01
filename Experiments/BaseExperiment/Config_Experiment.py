@@ -997,13 +997,6 @@ config = {
         "Trig": {
             "samples": [(1, 20000), (0, 0)]
         }
-    },
-
-    # TODO: Remove? Belongs to MW Spectroscopy
-    # "mixers": {
-    #     "my_mixer": [
-    #         {"intermediate_frequency": im_freq, "lo_frequency": lo_freq, "correction": correction_matrix}
-    #     ]
-    # }
+    }
 
 }

@@ -617,28 +617,16 @@ AOM_Minus_Attenuation = 1 # 0.85 seems to be about right, for 0.8 the slopes are
 ## For Homodyne ##
 LO_pulse_samples = ([0.4] * 20) + [0] * 100
 
-# TODO: Remove the section below (after I find it's not used in QRAM experiment)
-## MW Spectroscopy parameters
 
-# with open('conf_args.json', 'r') as fp:
-#     confargs = json.load(fp)
-# dc_i = confargs['offsets']['I']
-# dc_q = confargs['offsets']['Q']
-# i_port = confargs['ports']['I']
-# q_port = confargs['ports']['Q']
-# lo_freq = confargs['lo_frequency']
-# im_freq = confargs['im_frequency']
-# wf_samples = [confargs['wf_samples']['wf1'], confargs['wf_samples']['wf2']]
-# correction_matrix = Utils.calc_cmat([confargs['correction_vars']['theta'], confargs['correction_vars']['k']])
-# pulse_time = confargs['pulse_time']
-
-#------------------------------------------------------
+# ------------------------------------------------------------------
+# OPX Elements Configuration
+# ------------------------------------------------------------------
 # NOTES - OPX Limitations:
 # - In 'elements', OPX allows only N intermediate channels
 # - Elements: avoid having multiple elements playing on the same port at the same time - may cause problems to the OPX
 # - Pulses: must be a multiplication of 4
 # - Waveforms: sample (amplitude) must not exceed 0.5 v (OPX will not alert, but perform modulu)
-#------------------------------------------------------
+# ------------------------------------------------------------------
 config = {
 
     'version': 1,
@@ -1679,121 +1667,6 @@ config = {
         "FS_North": {
             "samples": QRAM_Exp_digital_samples_FS
         }
-    },
-
-    # TODO: Remove? Belongs to MW Spectroscopy
-    # "mixers": {
-    #     "my_mixer": [
-    #         {"intermediate_frequency": im_freq, "lo_frequency": lo_freq, "correction": correction_matrix}
-    #     ]
-    # }
-}
-
-streams = {
-    "Detector_1_Timetags": {
-        "number": 1,
-        "name": "Detector_1_Timetags",
-        "type": "int",
-        "binary": "I",  # Unsigned int
-        "playback": "Det1_timetags.npz",
-        "save_raw": True
-    },
-    "Detector_2_Timetags": {
-        "number": 2,
-        "name": "Detector_2_Timetags",
-        "type": "int",
-        "binary": "I",  # Unsigned int
-        "playback": "Det2_timetags.npz",
-        "save_raw": True
-    },
-    "Detector_3_Timetags": {
-        "number": 3,
-        "name": "Detector_3_Timetags",
-        "type": "int",
-        "binary": "I",  # Unsigned int
-        "playback": "Det3_timetags.npz",
-        "save_raw": True
-    },
-    "Detector_4_Timetags": {
-        "number": 4,
-        "name": "Detector_4_Timetags",
-        "type": "int",
-        "binary": "I",  # Unsigned int
-        "playback": "Det4_timetags.npz",
-        "save_raw": True
-    },
-    "Detector_5_Timetags": {
-        "number": 5,
-        "name": "Detector_5_Timetags",
-        "type": "int",
-        "binary": "I",  # Unsigned int
-        "playback": "Det5_timetags.npz",
-        "save_raw": True
-    },
-    "Detector_6_Timetags": {
-        "number": 6,
-        "name": "Detector_6_Timetags",
-        "type": "int",
-        "binary": "I",  # Unsigned int
-        "playback": "Det6_timetags.npz",
-        "save_raw": True
-    },
-    "Detector_7_Timetags": {
-        "number": 7,
-        "name": "Detector_7_Timetags",
-        "type": "int",
-        "binary": "I",  # Unsigned int
-        "playback": "Det7_timetags.npz",
-        "save_raw": True
-    },
-    "Detector_8_Timetags": {
-        "number": 8,
-        "name": "Detector_8_Timetags",
-        "type": "int",
-        "binary": "I",  # Unsigned int
-        "playback": "Det8_timetags.npz",
-        "save_raw": True
-    },
-    "Bright_Port_Counts": {
-        "name": "Bright_Port_Counts",
-        "type": "int",
-        "playback": "Bright(1,2)\\Bright_timetags.npz",
-        "save_raw": True
-},
-    "Dark_Port_Counts": {
-        "name": "Dark_Port_Counts",
-        "type": "int",
-        "playback": "Dark(3,4)\\Bright_timetags.npz",
-        "save_raw": True
-},
-    "Phase_Correction_array": {
-        "name": "Phase_Correction_array",
-        "type": "int",
-        "binary": "I",  # Unsigned int
-        "save_raw": True
-    },
-    #"Phase_diff": {
-    #     "name": "Phase_diff",
-    # },
-    "Max_counts": {
-        "name": "Max_counts",
-        "type": "int",
-        "binary": "I",  # Unsigned int
-        "save_raw": True
-    },
-    #"Phase_Correction_for_min": {
-    #     "name": "Phase_Correction_for_min",
-    # },
-    "FLR_measure": {
-        "name": "FLR_measure",
-        "type": "float",
-        "binary": "d",  # double
-        "playback": "Flouresence.npz",
-        "save_raw": True
-    },
-    "antihelmholtz_on": {
-        "name": "antihelmholtz_on",
-        "binary": "I",  # Unsigned int
-        "save_raw": False
     }
+
 }

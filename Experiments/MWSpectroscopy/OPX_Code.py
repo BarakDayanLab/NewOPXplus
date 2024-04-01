@@ -239,9 +239,27 @@ def OD_Measure(OD_pulse_duration, spacing_duration, OD_sleep):
     play("OD_FS", "AOM_2-2/3'", duration=OD_pulse_duration)
 
 
+def play_sequential(pulses):
+
+    element1 = pulses[0][1]
+    element2 = pulses[1][1]
+
+    # Iterate over pulses and align/play each one
+    for pulse_tupple in pulses:
+        align(element1, element2)
+        pulse = pulse_tupple[0]
+        element = pulse_tupple[1]
+        duration = pulse_tupple[2]
+        play(pulse, element, duration)
+    align(element1, element2)
+
+    pass
+
 def MW_spectroscopy(MW_freq, pulse_length_MW, pulse_length_OD):
     """
     The MW spectroscopy function responsible for the OD -> MW antenna -> OD sequence
+    Note that we also have Depump at the beginning. It is issued by the QuadRF
+
     :param rep:
     :param delta_f:
     :param MW_freq:
@@ -250,24 +268,36 @@ def MW_spectroscopy(MW_freq, pulse_length_MW, pulse_length_OD):
     :return:
     """
 
-    # Update the MW Antena with the frequency it should use
+    # Update the MW Antenna with the frequency it should use
     update_frequency('MW_Antenna', MW_freq)
+
+    # TODO: Uncomment the below and test it
+    # play_sequential([
+    #     ("OD" * amp(0.2), "AOM_2-2/3", pulse_length_OD),
+    #     ("gauss", "MW_Antenna", pulse_length_MW),
+    #     ("OD" * amp(0.2), "AOM_2-2/3", pulse_length_OD),
+    # ])
 
     # TODO: Shouldn't I have here Depump?
 
-    # Align the Antenna and AOM - Cycling Transition
+    # Align the Antenna and AOM elements
     align("MW_Antenna", "AOM_2-2/3'")
 
     # Start OD pulse
+    # TODO: Why do we use here * amp(0.2) ?
+    # TODO: Qua documentation mentions that "* amp(...)" may result in computational overhead
+    # TODO: so if we do not need to use dynamically, why not define OD_Amplified pulse?
     play("OD" * amp(0.2), "AOM_2-2/3'", duration=pulse_length_OD)
     align("MW_Antenna", "AOM_2-2/3'")
 
     # Start Antenna pulse
-    play('gaus', "MW_Antenna", duration=pulse_length_MW)
-    align("antenna1", "AOM_2-2/3'")
+    play('gauss', "MW_Antenna", duration=pulse_length_MW)
+    align("MW_Antenna", "AOM_2-2/3'")
 
     # Start OD pulse
     play("OD" * amp(0.2), "AOM_2-2/3'", duration=pulse_length_OD)
+
+    # TODO: Why do you need this last align?
     align("MW_Antenna", "AOM_2-2/3'")
 
 
@@ -1094,13 +1124,10 @@ def opx_control(obj, qm):
                 ## Trigger QuadRF Sequence #####################
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
-            ## For taking an image:
+
+            # Operating the MW Spectroscopy sequence (e.g. OD->MW->OD)
             with if_((Pulse_1_duration > 0) & ~Experiment_ON):
                 align(*all_elements)
-                # Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
-                #                 pulse_1_duration_minus, pulse_1_duration_plus)
-                # Measure(Pulse_1_duration)  # This triggers camera (Control 7)
-                # running mw spectroscopy when  not running pnsa - instead of taking flash/image
                 MW_spectroscopy(MW_freq, pulse_length_MW, pulse_length_OD)
                 align(*all_elements)
 
