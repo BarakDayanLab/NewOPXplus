@@ -1,7 +1,7 @@
-# Wrtitten by ngordon1
+# Written by ngordon1
 
 # pyserial & mogdevice modules for python should be installed.
-# pyserial can be installed vias pip install
+# pyserial can be installed via pip install
 # You can download the file from: https://www.moglabs.com/support/software/connection. Look for python driver; then put it in python-Lib library.
 
 ## --------------- Usage example: ----------------------------
@@ -12,7 +12,7 @@
 ## --------------- Formatting of commands file: ---------------
 
 # Code ignores empty lines & lines of which 1st char is '#' (could be used for comments)
-# Each line should be compirsed of 5 data-words:
+# Each line should be comprised of 5 data-words:
 # channel[1-4] , freq [Hz, kHz, MHz], power [dBm, dB, mW, W], phase [deg, rad], duration [us, ms, s]
 # Such that:
 #           1,10MHz,10dBm,0x0,3s
@@ -26,60 +26,58 @@
 
 
 ## ------------------------------------------------------------
-from mogdevice import MOGDevice
+from Experiments.QuadRF.mogdevice import MOGDevice
+
 import os.path
 from pathlib import Path
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
+from Utilities.BDLogger import BDLogger
+from Utilities.Utils import Utils
 
-
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
 
 class QuadRFController:
-    def __init__(self, MOGdevice = None, devPort = '169.254.231.196', debugging = False, opticalPowerCalibration = None):
+    def __init__(self, MOGdevice=None, devPort='169.254.231.196', debugging=False, opticalPowerCalibration=None):
 
-        # connect to the device
+        # Initialize Logger
+        self.logger = BDLogger()
+
+        # connect to the device (or use an existing one - passed as argument in 'MOGdevice'
         try:
-            self.dev = MOGDevice(devPort) if MOGdevice is None else MOGdevice
-        except:
-            print('\033[93m' + 'Could not connect to device-port %s (QuadRF). Try different port. Usual values are \'COM3\' or some ip address' % str(devPort) + '\033[0m' )
+            self.device = MOGDevice(devPort) if MOGdevice is None else MOGdevice
+        except Exception as e:
+            self.logger.warn(f'Could not connect to QuadRF device-port {devPort}. Error: {e}. Try different port. Usual values are \'COM3\' or some ip address.')
             return
         # print some information
         self.debugging = debugging
-        if self.debugging: print('\033[94m' + 'Connected to QuadRF. \n Device info:', self.dev.ask('info') + '\033[0m') # print blue
+        if self.debugging:
+            device_info = self.device.ask('info')
+            self.logger.debug(f'Connected to QuadRF. Device info: {device_info}')
         self.lineCount = 0
-        self.lines = [{'Amplitudes': [], 'Durations':[],'Frequencies':[]},{'Amplitudes': [], 'Durations':[],'Frequencies':[]},{'Amplitudes': [], 'Durations':[],'Frequencies':[]},{'Amplitudes': [], 'Durations':[],'Frequencies':[]}]  # 4 channels, each holds: duration, frequency, amplitude
-        self.constantOpticalPowerCalibration = opticalPowerCalibration # Format: c = {'ch_1':{'calibration_func':calibration_func, 'calibrate_RF_Power':'30dbm','calibrate_Optical_Power':0.5}}
+        self.lines = [{'Amplitudes': [], 'Durations':[], 'Frequencies':[]}, {'Amplitudes': [], 'Durations':[], 'Frequencies':[]}, {'Amplitudes': [], 'Durations':[], 'Frequencies':[]}, {'Amplitudes': [], 'Durations':[], 'Frequencies':[]}]  # 4 channels, each holds: duration, frequency, amplitude
+        self.constantOpticalPowerCalibration = opticalPowerCalibration  # Format: c = {'ch_1':{'calibration_func':calibration_func, 'calibrate_RF_Power':'30dbm','calibrate_Optical_Power':0.5}}
 
         # Previous line means: for channel 1, use calibration function to calibrate 30dbm to be 0.5 power [normalized] (for ANY frequency)
         # Note: calibration_func should be a python function taking two vars: freq & optical power, returning the desired RF power
-        if self.constantOpticalPowerCalibration is not None: print('\033[92m' + 'Note: calibration RF to optical power is ON'+ '\033[0m') # print green
+        if self.constantOpticalPowerCalibration is not None:
+            self.logger.info('Note: calibration RF to optical power is ON')
 
     def __del__(self):
         self.disconnectQuadRF()
 
     def disconnectQuadRF(self):
         try:
-            self.dev.close()
+            self.device.close()
         except Exception as e:
-            self.printError('Unable to disconnect from QuadRF. It was probably already disconnected.', e)
+            self.logger.error(f'Unable to disconnect from QuadRF. {e}. It was probably already disconnected.')
 
-    def sendCmd(self, line, phase_name = None):
+    def sendCmd(self, line, phase_name=None):
         if str(line).find('TABLE,APPEND') >= 0:
             self.lineCount += 1
             terms = self.processTableAppendLine(line)
             ch = terms['Channel']
-            if ch in range(1,5):
+            if ch in range(1, 5):
                 if self.constantOpticalPowerCalibration and ('ch_%d' % ch) in self.constantOpticalPowerCalibration:
                     cDic = self.constantOpticalPowerCalibration[('ch_%d' % ch)]
                     if ('affected_phases_names' not in cDic or phase_name in cDic['affected_phases_names']) and terms['Amplitude'] != '0x0':
@@ -89,18 +87,19 @@ class QuadRFController:
                 self.lines[ch - 1]['Durations'].append(terms['Duration'])
                 self.lines[ch - 1]['Frequencies'].append(terms['Frequency'])
                 self.lines[ch - 1]['Amplitudes'].append(terms['Amplitude'])
-            if self.debugging: print(line)
-        self.dev.cmd(line)
+            if self.debugging:
+                self.logger.debug(line)
+        self.device.cmd(line)
 
     def getNumericValueFromString(self, s):
         res = ''.join([n for n in str(s) if (n in['-','.'] or n.isdigit())]) if '0x0' not in s else '0x0' # '0x0' IS numeric, it means absolute zero
-        return(res)
+        return res
 
     def lineIsTableCommand(self, l):
         if  type(l) is str and len(l.strip()) > 0 and l[0] != '#':
-            return(True)
+            return True
         else:
-            return(False)
+            return False
 
     # @initalAmp, @finalAmp are numbers (dBm are assumed) or strings
     # @ch is channel int, @freq could be either number (MHz assumed) or string.
@@ -124,34 +123,34 @@ class QuadRFController:
             freqScale = 'MHz'
 
         d = self.getNumericValueFromString(duration)
-        durationScale = str(duration).replace(str(d),'')
+        durationScale = str(duration).replace(str(d), '')
         if durationScale == '':
             durationScale = 'ms'
 
         if linearPowerChange:
-            amps = [self.amplitudeMultiplierToDBm(p) for p in np.linspace(self.dbmToP(float(iAmp)), self.dbmToP(float(fAmp)), num = steps)] # Linear drop in power
+            amps = [Utils.amplitudeMultiplierToDBm(p) for p in np.linspace(Utils.dbmToP(float(iAmp)), Utils.dbmToP(float(fAmp)), num = steps)] # Linear drop in power
         else:
             amps = np.linspace(float(iAmp), float(fAmp), num=steps)  # Linear drop in dbms
         freq = np.linspace(float(iFreq),float(fFreq),steps)
         t = float(d) / steps
 
         # Phase calculations
-        tScale = 0.001 if durationScale == 'ms' else 1 # 1 if [sec]
-        fScale = 1e6 if freqScale == 'MHz' else 1 # 1 if [Hz]
-        phase = 0 # in degrees (!)
+        tScale = 0.001 if durationScale == 'ms' else 1  # 1 if [sec]
+        fScale = 1e6 if freqScale == 'MHz' else 1  # 1 if [Hz]
+        phase = 0  # in degrees (!)
         for index, a in enumerate(amps):
             self.sendCmd('TABLE,APPEND,%d,%.2f%s,%.2f%s,%.2f, %.2f%s' % (ch, float(freq[index]), freqScale, float(a), ampScale, float(phase), float(t), durationScale))
             phase = (phase + freq[index] * fScale * t * tScale) % 360
 
     def calibrateAmplitudeForConstantOpticalPower(self, calibration_func, freq, RFAmp, calibrate_RF_Power = 32, calibrate_Optical_Power = 0.6, calibrated_to_rf_ratio = False):
-        ratio = self.dbmToP(RFAmp - calibrate_RF_Power)  # i.e., say I want the equivalent of 22dbm, and am calibrated to 32dbm, then optical power is 10 times weaker
+        ratio = Utils.dbmToP(RFAmp - calibrate_RF_Power)  # i.e., say I want the equivalent of 22dbm, and am calibrated to 32dbm, then optical power is 10 times weaker
         targetOpticalPower = calibrate_Optical_Power * ratio
         calibratedRF = float(calibration_func(freq, targetOpticalPower))
         if calibratedRF == 0 or np.isnan(calibratedRF):
-            print('\033[91m' + 'Warning! for f = {f}, RFAmp = {a}, calibrated RF power is 0 (perhaps input outside calibration function limits?)'.format(f = freq, a = RFAmp) + '\033[0m') # print fail
+            self.logger.warn('For f = {f}, RFAmp = {a}, calibrated RF power is 0 (perhaps input outside calibration function limits?)'.format(f=freq, a=RFAmp))
             calibratedRF = calibrate_RF_Power
-            print('\033[91m' + 'Setting output RF to maximum ({m}))'.format(m = calibrate_RF_Power) + '\033[0m')
-        if calibrated_to_rf_ratio: calibratedRF = RFAmp + self.amplitudeMultiplierToDBm(calibratedRF) # in this case, calibration function actually gives ratio...
+            self.logger.warn('Setting output RF to maximum ({m}))'.format(m=calibrate_RF_Power))
+        if calibrated_to_rf_ratio: calibratedRF = RFAmp + Utils.amplitudeMultiplierToDBm(calibratedRF)  # in this case, calibration function actually gives ratio...
         return calibratedRF
 
     # ----------------------------------------------------------
@@ -163,7 +162,7 @@ class QuadRFController:
     # @trigger: either 'RISING' or 'FALLING' (see quadRF manual)
     def armMogRFTable(self, txtfile=None, reArm=True, checkCommandsFile=True, trigger='RISING'):
         if not os.path.isfile(txtfile):
-            print('Could not find %s; \n check for file location.')
+            self.logger.warn(f'Could not find {txtfile}. Check for file location.')
 
         lines = []
         with open(txtfile) as f:
@@ -179,14 +178,14 @@ class QuadRFController:
                         try:
                             chns[c - 1] = True
                         except:
-                            print('Line %d is corrupted' % (i + 1))
-                            print('Table was not loaded.')
+                            self.logger.warn('Line %d is corrupted' % (i + 1))
+                            self.logger.warn('Table was not loaded.')
                             return
 
             # Load general commands
             for i, c in enumerate(chns):
                 if c is True:
-                    self.prepareChannelForTable(i + 1, reArm, trigger)
+                    self.prepare_channel_for_table(i + 1, reArm, trigger)
 
             # Load table command
             for l in lines:
@@ -197,17 +196,20 @@ class QuadRFController:
                 if c is True:
                     self.armChannel(i + 1)
 
-    def prepareChannelForTable(self, ch, reArm=True, trigger='RISING', limit='4dbm'):
+    def prepare_channel_for_table(self, ch, reArm=True, trigger='RISING', limit='4dbm'):
         ch = int(ch)
         self.setLimit(ch, limit)  # Current limit on channel
-        self.sendCmd('MODE,%d,TSB' % ch)  # Out in table mode
-        self.sendCmd('TABLE,CLEAR,%d' % ch)  # clear all previous commands in table
+        self.sendCmd(f'MODE,{ch},TSB')  # Out in table mode
+        self.sendCmd(f'TABLE,CLEAR,{ch}')  # clear all previous commands in table
         self.lineCount = 0
-        self.sendCmd('TABLE,EDGE,%d,%s' % (ch, trigger.upper()))  # Set trigger option
-        if reArm:
-            self.sendCmd('TABLE,REARM,%d,on' % (ch))
-        else:
-            self.sendCmd('TABLE,REARM,%d,off' % (ch))
+        trigger_str = trigger.upper()
+        reArm_str = 'on' if reArm else 'off'
+
+        # Set Trigger option
+        self.sendCmd(f'TABLE,EDGE,{ch},{trigger_str}')  # Set trigger option
+
+        # ReArm - on/off
+        self.sendCmd(f'TABLE,REARM,{ch},{reArm_str}')
 
     def armChannel(self, ch):
         self.sendCmd('TABLE,ARM,%d' % (ch))
@@ -235,28 +237,45 @@ class QuadRFController:
         else:
             duration = durationNV        #if duration > 1e3: duration = duration / 1e2
         freqNV = self.getNumericValueFromString(str(terms[3]))
-        freq = float(freqNV) / 1e6 if str(terms[-1]).replace(freqNV,'').strip().lower() == 'hz' else float(freqNV)                   # either hz or mhz
+        freq = float(freqNV) / 1e6 if str(terms[-1]).replace(freqNV,'').strip().lower() == 'hz' else float(freqNV)  # either hz or mhz
         ampNV = self.getNumericValueFromString(str(terms[4].replace('dbm', '')))
         amp = float(ampNV) if ampNV != '0x0' else '0x0'                                                         # always dbm
         ch = int(terms[2])
         return {'Duration': duration, 'Frequency': freq, 'Amplitude': amp, 'Channel': ch}
 
-    def saveLinesAsCSV(self, path):
+    def get_channel_signals_as_string(self, channel_number):
+        """
+        Returns all channels signals in a CSV line format (Amplitude, Durations, Frequencies)
+        """
+        channel_signals = self.lines[channel_number]
+        csv_line = ''
+        for channel in channel_signals:
+            if channel != {'Amplitudes': [], 'Durations': [], 'Frequencies': []}:
+                csv_line = f"{channel['Amplitude']},{channel['Durations']},{channel['Frequencies']}\n"
+        return csv_line
+
+    def saveLinesAsCSV(self, path, file_name):
+
+        # Ensure the save path exists (create it if not)
+        Utils.ensure_folder_exists(path)
+
         for i, channel in enumerate(self.lines):
-            if channel != {'Amplitudes': [], 'Durations':[],'Frequencies':[]}: # That is, if channel isn't empty
-                file_name = Path(path).stem
-                save_path = path.replace(file_name, f'{file_name}_ch{i + 1}') # add channel to save path
+            if channel != {'Amplitudes': [], 'Durations': [], 'Frequencies': []}:  # That is, if channel isn't empty
+                file_name_with_channel = file_name.replace('.csv', f'_ch{i + 1}.csv')
+                save_path = os.path.join(path, file_name_with_channel)
                 try:
                     with open(save_path, "w") as outfile:
                         writer = csv.writer(outfile)
                         writer.writerow(channel.keys())
                         writer.writerows(zip(*channel.values()))
                 except IOError as e:
-                    print("I/O error in saveLinesAsCSV", e)
+                    self.logger.error(f'I/O error in saveLinesAsCSV {e}')
 
+    def get_channel_data(self, channel_num):
+        return self.lines[channel_num]
 
     def plotTables(self):
-        print(self.lines)
+        self.logger.debug(self.lines)
         fig, axs = plt.subplots(2,2)
         fig.suptitle('QuadRF Table [MOT not to scale]')
         for ch, terms in enumerate(self.lines):
@@ -281,11 +300,11 @@ class QuadRFController:
     def continuousTableForChannel(self, ch, frq, amp):
         self.sendCmd('TABLE,APPEND,%d, %s, %s, 0x0, 0x0' % (ch,frq,amp))
 
-    def continuousTablesForChannels(self, channels = (1,2,3,4), start = True):
+    def continuousTablesForChannels(self, channels=(1, 2, 3, 4), start=True):
         if 1 in channels and self.topticaLockWhenUpdating: self.setTopticaLock(False)
-        self.prepareChannelsForTable(prepareChannels=channels,reArm = False)  # Deletes all existing tables on QuadRF. Also sets limits [hard coded!] on each channel
-        if 'Continuous' != self.initialValues['Operation_Mode']:
-            print('\033[94m' + 'Continuous mode. Parameters taken from quadRFMOTController.py (hard coded)' + '\033[0m')  # print blue
+        self.prepareChannelsForTable(prepareChannels=channels, reArm=False)  # Deletes all existing tables on QuadRF. Also sets limits [hard coded!] on each channel
+        if not self.continuous:
+            self.logger.debug('Continuous mode. Parameters taken from quadRFMOTController.py (hard coded)')
             # Hard coding continuous parameters here, if this function was called not due to Operation_Mode = Continuous.
             zeroAmp = '0x0'
             if 1 in channels: self.continuousTableForChannel(1, '113MHz', self.Amp_Ch1)
@@ -293,8 +312,7 @@ class QuadRFController:
             if 3 in channels: self.continuousTableForChannel(3, '110MHz', self.Amp_Ch3)
             if 4 in channels: self.continuousTableForChannel(4, '133.325MHz', self.Amp_Ch4)  # Depump
         else:
-            print('\033[94m' + 'Continuous mode. Parameters taken from Config_Table.py. See Operation_Modes.' + '\033[0m')  # print blue
-            # Otherwise, get the data from Config_Table
+            self.logger.debug('Continuous mode. Parameters taken initial values passed as parameters when inited QuadRFController')
             if 1 in channels: self.continuousTableForChannel(1, self.initialValues['CH1_freq'], self.initialValues['CH1_amp'])
             if 2 in channels: self.continuousTableForChannel(2, self.initialValues['CH2_freq'], self.initialValues['CH2_amp'])
             if 3 in channels: self.continuousTableForChannel(3, self.initialValues['CH3_freq'], self.initialValues['CH3_amp'])
@@ -303,20 +321,15 @@ class QuadRFController:
         channelsStr = ''
         for ch in channels:
             channelsStr += ',%d'%ch
-        if start: self.sendCmd('TABLE,START ' + channelsStr)
+        if start:
+            self.sendCmd('TABLE,START ' + channelsStr)
 
         if 1 in channels and self.topticaLockWhenUpdating: self.setTopticaLock(True)
 
-    def turnChannelsOff(self, channels=(1, 2, 3, 4), holdLocking = True):
-        """
-        This was never tested. The idea behind it was to completely offset the AOMs so the beam path
-        is completely off, not used. This is to keep the AOMs warm.
-
-        This method is not invoked anywhere.
-        """
+    def turnChannelsOff(self, channels=(1, 2, 3, 4), holdLocking=True):
         if 1 in channels and holdLocking: self.setTopticaLock(False)
-        self.prepareChannelsForTable(prepareChannels=channels,reArm = False)  # Deletes all existing tables on QuadRF. Also sets limits [hard coded!] on each channel
-        print('\033[94m' + 'Turnning all channels off (far detuning them)' + '\033[0m')  # print blue
+        self.prepareChannelsForTable(prepareChannels=channels,reArm=False)  # Deletes all existing tables on QuadRF. Also sets limits [hard coded!] on each channel
+        self.logger.debug('Turning all channels off (far detuning them)')
         zeroAmp = '0x0'
         if 1 in channels: self.continuousTableForChannel(1, '113MHz', self.Amp_Ch1)
         if 2 in channels: self.continuousTableForChannel(2, '150MHz', self.Amp_Ch2)
@@ -328,22 +341,5 @@ class QuadRFController:
             channelsStr += ',%d' % ch
         self.sendCmd('TABLE,START ' + channelsStr)
 
-        if 1 in channels and holdLocking: self.setTopticaLock(True)
-
-    # ----------------------------------------------------------
-    # --------------- Utility methods -------------------------
-    # ----------------------------------------------------------
-
-    def amplitudeMultiplierToDBm(self, ratio):
-        return 10 * np.log10(ratio)
-
-    def dbmToP(self, dbm):
-        return 10**(dbm/10) # return mW
-
-
-    def printError(self, s=''):
-        print(f"{bcolors.WARNING}{s}{bcolors.ENDC}")
-
-    def printGreen(self, s=''):
-        print(f"{bcolors.OKGREEN}{s}{bcolors.ENDC}")
-
+        if 1 in channels and holdLocking:
+            self.setTopticaLock(True)

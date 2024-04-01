@@ -33,6 +33,9 @@ from Experiments.BaseExperiment.Config_Table import Default_Values
 from Experiments.Enums.ValuesTransformer import ValuesTransformer
 
 from Experiments.QuadRF.quadRFMOTController import QuadRFMOTController
+#from Experiments.QuadRF.QuadRFMOTController2 import QuadRFMOTController
+#from Experiments.QuadRF.QuadRFMOTController2 import QuadRFMode
+
 
 from logging import StreamHandler, Formatter, INFO
 from qm.QuantumMachinesManager import QuantumMachinesManager
@@ -266,6 +269,7 @@ class BaseExperiment:
                                        # updateChannels=(1, 4),  # For constant Depump
                                        topticaLockWhenUpdating=False,
                                        debugging=False,  # True,
+                                       #mode=QuadRFMode.DYNAMIC,
                                        continuous=False)
         self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
 
@@ -276,7 +280,8 @@ class BaseExperiment:
                                         initialValues={'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
                                         updateChannels=[3],
                                         debugging=False,  # True,
-                                        continuous=True)  # updates values on QuadRF (uploads table)
+                                        #mode=QuadRFMode.CONTINUOUS,
+                                        continuous=True)
         self.QuadRFControllers.append(qrfContr2)  # updates values on QuadRF (uploads table)
 
         # TODO: do we need this?
