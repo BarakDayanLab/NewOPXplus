@@ -8,7 +8,7 @@ from Utilities.OPX_Utils import OPX_Utils
 all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]
 
 
-def MOT(mot_repetitions):
+def MOT(mot_repetitions, OD_Attenuation):
     """
     The MOT function is used to play the MOT. To that end, we send RF signal to AOM_0, AOM_+, AOM_- for the duration of the MOT.
 
@@ -25,19 +25,23 @@ def MOT(mot_repetitions):
     m = declare(int)
     play("Detection" * amp(FLR * 0), "FLR_detection", duration=4)  # we dont know why this works, but Yoav from QM made us write this line to solve an alignment problem we had in the next 2 for loops
     with for_(n, 1, n <= mot_repetitions, n + 1):
+        # MOT Related AOMs
         play("MOT_with_EOM" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0")
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
         # play("Const_open", "PULSER_N")
-        # play("OD_FS" * amp(0.5), "AOM_2-2/3'")
+
+        # OD Beam
+        play("OD_FS" * amp(OD_Attenuation), "AOM_2-2/3'")
+
         # play("Const_open" * amp(Config.AOM_Late_Attenuation_From_Const), "AOM_Late")
         # play("Const_open","PULSER_N")
         # play("Const_open","PULSER_S")
 
         play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
+
     with for_(m, 1, m <= (mot_repetitions - 1), m + 1):
         measure("Detection", "FLR_detection", None, integration.full("Detection_opt", FLR, "out1"))
-        # play("OD_FS" * amp(0.1), "AOM_2-3'_for_interference")
 
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
           "AOM_2-2/3'", "FLR_detection", "Measurement") # , "Dig_detectors") #, "PULSER_N", "PULSER_S")
@@ -46,7 +50,7 @@ def MOT(mot_repetitions):
 
 def Pulse_const(total_pulse_duration):
     """
-    This pulse id devided to two parts:
+    This pulse id divided to two parts:
         1) Preparation sequence where different parameters changes such as the RF amplitudes to the 0 - + AOMs (scan each separately)
         2) Part where we keep the different values constant for the 0 - + AOMs
 
@@ -988,6 +992,8 @@ def opx_control(obj, qm):
         Depump_start = declare(int, value=int(obj.Depump_Start * 1e6 / 4))
 
         # OD measurement variables:
+        OD_attenuation = declare(fixed, value=obj.Exp_Values['OD_continuous_attenuation'])
+
         ## In fiber:
         M_off_time = declare(int, value=int(obj.M_off_time / 4))
         shutter_open_time = declare(int, value=int(obj.Shutter_open_time * 1e6 / 4))
@@ -1049,7 +1055,7 @@ def opx_control(obj, qm):
 
             # MOT sequence:
 
-            FLR = MOT(MOT_Repetitions)
+            FLR = MOT(MOT_Repetitions, OD_attenuation)
             play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
 
             # Delay before fountain:

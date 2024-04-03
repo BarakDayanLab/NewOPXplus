@@ -7,7 +7,7 @@ from qm.qua import *
 all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]
 
 
-def MOT(mot_repetitions):
+def MOT(mot_repetitions, OD_Attenuation):
     """
     The MOT function is used to play the MOT. To that end, we send RF signal to AOM_0, AOM_+, AOM_- for the duration of the MOT.
 
@@ -27,7 +27,10 @@ def MOT(mot_repetitions):
         play("MOT" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0")
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
-        # play("OD_FS" * amp(0.5), "AOM_2-2/3'")
+
+        # OD beam
+        play("OD_FS" * amp(OD_Attenuation), "AOM_2-2/3'")
+
         play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
     with for_(m, 1, m <= (mot_repetitions - 1), m + 1):
         measure("Detection", "FLR_detection", None, integration.full("Detection_opt", FLR, "out1"))
@@ -308,6 +311,7 @@ def opx_control(obj, qm):
         M_duration = declare(int, value=int(obj.M_time / 4))  # From [nsec] to [4 nsec]
         M_off_time = declare(int, value=int(obj.M_off_time / 4))
         OD_Delay = declare(int, value=int(obj.OD_delay * 1e6 / 4))
+        OD_attenuation = declare(int, value=int(obj.Exp_Values['OD_continuous_attenuation']))
         shutter_open_time = declare(int, value=int(obj.Shutter_open_time * 1e6 / 4))
         Rep = declare(int, value=obj.rep)
 
@@ -351,7 +355,7 @@ def opx_control(obj, qm):
             ##########################
 
             # MOT sequence:
-            FLR = MOT(MOT_Repetitions)
+            FLR = MOT(MOT_Repetitions, OD_attenuation)
             play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
 
             # Delay before fountain:
@@ -485,6 +489,8 @@ def opx_control(obj, qm):
                     assign(OD_Delay, IO2)
                 with if_(i == IOP.OD_SNSPDS_DURATION.value):  # Live control of the SNSPDs OD measurement duration
                     assign(Rep, IO2)
+                with if_(i == IOP.OD_CONTINUOUS_ATTENUATION):  # Turn on continuous OD and attenuate factor
+                    assign(OD_attenuation, IO2)
                 with if_(i == IOP.DEPUMP_START.value):  # Live control of the Depump measurement start time
                     assign(Depump_start, IO2)
                 with if_(i == IOP.DEPUMP_PULSE_DURATION.value):  # Live control of the Depump measurement pulses duration
