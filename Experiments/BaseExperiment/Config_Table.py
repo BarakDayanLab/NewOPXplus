@@ -131,7 +131,11 @@ Initial_Values = {
 
     'OPX_Quad_Misalignment_Delay': 4000,  # = 4us [ns]
 
-    'opticalPowerCalibrationFunction': None  # calibrationData  # Used for calibration of the power of the lock AOM (TOP1)
+    'opticalPowerCalibrationFunction': None,  # calibrationData  # Used for calibration of the power of the lock AOM (TOP1)
+
+    # OD Related
+    'OD_continuous_attenuation': 0.0  # Put on 0 to turn beam off
+
 }
 
 Default_Values = {

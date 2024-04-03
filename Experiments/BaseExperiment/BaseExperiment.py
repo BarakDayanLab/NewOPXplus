@@ -908,7 +908,7 @@ class BaseExperiment:
                 for ch in K2C[key]:
                     self.Update_QuadRF_channels.add(ch)
             else:
-                self.logger.warn(f'{key} is not in KeyToChannel. No QuadRF channel updated.')
+                self.logger.info(f'{key} is not in KeyToChannel. No QuadRF channel updated.')
 
         # -------------------------------------------------------
         # Now we check if this is a param we need to update OPX
@@ -939,7 +939,7 @@ class BaseExperiment:
             logger.warn(f'Cannot update {key}. Not supported in your IOP or K2C tables.')
             return
 
-        logger.info(f'updateValue: updated {key} to {value} at {"and ".join(updated_at)}')
+        logger.info(f'updateValue: {key} updated. New Value: {value}. Updated: {", ".join(updated_at)}')
 
         if update_parameters:
             self.update_parameters()

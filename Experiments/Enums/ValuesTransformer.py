@@ -138,6 +138,8 @@ ValuesFactor = {
     'OD_duration_pulse1': [int, 1e6 / 4],  # [msec]
     'OD_sleep': [int, 1e6 / 4],  # [msec]
     'OD_duration_pulse2': [int, 1e6 / 4],  # [msec]
+    'OD_continuous_attenuation': [float, 1],  # Amplitude factor
+
     'M_time': [int, 1e6 / 4]  # [msec]'
 }
 

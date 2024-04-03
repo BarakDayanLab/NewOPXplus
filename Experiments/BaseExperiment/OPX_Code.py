@@ -30,6 +30,8 @@ def MOT(mot_repetitions, OD_Attenuation):
 
         # OD beam
         play("OD_FS" * amp(OD_Attenuation), "AOM_2-2/3'")
+        # play("OD_FS" * amp(0.5), "AOM_2-2/3'")
+
 
         play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
     with for_(m, 1, m <= (mot_repetitions - 1), m + 1):
@@ -311,7 +313,7 @@ def opx_control(obj, qm):
         M_duration = declare(int, value=int(obj.M_time / 4))  # From [nsec] to [4 nsec]
         M_off_time = declare(int, value=int(obj.M_off_time / 4))
         OD_Delay = declare(int, value=int(obj.OD_delay * 1e6 / 4))
-        OD_attenuation = declare(int, value=int(obj.Exp_Values['OD_continuous_attenuation']))
+        OD_attenuation = declare(fixed, value=obj.Exp_Values['OD_continuous_attenuation'])
         shutter_open_time = declare(int, value=int(obj.Shutter_open_time * 1e6 / 4))
         Rep = declare(int, value=obj.rep)
 
@@ -489,7 +491,7 @@ def opx_control(obj, qm):
                     assign(OD_Delay, IO2)
                 with if_(i == IOP.OD_SNSPDS_DURATION.value):  # Live control of the SNSPDs OD measurement duration
                     assign(Rep, IO2)
-                with if_(i == IOP.OD_CONTINUOUS_ATTENUATION):  # Turn on continuous OD and attenuate factor
+                with if_(i == IOP.OD_CONTINUOUS_ATTENUATION.value):  # Turn on continuous OD and attenuate factor
                     assign(OD_attenuation, IO2)
                 with if_(i == IOP.DEPUMP_START.value):  # Live control of the Depump measurement start time
                     assign(Depump_start, IO2)

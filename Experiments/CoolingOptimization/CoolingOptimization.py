@@ -112,19 +112,19 @@ class CoolingSequenceOptimizer(BaseExperiment):
         # solving quadratic equation 0 = h_1ms + v_1ms*t - g*t^2/2: a=-g/2[mm/s^2], b=v_1ms[mm/s], c=h_1ms[mm]
         t_arrival = self.solve_quad_eq((-9.81 * 1000 / 2), v_1ms, h_1ms)
         if t_arrival.any():
-            t_arrival_str = '%.1f' % (t_arrival.min() * 1e3)
+            t_arrival_str = '%.1f' % (t_arrival.min() * 1e3 + 1)  #  + 1 due to the fact that we estimated the arrival time for the cloud after 1ms so we added the 1 ms for the arrival time from end of PGC.
         else:
             t_arrival_str = '$ \infty $'
 
         if plotResults:
-            titlestr_v = r'Y position fit;' + r' $\alpha = %.3f$' % alpha + '[mm/pixel]' #+ '\n $v_0 = %.1f$' % v_launch * 100 + r'[cm/s]; $\alpha = %.3f$' % alpha + '[mm/pixel]'
+            titlestr_v = r'Y position fit;' + r' $\bf{\alpha = %.3f}$' % alpha + '[mm/pixel]' #+ '\n $v_0 = %.1f$' % v_launch * 100 + r'[cm/s]; $\alpha = %.3f$' % alpha + '[mm/pixel]'
             resstr_v = r'$v_0 = %.1f$' % (-v_launch * 100) + r'$\pm$ %.1f[cm/s]' % (v_launch_std * 100) + '\n' +\
                        '$t_{arrival} = $' + t_arrival_str + '[ms]'
             # self.plotDataAndFit(time_vector, y_position_vector, fitFunc=fitFunc, fitParams=v_launch_popt,
             self.plotDataAndFit(time_vector, y_position_vector_mm, fitFunc=linearFreeFall_mm, fitParams=v_launch_popt,
                                 # title=f'Y position fit \n V_launch = {v_launch}; alpha = {alpha}', ylabel='Y_center [px]',
                                 # title=titlestr_v, props_str=resstr_v, ylabel='$Y_{center} [px]$',
-                                title=titlestr_v, props_str=resstr_v, ylabel='$Y_{center} [mm]$',
+                                title=titlestr_v, props_str=resstr_v, ylabel=r'$\bf{Y_{center} [mm]}$',
                                 saveFilePath=os.path.join(extraFilesPath, 'Y_position.png'), show=False)
         return (v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str)
 
@@ -143,23 +143,23 @@ class CoolingSequenceOptimizer(BaseExperiment):
         x_temp_popt, x_temp_cov = opt.curve_fit(tempFromSigmaFunc, time_vector, sigma_x_vector, bounds=(0, np.inf))
         y_temp_popt, y_temp_cov = opt.curve_fit(tempFromSigmaFunc, time_vector, sigma_y_vector, bounds=(0, np.inf))
         T_x, T_y = x_temp_popt[1] * _m / _Kb * 1e6, y_temp_popt[1] * _m / _Kb * 1e6  # [uK]
-        std_x, std_y = np.sqrt(np.diag(x_temp_cov))[1] * _m / _Kb * 1e6, np.sqrt(np.diag(x_temp_cov))[1] * _m / _Kb * 1e6
+        std_x, std_y = np.sqrt(np.diag(x_temp_cov))[1] * _m / _Kb * 1e6, np.sqrt(np.diag(y_temp_cov))[1] * _m / _Kb * 1e6
 
         if plotResults:
-            titlestr_x = '$T_x$ fit, $\sigma_x$[mm]  vs. Time [ms]'  # + '\n$T_x$ = %.2f' % T_x + '$\pm %.2f[uK]$' % std_x
-            titlestr_y = '$T_y$ fit, $\sigma_y$[mm]  vs. Time [ms]'  # + '\n$T_y$ = %.2f' % T_y + '$\pm %.2f[uK]$' % std_y
+            titlestr_x = r'$\bf{T_x}$ fit; $\bf{\sigma_x}$[mm]  vs. Time [ms]'  # + '\n$T_x$ = %.2f' % T_x + '$\pm %.2f[uK]$' % std_x
+            titlestr_y = r'$\bf{T_y}$ fit; $\bf{\sigma_y}$[mm]  vs. Time [ms]'  # + '\n$T_y$ = %.2f' % T_y + '$\pm %.2f[uK]$' % std_y
             resstr_x = '$T_x$ = %.2f' % T_x + '$\pm %.2f[\mu K]$' % std_x
             resstr_y = '$T_y$ = %.2f' % T_y + '$\pm %.2f[\mu K]$' % std_y
             self.plotDataAndFit(time_vector, sigma_x_vector, fitFunc=tempFromSigmaFunc, fitParams=x_temp_popt,
                                 # title=f'X Temperature fit, Sigma_x[mm]  vs. Time [ms]\n %T_x% = {T_x} [uK]',
                                 # ylabel=f'Sigma_x [mm]', saveFilePath=os.path.join(extraFilesPath, 'X_temp_fit.png'), show=False)
                                 title=titlestr_x, props_str=resstr_x,
-                                ylabel=f'$\sigma_x$ [mm]', saveFilePath=os.path.join(extraFilesPath, 'X_temp_fit.png'), show=False)
+                                ylabel=r'$\bf{\sigma_x}$ [mm]', saveFilePath=os.path.join(extraFilesPath, 'X_temp_fit.png'), show=False)
             self.plotDataAndFit(time_vector, sigma_y_vector, fitFunc=tempFromSigmaFunc, fitParams=y_temp_popt,
                                 # title=f'Y Temperature fit, Sigma_y[mm]  vs. Time [ms]\n %T_y% = {T_y} [uK]',
                                 # ylabel=f'Sigma_y [mm]', saveFilePath=os.path.join(extraFilesPath, 'Y_temp_fit.png'), show=False)
                                 title=titlestr_y, props_str=resstr_y,
-                                ylabel=f'$\sigma_y$ [mm]', saveFilePath=os.path.join(extraFilesPath, 'Y_temp_fit.png'), show=False)
+                                ylabel=r'$\bf{\sigma_y}$ [mm]', saveFilePath=os.path.join(extraFilesPath, 'Y_temp_fit.png'), show=False)
         return T_x, T_y
 
     def perform_fit(self, path, fit_for_alpha=False):
@@ -674,7 +674,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
 
         #img_max_index = [np.argmax(np.sum(EffectiveImg, axis=1)), np.argmax(np.sum(EffectiveImg, axis=0))]
         initial_guess = (ImgToFit[img_max_index[1]][img_max_index[0]], img_max_index[1], img_max_index[0], EFFECTIVE_X_PIXEL_LEN/10, EFFECTIVE_Y_PIXEL_LEN/10, 0, 10)
-        fitBounds =[0, (255, EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN, EFFECTIVE_X_PIXEL_LEN / 2, EFFECTIVE_Y_PIXEL_LEN / 2, 2* np.pi, 255)]
+        fitBounds = [0, (255, EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN, EFFECTIVE_X_PIXEL_LEN / 2, EFFECTIVE_Y_PIXEL_LEN / 2, 2 * np.pi, 255)]
         # print(initial_guess)
         popt, pcov = opt.curve_fit(self.twoD_Gaussian, (x, y), data_noisy, p0=initial_guess, bounds=fitBounds)
 
