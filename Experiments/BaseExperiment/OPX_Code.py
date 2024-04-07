@@ -29,13 +29,14 @@ def MOT(mot_repetitions, OD_Attenuation):
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
 
         # OD beam
-        play("OD_FS" * amp(OD_Attenuation), "AOM_2-2/3'")
-        # play("OD_FS" * amp(0.5), "AOM_2-2/3'")
-
+        #play("OD_FS" * amp(OD_Attenuation), "AOM_2-2/3'")
 
         play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
     with for_(m, 1, m <= (mot_repetitions - 1), m + 1):
         measure("Detection", "FLR_detection", None, integration.full("Detection_opt", FLR, "out1"))
+
+        play("OD_FS" * amp(OD_Attenuation), "AOM_2-2/3'")
+
         # play("OD_FS" * amp(0.5), "AOM_2-3'_for_interference")
 
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
@@ -405,11 +406,11 @@ def opx_control(obj, qm):
 
             ## For taking an image:
             with if_(Pulse_1_duration > 0):
-                align(*all_elements)
+                align(*all_elements, "AOM_2-2/3'")
                 Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
                                 pulse_1_duration_minus, pulse_1_duration_plus)
                 Measure(Pulse_1_duration)  # This triggers camera (Control 7)
-                align(*all_elements)
+                align(*all_elements, "AOM_2-2/3'")
 
             assign(N_Snaps, 1)
             assign(Buffer_Cycles, 0)
