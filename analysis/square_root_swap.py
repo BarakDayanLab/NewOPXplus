@@ -18,8 +18,12 @@ class SquareRootOfSwap:
         self.h = 1*10e6  # 1 MHz
         self.r_sigma = 0.18  # %
         self.r_pi = 0.13  # %
-        self.gamma = 3*10e6  # 3 MHz
+
+        self.gamma_0 = 3*10e6  # 3 MHz
+        self.gamma = self.gamma_0
         self.kappa = 30*10e6  # 30 MHz
+        self.kappa_0 = self.kappa
+
         self.kappa_i = 6*10e6  # 6 MHz
         self.kappa_ex = 1*10e6  # TODO - this vs kappa?
 
@@ -49,21 +53,25 @@ class SquareRootOfSwap:
 
         pass
 
-    def set_gamma(self, gamma):
-        self.gamma = gamma
+    def set_detuning(self, atom_detuning, cavity_detuning):
+        self.gamma = self.gamma_0 + atom_detuning
+        self.kappa = self.kappa_0 + cavity_detuning
+
         self.C_0 = self.g0_squared.real / (2 * self.kappa * self.gamma)
         self.C_tot = (self.g1_squared**2 + self.g2_squared**2).real / (2 * self.kappa * self.gamma)
 
-    def set_gamma_detuning(self, delta):
-        self.gamma_detuned = complex(self.gamma, delta)
+    def set_gamma(self, detuning):
+        self.gamma = self.gamma_0 + detuning
 
-        # Fix gamma related parameters
-        self.C_0 = self.g0_squared.real / (2 * self.kappa_detuned * self.gamma_detuned)
-        self.C_tot = (self.g1_squared**2 + self.g2_squared**2).real / (2 * self.kappa_detuned * self.gamma_detuned)
+        self.C_0 = self.g0_squared.real / (2 * self.kappa * self.gamma)
+        self.C_tot = (self.g1_squared**2 + self.g2_squared**2).real / (2 * self.kappa * self.gamma)
 
+    def set_kappa(self, detuning):
+        self.kappa = self.kappa_0 + detuning
 
-    def set_kappa_detuning(self, delta):
-        self.kappa_detuned = complex(self.kappa, delta)
+        self.C_0 = self.g0_squared.real / (2 * self.kappa * self.gamma)
+        self.C_tot = (self.g1_squared**2 + self.g2_squared**2).real / (2 * self.kappa * self.gamma)
+
 
     def transmission(self):
         alpha0 = self.alpha0()
@@ -161,25 +169,55 @@ class SquareRootOfSwap:
         # current_date_time = time.strftime("%H:%M:%S (%d/%m/%Y)")
         # self.fig.canvas.manager.set_window_title(f'{current_date_time} | T-R simulation')
 
-        num_detunings = 100
-        start = 0  # -40
-        end = 40*10e6
-        atom_detunings = np.linspace(start, end, num=num_detunings)
-        cavity_detunings = np.linspace(start, end, num=num_detunings)
+        a = np.linspace(1, 2, num=2)
+        b = np.linspace(3, 4, num=2)
 
+        foo = np.array([[(i + 1) * (j + 1) for i in range(2)] for j in range(2)])
+
+        num_detunings = 80  # 100
+        start = -40
+        end = 40
+        atom_detunings = np.linspace(start, end, num=num_detunings) * 10e6
+        cavity_detunings = np.linspace(start, end, num=num_detunings) * 10e6
+
+        # Sanity check - no detunings at all
+        self.kappa = self.kappa_0 + complex(0, 0)
+        self.gamma = self.gamma_0 + complex(0, 0)
         t, r = self.get_t_r()
 
-        gamma_arr = np.linspace(1, 2, num=2)
-        self.set_gamma(gamma_arr)
+        n = len(atom_detunings)
+        A = np.zeros((n, n))
+        ii = 0
+        jj = 0
+        # for idx, j in enumerate(theta):
+        #     some_function(idx, j, theta)
+        for i in np.nditer(cavity_detunings):
+            for j in np.nditer(atom_detunings):
+                self.kappa = self.kappa_0 + complex(0, i)
+                self.gamma = self.gamma_0 + complex(0, j)
 
-        t, r = self.get_t_r()
+                # Recalc C_0 and C_tot
+                self.C_0 = self.g0_squared.real / (2 * self.kappa * self.gamma)
+                self.C_tot = (self.g1_squared ** 2 + self.g2_squared ** 2).real / (2 * self.kappa * self.gamma)
 
-        t = np.linspace(0, 2 * np.pi, 1024)
+                t, r = self.get_t_r()
+
+                z = (t-r)/(t+r)
+
+                A[ii][jj] = z
+                jj += 1
+                pass
+            ii += 1
+            jj = 0
 
         #data2d = np.sin(t)[:, np.newaxis] * np.cos(t)[np.newaxis, :]
 
+        atom_detunings = np.linspace(start, end, num=num_detunings)
+        cavity_detunings = np.linspace(start, end, num=num_detunings)
+
         data2d = atom_detunings[:, np.newaxis] * cavity_detunings[np.newaxis, :]
 
+        data2d = A
         fig, ax = plt.subplots()
         im = ax.imshow(data2d)
         ax.set_title('Pan on the colorbar to shift the color mapping\n'
@@ -187,7 +225,7 @@ class SquareRootOfSwap:
 
         fig.colorbar(im, ax=ax, label='Interactive colorbar')
 
-        plt.show()
+        plt.show(block=True)
         pass
 
     def test_complex_stuff(self):
