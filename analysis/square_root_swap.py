@@ -7,50 +7,31 @@ import numpy as np
 
 class SquareRootOfSwap:
 
-    # g = 15-20 Mhz  e^i = the E field phase  g= E*d
-    # r_sigma = 4%
-    # kappa = .. see in article
-    #
-
     def __init__(self):
 
-        # TODO:
-        self.h = 1*10e6  # 1 MHz
         self.r_sigma = 0.18  # %
         self.r_pi = 0.13  # %
 
-        self.gamma_0 = 3*10e6  # 3 MHz
-        self.kappa_0 = 30*10e6  # 30 MHz
+        self.gamma_0 = 3*1e6 * 2*np.pi # 3 MHz
+        self.kappa_0 = 30*1e6 * 2*np.pi # 30 MHz
 
-        self.sigma_g = 6*10e6
+        self.sigma_g = 6*1e6
 
-        self.kappa_i = 6*10e6  # 6 MHz
-        self.kappa_ex = 30*10e6  # 30*10e6
-        self.kappa_0 = self.kappa_ex - self.kappa_i
+        self.h = 1*1e6 * 2*np.pi  # 1 MHz
+        self.kappa_i = 6*1e6 * 2*np.pi  # 6 MHz
+        self.kappa_ex = 30*1e6 * 2*np.pi  # 30*10e6
+        self.kappa_0 = self.kappa_ex + self.kappa_i
 
-        self.g0 = 16*10e6  # 20 MHz
-        self.g1 = 16*10e6  # 20 MHz
-        self.g2 = 16*10e6  # 20 MHz
-
-        TWO_PI = False
-        if TWO_PI:
-            self.kappa_i *= 2*np.pi
-            self.kappa_ex *= 2*np.pi
-            self.kappa_0 = self.kappa_ex - self.kappa_i
-
-            self.gamma_0 *= 2*np.pi
-            self.g0 *= 2*np.pi
-            self.g1 *= 2*np.pi
-            self.g2 *= 2*np.pi
-            self.sigma_g *= 2*np.pi
-            self.h *= 2*np.pi
+        self.g0 = 16*1e6 * 2*np.pi  # 16 MHz
+        self.g1 = 16*1e6 * 2*np.pi  # 16 MHz
+        self.g2 = 16*1e6 * 2*np.pi  # 16 MHz
 
         self.gamma = self.gamma_0
         self.kappa = self.kappa_0
 
         self.h_squared = self.h**2
         self.h_k_ratio = self.h / self.kappa
-        self.h_k_ratio_squared = self.h_k_ratio**2  # TODO: use in code
+        self.h_k_ratio_squared = self.h_k_ratio**2
 
         self.g0_squared = self.g0**2
         self.g1_squared = self.g1**2
@@ -69,26 +50,6 @@ class SquareRootOfSwap:
         self.D = self.calc_D()
 
         pass
-
-    def set_detuning(self, atom_detuning, cavity_detuning):
-        self.gamma = self.gamma_0 + atom_detuning
-        self.kappa = self.kappa_0 + cavity_detuning
-
-        self.C_0 = self.g0_squared.real / (2 * self.kappa * self.gamma)
-        self.C_tot = (self.g1_squared**2 + self.g2_squared**2).real / (2 * self.kappa * self.gamma)
-
-    def set_gamma(self, detuning):
-        self.gamma = self.gamma_0 + detuning
-
-        self.C_0 = self.g0_squared.real / (2 * self.kappa * self.gamma)
-        self.C_tot = (self.g1_squared**2 + self.g2_squared**2).real / (2 * self.kappa * self.gamma)
-
-    def set_kappa(self, detuning):
-        self.kappa = self.kappa_0 + detuning
-
-        self.C_0 = self.g0_squared.real / (2 * self.kappa * self.gamma)
-        self.C_tot = (self.g1_squared**2 + self.g2_squared**2).real / (2 * self.kappa * self.gamma)
-
 
     def transmission(self):
         alpha0 = self.alpha0()
@@ -186,16 +147,11 @@ class SquareRootOfSwap:
         # current_date_time = time.strftime("%H:%M:%S (%d/%m/%Y)")
         # self.fig.canvas.manager.set_window_title(f'{current_date_time} | T-R simulation')
 
-        a = np.linspace(1, 2, num=2)
-        b = np.linspace(3, 4, num=2)
-
-        foo = np.array([[(i + 1) * (j + 1) for i in range(2)] for j in range(2)])
-
-        num_detunings = 100  # 100
+        num_detunings = 100
         start = -50
         end = 50
-        atom_detunings = np.linspace(start, end, num=num_detunings) * 10e6
-        cavity_detunings = np.linspace(start, end, num=num_detunings) * 10e6
+        atom_detunings = np.linspace(start, end, num=num_detunings) * 1e6 * 2*np.pi
+        cavity_detunings = np.linspace(start, end, num=num_detunings) * 1e6 * 2*np.pi
 
         # Sanity check - no detunings at all
         self.kappa = self.kappa_0 + complex(0, 0)
@@ -226,7 +182,11 @@ class SquareRootOfSwap:
 
         data2d = A
         fig, ax = plt.subplots()
-        im = ax.imshow(data2d)
+        #im = ax.imshow(data2d)
+
+        extent0 = [-50, 50, -50, 50]
+        im = ax.imshow(data2d, extent=extent0)
+
         ax.set_title('Pan/Zoom colorbar to shift/scale color mapping')
 
         # Set scales
