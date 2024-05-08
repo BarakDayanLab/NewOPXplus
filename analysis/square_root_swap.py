@@ -12,26 +12,20 @@ class SquareRootOfSwap:
         self.r_sigma = 0.18  # %
         self.r_pi = 0.13  # %
 
-        self.gamma_0 = 3*1e6 * 2*np.pi # 3 MHz
-        self.kappa_0 = 30*1e6 * 2*np.pi # 30 MHz
+        self.gamma = 3 * 1e6 * 2*np.pi  # 3 MHz
+        self.kappa_total = 27 * 1e6 * 2*np.pi  # 30 MHz
 
         self.sigma_g = 6*1e6
 
-        self.h = 1*1e6 * 2*np.pi  # 1 MHz
-        self.kappa_i = 6*1e6 * 2*np.pi  # 6 MHz
-        self.kappa_ex = 30*1e6 * 2*np.pi  # 30*10e6
-        self.kappa_0 = self.kappa_ex + self.kappa_i
+        self.h = 0.6*1e6 * 2*np.pi  # 1 MHz
+        self.kappa_i = 2*1e6 * 2*np.pi  # 6 MHz
+        self.kappa_ex = 30*1e6 * 2*np.pi  # 30*1e6
+        self.kappa_total = self.kappa_ex + self.kappa_i
 
-        self.g0 = 16*1e6 * 2*np.pi  # 16 MHz
-        self.g1 = 16*1e6 * 2*np.pi  # 16 MHz
-        self.g2 = 16*1e6 * 2*np.pi  # 16 MHz
-
-        self.gamma = self.gamma_0
-        self.kappa = self.kappa_0
-
-        self.h_squared = self.h**2
-        self.h_k_ratio = self.h / self.kappa
-        self.h_k_ratio_squared = self.h_k_ratio**2
+        self.avg_g = 10*1e6*2*np.pi  # 16 MHz
+        self.g0 = self.avg_g  # 16 MHz
+        self.g1 = self.avg_g  # 16 MHz
+        self.g2 = self.avg_g  # 16 MHz
 
         self.g0_squared = self.g0**2
         self.g1_squared = self.g1**2
@@ -40,13 +34,28 @@ class SquareRootOfSwap:
         self.g1_abs_squared = self.abs_squared(self.g1)
         self.g2_abs_squared = self.abs_squared(self.g2)
 
+        self.gamma_detuned = self.gamma
+        self.kappa_total_detuned = self.kappa_total
+
+        self.h_squared = self.h**2
+
         self.r_sigma_squared = self.r_sigma**2
         self.r_pi_squared = self.r_pi**2
 
-        self.C_0 = self.g0_squared.real / (2 * self.kappa * self.gamma)
-        self.C_tot = (self.g1_squared**2 + self.g2_squared**2).real / (2 * self.kappa * self.gamma)
+        self.calc_terms()
 
-        self.p = (2 * self.kappa_ex) / (self.kappa + self.h_squared/self.kappa)
+        pass
+
+    def calc_terms(self):
+
+        self.h_k_ratio = self.h / self.kappa_total_detuned
+        self.h_k_ratio_squared = self.h_k_ratio**2
+
+        self.C_0 = self.g0_squared.real / (2 * self.kappa_total_detuned * self.gamma_detuned)
+
+        self.C_tot = (self.g1_squared + self.g2_squared).real / (2 * self.kappa_total_detuned * self.gamma_detuned)
+
+        self.p = (2 * self.kappa_ex) / (self.kappa_total_detuned + (self.h_squared / self.kappa_total_detuned))
         self.D = self.calc_D()
 
         pass
@@ -59,7 +68,7 @@ class SquareRootOfSwap:
         alpha0_squared = self.abs_squared(alpha0)
         alpha1_squared = self.abs_squared(alpha1)
         alpha2_squared = self.abs_squared(alpha2)
-        t = 1 + 2 * alpha1.real + alpha0_squared + alpha1_squared + alpha2_squared
+        t = 1 + (2 * alpha1.real) + alpha1_squared + alpha2_squared + alpha0_squared
         return t
 
     def reflection(self):
@@ -70,50 +79,52 @@ class SquareRootOfSwap:
         beta0_squared = self.abs_squared(beta0)
         beta1_squared = self.abs_squared(beta1)
         beta2_squared = self.abs_squared(beta2)
-        r = beta0_squared + beta1_squared + beta2_squared
+        r = beta1_squared + beta2_squared + beta0_squared
         return r
 
     def calc_D(self):
         term_1 = 1
         term_2 = self.h_k_ratio_squared
         term_3 = 2 * ((1+self.r_sigma_squared) * self.C_tot + 2 * self.r_pi_squared * self.C_0)
-        term_4 = -4 * (0+1j) * (self.h/self.kappa) * (self.r_sigma * self.C_tot + self.r_pi_squared * self.C_0)
+        term_4 = (0-4j) * (self.h / self.kappa_total_detuned) * (self.r_sigma * self.C_tot + self.r_pi_squared * self.C_0)
         term_sum = term_1 + term_2 + term_3 + term_4
         return term_sum
 
     def u(self, g):
-        term_1 = self.r_sigma * (self.h / self.kappa) * g.conjugate()
+        term_1 = self.r_sigma * (self.h / self.kappa_total_detuned) * g.conjugate()
         term_2 = (0+1j) * g  # TODO: can be: term_2 = complex(0, g)
         term_sum = term_1 + term_2
         return term_sum
 
     def v(self, g):
         term_1 = -self.r_sigma * g
-        term_2 = (0+1j) * (self.h/self.kappa) * g.conjugate()
+        term_2 = (0+1j) * (self.h / self.kappa_total_detuned) * g.conjugate()
         term_sum = term_1 + term_2
         return term_sum
 
     def w(self, g):
-        term_1 = (self.h / self.kappa) * g.conjugate()
+        term_1 = (self.h / self.kappa_total_detuned) * g.conjugate()
         term_2 = (0+1j) * g  # TODO: can be: term_2 = complex(0, g)
         product = self.r_pi * (term_1 + term_2)
         return product
 
     def alpha1(self):
-        nom = self.u(self.g1) * self.u(self.g1.conjugate()) * 2 * self.C_tot / self.D
-        denom = (self.g1_abs_squared + self.g2_abs_squared)
-        product = -self.p * (1 + nom/denom)
+        term1 = self.u(self.g1) * self.u(self.g1.conjugate()) / (self.g1_abs_squared + self.g2_abs_squared)
+        term2 = 2 * self.C_tot / self.D
+        product = -self.p * (1 + term1 * term2)
         return product
 
     def alpha2(self):
-        nom = self.u(self.g1) * self.v(self.g2.conjugate()) * 2 * self.C_tot / self.D
-        denom = (self.g1_abs_squared + self.g2_abs_squared)
-        return self.p * (nom/denom)
+        term1 = self.u(self.g1) * self.v(self.g2.conjugate()) / (self.g1_abs_squared + self.g2_abs_squared)
+        term2 = 2 * self.C_tot / self.D
+        product = self.p * term1 * term2
+        return product
 
     def alpha0(self):
-        nom = self.u(self.g1) * self.w(self.g0) * self.C_tot / self.D
-        denom = (self.g1_abs_squared + self.g2_abs_squared)
-        return self.p * (nom/denom)
+        term1 = self.u(self.g1) * self.w(self.g0) / (self.g1_abs_squared + self.g2_abs_squared)
+        term2 = 2 * self.C_tot / self.D
+        product = self.p * term1 * term2
+        return product
 
     def beta1(self):
         nom = self.u(self.g1) * self.v(self.g1) * 2 * self.C_tot / self.D
@@ -153,27 +164,34 @@ class SquareRootOfSwap:
         atom_detunings = np.linspace(start, end, num=num_detunings) * 1e6 * 2*np.pi
         cavity_detunings = np.linspace(start, end, num=num_detunings) * 1e6 * 2*np.pi
 
-        # Sanity check - no detunings at all
-        self.kappa = self.kappa_0 + complex(0, 0)
-        self.gamma = self.gamma_0 + complex(0, 0)
-        t, r = self.get_t_r()
-
         n = len(atom_detunings)
         A = np.zeros((n, n))
         for i, d_c in enumerate(cavity_detunings):
             for j, d_a in enumerate(atom_detunings):
-                self.kappa = self.kappa_0 + complex(0, d_c)
-                self.gamma = self.gamma_0 + complex(0, d_a)
+                self.kappa_total_detuned = complex(self.kappa_total, d_c)
+                self.gamma_detuned = complex(self.gamma, d_a)
 
                 # Recalc C_0 and C_tot
-                self.C_0 = self.g0_squared.real / (2 * self.kappa * self.gamma)
-                self.C_tot = (self.g1_squared ** 2 + self.g2_squared ** 2).real / (2 * self.kappa * self.gamma)
+                self.calc_terms()
 
+                # T-R -> ideally we get 50%/50%
+                # Get transmissions and reflections
                 t, r = self.get_t_r()
+                print(f't={t}, r={r}')
 
+                # SQRT-SWAP
                 z = (t-r)/(t+r)
 
+                # Sum transaction + reflections
+                z = (t+r)
+
+                # Infidelity
+                beta1 = self.abs_squared(self.beta1())
+                alpha2 = self.abs_squared(self.alpha2())
+                z = (beta1 + alpha2) / (t+r)
+
                 A[i][j] = z
+
             pass
 
         #data2d = np.sin(t)[:, np.newaxis] * np.cos(t)[np.newaxis, :]
@@ -185,7 +203,7 @@ class SquareRootOfSwap:
         #im = ax.imshow(data2d)
 
         extent0 = [-50, 50, -50, 50]
-        im = ax.imshow(data2d, extent=extent0)
+        im = ax.imshow(data2d, origin='lower', extent=extent0)
 
         ax.set_title('Pan/Zoom colorbar to shift/scale color mapping')
 
@@ -199,7 +217,7 @@ class SquareRootOfSwap:
         fig.colorbar(im, ax=ax, label='Interactive colorbar')
 
         # Dashed line
-        SHOW_DASHED = False
+        SHOW_DASHED = True
         if SHOW_DASHED:
             x_points = np.linspace(start, end, num=num_detunings)
             plt.plot(x_points, x_points, linestyle='dashed')
