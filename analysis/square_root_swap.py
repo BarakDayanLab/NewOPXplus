@@ -20,16 +20,33 @@ class SquareRootOfSwap:
         self.r_pi = 0.13  # %
 
         self.gamma_0 = 3*10e6  # 3 MHz
-        self.gamma = self.gamma_0
-        self.kappa = 30*10e6  # 30 MHz
-        self.kappa_0 = self.kappa
+        self.kappa_0 = 30*10e6  # 30 MHz
+
+        self.sigma_g = 6*10e6
 
         self.kappa_i = 6*10e6  # 6 MHz
-        self.kappa_ex = 1*10e6  # TODO - this vs kappa?
+        self.kappa_ex = 30*10e6  # 30*10e6
+        self.kappa_0 = self.kappa_ex - self.kappa_i
 
-        self.g0 = 16*10e3  # 20 MHz
-        self.g1 = 16*10e3  # 20 MHz
-        self.g2 = 16*10e3  # 20 MHz
+        self.g0 = 16*10e6  # 20 MHz
+        self.g1 = 16*10e6  # 20 MHz
+        self.g2 = 16*10e6  # 20 MHz
+
+        TWO_PI = False
+        if TWO_PI:
+            self.kappa_i *= 2*np.pi
+            self.kappa_ex *= 2*np.pi
+            self.kappa_0 = self.kappa_ex - self.kappa_i
+
+            self.gamma_0 *= 2*np.pi
+            self.g0 *= 2*np.pi
+            self.g1 *= 2*np.pi
+            self.g2 *= 2*np.pi
+            self.sigma_g *= 2*np.pi
+            self.h *= 2*np.pi
+
+        self.gamma = self.gamma_0
+        self.kappa = self.kappa_0
 
         self.h_squared = self.h**2
         self.h_k_ratio = self.h / self.kappa
@@ -174,9 +191,9 @@ class SquareRootOfSwap:
 
         foo = np.array([[(i + 1) * (j + 1) for i in range(2)] for j in range(2)])
 
-        num_detunings = 80  # 100
-        start = -40
-        end = 40
+        num_detunings = 100  # 100
+        start = -50
+        end = 50
         atom_detunings = np.linspace(start, end, num=num_detunings) * 10e6
         cavity_detunings = np.linspace(start, end, num=num_detunings) * 10e6
 
@@ -187,14 +204,10 @@ class SquareRootOfSwap:
 
         n = len(atom_detunings)
         A = np.zeros((n, n))
-        ii = 0
-        jj = 0
-        # for idx, j in enumerate(theta):
-        #     some_function(idx, j, theta)
-        for i in np.nditer(cavity_detunings):
-            for j in np.nditer(atom_detunings):
-                self.kappa = self.kappa_0 + complex(0, i)
-                self.gamma = self.gamma_0 + complex(0, j)
+        for i, d_c in enumerate(cavity_detunings):
+            for j, d_a in enumerate(atom_detunings):
+                self.kappa = self.kappa_0 + complex(0, d_c)
+                self.gamma = self.gamma_0 + complex(0, d_a)
 
                 # Recalc C_0 and C_tot
                 self.C_0 = self.g0_squared.real / (2 * self.kappa * self.gamma)
@@ -204,26 +217,32 @@ class SquareRootOfSwap:
 
                 z = (t-r)/(t+r)
 
-                A[ii][jj] = z
-                jj += 1
-                pass
-            ii += 1
-            jj = 0
+                A[i][j] = z
+            pass
 
         #data2d = np.sin(t)[:, np.newaxis] * np.cos(t)[np.newaxis, :]
 
-        atom_detunings = np.linspace(start, end, num=num_detunings)
-        cavity_detunings = np.linspace(start, end, num=num_detunings)
-
-        data2d = atom_detunings[:, np.newaxis] * cavity_detunings[np.newaxis, :]
+        #data2d = atom_detunings[:, np.newaxis] * cavity_detunings[np.newaxis, :]
 
         data2d = A
         fig, ax = plt.subplots()
         im = ax.imshow(data2d)
-        ax.set_title('Pan on the colorbar to shift the color mapping\n'
-                     'Zoom on the colorbar to scale the color mapping')
+        ax.set_title('Pan/Zoom colorbar to shift/scale color mapping')
+
+        # Set scales
+        SHOW_SCALES = False
+        if SHOW_SCALES:
+            r = int(n/2)
+            plt.xlim(-r, r)
+            plt.ylim(-r, r)
 
         fig.colorbar(im, ax=ax, label='Interactive colorbar')
+
+        # Dashed line
+        SHOW_DASHED = False
+        if SHOW_DASHED:
+            x_points = np.linspace(start, end, num=num_detunings)
+            plt.plot(x_points, x_points, linestyle='dashed')
 
         plt.show(block=True)
         pass
