@@ -13,7 +13,6 @@ class SquareRootOfSwap:
         self.r_pi = 0.13  # %
 
         self.gamma = 3 * 1e6 * 2*np.pi  # 3 MHz
-        self.kappa_total = 27 * 1e6 * 2*np.pi  # 30 MHz
 
         self.sigma_g = 6*1e6
 
@@ -23,6 +22,11 @@ class SquareRootOfSwap:
         self.kappa_total = self.kappa_ex + self.kappa_i
 
         self.avg_g = 10*1e6*2*np.pi  # 16 MHz
+
+        pass
+
+    def calc_terms(self):
+
         self.g0 = self.avg_g  # 16 MHz
         self.g1 = self.avg_g  # 16 MHz
         self.g2 = self.avg_g  # 16 MHz
@@ -34,19 +38,13 @@ class SquareRootOfSwap:
         self.g1_abs_squared = self.abs_squared(self.g1)
         self.g2_abs_squared = self.abs_squared(self.g2)
 
-        self.gamma_detuned = self.gamma
-        self.kappa_total_detuned = self.kappa_total
+        self.kappa_total = self.kappa_ex + self.kappa_i
 
         self.h_squared = self.h**2
 
         self.r_sigma_squared = self.r_sigma**2
         self.r_pi_squared = self.r_pi**2
 
-        self.calc_terms()
-
-        pass
-
-    def calc_terms(self):
 
         self.h_k_ratio = self.h / self.kappa_total_detuned
         self.h_k_ratio_squared = self.h_k_ratio**2
@@ -152,7 +150,33 @@ class SquareRootOfSwap:
 
         return t, r
 
-    def go(self):
+    def go_all(self):
+
+        self.go('')
+        plt.show(block=True)
+
+        return
+
+        self.h = 0.6 * 1e6 * 2 * np.pi  # 0.6 MHz
+        # self.kappa_ex = 30 * 1e6 * 2 * np.pi  # 30*1e6
+        self.avg_g = 10*1e6*2*np.pi  # 16 MHz
+        self.go(f'h={self.h} | k_ex={self.kappa_ex} | g={self.avg_g}')
+
+        self.h = 1 * 1e6 * 2 * np.pi  # 0.6 MHz
+        # self.kappa_ex = 20 * 1e6 * 2 * np.pi  # 30*1e6
+        self.avg_g = 13*1e6*2*np.pi  # 16 MHz
+        self.go(f'h={self.h} | k_ex={self.kappa_ex} | g={self.avg_g}')
+
+        self.h = 2 * 1e6 * 2 * np.pi  # 0.6 MHz
+        # self.kappa_ex = 10 * 1e6 * 2 * np.pi  # 30*1e6
+        self.avg_g = 16*1e6*2*np.pi  # 16 MHz
+        self.go(f'h={self.h} | k_ex={self.kappa_ex} | g={self.avg_g}')
+
+        plt.show(block=True)
+
+        pass
+
+    def go(self, param):
 
         # self.fig = plt.figure()
         # current_date_time = time.strftime("%H:%M:%S (%d/%m/%Y)")
@@ -166,6 +190,9 @@ class SquareRootOfSwap:
 
         n = len(atom_detunings)
         A = np.zeros((n, n))
+        B = np.zeros((n, n))
+        C = np.zeros((n, n))
+
         for i, d_c in enumerate(cavity_detunings):
             for j, d_a in enumerate(atom_detunings):
                 self.kappa_total_detuned = complex(self.kappa_total, d_c)
@@ -177,52 +204,93 @@ class SquareRootOfSwap:
                 # T-R -> ideally we get 50%/50%
                 # Get transmissions and reflections
                 t, r = self.get_t_r()
-                print(f't={t}, r={r}')
+                #print(f't={t}, r={r}')
 
                 # SQRT-SWAP
-                z = (t-r)/(t+r)
+                A[i][j] = (t-r)/(t+r)
 
                 # Sum transaction + reflections
-                z = (t+r)
+                B[i][j] = (t+r)
 
                 # Infidelity
                 beta1 = self.abs_squared(self.beta1())
-                alpha2 = self.abs_squared(self.alpha2())
-                z = (beta1 + alpha2) / (t+r)
+                beta0 = self.abs_squared(self.beta0())
 
-                A[i][j] = z
+                alpha2 = self.abs_squared(self.alpha2())
+
+                #sum_probabilities = beta1 + beta0 + alpha2  # originally only beta1
+                sum_probabilities = beta1 + alpha2
+
+
+                C[i][j] = (sum_probabilities) / (t+r)
 
             pass
 
-        #data2d = np.sin(t)[:, np.newaxis] * np.cos(t)[np.newaxis, :]
+        # Place some "fictitious" pixels to make matplotlib axis have the min/max values on the axes
+        A[0, 0] = 1.0
+        A[1, 1] = -1.0
 
-        #data2d = atom_detunings[:, np.newaxis] * cavity_detunings[np.newaxis, :]
+        B[0, 0] = 1.0
+        B[1, 1] = 0.0
 
-        data2d = A
+        C[0, 0] = 0.0
+        C[1, 1] = 0.1
+
+        # Run the subplots
+        self.subplot(plt, A, True, f'Transmission/Reflection {param}', start, end, num_detunings, -1.0, 1.0, cmap='RdYlBu')
+
+        self.subplot(plt, B, True, 'Transmission + Reflection', start, end, num_detunings, 0.0, 1.0, cmap='bwr')
+
+        self.subplot(plt, C, True, 'Infidelity', start, end, num_detunings, 0.0, 0.1, cmap='viridis')
+        pass
+
+    def subplot(self, plt, data2d, show_dashed, title, start, end, num_detunings, tick_min, tick_max, cmap):
+
+        ev = None
+        def onclick(event):
+            nonlocal ev
+            ev = event
+            btn = str(event.button).replace('MouseButton.', '')
+
+            if btn == 'LEFT':
+                self.k = self.k - 5
+            elif btn == 'RIGHT':
+                self.k = self.k + 5
+            elif btn == 'MIDDLE':
+                self.k = 'something else'
+            pass
+
         fig, ax = plt.subplots()
-        #im = ax.imshow(data2d)
+
+        cid = fig.canvas.mpl_connect('button_press_event', onclick)
 
         extent0 = [-50, 50, -50, 50]
-        im = ax.imshow(data2d, origin='lower', extent=extent0)
+        # Other colormaps can be found here: https://matplotlib.org/stable/users/explain/colors/colormaps.html
+        im = ax.imshow(data2d, origin='lower', extent=extent0, cmap=cmap)  # 'coolwarm' / 'bwr'
 
-        ax.set_title('Pan/Zoom colorbar to shift/scale color mapping')
+        SHOW_TITLE = True
+        if SHOW_TITLE:
+            ax.set_title(title)
 
-        # Set scales
-        SHOW_SCALES = False
-        if SHOW_SCALES:
-            r = int(n/2)
-            plt.xlim(-r, r)
-            plt.ylim(-r, r)
+        # Find min/max
+        # aa = np.array(data2d)
+        # tick_min_0 = aa.min()
+        # tick_max_0 = aa.max()
 
-        fig.colorbar(im, ax=ax, label='Interactive colorbar')
+        # Set the axis ticks
+        ticks = np.linspace(tick_min, tick_max, 5, endpoint=True)
+        fig.colorbar(im, ax=ax, ticks=ticks)  # label='Explain the color map here'
+
+        # Set the labels
+        ax.set_xlabel(r'$\delta_a [MHz]$')
+        ax.set_ylabel(r'$\delta_c [MHz]$')
+
 
         # Dashed line
-        SHOW_DASHED = True
-        if SHOW_DASHED:
+        if show_dashed:
             x_points = np.linspace(start, end, num=num_detunings)
             plt.plot(x_points, x_points, linestyle='dashed')
 
-        plt.show(block=True)
         pass
 
     def test_complex_stuff(self):
@@ -249,6 +317,6 @@ if __name__ == "__main__":
 
     sros = SquareRootOfSwap()
 
-    sros.go()
+    sros.go_all()
 
     pass
