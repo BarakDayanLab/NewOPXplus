@@ -204,7 +204,6 @@ class SquareRootOfSwap:
                 # T-R -> ideally we get 50%/50%
                 # Get transmissions and reflections
                 t, r = self.get_t_r()
-                #print(f't={t}, r={r}')
 
                 # SQRT-SWAP
                 A[i][j] = (t-r)/(t+r)
@@ -253,11 +252,11 @@ class SquareRootOfSwap:
             btn = str(event.button).replace('MouseButton.', '')
 
             if btn == 'LEFT':
-                self.k = self.k - 5
+                print('Left mouse button pressed')
             elif btn == 'RIGHT':
-                self.k = self.k + 5
+                print('Right mouse button pressed')
             elif btn == 'MIDDLE':
-                self.k = 'something else'
+                print('Middle mouse button pressed')
             pass
 
         fig, ax = plt.subplots()
