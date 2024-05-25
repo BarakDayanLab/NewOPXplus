@@ -192,6 +192,8 @@ class SquareRootOfSwap:
         A = np.zeros((n, n))
         B = np.zeros((n, n))
         C = np.zeros((n, n))
+        D = np.zeros((n, n))
+
 
         for i, d_c in enumerate(cavity_detunings):
             for j, d_a in enumerate(atom_detunings):
@@ -217,11 +219,11 @@ class SquareRootOfSwap:
 
                 alpha2 = self.abs_squared(self.alpha2())
 
-                #sum_probabilities = beta1 + beta0 + alpha2  # originally only beta1
-                sum_probabilities = beta1 + alpha2
+                sum_probabilities_1 = beta1 + alpha2
+                sum_probabilities_2 = beta1 + beta0 + alpha2  # originally only beta1
 
-
-                C[i][j] = (sum_probabilities) / (t+r)
+                C[i][j] = (sum_probabilities_1) / (t+r)
+                D[i][j] = (sum_probabilities_2) / (t+r)
 
             pass
 
@@ -235,12 +237,18 @@ class SquareRootOfSwap:
         C[0, 0] = 0.0
         C[1, 1] = 0.1
 
+        D[0, 0] = 0.0
+        D[1, 1] = 0.1
+
         # Run the subplots
         self.subplot(plt, A, True, f'Transmission/Reflection {param}', start, end, num_detunings, -1.0, 1.0, cmap='RdYlBu')
 
         self.subplot(plt, B, True, 'Transmission + Reflection', start, end, num_detunings, 0.0, 1.0, cmap='bwr')
 
         self.subplot(plt, C, True, 'Infidelity', start, end, num_detunings, 0.0, 0.1, cmap='viridis')
+
+        self.subplot(plt, D, True, 'Infidelity-beta0', start, end, num_detunings, 0.0, 0.1, cmap='viridis')
+
         pass
 
     def subplot(self, plt, data2d, show_dashed, title, start, end, num_detunings, tick_min, tick_max, cmap):
