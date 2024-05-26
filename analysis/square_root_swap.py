@@ -210,8 +210,10 @@ class SquareRootOfSwap:
                 # SQRT-SWAP
                 A[i][j] = (t-r)/(t+r)
 
-                # Sum transmissions + reflections
-                B[i][j] = (t+r)
+                # Losses: 1 - (Sum transmissions + reflections)
+                B[i][j] = (1-(t+r))*100
+                #B[i][j] = (t+r)
+
                 if (r>0.38):
                     print(f'[{i}, {j}]: T={t} | R={r}')
 
@@ -233,7 +235,7 @@ class SquareRootOfSwap:
         A[0, 0] = 1.0
         A[1, 1] = -1.0
 
-        B[0, 0] = 1.0
+        B[0, 0] = 100.0  #1.0
         B[1, 1] = 0.0
 
         C[0, 0] = 0.0
@@ -243,13 +245,13 @@ class SquareRootOfSwap:
         D[1, 1] = 0.1
 
         # Run the subplots
-        self.subplot(plt, A, True, f'Transmission/Reflection {param}', start, end, num_detunings, -1.0, 1.0, cmap='RdYlBu')
+        self.subplot(plt, A, True, f'Transmission/Reflection Ratio {param}', start, end, num_detunings, -1.0, 1.0, cmap='RdYlBu')
 
-        self.subplot(plt, B, True, 'Transmission + Reflection', start, end, num_detunings, 0.0, 1.0, cmap='bwr')
+        self.subplot(plt, B, True, 'Losses (%)', start, end, num_detunings, 0.0, 100.0, cmap='bwr_r')  # cmap='bwr_r'
 
-        self.subplot(plt, C, True, 'Infidelity', start, end, num_detunings, 0.0, 0.1, cmap='viridis')
+        self.subplot(plt, C, True, 'Infidelity-no beta0', start, end, num_detunings, 0.0, 0.1, cmap='viridis')
 
-        self.subplot(plt, D, True, 'Infidelity-beta0', start, end, num_detunings, 0.0, 0.1, cmap='viridis')
+        self.subplot(plt, D, True, 'Infidelity', start, end, num_detunings, 0.0, 0.1, cmap='viridis')
 
         pass
 
