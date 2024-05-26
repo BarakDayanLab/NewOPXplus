@@ -155,24 +155,24 @@ class SquareRootOfSwap:
         self.go('')
         plt.show(block=True)
 
-        return
-
-        self.h = 0.6 * 1e6 * 2 * np.pi  # 0.6 MHz
-        # self.kappa_ex = 30 * 1e6 * 2 * np.pi  # 30*1e6
-        self.avg_g = 10*1e6*2*np.pi  # 16 MHz
-        self.go(f'h={self.h} | k_ex={self.kappa_ex} | g={self.avg_g}')
-
-        self.h = 1 * 1e6 * 2 * np.pi  # 0.6 MHz
-        # self.kappa_ex = 20 * 1e6 * 2 * np.pi  # 30*1e6
-        self.avg_g = 13*1e6*2*np.pi  # 16 MHz
-        self.go(f'h={self.h} | k_ex={self.kappa_ex} | g={self.avg_g}')
-
-        self.h = 2 * 1e6 * 2 * np.pi  # 0.6 MHz
-        # self.kappa_ex = 10 * 1e6 * 2 * np.pi  # 30*1e6
-        self.avg_g = 16*1e6*2*np.pi  # 16 MHz
-        self.go(f'h={self.h} | k_ex={self.kappa_ex} | g={self.avg_g}')
-
-        plt.show(block=True)
+        # return
+        #
+        # self.h = 0.6 * 1e6 * 2 * np.pi  # 0.6 MHz
+        # # self.kappa_ex = 30 * 1e6 * 2 * np.pi  # 30*1e6
+        # self.avg_g = 10*1e6*2*np.pi  # 16 MHz
+        # self.go(f'h={self.h} | k_ex={self.kappa_ex} | g={self.avg_g}')
+        #
+        # self.h = 1 * 1e6 * 2 * np.pi  # 0.6 MHz
+        # # self.kappa_ex = 20 * 1e6 * 2 * np.pi  # 30*1e6
+        # self.avg_g = 13*1e6*2*np.pi  # 16 MHz
+        # self.go(f'h={self.h} | k_ex={self.kappa_ex} | g={self.avg_g}')
+        #
+        # self.h = 2 * 1e6 * 2 * np.pi  # 0.6 MHz
+        # # self.kappa_ex = 10 * 1e6 * 2 * np.pi  # 30*1e6
+        # self.avg_g = 16*1e6*2*np.pi  # 16 MHz
+        # self.go(f'h={self.h} | k_ex={self.kappa_ex} | g={self.avg_g}')
+        #
+        # plt.show(block=True)
 
         pass
 
@@ -210,8 +210,10 @@ class SquareRootOfSwap:
                 # SQRT-SWAP
                 A[i][j] = (t-r)/(t+r)
 
-                # Sum transaction + reflections
+                # Sum transmissions + reflections
                 B[i][j] = (t+r)
+                if (r>0.38):
+                    print(f'[{i}, {j}]: T={t} | R={r}')
 
                 # Infidelity
                 beta1 = self.abs_squared(self.beta1())
