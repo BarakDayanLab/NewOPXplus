@@ -16,26 +16,29 @@ def MOT(mot_repetitions, OD_Attenuation):
     :param mot_repetitions: derived from the MOT duration, and is calculated in the Experiment parameters section
     """
     FLR = declare(fixed)
+    # OPX_Utils.assign_variables_to_element("FLR_detection", FLR)
+
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
           "AOM_2-2/3'", "AOM_2-3'_for_interference", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors_spectrum", "Dig_detectors") # , "PULSER_N", "PULSER_S")
 
     ## MOT build-up ##
     n = declare(int)
     m = declare(int)
-    play("Detection" * amp(FLR * 0), "FLR_detection", duration=4)  # we dont know why this works, but Yoav from QM made us write this line to solve an alignment problem we had in the next 2 for loops
+    play("Detection" * amp(FLR * 0), "FLR_detection", duration=4)  # we don't know why this works, but Yoav from QM made us write this line to solve an alignment problem we had in the next 2 for loops
     with for_(n, 1, n <= mot_repetitions, n + 1):
         play("MOT" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0")
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
 
         # OD beam
-        #play("OD_FS" * amp(OD_Attenuation), "AOM_2-2/3'")
+        # play("OD_FS" * amp(OD_Attenuation), "AOM_2-2/3'")
+        # play("OD_FS" * amp(0.4), "AOM_2-2/3'")
 
         play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
     with for_(m, 1, m <= (mot_repetitions - 1), m + 1):
         measure("Detection", "FLR_detection", None, integration.full("Detection_opt", FLR, "out1"))
 
-        play("OD_FS" * amp(OD_Attenuation), "AOM_2-2/3'")
+        # play("OD_FS" * amp(OD_Attenuation), "AOM_2-2/3'")
 
         # play("OD_FS" * amp(0.5), "AOM_2-3'_for_interference")
 
@@ -343,7 +346,6 @@ def opx_control(obj, qm):
         AntiHelmholtz_ON_st = declare_stream()
         FLR_st = declare_stream()
 
-
         x = declare(int)
         assign(IO1, 0)
         assign(IO2, 0)
@@ -404,7 +406,7 @@ def opx_control(obj, qm):
                 play("C_Seq", "Cooling_Sequence", duration=us(10))
                 ################################################
 
-            ## For taking an image:
+            # For taking an image:
             with if_(Pulse_1_duration > 0):
                 align(*all_elements, "AOM_2-2/3'")
                 Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,

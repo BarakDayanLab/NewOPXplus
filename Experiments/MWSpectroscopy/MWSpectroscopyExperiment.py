@@ -187,8 +187,8 @@ class MWSpectroscopyExperiment(BaseExperiment):
         # MW spectroscopy parameters:
         self.MW_start_frequency = int(100e6)  # [Hz]
         # TODO: what are the increments of the scan? The end frequency?
-        self.Pulse_Length_MW = 400  # [usec]
-        self.Pulse_Length_OD = 20  # [usec]
+        self.Pulse_Length_MW = 250  # [usec]
+        self.Pulse_Length_OD = 50  # [usec]
 
         # Main Experiment:
         self.TOP2_pulse_len = int(Config.Probe_pulse_len / 4)  # [nsec]
@@ -2567,6 +2567,6 @@ if __name__ == "__main__":
     }
 
     experiment = MWSpectroscopyExperiment(playback_parameters=playback_parameters, save_raw_data=True)
-    run_status = experiment.run_sequence(sequence_definitions, run_parameters)
+    # run_status = experiment.run_sequence(sequence_definitions, run_parameters)
 
     pass

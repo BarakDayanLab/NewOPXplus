@@ -969,7 +969,7 @@ config = {
             },
             'intermediate_frequency': mw_config['im_frequency'],  # MHz
             'operations': {
-                # 'pulse1': 'pulse1_in',
+                'pulse1': 'pulse1_in',
                 'gauss': 'pulse_gauss',
             }
         },

@@ -52,18 +52,32 @@ COW = False
 # sprint_pulse_amp_S = [0, 0.06, 0, 0.06]
 
 
+det_pulse_amp_N = [0, 0.28, 0, 0.28, 0, 0.18]
+det_pulse_amp_S = [0.095, 0, 0.095, 0, 0.095, 0]
+
+#det_pulse_amp_N = [0.28, 0, 0.28, 0, 0.28, 0]
+#det_pulse_amp_S = [0, 0.095, 0, 0.095, 0, 0.06]
+
 #### 1st set: ####
 # S reflection:
-det_pulse_amp_N = [0.28, 0, 0.28, 0, 0.28, 0]
+#det_pulse_amp_N = [0.28, 0, 0.28, 0, 0.28, 0]
 # det_pulse_amp_N = [0, 0.28, 0, 0.28, 0, 0.18] # Transmission fidelity check
 # det_pulse_amp_S = [0, 0.45, 0, 0.45, 0, 0.24]
-det_pulse_amp_S = [0, 0.095, 0, 0.095, 0, 0.06]
+#det_pulse_amp_S = [0, 0.095, 0, 0.095, 0, 0.06]
 # det_pulse_amp_S = [0.095, 0, 0.095, 0, 0.095, 0] # Transmission fidelity check
 # sprint_pulse_amp_N = [0, 0.115, 0, 0]
 # sprint_pulse_amp_N = [0, 0, 0, 0.115]
 # sprint_pulse_amp_N = [0, 0.065, 0, 0.065]
 # sprint_pulse_amp_S = [0, 0, 0, 0]
-sprint_pulse_amp_N = [0.065, 0.065]
+# sprint_pulse_amp_N = [0.065, 0] #
+#sprint_pulse_amp_N = [0, 0]
+# sprint_pulse_amp_S = [0, 0]
+#sprint_pulse_amp_S = [0.022, 0]
+
+#sprint_pulse_amp_N = [0, 0]
+#sprint_pulse_amp_S = [0.022, 0]
+
+sprint_pulse_amp_N = [0.065, 0]
 sprint_pulse_amp_S = [0, 0]
 
 # N reflection:
@@ -190,7 +204,8 @@ def PNSA_Exp_Square_samples(amp=0.45, sprint_pulse_len=110, det_pulse_len=30, de
     pnsa_exp_gaussian_samples += [det_pulses_amp[-1] * amp] * (sprint_pulse_len - 60 - 2) + \
                                  [det_pulses_amp[-1] * sprint_pulses_amp[0] * amp] * (num_between_vals)
 
-    pnsa_exp_gaussian_samples += [0] * 55  # due to unresolved reflections
+    # pnsa_exp_gaussian_samples += [0] * 55  # due to unresolved reflections
+    pnsa_exp_gaussian_samples += [sprint_pulses_amp[0] * amp] * 55  # just for 1111 late ewxperiment remove assaf
 
     pnsa_exp_gaussian_samples += [sprint_pulses_amp[0] * amp] * (num_mid_val-10)  # due to unresolved reflections
 
@@ -289,9 +304,11 @@ IF_AOM_Depump = 133.325e6
 IF_AOM_Repump = 78.4735e6
 # IF_AOM_N = 89.2368e6
 IF_AOM_N = 129e6
+# IF_AOM_N = 127e6 # assaf experiment 12/03/2024
 # IF_AOM_S = 89.2368e6
 # IF_AOM_S = 129.2368e6
 IF_AOM_S = 129e6
+# IF_AOM_S = 127e6# assaf experiment 12/03/2024
 # IF_AOM_LO = 89.2368e6
 IF_AOM_ANCILLA = 129.2368e6 + 110e6/2
 # IF_AOM_LO = 129.2368e6
@@ -526,8 +543,8 @@ Pulses_Amp_Early = 0.495
 # |1c, (0 + 1)t>
 # det_pulse_amp_Early = [0, 0, 0, 0, 0, 0, 0, 0]
 det_pulse_amp_Early = [0, 0, 0, 0, 0, 0]
-sprint_pulse_amp_Early = [1, 0, 0, 0]
-# sprint_pulse_amp_Early = [0, 0, 0, 0]
+# sprint_pulse_amp_Early = [1, 0, 0, 0]
+sprint_pulse_amp_Early = [0, 0, 0, 0]
 # sprint_pulse_amp_Early = [0]
 
 
@@ -589,8 +606,8 @@ det_pulse_amp_Late = [1, 1, 1, 1, 1, 1]
 # sprint_pulse_amp_Late = [0, 0, 1, 1]
 # # |1c, (0 + 1)t>
 # det_pulse_amp_Late = [1, 1, 1, 1, 1, 1, 1, 1]
-sprint_pulse_amp_Late = [0, 0, 1, 1]
-# sprint_pulse_amp_Late = [1, 1, 1, 1]
+# sprint_pulse_amp_Late = [0, 0, 1, 1]
+sprint_pulse_amp_Late = [1, 1, 1, 1]
 
 PNSA_Exp_Square_samples_Late = PNSA_Exp_Square_samples(amp=Pulses_Amp_Late,
                                                        sprint_pulse_len=int(MZ_delay/2),

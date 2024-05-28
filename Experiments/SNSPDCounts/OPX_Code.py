@@ -49,7 +49,7 @@ def opx_control(obj, qm):
                 play("Const_open_triggered" * amp(0.4), "PULSER_N")
                 # play("Const_open", "PULSER_N")
                 # play("Const_open", "PULSER_S")
-                play("Const_open_triggered" * amp(0), "PULSER_S")
+                play("Const_open_triggered" * amp(0.4), "PULSER_S")
 
                 # We play either early or late AOMs - to test different system paths efficiencies
                 play("Const_late_open", "PULSER_L")

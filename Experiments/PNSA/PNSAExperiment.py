@@ -238,6 +238,20 @@ class PNSAExperiment(BaseExperiment):
         # Unify detectors 6 & 7
         self.tt_FS_measure = sorted(sum(self.tt_measure[5:7], []))
 
+        # for debug
+        self.Total_clicks = len(sum(self.tt_measure[:], []))
+        self.Total_North_clicks = len(sum(self.tt_measure[4:7], []))
+        self.Total_South_clicks = self.Total_clicks - self.Total_North_clicks
+        print("total clicks in cycle is %d" %  self.Total_clicks)
+        print("total clicks in South cycle is %d" % self.Total_North_clicks)
+        print("total clicks in North cycle is %d" % self.Total_South_clicks)
+
+        num = len(sum(self.tt_measure[:], []))
+        #if num > 300:
+            #self._plot([self.tt_N_measure, self.tt_S_measure, self.tt_DP_measure, self.tt_BP_measure, self.tt_FS_measure])
+            #pass
+
+
         # Phase Correction is a result of ZIP action in opx_control, thus we have "value_0" and "value_1" for the tupples
         self.Phase_Correction_vec = self.streams['Phase_Correction_array']['results']['value_0']
         self.Phase_Correction_min_vec = self.streams['Phase_Correction_array']['results']['value_1']
@@ -2509,9 +2523,10 @@ if __name__ == "__main__":
 
     # Playback definitions
     playback_parameters = {
-        "active": False,
+        "active": True,
         #'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240225\173049_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
-        'playback_files_path': r'C:\temp\playback_data\PNSA\20240312\121917_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
+        #'playback_files_path': r'C:\temp\playback_data\PNSA\20240312\121917_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
+        'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240527\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
         "old_format": False,
         "save_results": False,
         "save_results_path": 'C:\\temp\\playback_data',
@@ -2534,7 +2549,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 0.8,
         'photons_per_det_pulse_threshold': 12,
-        'exp_flag': True,
+        'exp_flag': False,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2546,17 +2561,17 @@ if __name__ == "__main__":
             {
                 'name': 'Without Atoms',
                 'parameters': {
-                    'N': 50,
+                    'N': 500,
                     'with_atoms': False
                 }
             },
-            {
-                'name': 'With Atoms',
-                'parameters': {
-                    'N': 500,
-                    'with_atoms': True
-                }
-            },
+            # {
+            #     'name': 'With Atoms',
+            #     'parameters': {
+            #         'N': 500,
+            #         'with_atoms': True
+            #     }
+            # },
         ]
     }
 

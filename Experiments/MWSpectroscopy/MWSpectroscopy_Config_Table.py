@@ -36,7 +36,7 @@ Experiment_Values = {
     'M_off_time': 1.5,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
 
     # TODO: we should have a different value here - and fix opx code to use this value
-    'OPX_Quad_Misalignment_Delay': 4000,  # = 4us [ns]
+    'OPX_Quad_Misalignment_Delay': 9000,  # = 4us [ns]
 
     # OD Related
     'OD_continuous_attenuation': 0.5  # Put on 0 to turn beam off
