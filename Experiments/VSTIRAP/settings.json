@@ -1,0 +1,217 @@
+{
+    "streams": {
+        "Detector_1_Timetags": {
+            "number": 1,
+            "name": "Detector_1_Timetags",
+            "type": "int",
+            "playback": "Det1_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_2_Timetags": {
+            "number": 2,
+            "name": "Detector_2_Timetags",
+            "type": "int",
+            "playback": "Det2_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_3_Timetags": {
+            "number": 3,
+            "name": "Detector_3_Timetags",
+            "type": "int",
+            "playback": "Det3_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_4_Timetags": {
+            "number": 4,
+            "name": "Detector_4_Timetags",
+            "type": "int",
+            "playback": "Det4_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_5_Timetags": {
+            "number": 5,
+            "name": "Detector_5_Timetags",
+            "type": "int",
+            "playback": "Det5_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_6_Timetags": {
+            "number": 6,
+            "name": "Detector_6_Timetags",
+            "type": "int",
+            "playback": "Det6_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_7_Timetags": {
+            "number": 7,
+            "name": "Detector_7_Timetags",
+            "type": "int",
+            "playback": "Det7_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_8_Timetags": {
+            "number": 8,
+            "name": "Detector_8_Timetags",
+            "type": "int",
+            "playback": "Det8_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Bright_Port_Counts": {
+            "name": "Bright_Port_Counts",
+            "type": "int",
+            "playback": "Bright(1,2)\\Bright_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Dark_Port_Counts": {
+            "name": "Dark_Port_Counts",
+            "type": "int",
+            "playback": "Dark(3,4)\\Bright_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Phase_Correction_array": {
+            "name": "Phase_Correction_array",
+            "type": "int",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Max_counts": {
+            "name": "Max_counts",
+            "type": "int",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "FLR_measure": {
+            "name": "FLR_measure",
+            "type": "float",
+            "playback": "Flouresence.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "antihelmholtz_on": {
+            "name": "antihelmholtz_on",
+            "save_raw": false,
+            "source": "opx",
+            "skip": true
+        },
+        "Lock_Error": {
+            "name": "Lock_Error",
+            "type": "float",
+            "save_raw": true,
+            "channel": "cavity_lock",
+            "default": 99.9,
+            "source": "comm"
+        },
+        "Kappa_Ex": {
+            "name": "K_Ex",
+            "type": "float",
+            "save_raw": true,
+            "channel": "cavity_lock",
+            "default": 99.9,
+            "source": "comm"
+        },
+        "Interference": {
+            "name": "Interference_Error",
+            "type": "float",
+            "save_raw": true,
+            "channel": "cavity_lock",
+            "default": 99.9,
+            "source": "comm"
+        }
+    },
+    "batches": {},
+    "connections": {
+        "cavity_lock": {
+            "description": "Kappa Ex, Lock error, Interference values as calculated from auto fit process",
+            "value_name": "cavity_lock",
+            "trusted_IP": ["*"]
+        }
+    },
+    "keyboard": {
+        "stop_experiment": {
+            "description": "Stops experiment",
+            "callback": "stop_experiment",
+            "keys": ["escape", "Q", "q", "ctrl+q"]
+        },
+        "pause_unpause": {
+            "description": "Toggles Pauses/Unpause, for taking of measurements",
+            "callback": "pause_unpause",
+            "keys": [" "]
+        },
+        "atoms_on_off": {
+            "description": "Toggles atoms cloud on/off",
+            "callback": "turn_on_off_atoms",
+            "keys": ["A", "a"]
+        }
+    },
+    "menus": {},
+    "files": {},
+    "dialogs": {
+        "save_dialog": {
+            "title": "Experiment Completed",
+            "geometry": "500x270",
+            "message": "Enter the comment to save with experiment data",
+            "buttons": [
+                {
+                    "description": "Saves results that are required for analysis",
+                    "button_id": 1,
+                    "button_name": "Analysis",
+                    "folder_name": "for_analysis"
+                },
+                {
+                    "description": "Saves results the are required for optimization",
+                    "button_id": 2,
+                    "button_name": "Optimization",
+                    "folder_name": "for_optimization"
+                },
+                {
+                    "description": "Ignore results",
+                    "button_id": 3,
+                    "button_name": "Ignore",
+                    "folder_name": "n/a"
+                },
+                {
+                    "description": "Allows generic save location",
+                    "button_id": 9,
+                    "button_name": "Choose Folder...",
+                    "pad": 40,
+                    "explorer": true
+                }
+            ]
+        },
+        "live_dialog": {
+            "title": "LIVE on local",
+            "geometry": "600x270",
+            "message": "You are about to run LIVE from your workstation. Continue? (type CONFIRM)",
+            "buttons": [
+                {
+                    "description": "Continue live",
+                    "button_id": 1,
+                    "button_name": "Continue"
+                },
+                {
+                    "description": "Go offline",
+                    "button_id": 2,
+                    "button_name": "Offline"
+                },
+                {
+                    "description": "Exit code",
+                    "button_id": 3,
+                    "button_name": "Exit"
+                }
+            ]
+        }
+    },
+    "permissions": {
+        "allowed_offline": ["drorg", "dork"]
+    }
+}
