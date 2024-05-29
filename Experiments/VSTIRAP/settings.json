@@ -155,6 +155,15 @@
     },
     "menus": {},
     "files": {},
+    "figures": {
+        "order": ["live transits", "phase array", "other"],
+        "plots": [
+            {
+                "name": "live transits",
+                "func": "plot_live_transits"
+            }
+        ]
+    },
     "dialogs": {
         "save_dialog": {
             "title": "Experiment Completed",
