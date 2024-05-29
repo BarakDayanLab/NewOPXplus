@@ -173,10 +173,10 @@ class BaseExperiment:
         try:
             # If we're in playback mode, we load the config files from the playback folder
             if self.playback['active']:
-                the_path = os.path.join(self.playback['playback_files_path'], 'Source Files', 'PNSA_Config_Experiment.py')
-                Config = SourceFileLoader("PNSA_Config_Experiment", the_path).load_module()
-                the_path = os.path.join(self.playback['playback_files_path'], 'Source Files', 'PNSA_Config_Table.py')
-                ConfigTable = SourceFileLoader("PNSA_Config_Table", the_path).load_module()
+                the_path = os.path.join(self.playback['playback_files_path'], 'Source Files', f'{self.experiment_name}_Config_Experiment.py')
+                Config = SourceFileLoader(f"{self.experiment_name}_Config_Experiment", the_path).load_module()
+                the_path = os.path.join(self.playback['playback_files_path'], 'Source Files', f'{self.experiment_name}_Config_Table.py')
+                ConfigTable = SourceFileLoader(f"{self.experiment_name}_Config_Table", the_path).load_module()
             else:
                 Config = importlib.import_module(f'{self.experiment_name}_Config_Experiment')
                 ConfigTable = importlib.import_module(f'{self.experiment_name}_Config_Table')

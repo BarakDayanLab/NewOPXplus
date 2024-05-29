@@ -156,11 +156,71 @@
     "menus": {},
     "files": {},
     "figures": {
-        "order": ["live transits", "phase array", "other"],
-        "plots": [
+        "display": ["1", "2", "3", "4", "6"],
+        "grid_shape": [3, 4],
+        "subplots": [
             {
-                "name": "live transits",
-                "func": "plot_live_transits"
+                "id": "1",
+                "title": "Binned Time Tags (live)",
+                "func": "plot_binned_tags_live",
+                "location_x": 0,
+                "location_y": 0,
+                "colspan": 2,
+                "rowspan": 1
+            },
+            {
+                "id": "2",
+                "title": "Binned Time Tags (averaged)",
+                "func": "plot_binned_tags_live",
+                "location_x": 2,
+                "location_y": 0,
+                "colspan": 2,
+                "rowspan": 1
+            },
+            {
+                "id": "3",
+                "title": "MZ Outputs (while locking)",
+                "func": "plot_mz_outputs",
+                "location_x": 0,
+                "location_y": 1,
+                "colspan": 2,
+                "rowspan": 1
+            },
+            {
+                "id": "4",
+                "title": "Number reflections per sequence",
+                "func": "plot_num_reflections_per_sequence",
+                "location_x": 2,
+                "location_y": 1,
+                "colspan": 2,
+                "rowspan": 1
+            },
+            {
+                "id": "5_1",
+                "title": "MZ outputs around experiment",
+                "func": "plot_mz_outputs_around_experiment",
+                "location_x": 0,
+                "location_y": 2,
+                "colspan": 2,
+                "rowspan": 1
+            },
+            {
+                "id": "5_2",
+                "title": "MZ outputs during experiment",
+                "func": "plot_mz_outputs_during_experiment",
+                "location_x": 1,
+                "location_y": 2,
+                "colspan": 2,
+                "rowspan": 1
+            },
+            {
+                "id": "6",
+                "title": "Transits per sequence",
+                "func": "plot_transits_per_sequence",
+                "location_x": 2,
+                "location_y": 2,
+                "colspan": 2,
+                "rowspan": 1
             }
         ]
     },

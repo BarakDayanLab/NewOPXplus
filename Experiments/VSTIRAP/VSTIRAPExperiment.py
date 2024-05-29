@@ -1120,6 +1120,17 @@ class VSTIRAPExperiment(BaseExperiment):
 
         self.subplots = []
 
+        # TODO: Move this to BaseExperiment
+        subplots_shape = self.settings['figures']['grid_shape']
+
+        for subplots in self.settings['figures']['subplots']:
+            self.subplots.append(plt.subplot2grid(shape=subplots_shape,
+                                              loc=(subplots['location_y'], subplots['location_x']),
+                                              colspan=subplots['colspan'], rowspan=subplots['rowspan']))
+            pass
+
+        return
+
         # Figure 0 - Top Left - Binned Time-Tags from All Detectors
         self.subplots.append(plt.subplot2grid((3, 4), (0, 0), colspan=2, rowspan=1))
 
@@ -2509,9 +2520,10 @@ if __name__ == "__main__":
 
     # Playback definitions
     playback_parameters = {
-        "active": False,
+        "active": True,
         #'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240225\173049_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
-        'playback_files_path': r'C:\temp\playback_data\PNSA\20240312\121917_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
+        #'playback_files_path': r'C:\temp\playback_data\PNSA\20240312\121917_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
+        'playback_files_path': r'C:\temp\playback_data\STIRAP\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
         "old_format": False,
         "save_results": False,
         "save_results_path": 'C:\\temp\\playback_data',
