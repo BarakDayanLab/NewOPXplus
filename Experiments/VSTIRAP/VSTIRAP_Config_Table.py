@@ -6,7 +6,7 @@ import Experiments.PNSA.PNSA_Config_Experiment as Config
 
 # These values will be added/override the ones in Initial_Values (e.g. Common Experiment Values)
 Experiment_Values = {
-    'Experiment_Name': 'PNSA',
+    'Experiment_Name': 'VSTIRAP',
     'Triggering_Phase': Phases.FREE_FALL,
     'Phases_Order': [Phases.MOT, Phases.FOUNTAIN, Phases.PGC, Phases.FREE_FALL, Phases.PULSE_1, Phases.INTER_PULSES, Phases.PULSE_2, Phases.POST_PULSE],
     'MOT_rep': int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config.MOT_pulse_len)),
