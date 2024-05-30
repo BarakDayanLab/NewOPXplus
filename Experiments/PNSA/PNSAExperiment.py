@@ -238,13 +238,18 @@ class PNSAExperiment(BaseExperiment):
         # Unify detectors 6 & 7
         self.tt_FS_measure = sorted(sum(self.tt_measure[5:7], []))
 
-        # for debug
+        # calculate and print Total Counts in cycle
         self.Total_clicks = len(sum(self.tt_measure[:], []))
-        self.Total_North_clicks = len(sum(self.tt_measure[4:7], []))
-        self.Total_South_clicks = self.Total_clicks - self.Total_North_clicks
-        print("total clicks in cycle is %d" %  self.Total_clicks)
-        print("total clicks in South cycle is %d" % self.Total_North_clicks)
-        print("total clicks in North cycle is %d" % self.Total_South_clicks)
+        self.Total_South_clicks = len(sum(self.tt_measure[4:7], []))
+        self.Total_North_clicks = self.Total_clicks - self.Total_South_clicks
+
+        self.Avg_clicks += (self.Total_clicks-self.Avg_clicks)/(self.counter+5)
+        self.Avg_North_clicks += (-self.Avg_North_clicks+self.Total_North_clicks)/(self.counter+5)
+        self.Avg_South_clicks += (-self.Avg_South_clicks+self.Total_South_clicks)/(self.counter+5)
+
+        self.logger.info("total clicks in cycle is %d , average %d " % (self.Total_clicks,self.Avg_clicks ))
+        self.logger.info("total clicks in North cycle is %d, average %d" % (self.Total_North_clicks,self.Avg_North_clicks))
+        self.logger.info("total clicks in South cycle is %d, average %d" % (self.Total_South_clicks,self.Avg_South_clicks))
 
         num = len(sum(self.tt_measure[:], []))
         #if num > 300:
@@ -1573,6 +1578,11 @@ class PNSAExperiment(BaseExperiment):
         self.BP_counts_SPRINT_data_without_transits = []
         self.DP_counts_SPRINT_data_without_transits = []
 
+        # average of clicks in cycle
+        self.Avg_clicks = 0
+        self.Avg_North_clicks = 0
+        self.Avg_South_clicks = 0
+
     def new_timetags_detected(self, prev_measures, curr_measure):
         """
         Attempt to deduce if the time-tags that are in are new ones (as opposed to leftovers from prev measure)
@@ -2523,7 +2533,7 @@ if __name__ == "__main__":
 
     # Playback definitions
     playback_parameters = {
-        "active": True,
+        "active": False,
         #'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240225\173049_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
         #'playback_files_path': r'C:\temp\playback_data\PNSA\20240312\121917_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
         'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240527\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
