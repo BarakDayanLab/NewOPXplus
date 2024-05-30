@@ -52,7 +52,7 @@ def json_numpy_obj_hook(dct):
 
 class BDStreams:
 
-    def __init__(self, streams=None, save_raw_data=False, logger=None):
+    def __init__(self, streams=None, max_files_to_load=-1, save_raw_data=False, logger=None):
 
         # Flag - whether we should save raw data or not
         self.save_raw_data = save_raw_data
@@ -62,6 +62,7 @@ class BDStreams:
 
         self.streams = streams
         self.number_of_rows_saved = 0
+        self.max_files_to_load = max_files_to_load  # Max number of playback files to load
 
         pass
 
@@ -190,6 +191,8 @@ class BDStreams:
                 self.logger.info(f'Loading playback files ({i}/{len(playback_files)})')
             i += 1
             self.load_streams(os.path.join(playback_files_path, playback_file))
+            if i > self.max_files_to_load:
+                break
 
         self.logger.info(f'Finished loading {len(playback_files)} playback files. Took {time.time() - load_time_start} secs')
         pass

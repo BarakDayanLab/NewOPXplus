@@ -1118,16 +1118,24 @@ class VSTIRAPExperiment(BaseExperiment):
         matplotlib.mathtext.SHRINK_FACTOR = 0.4
         matplotlib.mathtext.GROW_FACTOR = 1 / 0.4
 
-        self.subplots = []
-
-        # TODO: Move this to BaseExperiment
+        # TODO: Move the below code to BaseExperiment (or even better - BDPlotsManager
+        self.subplots = {}
+        self.header_ax = None  # This is the axis we will "glue" the experiment header to
         subplots_shape = self.settings['figures']['grid_shape']
 
-        for subplots in self.settings['figures']['subplots']:
-            self.subplots.append(plt.subplot2grid(shape=subplots_shape,
-                                              loc=(subplots['location_y'], subplots['location_x']),
-                                              colspan=subplots['colspan'], rowspan=subplots['rowspan']))
-            pass
+        # Iterate over all subplots definitions and create subplots, putting them into a dictionary
+        for subplot_def in self.settings['figures']['subplots']:
+            if 'twinx' in subplot_def.keys():
+                subplot_def["ax"] = self.subplots[subplot_def['twinx']]["ax"].twinx()
+            else:
+                subplot_def["ax"] = plt.subplot2grid(shape=subplots_shape,
+                                           loc=(subplot_def['location_y'], subplot_def['location_x']),
+                                           colspan=subplot_def['colspan'], rowspan=subplot_def['rowspan'])
+            self.subplots[subplot_def["id"]] = subplot_def
+            # If this is the [0,0] positioned axis, remember it - so we can "glue" experiment header to it
+            if (('location_x' in subplot_def.keys()) and subplot_def['location_x'] == 0 and
+                    ('location_y' in subplot_def.keys()) and subplot_def['location_y'] == 0):
+                self.header_ax = subplot_def["ax"]
 
         return
 
@@ -1164,10 +1172,392 @@ class VSTIRAPExperiment(BaseExperiment):
             self._plot_figures()
         except Exception as err:
             tb = traceback.format_exc()
-            self.warn(f'Failed on plot_figures: {err}')
+            self.warn(f'Failed on plot_figures: {err}.\n{tb}')
+        pass
+
+    # -------------------------------------------------------------------------
+    # Experiment Plots
+    # -------------------------------------------------------------------------
+
+    def plots_header(self, ax):
+        """
+        Plots a TEXT that is the experiment header line
+        """
+
+        pause_str = ' , PAUSED!' if self.pause_flag else ''
+        ref_str = '%.2f' % self.sum_for_threshold
+        eff_str = '%.1f%%' % (self.counter * 100 / self.repetitions)
+        exp_str = r'$\bf{' + self.experiment_type + '}$'
+        if hasattr(self, 'fluorescence_flag'):
+            if self.fluorescence_flag:  # @@@
+                # flr_str = '$Flr: %.2f$' % self.fluorescence_average
+                flr_str = '$Flr: %d$' % int(self.fluorescence_average)
+            else:
+                # flr_str = r'$\bf{Flr: %.2f}$' % self.fluorescence_average
+                flr_str = r'$\bf{Flr: %d}$' % int(self.fluorescence_average)
+        else:
+            flt_str = "Flr: N/A"
+
+        if self.lock_err is not None:
+            if self.lock_err_flag:
+                lck_str = '$\Delta_{lock}: %.1f$' % self.lock_err
+            else:
+                lck_str = r'$\bf{\Delta_{lock}: %.1f}$' % self.lock_err
+        else:
+            lck_str = r'LckErr: N/A'
+
+        if self.k_ex is not None:
+            if self.k_ex_flag:
+                k_ex_str = '$\kappa_{ex}: %.1f$' % self.k_ex
+            else:
+                k_ex_str = r'$\bf{\kappa_{ex}: %.1f}$' % self.k_ex
+        else:
+            k_ex_str = "K_ex: N/A"
+
+        status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({eff_str})'
+        playback_str = 'P: ' if self.playback['active'] else ''
+
+        header_text = f'{playback_str} {self.experiment_type}, {status_str} - {flr_str}, {lck_str}, {k_ex_str} {pause_str}'
+
+        # Threshold Box:
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+        flag_color = 'green' if self.acquisition_flag else 'red'
+        props_thresholds = dict(boxstyle='round', edgecolor=flag_color, linewidth=2, facecolor=flag_color, alpha=0.5)
+
+        ax.text(0, 1.4, header_text, transform=ax.transAxes, fontsize=26, verticalalignment='top', bbox=props_thresholds)
+
+        pass
+
+    def plot_left_side_bar(self, ax):
+
+        latched_detectors = self.latched_detectors()
+        saturated_detectors = self.saturated_detectors()
+        for i, det in enumerate(self.Num_Of_dets):
+            x = -0.15
+            #y = 1.9 - i * 0.4
+            y = 0.5 - i * 0.4
+
+            pad = 1.2
+            num_clicks = len(self.tt_measure[i])
+            # num_clicks = len(self.streams[f'Detector_{det}_Timetags']['results'][0])
+            text = f'{self.detectors_names[i]}-{det}\n({num_clicks - 1})'
+            det_color = 'red' if i in latched_detectors else 'green'
+            if i in latched_detectors:
+                det_color = 'red'
+            elif i in saturated_detectors:
+                det_color = '#ffc710'
+            props = dict(boxstyle=f"circle,pad={pad}", edgecolor=det_color, linewidth=2, facecolor=det_color, alpha=0.5)
+            ax.text(x, y, text, ha="center", va="center", transform=ax.transAxes, fontsize=8, bbox=props)
+
+        pass
+    def plot_binned_tags_live(self, subplot_def):
+
+        ax = subplot_def["ax"]
+
+        ax.plot(self.folded_tt_N_directional, label='"N" detectors')
+        ax.plot(self.folded_tt_S_directional, label='"S" detectors')
+        ax.plot(self.folded_tt_BP_timebins, label='"BP" detectors')
+        ax.plot(self.folded_tt_DP_timebins, label='"DP" detectors')
+        ax.plot((self.filter_S) * max(self.folded_tt_N_directional + self.folded_tt_S_directional),
+                   '--', color='orange', label='Filter "S"')
+        for i in range(len(self.Num_of_photons_txt_box_y_loc_live)):
+            ax.text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc_live[i],
+                       '%.2f' % self.avg_num_of_photons_per_pulse_live[i],
+                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
+        for j in range(len(self.Num_of_photons_txt_box_y_loc_live_MZ)):
+            ax.text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j],
+                       self.Num_of_photons_txt_box_y_loc_live_MZ[j][0],
+                       '%.2f' % self.avg_num_of_photons_per_pulse_live_MZ[j][0],
+                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
+                       color='#2ca02c')
+            ax.text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j],
+                       self.Num_of_photons_txt_box_y_loc_live_MZ[j][1],
+                       '%.2f' % self.avg_num_of_photons_per_pulse_live_MZ[j][1],
+                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
+                       color='#d62728')
+
+        pass
+
+    def plot_binned_tags_averaged(self, subplot_def):
+
+        ax = subplot_def["ax"]
+
+        ax.plot(self.folded_tt_N_directional_cumulative_avg, label='"N" detectors')
+        ax.plot(self.folded_tt_S_directional_cumulative_avg, label='"S" detectors')
+        ax.plot(self.folded_tt_BP_timebins_cumulative_avg, label='"BP" detectors')
+        ax.plot(self.folded_tt_DP_timebins_cumulative_avg, label='"DP" detectors')
+        ax.plot((self.filter_N) * max(
+            self.folded_tt_N_directional_cumulative_avg + self.folded_tt_S_directional_cumulative_avg),
+                   '--b', label='Filter "N"')
+        for i in range(len(self.Num_of_photons_txt_box_y_loc)):
+            ax.text(self.Num_of_photons_txt_box_x_loc.tolist()[i], self.Num_of_photons_txt_box_y_loc[i],
+                       '%.2f' % self.avg_num_of_photons_per_pulse[i],
+                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'])
+        for j in range(len(self.Num_of_photons_txt_box_y_loc_MZ)):
+            ax.text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j],
+                       self.Num_of_photons_txt_box_y_loc_MZ[j][0],
+                       '%.2f' % self.avg_num_of_photons_per_pulse_MZ[j][0],
+                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
+                       color='#2ca02c')
+            ax.text(self.Num_of_photons_txt_box_x_loc_for_MZ_ports.tolist()[j],
+                       self.Num_of_photons_txt_box_y_loc_MZ[j][1],
+                       '%.2f' % self.avg_num_of_photons_per_pulse_MZ[j][1],
+                       horizontalalignment='center', fontsize=12, fontweight='bold', family=['Comic Sans MS'],
+                       color='#d62728')
+
+        # -----------------------------------------
+        # SPRINT results box ("Soccer Results")
+        # -----------------------------------------
+
+        SPRINT_reflections_without_transits = '%d' % sum(self.batcher['num_of_total_SPRINT_reflections_batch'])
+        SPRINT_transmissions_without_transits = '%d' % sum(self.batcher['num_of_total_SPRINT_transmissions_batch'])
+        if (sum(self.batcher['num_of_total_SPRINT_reflections_batch']) + sum(self.batcher['num_of_total_SPRINT_transmissions_batch'])) > 0:
+            SPRINT_reflections_percentage_without_transits = (
+                    '%.1f' % ((sum(self.batcher['num_of_total_SPRINT_reflections_batch']) * 100) /
+                              (sum(self.batcher['num_of_total_SPRINT_reflections_batch']) + sum(self.batcher['num_of_total_SPRINT_transmissions_batch']))))
+            SPRINT_transmissions_percentage_without_transits = (
+                    '%.1f' % ((sum(self.batcher['num_of_total_SPRINT_transmissions_batch']) * 100) /
+                              (sum(self.batcher['num_of_total_SPRINT_reflections_batch']) + sum(self.batcher['num_of_total_SPRINT_transmissions_batch']))))
+        else:
+            SPRINT_reflections_percentage_without_transits = '%.1f' % 0
+            SPRINT_transmissions_percentage_without_transits = '%.1f' % 0
+
+        SPRINT_reflections_with_transits = '%d' % sum(sum(self.batcher['reflection_SPRINT_data_batch'], []))
+        # SPRINT_reflections = f'${SPRINT_reflections_with_transits}_{{({SPRINT_reflections_without_transits})}}$'
+        SPRINT_reflections = f'${SPRINT_reflections_with_transits}_{{({SPRINT_reflections_percentage_without_transits}\%)}}$'
+        SPRINT_reflections_text = '$R_{SPRINT}$'
+        SPRINT_transmissions_with_transits = '%d' % sum(sum(self.batcher['transmission_SPRINT_data_batch'], []))
+        # SPRINT_transmissions = f'${SPRINT_transmissions_with_transits}_{{({SPRINT_transmissions_without_transits})}}$'
+        SPRINT_transmissions = f'${SPRINT_transmissions_with_transits}_{{({SPRINT_transmissions_percentage_without_transits}\%)}}$'
+        SPRINT_transmissions_text = '$T_{SPRINT}$'
+        SPRINT_Score = f'{SPRINT_reflections} - {SPRINT_transmissions}'
+        table_vals = [SPRINT_reflections_text, SPRINT_Score, SPRINT_transmissions_text]
+        SPRINT_text = f'{SPRINT_reflections_text} {SPRINT_reflections} - {SPRINT_transmissions} {SPRINT_transmissions_text}'
+        props_SPRINT = dict(boxstyle='round', edgecolor='gray', linewidth=2, facecolor='gray', alpha=0.5)
+
+        ax.text(1, 1.4, SPRINT_text, transform=ax.transAxes, fontsize=26, verticalalignment='top',
+                   horizontalalignment='right', bbox=props_SPRINT)
+        pass
+
+    def plot_mz_outputs(self, subplot_def):
+
+        ax = subplot_def["ax"]
+
+        ax.plot(self.MZ_BP_counts_res_value_0, label='MZ Bright port')
+        ax.plot(self.MZ_DP_counts_res_value_0, label='MZ Dark port')
+        ax.plot(self.MZ_BP_counts_res_value_0 - self.MZ_DP_counts_res_value_0, label='Dif ports')
+
+        ax.set_ylim(0, 1.1 * np.max([self.MZ_BP_counts_res_value_0, self.MZ_DP_counts_res_value_0]))
+
+        pass
+
+    def plot_phase_correction(self, subplot_def):
+
+        ax = subplot_def["ax"]
+
+        ax.tick_params(axis="y", labelcolor='#8c564b')
+        ax.plot(self.Phase_Correction_vec, label='Phase correction values', color='#8c564b')
+        ax.plot(self.Phase_Correction_min_vec, label='Phase correction values', color='#9467bd')
+
+        pass
+
+    def plot_num_reflections_per_sequence(self, subplot_def):
+
+        ax = subplot_def["ax"]
+
+        max_reflect_avg = max(self.num_of_det_reflections_per_seq_accumulated / self.counter)
+        max_reflect = max(self.num_of_det_reflections_per_seq)
+
+        textstr_total_reflections_N = 'Total reflections per cycle "N" = %d' % (
+            sum(self.num_of_det_reflections_per_seq_N),)
+
+        textstr_total_reflections_S = 'Total reflections per cycle "S" = %d' % (
+            sum(self.num_of_det_reflections_per_seq_S),)
+
+        textstr_total_reflections_avg = 'Average reflections per cycle = %.2f' % (
+            sum(self.num_of_det_reflections_per_seq_accumulated / self.counter),)
+
+        textstr_total_transmission_avg = 'Average transmissions per cycle = %.2f' % (
+            sum(self.num_of_det_transmissions_per_seq_accumulated / self.counter),)
+
+        total_photons_per_seq_accumulated = sum(self.num_of_det_reflections_per_seq_accumulated) + \
+                                            (sum(self.num_of_det_transmissions_per_seq_accumulated) / self.Cavity_transmission)
+        if total_photons_per_seq_accumulated > 0:
+            textstr_total_reflections_percentage = 'Average reflections percentage = %.1f%%' % (
+                (sum(self.num_of_det_reflections_per_seq_accumulated) * 100) / total_photons_per_seq_accumulated,)
+        else:
+            textstr_total_reflections_percentage = 'Average reflections percentage = %.1f%%' % 0
+
+        textstr_total_reflections = f'{textstr_total_reflections_N} \n{textstr_total_reflections_S} \n' \
+                                    f'{textstr_total_reflections_avg} \n{textstr_total_transmission_avg} \n' \
+                                    f'{textstr_total_reflections_percentage}' \
+
+        ax.plot(self.num_of_det_reflections_per_seq_accumulated / self.counter,
+                   label='Num of reflections per sequence')
+
+        # TODO: original code did not have this condition. Can it be that max_relect is never zero?
+        if max_reflect > 0:
+            ax.plot(self.num_of_det_reflections_per_seq * 0.5 * max_reflect_avg / max_reflect * 0.3,
+                       label='Num of reflections per sequence (Live)')
+
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+        ax.text(0.02, 0.95, textstr_total_reflections, transform=ax.transAxes, fontsize=14,
+                   verticalalignment='top', bbox=props)
+
+        pass
+
+    def plot_mz_outputs_around_experiment(self, subplot_def):
+
+        ax = subplot_def["ax"]
+
+        ax.plot(self.MZ_BP_counts_res_value_1, label='MZ BP counts before and after')
+        ax.plot(self.MZ_DP_counts_res_value_1, label='MZ DP port counts before and after')
+        ax.axvline(len(self.MZ_DP_counts_res_value_1) / 2, linestyle='--', color='red')
+
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+        flag_color = 'green' if self.acquisition_flag else 'red'
+        props_thresholds = dict(boxstyle='round', edgecolor=flag_color, linewidth=2, facecolor=flag_color, alpha=0.5)
+
+        if self.MZ_infidelity_flag:
+            props_MZ = props
+        else:
+            props_MZ = props_thresholds
+
+        textstr_BP_DP_BA = 'Infidelity before = %.2f \n' % (self.Infidelity_before,) + \
+                           'Infidelity after= %.2f \n' % (self.Infidelity_after,) + \
+                           'S total counts MZ = %.2f ' % (self.MZ_S_tot_counts,)
+
+        ax.text(0.05, 0.6, textstr_BP_DP_BA, transform=ax.transAxes, fontsize=14, verticalalignment='top',
+                   bbox=props_MZ)
+
+        pass
+
+    def plot_mz_outputs_during_experiment(self, subplot_def):
+
+        ax = subplot_def["ax"]
+
+        ax.plot(self.num_of_BP_counts_per_n_sequences, label='MZ BP counts per %d seq' % 50)
+        ax.plot(self.num_of_DP_counts_per_n_sequences, label='MZ DP counts per %d seq' % 50)
+        ax.plot(self.num_of_S_counts_per_n_sequences, label='"S" transmission counts per %d seq' % 50)
+        ax.plot(self.num_of_S_counts_per_n_sequences + self.num_of_DP_counts_per_n_sequences + self.num_of_BP_counts_per_n_sequences,
+            label='"S" total counts per %d seq' % 50)
+
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+        props_SPRINT_coherence = dict(boxstyle='round', edgecolor='gray', linewidth=2, facecolor='gray', alpha=0.5)
+
+        # Coherence results box
+        if (sum(self.batcher['num_of_total_SPRINT_BP_counts_batch']) + sum(self.batcher['num_of_total_SPRINT_DP_counts_batch'])) > 0:
+            SPRINT_BP_percentage_without_transits = (
+                    '%.1f' % ((sum(self.batcher['num_of_total_SPRINT_BP_counts_batch']) * 100) /
+                              (sum(self.batcher['num_of_total_SPRINT_BP_counts_batch']) + sum(self.batcher['num_of_total_SPRINT_DP_counts_batch']))))
+            SPRINT_DP_percentage_without_transits = (
+                    '%.1f' % ((sum(self.batcher['num_of_total_SPRINT_DP_counts_batch']) * 100) /
+                              (sum(self.batcher['num_of_total_SPRINT_BP_counts_batch']) + sum(self.batcher['num_of_total_SPRINT_DP_counts_batch']))))
+        else:
+            SPRINT_BP_percentage_without_transits = '%.1f' % 0
+            SPRINT_DP_percentage_without_transits = '%.1f' % 0
+
+        SPRINT_BP_counts_with_transits = '%d' % sum(sum(self.batcher['BP_counts_SPRINT_data_batch'], []))
+        SPRINT_BP_counts = f'${SPRINT_BP_counts_with_transits}_{{({SPRINT_BP_percentage_without_transits}\%)}}$'
+        SPRINT_BP_counts_text = '$BP_{SPRINT}$'
+        SPRINT_DP_counts_with_transits = '%d' % sum(sum(self.batcher['DP_counts_SPRINT_data_batch'], []))
+        SPRINT_DP_counts = f'${SPRINT_DP_counts_with_transits}_{{({SPRINT_DP_percentage_without_transits}\%)}}$'
+        SPRINT_DP_counts_text = '$DP_{SPRINT}$'
+        SPRINT_Coherence_Score = f'{SPRINT_BP_counts} - {SPRINT_DP_counts}'
+        table_vals = [SPRINT_BP_counts_text, SPRINT_Coherence_Score, SPRINT_DP_counts_text]
+
+        SPRINT_Coherence_text = f'{SPRINT_BP_counts_text} {SPRINT_BP_counts} - {SPRINT_DP_counts} {SPRINT_DP_counts_text}'
+
+        avg_BP = np.average(self.num_of_BP_counts_per_n_sequences)
+        avg_DP = np.average(self.num_of_DP_counts_per_n_sequences)
+
+        # TODO: temp workaround, REMOVE
+        avg_BP = 0.001 if avg_BP == 0 else avg_BP
+        textstr_BP_DP = 'Average Bright counts = %.2f \n' % (avg_BP,) + \
+                        'Average Dark counts = %.2f \n' % (avg_DP,) + \
+                        'Infidelity = %.2f' % (avg_DP / (avg_DP + avg_BP),)
+
+        ax.text(0.05, 0.6, textstr_BP_DP, transform=ax.transAxes, fontsize=14, verticalalignment='top', bbox=props)
+        ax.text(0.05, 0.9, SPRINT_Coherence_text, transform=ax.transAxes, fontsize=18, verticalalignment='top',
+                   bbox=props_SPRINT_coherence)
+        pass
+
+    def plot_transits_per_sequence(self, subplot_def):
+
+        ax = subplot_def["ax"]
+
+        ax.plot(range(self.number_of_PNSA_sequences), self.seq_transit_events_batched, label='Transit Events Accumulated')
+        ax.plot(range(self.number_of_PNSA_sequences), self.seq_transit_events_live, label='Transit Events Live')
+        ax.set(xlabel='Sequence [#]', ylabel='Counts [Photons]')
+
+        if self.number_of_transits_live:
+            textstr_transit_counts = r'$N_{Transits} = %s $' % (self.number_of_transits_live,) + r'$[Counts]$'
+        else:
+            textstr_transit_counts = r'$N_{Transits} = %s $' % (0,) + r'$[Counts]$'
+
+        textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (self.number_of_transits_total,) + '[Counts]\n' \
+                                        + textstr_transit_counts
+
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+        ax.text(0.02, 0.92, textstr_transit_event_counter, transform=ax.transAxes, fontsize=14,
+                   verticalalignment='top', bbox=props)
+
         pass
 
     def _plot_figures(self):
+
+        # TODO: Move this entire section to "plot_figures" and into BaseExperiment
+        if self.playback['active']:
+            if self.playback['plot'] == 'NONE':
+                return
+            if self.playback['plot'] == 'LAST' and self.counter < (self.N - 10):
+                return
+
+        if not self.plot_shown:
+            plt.show(block=False)
+            self.plot_shown = True
+
+        # Iterate over all required figures and invoke their plotting function
+        for id, subplot in self.subplots.items():
+            # Check that we need to display this plot
+            if id not in self.settings["figures"]["display"]:
+                continue
+            try:
+                ax = subplot["ax"]
+                ax.clear()
+
+                def func_not_found():  # just in case we dont have the function
+                    self.warn(f'Could not find plot function to invoke. Skipping')
+
+                # Set subplot title
+                if "title" in subplot.keys():
+                    ax.set_title(subplot["title"], fontweight="bold")
+
+                func_name = subplot['func']
+                func = getattr(self, func_name, func_not_found)
+                func(subplot)
+
+                # Set subplot title and legend
+                if "legend_loc" in subplot.keys():
+                    ax.legend(loc=subplot["legend_loc"])
+
+            except Exception as err:
+                tb = traceback.format_exc()
+                self.warn(f'Problem with subplot {id}. Could not display it.\n{tb}')
+
+        # Print the main experiment header (this is "glued" to the plot at [0,0]
+        self.plots_header(self.header_ax)
+
+        # Plot the left side-bar
+        self.plot_left_side_bar(self.header_ax)
+
+        # plt.tight_layout()
+        plt.pause(0.2)
+
+        pass
+
+
+    def _plot_figures_DEP(self):
 
         if self.playback['active']:
             if self.playback['plot'] == 'NONE':
@@ -2523,11 +2913,13 @@ if __name__ == "__main__":
         "active": True,
         #'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240225\173049_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
         #'playback_files_path': r'C:\temp\playback_data\PNSA\20240312\121917_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
-        'playback_files_path': r'C:\temp\playback_data\STIRAP\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
+        #'playback_files_path': r'C:\temp\playback_data\STIRAP\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
+        'playback_files_path': r'F:\temp\Weizmann\playback data\STIRAP\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
         "old_format": False,
         "save_results": False,
         "save_results_path": 'C:\\temp\\playback_data',
-        "max_iterations": -1,  # -1 if you want playback to run through entire data
+        "max_iterations": 100,  # -1 if you want playback to run through entire data
+        "max_files_to_load": 100,  # -1 if you want to load all available playback files in folder
         "plot": "LIVE",  # "LIVE", "LAST", "NONE"
         "delay": -1,  # -1,  # 0.5,  # In seconds. Use -1 for not playback delay
     }
