@@ -17,11 +17,11 @@ class SquareRootOfSwap:
         self.sigma_g = 6*1e6
 
         self.h = 0.6*1e6 * 2*np.pi  # 1 MHz
-        self.kappa_i = 2*1e6 * 2*np.pi  # 6 MHz
+        self.kappa_i = 6*1e6 * 2*np.pi  # 6 MHz
         self.kappa_ex = 30*1e6 * 2*np.pi  # 30*1e6
         self.kappa_total = self.kappa_ex + self.kappa_i
 
-        self.avg_g = 10*1e6*2*np.pi  # 16 MHz
+        self.avg_g = 14*1e6*2*np.pi  # 16 MHz (Atom-Cavity Coupling)
 
         pass
 
@@ -247,7 +247,7 @@ class SquareRootOfSwap:
         # Run the subplots
         self.subplot(plt, A, True, f'Transmission/Reflection Ratio {param}', start, end, num_detunings, -1.0, 1.0, cmap='RdYlBu')
 
-        self.subplot(plt, B, True, 'Losses (%)', start, end, num_detunings, 0.0, 100.0, cmap='bwr_r')  # cmap='bwr_r'
+        self.subplot(plt, B, True, 'Losses (%)', start, end, num_detunings, 0.0, 100.0, cmap='bwr_r')  # cmap='bwr_r' / 'viridis'
 
         self.subplot(plt, C, True, 'Infidelity-no beta0', start, end, num_detunings, 0.0, 0.1, cmap='viridis')
 
