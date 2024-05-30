@@ -3,6 +3,7 @@ import sys
 import time
 import json
 import pathlib
+import traceback
 import matplotlib
 import matplotlib.pyplot as plt
 import os
@@ -498,6 +499,15 @@ class BaseExperiment:
         # Note: user may have pressed A fast multiple times, so no need to add multiple "_" prefixes until the switch is handled
         if self.switch_atom_no_atoms[0] != '_':
             self.switch_atom_no_atoms = '_' + self.switch_atom_no_atoms
+        pass
+
+    def keyboard_handler__zoom_in_out_plots(self, key):
+
+        # Create a new
+        self.fig = plt.figure()
+
+        # Invoke the plotting of the specific graph
+        # TODO:
         pass
 
     def should_terminate(self):

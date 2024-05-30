@@ -238,6 +238,24 @@ class VSTIRAPExperiment(BaseExperiment):
         # Unify detectors 6 & 7
         self.tt_FS_measure = sorted(sum(self.tt_measure[5:7], []))
 
+        # --------------------------
+
+        # calculate and print Total Counts in cycle
+        # @@@
+        self.Total_clicks = len(sum(self.tt_measure[:], []))
+        self.Total_South_clicks = len(sum(self.tt_measure[4:7], []))
+        self.Total_North_clicks = self.Total_clicks - self.Total_South_clicks
+
+        self.Avg_clicks += (self.Total_clicks-self.Avg_clicks)/(self.counter+5)
+        self.Avg_North_clicks += (-self.Avg_North_clicks+self.Total_North_clicks)/(self.counter+5)
+        self.Avg_South_clicks += (-self.Avg_South_clicks+self.Total_South_clicks)/(self.counter+5)
+
+        self.logger.info("total clicks in cycle is %d , average %d " % (self.Total_clicks,self.Avg_clicks ))
+        self.logger.info("total clicks in North cycle is %d, average %d" % (self.Total_North_clicks,self.Avg_North_clicks))
+        self.logger.info("total clicks in South cycle is %d, average %d" % (self.Total_South_clicks,self.Avg_South_clicks))
+
+        # --------------------------
+
         # Phase Correction is a result of ZIP action in opx_control, thus we have "value_0" and "value_1" for the tupples
         self.Phase_Correction_vec = self.streams['Phase_Correction_array']['results']['value_0']
         self.Phase_Correction_min_vec = self.streams['Phase_Correction_array']['results']['value_1']
@@ -1451,6 +1469,20 @@ class VSTIRAPExperiment(BaseExperiment):
 
         pass
 
+    def plot_scattering(self, subplot_def):
+        """
+        @@@
+        TODO: Need to complete the batching of the North/South avg counts
+        TODO: Display them here
+        """
+
+        ax = subplot_def["ax"]
+
+        # ax.plot(self.batcher['north_avg_counts'], label='Total North Clicks')
+        # ax.plot(self.batcher['south_avg_counts'], label='Total South Clicks')
+
+        pass
+
     def plot_figures(self):
 
         super().plot_figures()
@@ -1506,6 +1538,12 @@ class VSTIRAPExperiment(BaseExperiment):
         self.transmission_SPRINT_data_without_transits = []  # Array of vectors with data on the number of transmissions per SPRINT pulse in sequence.
         self.BP_counts_SPRINT_data_without_transits = []
         self.DP_counts_SPRINT_data_without_transits = []
+
+        # Average of clicks per cycle
+        self.Avg_clicks = 0
+        self.Avg_North_clicks = 0
+        self.Avg_South_clicks = 0
+
 
     def new_timetags_detected(self, prev_measures, curr_measure):
         """

@@ -151,6 +151,11 @@
             "description": "Toggles atoms cloud on/off",
             "callback": "turn_on_off_atoms",
             "keys": ["A", "a"]
+        },
+        "zoom_plot": {
+            "description": "Zoom in/out plots",
+            "callback": "zoom_in_out_plots",
+            "keys": ["0", "1", "2"]
         }
     },
     "menus": {},
@@ -231,6 +236,16 @@
                 "id": "7",
                 "func": "plot_phase_correction",
                 "twinx": "3_1"
+            },
+            {
+                "id": "8",
+                "func": "plot_scattering",
+                "title": "North/South Scattering",
+                "legend_loc": "upper right",
+                "location_x": 2,
+                "location_y": 0,
+                "colspan": 2,
+                "rowspan": 1
             }
         ]
     },

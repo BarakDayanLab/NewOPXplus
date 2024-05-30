@@ -90,5 +90,11 @@
     },
     "num_of_total_SPRINT_DP_counts_batch": {
         "value_name": "num_of_total_SPRINT_DP_counts"
+    },
+    "south_avg_counts": {
+        "value_name": "south_avg_counts"
+    },
+    "north_avg_counts": {
+        "value_name": "north_avg_counts"
     }
 }
