@@ -2496,8 +2496,8 @@ if __name__ == "__main__":
         #'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240225\173049_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
         #'playback_files_path': r'C:\temp\playback_data\PNSA\20240312\121917_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
 
-        'playback_files_path': r'C:\temp\playback_data\STIRAP\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
-        #'playback_files_path': r'F:\temp\Weizmann\playback data\STIRAP\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
+        #'playback_files_path': r'C:\temp\playback_data\STIRAP\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
+        'playback_files_path': r'F:\temp\Weizmann\playback data\STIRAP\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
         "old_format": False,
         "save_results": False,
         "save_results_path": 'C:\\temp\\playback_data',

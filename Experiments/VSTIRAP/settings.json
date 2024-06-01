@@ -155,7 +155,7 @@
         "zoom_plot": {
             "description": "Zoom in/out plots",
             "callback": "zoom_in_out_plots",
-            "keys": ["0", "1", "2"]
+            "keys": ["0", "1", "2", "3", "4", "5", "6", "7"]
         }
     },
     "menus": {},
@@ -169,8 +169,8 @@
                 "func": "plot_binned_tags_live",
                 "title": "Binned Time Tags (live)",
                 "legend_loc": "upper right",
-                "location_x": 0,
-                "location_y": 0,
+                "locx": 0,
+                "locy": 0,
                 "colspan": 2,
                 "rowspan": 1
             },
@@ -179,8 +179,8 @@
                 "func": "plot_binned_tags_averaged",
                 "title": "Binned Time Tags (averaged)",
                 "legend_loc": "upper right",
-                "location_x": 2,
-                "location_y": 0,
+                "locx": 2,
+                "locy": 0,
                 "colspan": 2,
                 "rowspan": 1
             },
@@ -189,8 +189,8 @@
                 "func": "plot_mz_outputs",
                 "title": "MZ Outputs (while locking)",
                 "legend_loc": "upper right",
-                "location_x": 0,
-                "location_y": 1,
+                "locx": 0,
+                "locy": 1,
                 "colspan": 2,
                 "rowspan": 1
             },
@@ -199,8 +199,8 @@
                 "func": "plot_num_reflections_per_sequence",
                 "title": "Number reflections per sequence",
                 "legend_loc": "upper right",
-                "location_x": 2,
-                "location_y": 1,
+                "locx": 2,
+                "locy": 1,
                 "colspan": 2,
                 "rowspan": 1
             },
@@ -208,8 +208,8 @@
                 "id": "5_1",
                 "func": "plot_mz_outputs_around_experiment",
                 "title": "MZ outputs around experiment",
-                "location_x": 0,
-                "location_y": 2,
+                "locx": 0,
+                "locy": 2,
                 "colspan": 1,
                 "rowspan": 1
             },
@@ -217,8 +217,8 @@
                 "id": "5_2",
                 "func": "plot_mz_outputs_during_experiment",
                 "title": "MZ outputs during experiment",
-                "location_x": 1,
-                "location_y": 2,
+                "locx": 1,
+                "locy": 2,
                 "colspan": 1,
                 "rowspan": 1
             },
@@ -227,8 +227,8 @@
                 "func": "plot_transits_per_sequence",
                 "title": "Transits per sequence",
                 "legend_loc": "upper right",
-                "location_x": 2,
-                "location_y": 2,
+                "locx": 2,
+                "locy": 2,
                 "colspan": 2,
                 "rowspan": 1
             },
@@ -242,8 +242,8 @@
                 "func": "plot_scattering",
                 "title": "North/South Scattering",
                 "legend_loc": "upper right",
-                "location_x": 2,
-                "location_y": 0,
+                "locx": 2,
+                "locy": 0,
                 "colspan": 2,
                 "rowspan": 1
             }

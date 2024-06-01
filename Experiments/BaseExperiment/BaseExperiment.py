@@ -19,6 +19,7 @@ from Utilities.BDSound import BDSound
 from Utilities.BDSocket import BDSocket
 from Utilities.BDKeyboard import BDKeyboard
 from Utilities.BDDialog import BDDialog
+from Utilities.BDPlots import BDPlots
 
 from Experiments.Enums.TerminationReason import TerminationReason
 from Experiments.Enums.IOParameters import IOParameters as IOP
@@ -230,6 +231,9 @@ class BaseExperiment:
 
         # Set keyboard handler
         self.bdkeyboard = BDKeyboard(self.settings['keyboard'])
+
+        # Set plots handler
+        self.bdplots = BDPlots(self.settings['figures'], plotter=self, logger=self.logger)
 
         # (a) Initialize QuadRF (b) Set experiment related variables (c) Initialize OPX
         self.initialize_experiment()
@@ -502,12 +506,7 @@ class BaseExperiment:
         pass
 
     def keyboard_handler__zoom_in_out_plots(self, key):
-
-        # Create a new
-        self.fig = plt.figure()
-
-        # Invoke the plotting of the specific graph
-        # TODO:
+        self.bdplots.set_subplots_view(int(key))
         pass
 
     def should_terminate(self):
@@ -1079,52 +1078,22 @@ class BaseExperiment:
     # ------------------------------------------------------------
 
     def prepare_figures(self):
-        """
-        Perform general preparations required for figure plotting
-        """
 
-        # Ensure the backend we need
-        matplotlib_version = matplotlib.get_backend()
-        self.logger.info(f'Matplotlib backend: {matplotlib_version}')
-        matplotlib.use("Qt5Agg")
+        self.bdplots.create_figures(new_figure=True)
 
-        self.fig = plt.figure()
-
-        # Get Iteration and sequence
+        # Set figure title - (a) iteration and sequence (b) current date and time
         str = self.format_iteration_and_sequence()
-
-        # Set figure title - current date and time
         current_date_time = time.strftime("%H:%M:%S (%d/%m/%Y)")
-        self.fig.canvas.manager.set_window_title(f'{current_date_time} | {str} | {self.UUID}')
-
-        # Create all axis for figures - per settings.json
-        self.subplots = {}
-        self.header_ax = None  # This is the axis we will "glue" the experiment header to
-        subplots_shape = self.settings['figures']['grid_shape']
-
-        # Iterate over all subplots definitions and create subplots, putting them into a dictionary
-        for subplot_def in self.settings['figures']['subplots']:
-            # If the plot is not in the display list, skip creating an axis for it
-            if subplot_def["id"] not in self.settings['figures']['display']:
-                continue
-            if 'twinx' in subplot_def.keys():
-                subplot_def["ax"] = self.subplots[subplot_def['twinx']]["ax"].twinx()
-            else:
-                subplot_def["ax"] = plt.subplot2grid(shape=subplots_shape,
-                                           loc=(subplot_def['location_y'], subplot_def['location_x']),
-                                           colspan=subplot_def['colspan'], rowspan=subplot_def['rowspan'])
-            self.subplots[subplot_def["id"]] = subplot_def
-            # If this is the [0,0] positioned axis, remember it - so we can "glue" experiment header to it
-            if (('location_x' in subplot_def.keys()) and subplot_def['location_x'] == 0 and
-                    ('location_y' in subplot_def.keys()) and subplot_def['location_y'] == 0):
-                self.header_ax = subplot_def["ax"]
+        title = f'{current_date_time} | {str} | {self.UUID}'
+        self.bdplots.set_figure_title(title)
 
         # Set keyboard listener
-        self.bdkeyboard.set_listener(self.fig, self)
+        self.bdkeyboard.set_listener(self.bdplots.get_figure(), self)
 
         self.plot_shown = False
 
         pass
+
     def plot_figures(self):
 
         # TODO: Move this entire section to "plot_figures" and into BaseExperiment
@@ -1134,48 +1103,8 @@ class BaseExperiment:
             if self.playback['plot'] == 'LAST' and self.counter < (self.N - 10):
                 return
 
-        if not self.plot_shown:
-            plt.show(block=False)
-            self.plot_shown = True
+        self.bdplots.plot_figures()
 
-        # Iterate over all required figures and invoke their plotting function
-        for id, subplot in self.subplots.items():
-            # Check that we need to display this plot
-            if id not in self.settings["figures"]["display"]:
-                continue
-            try:
-                ax = subplot["ax"]
-                ax.clear()
-
-                def func_not_found():  # just in case we dont have the function
-                    self.warn(f'Could not find plot function to invoke. Skipping')
-
-                # Set subplot title
-                if "title" in subplot.keys():
-                    ax.set_title(subplot["title"], fontweight="bold")
-
-                func_name = subplot['func']
-                func = getattr(self, func_name, func_not_found)
-                func(subplot)
-
-                # Set subplot title and legend
-                if "legend_loc" in subplot.keys():
-                    ax.legend(loc=subplot["legend_loc"])
-
-            except Exception as err:
-                tb = traceback.format_exc()
-                self.warn(f'Problem with subplot {id}. Could not display it.\n{tb}')
-
-        # Print the main experiment header (this is "glued" to the plot at [0,0]
-        self.plots_header(self.header_ax)
-
-        # Plot the left side-bar
-        self.plot_left_side_bar(self.header_ax)
-
-        # plt.tight_layout()
-        plt.pause(0.2)
-
-        pass
 
     def _plot(self, sequence_or_sequences, clear=True):
         """
