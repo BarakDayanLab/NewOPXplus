@@ -21,7 +21,7 @@ class SquareRootOfSwap:
         self.kappa_ex = 30*1e6 * 2*np.pi  # 30*1e6
         self.kappa_total = self.kappa_ex + self.kappa_i
 
-        self.avg_g = 14*1e6*2*np.pi  # 16 MHz (Atom-Cavity Coupling)
+        self.avg_g = 16*1e6*2*np.pi  # 16 MHz (Atom-Cavity Coupling)
 
         pass
 
@@ -247,7 +247,7 @@ class SquareRootOfSwap:
         # Run the subplots
         self.subplot(plt, A, True, f'Transmission/Reflection Ratio {param}', start, end, num_detunings, -1.0, 1.0, cmap='RdYlBu')
 
-        self.subplot(plt, B, True, 'Losses (%)', start, end, num_detunings, 0.0, 100.0, cmap='bwr_r')  # cmap='bwr_r' / 'viridis'
+        self.subplot(plt, B, True, 'Losses (%)', start, end, num_detunings, 0.0, 100.0, cmap='bwr_r')  # 'jet', 'jet_r', 'Spectral' / 'bwr_r' / 'viridis' / 'seismic'
 
         self.subplot(plt, C, True, 'Infidelity-no beta0', start, end, num_detunings, 0.0, 0.1, cmap='viridis')
 
@@ -300,7 +300,9 @@ class SquareRootOfSwap:
         # Dashed line
         if show_dashed:
             x_points = np.linspace(start, end, num=num_detunings)
-            plt.plot(x_points, x_points, linestyle='dashed')
+            plt.plot(x_points, x_points, linewidth=1, linestyle='dashed', dashes=(5, 5), color='black')
+            plt.scatter(-22, -22, s=100, facecolors='none', edgecolors='black')
+
 
         pass
 
