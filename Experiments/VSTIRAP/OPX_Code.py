@@ -1,4 +1,4 @@
-from Experiments.PNSA import PNSA_Config_Experiment as Config
+from Experiments.VSTIRAP import VSTIRAP_Config_Experiment as Config
 from Experiments.Enums.Phases import Phases
 from Experiments.Enums.IOParameters import IOParameters as IOP
 from qm.qua import *

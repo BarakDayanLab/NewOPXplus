@@ -735,11 +735,6 @@ AOM_Minus_Attenuation = 1 # 0.85 seems to be about right, for 0.8 the slopes are
 ## For Homodyne ##
 LO_pulse_samples = ([0.4] * 20) + [0] * 100
 
-plt.plot(PNSA_Exp_Gaussian_samples_N)
-plt.plot(PNSA_Exp_Gaussian_samples_S)
-plt.plot(PNSA_Exp_Square_samples_Early)
-plt.plot(PNSA_Exp_Square_samples_Late)
-
 # ------------------------------------------------------------------
 # OPX Elements Configuration
 # ------------------------------------------------------------------

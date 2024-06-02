@@ -91,10 +91,10 @@
     "num_of_total_SPRINT_DP_counts_batch": {
         "value_name": "num_of_total_SPRINT_DP_counts"
     },
-    "south_avg_counts": {
-        "value_name": "south_avg_counts"
+    "total_south_clicks_batch": {
+        "value_name": "total_south_clicks"
     },
-    "north_avg_counts": {
-        "value_name": "north_avg_counts"
+    "total_north_clicks_batch": {
+        "value_name": "total_north_clicks"
     }
 }

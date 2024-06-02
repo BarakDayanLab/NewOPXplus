@@ -1,6 +1,6 @@
 from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
 from Experiments.BaseExperiment.BaseExperiment import TerminationReason
-from Experiments.PNSA import PNSA_Config_Experiment as Config
+from Experiments.VSTIRAP import VSTIRAP_Config_Experiment as Config
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -240,19 +240,18 @@ class VSTIRAPExperiment(BaseExperiment):
 
         # --------------------------
 
-        # calculate and print Total Counts in cycle
-        # @@@
-        self.Total_clicks = len(sum(self.tt_measure[:], []))
-        self.Total_South_clicks = len(sum(self.tt_measure[4:7], []))
-        self.Total_North_clicks = self.Total_clicks - self.Total_South_clicks
+        # Calculate the total North/South counts in cycle
+        self.total_south_clicks = len(self.tt_S_measure) + len(self.tt_FS_measure)
+        self.total_north_clicks = len(self.tt_BP_measure) + len(self.tt_DP_measure) + len(self.tt_N_measure)
+        self.total_clicks = self.total_north_clicks + self.total_south_clicks
 
-        self.Avg_clicks += (self.Total_clicks-self.Avg_clicks)/(self.counter+5)
-        self.Avg_North_clicks += (-self.Avg_North_clicks+self.Total_North_clicks)/(self.counter+5)
-        self.Avg_South_clicks += (-self.Avg_South_clicks+self.Total_South_clicks)/(self.counter+5)
+        self.avg_clicks += (self.total_clicks - self.avg_clicks) / (self.counter+5)
+        self.avg_north_clicks += (-self.avg_north_clicks + self.total_north_clicks) / (self.counter+5)
+        self.avg_south_clicks += (-self.avg_south_clicks + self.total_south_clicks) / (self.counter+5)
 
-        self.logger.info("total clicks in cycle is %d , average %d " % (self.Total_clicks,self.Avg_clicks ))
-        self.logger.info("total clicks in North cycle is %d, average %d" % (self.Total_North_clicks,self.Avg_North_clicks))
-        self.logger.info("total clicks in South cycle is %d, average %d" % (self.Total_South_clicks,self.Avg_South_clicks))
+        # self.logger.info("total clicks in cycle is %d , average %d " % (self.total_clicks,self.avg_clicks ))
+        # self.logger.info("total clicks in North cycle is %d, average %d" % (self.total_north_clicks,self.avg_north_clicks))
+        # self.logger.info("total clicks in South cycle is %d, average %d" % (self.total_south_clicks,self.avg_south_clicks))
 
         # --------------------------
 
@@ -1471,17 +1470,22 @@ class VSTIRAPExperiment(BaseExperiment):
 
     def plot_scattering(self, subplot_def):
         """
-        @@@
-        TODO: Need to complete the batching of the North/South avg counts
-        TODO: Display them here
+        Plot the scatterings to the fiber over time - north and south
         """
 
         ax = subplot_def["ax"]
-
-        # ax.plot(self.batcher['north_avg_counts'], label='Total North Clicks')
-        # ax.plot(self.batcher['south_avg_counts'], label='Total South Clicks')
+        ax.plot(self.batcher['total_north_clicks_batch'], label='Total North Clicks')
+        ax.plot(self.batcher['total_south_clicks_batch'], label='Total South Clicks')
 
         pass
+
+    def plot_pulses(self, subplot_def):
+
+        ax = subplot_def["ax"]
+        ax.plot(Config.PNSA_Exp_Gaussian_samples_N, label='North Gaussian')
+        ax.plot(Config.PNSA_Exp_Gaussian_samples_S, label='South Gaussian')
+        ax.plot(Config.PNSA_Exp_Square_samples_Early, label='Early Square')
+        ax.plot(Config.PNSA_Exp_Square_samples_Late, label='Late Square')
 
     def plot_figures(self):
 
@@ -1540,9 +1544,9 @@ class VSTIRAPExperiment(BaseExperiment):
         self.DP_counts_SPRINT_data_without_transits = []
 
         # Average of clicks per cycle
-        self.Avg_clicks = 0
-        self.Avg_North_clicks = 0
-        self.Avg_South_clicks = 0
+        self.avg_clicks = 0
+        self.avg_north_clicks = 0
+        self.avg_south_clicks = 0
 
 
     def new_timetags_detected(self, prev_measures, curr_measure):
@@ -2496,8 +2500,8 @@ if __name__ == "__main__":
         #'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240225\173049_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
         #'playback_files_path': r'C:\temp\playback_data\PNSA\20240312\121917_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
 
-        #'playback_files_path': r'C:\temp\playback_data\STIRAP\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
-        'playback_files_path': r'F:\temp\Weizmann\playback data\STIRAP\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
+        'playback_files_path': r'C:\temp\playback_data\STIRAP\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
+        #'playback_files_path': r'F:\temp\Weizmann\playback data\STIRAP\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
         "old_format": False,
         "save_results": False,
         "save_results_path": 'C:\\temp\\playback_data',
