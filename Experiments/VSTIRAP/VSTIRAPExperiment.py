@@ -1143,7 +1143,7 @@ class VSTIRAPExperiment(BaseExperiment):
     # Experiment Plots
     # -------------------------------------------------------------------------
 
-    def plots_header(self, ax):
+    def plots_handler__header(self, ax):
         """
         Plots a TEXT that is the experiment header line
         """
@@ -1192,15 +1192,22 @@ class VSTIRAPExperiment(BaseExperiment):
 
         pass
 
-    def plot_left_side_bar(self, ax):
+    def plots_handler__left_sidebar(self, ax):
 
         latched_detectors = self.latched_detectors()
         saturated_detectors = self.saturated_detectors()
-        for i, det in enumerate(self.Num_Of_dets):
-            x = -0.15
-            #y = 1.9 - i * 0.4
-            y = 0.5 - i * 0.4
 
+        subplots_view = self.bdplots.get_subplots_view()
+
+        x0 = -0.15
+        y0 = 0.5  # or 1.0 in zoom mode
+        w = 0.4  # or 0.2 in zoom mode
+        if subplots_view > 0:  # Single Plot
+            x0 = -0.08
+            y0 = 1.0
+            w = 0.14
+
+        for i, det in enumerate(self.Num_Of_dets):
             pad = 1.2
             num_clicks = len(self.tt_measure[i])
             # num_clicks = len(self.streams[f'Detector_{det}_Timetags']['results'][0])
@@ -1211,10 +1218,13 @@ class VSTIRAPExperiment(BaseExperiment):
             elif i in saturated_detectors:
                 det_color = '#ffc710'
             props = dict(boxstyle=f"circle,pad={pad}", edgecolor=det_color, linewidth=2, facecolor=det_color, alpha=0.5)
-            ax.text(x, y, text, ha="center", va="center", transform=ax.transAxes, fontsize=8, bbox=props)
+
+            y = y0 - i * w
+            ax.text(x0, y, text, ha="center", va="center", transform=ax.transAxes, fontsize=8, bbox=props)
 
         pass
-    def plot_binned_tags_live(self, subplot_def):
+
+    def plots_handler__binned_tags_live(self, subplot_def):
 
         ax = subplot_def["ax"]
 
@@ -1242,7 +1252,7 @@ class VSTIRAPExperiment(BaseExperiment):
 
         pass
 
-    def plot_binned_tags_averaged(self, subplot_def):
+    def plots_handler__binned_tags_averaged(self, subplot_def):
 
         ax = subplot_def["ax"]
 
@@ -1303,7 +1313,7 @@ class VSTIRAPExperiment(BaseExperiment):
                    horizontalalignment='right', bbox=props_SPRINT)
         pass
 
-    def plot_mz_outputs(self, subplot_def):
+    def plots_handler__mz_outputs(self, subplot_def):
 
         ax = subplot_def["ax"]
 
@@ -1315,7 +1325,7 @@ class VSTIRAPExperiment(BaseExperiment):
 
         pass
 
-    def plot_phase_correction(self, subplot_def):
+    def plots_handler__phase_correction(self, subplot_def):
 
         ax = subplot_def["ax"]
 
@@ -1325,7 +1335,7 @@ class VSTIRAPExperiment(BaseExperiment):
 
         pass
 
-    def plot_num_reflections_per_sequence(self, subplot_def):
+    def plots_handler__num_reflections_per_sequence(self, subplot_def):
 
         ax = subplot_def["ax"]
 
@@ -1370,7 +1380,7 @@ class VSTIRAPExperiment(BaseExperiment):
 
         pass
 
-    def plot_mz_outputs_around_experiment(self, subplot_def):
+    def plots_handler__mz_outputs_around_experiment(self, subplot_def):
 
         ax = subplot_def["ax"]
 
@@ -1396,7 +1406,7 @@ class VSTIRAPExperiment(BaseExperiment):
 
         pass
 
-    def plot_mz_outputs_during_experiment(self, subplot_def):
+    def plots_handler__mz_outputs_during_experiment(self, subplot_def):
 
         ax = subplot_def["ax"]
 
@@ -1446,7 +1456,7 @@ class VSTIRAPExperiment(BaseExperiment):
                    bbox=props_SPRINT_coherence)
         pass
 
-    def plot_transits_per_sequence(self, subplot_def):
+    def plots_handler__transits_per_sequence(self, subplot_def):
 
         ax = subplot_def["ax"]
 
@@ -1468,7 +1478,7 @@ class VSTIRAPExperiment(BaseExperiment):
 
         pass
 
-    def plot_scattering(self, subplot_def):
+    def plots_handler__scattering(self, subplot_def):
         """
         Plot the scatterings to the fiber over time - north and south
         """
@@ -1479,7 +1489,7 @@ class VSTIRAPExperiment(BaseExperiment):
 
         pass
 
-    def plot_pulses(self, subplot_def):
+    def plots_handler__pulse_shapes(self, subplot_def):
 
         ax = subplot_def["ax"]
         ax.plot(Config.PNSA_Exp_Gaussian_samples_N, label='North Gaussian')

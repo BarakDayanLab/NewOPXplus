@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 class BDPlots:
 
+    PREFIX = 'plots_handler__'
+
     def __init__(self, subplots_settings, plotter, logger):
 
         # Set logger
@@ -97,7 +99,6 @@ class BDPlots:
 
         if self.subplots_view > 0:
             subplots_values = [self.get_subplot_by_index(self.subplots_view-1)]
-            #subplots_values = [self.sorted_subplots[self.subplots_view-1]]
         else:
             subplots_values = self.subplots.values()
 
@@ -119,7 +120,7 @@ class BDPlots:
                 if "title" in subplot.keys():
                     ax.set_title(subplot["title"], fontweight="bold")
 
-                func_name = subplot['func']
+                func_name = BDPlots.PREFIX + subplot['func']
                 func = getattr(self.plotter, func_name, func_not_found)
                 func(subplot)
 
@@ -132,15 +133,18 @@ class BDPlots:
                 self.logger.warn(f'Problem with subplot {subplot["id"]}. Could not display it.\n{tb}')
 
         # Print the main experiment header (this is "glued" to the plot at [0,0]
-        plot_header_func = getattr(self.plotter, "plots_header", func_not_found)
+        plot_header_func = getattr(self.plotter, BDPlots.PREFIX + "header", func_not_found)
         plot_header_func(self.subplots_header["ax"])
 
         # Plot the left sidebar
-        plot_left_side_bar_func = getattr(self.plotter, "plot_left_side_bar", func_not_found)
-        plot_left_side_bar_func(self.subplots_header["ax"])
+        plot_left_sidebar_func = getattr(self.plotter, BDPlots.PREFIX + "left_sidebar", func_not_found)
+        plot_left_sidebar_func(self.subplots_header["ax"])
 
         # plt.tight_layout()
         plt.pause(0.2)
+
+    def get_subplots_view(self):
+        return self.subplots_view
 
     def set_subplots_view(self, new_subplot_view):
         """
@@ -181,12 +185,19 @@ class BDPlots:
                               loc=(0, 0), colspan=self.subplots_shape[1], rowspan=self.subplots_shape[0])
 
         self.subplots[subplot['id']]['ax'] = ax
+
+        # Set the subplot_header to this plot we zoomed into
+        self.subplots_header = subplot
+
         pass
 
     def move_from_single_plot_to_multiple_plots(self):
 
         # Recreate all figures based on their original setting
         self.create_figures(new_figure=False)
+
+        # Take the axis which is first in the list (e.g. Top-Left)
+        self.subplots_header = self.get_subplot_by_index(0)
 
         pass
 
@@ -196,5 +207,8 @@ class BDPlots:
         new_subplot = self.get_subplot_by_index(new_subplot_view - 1)
 
         self.subplots[new_subplot['id']]['ax'] = current_subplot['ax']
+
+        # Set the subplot_header to this plot we zoomed into
+        self.subplots_header = new_subplot
 
         pass
