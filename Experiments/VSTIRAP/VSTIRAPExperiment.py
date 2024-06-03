@@ -1224,6 +1224,15 @@ class VSTIRAPExperiment(BaseExperiment):
 
         pass
 
+    def plots_handler__right_sidebar(self, ax):
+
+        x0 = 2.15
+        y0 = 0.5  # or 1.0 in zoom mode
+        w = 0.4  # or 0.2 in zoom mode
+
+        pass
+
+
     def plots_handler__binned_tags_live(self, subplot_def):
 
         ax = subplot_def["ax"]
