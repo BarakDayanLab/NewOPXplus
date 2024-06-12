@@ -1,6 +1,3 @@
-import time
-
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -329,7 +326,6 @@ class SquareRootOfSwap:
 if __name__ == "__main__":
 
     sros = SquareRootOfSwap()
-
     sros.go_all()
 
     pass
