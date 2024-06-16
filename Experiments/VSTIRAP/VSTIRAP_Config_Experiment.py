@@ -293,7 +293,7 @@ IF_AOM_N = 129e6
 # IF_AOM_S = 129.2368e6
 IF_AOM_S = 129e6
 # IF_AOM_LO = 89.2368e6
-IF_AOM_ANCILLA = 129.2368e6 + 110e6/2
+#IF_AOM_ANCILLA = 129.2368e6 + 110e6/2
 # IF_AOM_LO = 129.2368e6
 IF_AOMs_MZ = 110e6
 IF_AOM_SigmaPlus = 114.58e6
@@ -304,6 +304,9 @@ IF_AOM_Spectrum = 133.325e6/2
 
 IF_Divert = 20e6
 # IF_AOM_Analyzer = np.abs(IF_AOM_N - IF_AOM_S) * 2
+
+IF_PULSER_VSTIRAP_1_1 = 164.236e6
+IF_PULSER_VSTIRAP_1_0 = 200.345e6  # Requires amplitude fixing of  ...
 
 # Waveforms
 
@@ -759,7 +762,7 @@ config = {
                 5: {'offset': +0.0},  # AOM 2-2/3' (Depump/OD)
                 6: {'offset': +0.0},  # AOM early
                 7: {'offset': +0.0},  # AOM late
-                8: {'offset': +0.0},  # AOM Ancilla
+                8: {'offset': +0.0},  # AOM VSTIRAP (previously Ancilla)
                 9: {'offset': +0.0},  # AOM N
                 10: {'offset': +0.0}, # AOM S
             },
@@ -1076,33 +1079,33 @@ config = {
             'intermediate_frequency': IF_AOMs_MZ,
         },
 
-        "PULSER_ANCILLA": {
-            "singleInput": {
-                "port": (controller, 8),
-            },
-            'digitalInputs': {
-                # "Shutter_Switch": {
-                #     "port": (controller, 5),
-                #     "delay": 0,
-                #     "buffer": 0,
-                # },
-                "SouthtoNorth_Shutter": {
-                    "port": (controller, 9),
-                    "delay": 0,
-                    "buffer": 0,
-                },
-            },
-            'operations': {
-                'Const_open': "MOT_lock",
-                'Const_open_triggered': "MOT_lock_ON",
-                'Detection_pulses': "Square_detection_pulses",
-                'Homodyne_Pulse': "Homodyne_Pulse",
-                # 'Balancing_support': "Balancing_support_Ancilla",
-                'PNSA_experiment_pulses_Ancilla': "PNSA_seq_pulse_Ancilla",
-                'Spectrum_pulse': "Frequency_Sweep"
-            },
-            'intermediate_frequency': IF_AOM_ANCILLA,
-        },
+        # "PULSER_ANCILLA": {
+        #     "singleInput": {
+        #         "port": (controller, 8),
+        #     },
+        #     'digitalInputs': {
+        #         # "Shutter_Switch": {
+        #         #     "port": (controller, 5),
+        #         #     "delay": 0,
+        #         #     "buffer": 0,
+        #         # },
+        #         "SouthtoNorth_Shutter": {
+        #             "port": (controller, 9),
+        #             "delay": 0,
+        #             "buffer": 0,
+        #         },
+        #     },
+        #     'operations': {
+        #         'Const_open': "MOT_lock",
+        #         'Const_open_triggered': "MOT_lock_ON",
+        #         'Detection_pulses': "Square_detection_pulses",
+        #         'Homodyne_Pulse': "Homodyne_Pulse",
+        #         # 'Balancing_support': "Balancing_support_Ancilla",
+        #         'PNSA_experiment_pulses_Ancilla': "PNSA_seq_pulse_Ancilla",
+        #         'Spectrum_pulse': "Frequency_Sweep"
+        #     },
+        #     'intermediate_frequency': IF_AOM_ANCILLA,
+        # },
 
         "AOM_Spectrum": {
             'singleInput': {
@@ -1112,6 +1115,24 @@ config = {
                 'Spectrum_pulse': "Frequency_Sweep2",
             },
             'intermediate_frequency': IF_AOM_Spectrum,
+        },
+
+        "PULSER_VSTIRAP": {
+            "singleInput": {
+                "port": (controller, 8),
+            },
+            'digitalInputs': {  # Shutter open (for S/N directional detectors)
+                "Shutter_Switch": {
+                    "port": (controller, 5),
+                    "delay": 0,
+                    "buffer": 0,
+                }
+            },
+            'operations': {
+                #'Const_open': "MOT_lock",
+                'VSTIRAP_experiment_pulses_N': "PNSA_seq_pulse_N",
+            },
+            'intermediate_frequency': IF_PULSER_VSTIRAP_1_1,  # Default Freq
         },
 
         "PULSER_N": {
