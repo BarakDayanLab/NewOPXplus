@@ -295,7 +295,7 @@ class QuadRFController:
     # --------------------- Continuous mode methods --------------
     # ----------------------------------------------------------
     def continuousTableForChannel(self, ch, frq, amp):
-        self.sendCmd('TABLE,APPEND,%d, %s, %s, 0x0, 0x0' % (ch,frq,amp))
+        self.sendCmd('TABLE,APPEND,%d, %s, %s, 0x0, 0x0' % (ch, frq, amp))
 
     def continuousTablesForChannels(self, channels=(1, 2, 3, 4), start=True):
         if 1 in channels and self.topticaLockWhenUpdating: self.setTopticaLock(False)

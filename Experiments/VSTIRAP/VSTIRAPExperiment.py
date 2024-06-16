@@ -2521,6 +2521,7 @@ if __name__ == "__main__":
 
         'playback_files_path': r'C:\temp\playback_data\STIRAP\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
         #'playback_files_path': r'F:\temp\Weizmann\playback data\STIRAP\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
+        "load_config_from_playback": False,  # True,
         "old_format": False,
         "save_results": False,
         "save_results_path": 'C:\\temp\\playback_data',

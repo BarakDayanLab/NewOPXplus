@@ -306,7 +306,7 @@ IF_Divert = 20e6
 # IF_AOM_Analyzer = np.abs(IF_AOM_N - IF_AOM_S) * 2
 
 IF_PULSER_VSTIRAP_1_1 = 164.236e6
-IF_PULSER_VSTIRAP_1_0 = 200.345e6  # Requires amplitude fixing of  ...
+IF_PULSER_VSTIRAP_1_0 = 200.345e6  # TODO: Requires amplitude fixing of  ...
 
 # Waveforms
 
@@ -727,6 +727,8 @@ Gaussian_pulse_samples = (signal.gaussian(500, std=(300 / 2.355)) * 0.2).tolist(
 Gaussian_pulse_samples2 = (signal.gaussian(500, std=(150 / 2.355)) * 0.2).tolist()
 # Gaussian_pulse_samples = Utils.gauss_adaptive(0.45, 500)
 
+VSTIRAP_Gaussian_pulse_samples = (signal.gaussian(500, std=(300 / 2.355)) * 0.2).tolist()
+
 ## Attenuators (global) for AOMs 0, + & - of MOT sequence
 # Factor 0.0-1.0
 AOM_0_Attenuation = 1 # 0.85 seems to be about right, for 0.8 the slopes are exactly the same
@@ -1117,7 +1119,7 @@ config = {
             'intermediate_frequency': IF_AOM_Spectrum,
         },
 
-        "PULSER_VSTIRAP": {
+        "PULSER_VSTIRAP_1_1": {
             "singleInput": {
                 "port": (controller, 8),
             },
@@ -1130,9 +1132,27 @@ config = {
             },
             'operations': {
                 #'Const_open': "MOT_lock",
-                'VSTIRAP_experiment_pulses_N': "PNSA_seq_pulse_N",
+                'VSTIRAP_experiment_pulse': "VSTIRAP_seq_pulse",
             },
             'intermediate_frequency': IF_PULSER_VSTIRAP_1_1,  # Default Freq
+        },
+
+        "PULSER_VSTIRAP_1_0": {
+            "singleInput": {
+                "port": (controller, 8),
+            },
+            'digitalInputs': {  # Shutter open (for S/N directional detectors)
+                "Shutter_Switch": {
+                    "port": (controller, 5),
+                    "delay": 0,
+                    "buffer": 0,
+                }
+            },
+            'operations': {
+                # 'Const_open': "MOT_lock",
+                'VSTIRAP_experiment_pulse': "VSTIRAP_seq_pulse",
+            },
+            'intermediate_frequency': IF_PULSER_VSTIRAP_1_0,  # Default Freq
         },
 
         "PULSER_N": {
@@ -1397,6 +1417,15 @@ config = {
                 'single': 'PNSA_Square_wf_Late'
             },
             'digital_marker': 'Trig_EOM'
+        },
+
+        "VSTIRAP_seq_pulse": {
+            'operation': 'control',
+            'length': len(VSTIRAP_Gaussian_pulse_samples),
+            'waveforms': {
+                'single': 'VSTIRAP_Gaussian_wf'
+            },
+            'digital_marker': 'ON'
         },
 
         "PNSA_seq_pulse_Ancilla": {
@@ -1667,6 +1696,10 @@ config = {
         #     'type': 'arbitrary',
         #     'samples': Sprint_Exp_Gaussian_samples_N
         # },
+        'VSTIRAP_Gaussian_wf': {
+            'type': 'arbitrary',
+            'samples': VSTIRAP_Gaussian_pulse_samples
+        },
         'PNSA_Gaussian_wf_Ancilla': {
             'type': 'arbitrary',
             'samples': PNSA_Exp_Gaussian_samples_Ancilla

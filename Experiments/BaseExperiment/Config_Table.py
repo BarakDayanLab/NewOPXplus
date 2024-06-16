@@ -134,8 +134,10 @@ Initial_Values = {
     'opticalPowerCalibrationFunction': None,  # calibrationData  # Used for calibration of the power of the lock AOM (TOP1)
 
     # OD Related
-    'OD_continuous_attenuation': 0.0  # Put on 0 to turn beam off
+    'OD_continuous_attenuation': 0.0,  # Put on 0 to turn beam off
 
+    'CH3_continuous_freq': '90MHz',  # QuadRF
+    'CH3_continuous_amp': '31dbm',  # QuadRF
 }
 
 Default_Values = {

@@ -174,7 +174,7 @@ class BaseExperiment:
         # Dynamically import the config-experiment and config-table and merge the values
         try:
             # If we're in playback mode, we load the config files from the playback folder
-            if self.playback['active']:
+            if self.playback['active'] and self.playback['load_config_from_playback']:
                 the_path = os.path.join(self.playback['playback_files_path'], 'Source Files', f'{self.experiment_name}_Config_Experiment.py')
                 Config = SourceFileLoader(f"{self.experiment_name}_Config_Experiment", the_path).load_module()
                 the_path = os.path.join(self.playback['playback_files_path'], 'Source Files', f'{self.experiment_name}_Config_Table.py')
@@ -263,14 +263,17 @@ class BaseExperiment:
 
     # Initialize the QuadRF
     def initiliaze_QuadRF(self):
-        if self._quadrf_skip: return
+        if self._quadrf_skip:
+            return
 
         self.QuadRFControllers = []
 
         # Note: So as not to connect again and again to QuadRF each time we update table, we now save the MOGDevice (actual QuadRF device) connected,
         # we hold this connection until update is finished, then we close the connection.
         # we do still hold the QuadRFController objects, for access to the table (read only!) when the experiment is running.
-        qrfContr = QuadRFMOTController(initialValues=self.Exp_Values,
+
+        qrfContr = QuadRFMOTController(MOGdevice=None,
+                                       initialValues=self.Exp_Values,
                                        updateChannels=[1, 2, 4],
                                        # updateChannels=(1, 4),  # For constant Depump
                                        topticaLockWhenUpdating=False,
@@ -281,9 +284,7 @@ class BaseExperiment:
 
         # TODO: why aren't the values below part of the experiment values or configuration values?
         qrfContr2 = QuadRFMOTController(MOGdevice=qrfContr.device,
-                                        # TODO: remove this - we don't want 'Operation Mode' in the code anymore :-)
-                                        #initialValues={'Operation_Mode': 'Continuous', 'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
-                                        initialValues={'CH3_freq': '90MHz', 'CH3_amp': '31dbm'},
+                                        initialValues={'CH3_freq': self.Exp_Values['CH3_continuous_freq'], 'CH3_amp': self.Exp_Values['CH3_continuous_amp']},
                                         updateChannels=[3],
                                         debugging=False,  # True,
                                         #mode=QuadRFMode.CONTINUOUS,

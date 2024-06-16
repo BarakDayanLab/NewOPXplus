@@ -13,7 +13,7 @@ Experiment_Values = {
     'Fountain_final_Delta_freq': 0.312e6,  # 0.37e6 - until 26.02.24
     # 'Fountain_final_Delta_freq': 0.3e6,  # 0.315e6 - until 28.02.24
     # 'Fountain_final_Delta_freq': 0.35e6,  # 0.315e6 - until 28.02.24
-    'PrePulse_Repump_amp': 0.000001,  # relative
+    'PrePulse_Repump_amp': 0.000001,  # relative  (QuadRF)
     'PrePulse_CH2_freq': 133.325e6,  # Hz  (QuadRF - Depump)
     'Pulse_1_CH1_Freq_f': Initial_Values['MOT_freq'],  # (QuadRF - AOM - Top F2)
     'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq'] + 30e6,  # (QuadRF - Repump)
@@ -35,6 +35,9 @@ Experiment_Values = {
     # Pulse_length[nsec] * 1000 repetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
     'M_off_time': 1.5,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
 
-    # TODO: we should have a differnt value here - and fix opx code to use this value
+    'CH3_continuous_freq': '125MHz',  # QuadRF
+    'CH3_continuous_amp': '31dbm',  # QuadRF
+
+    # TODO: we should have a different value here - and fix opx code to use this value
     'OPX_Quad_Misalignment_Delay': 4000  # = 4us [ns]
 }
