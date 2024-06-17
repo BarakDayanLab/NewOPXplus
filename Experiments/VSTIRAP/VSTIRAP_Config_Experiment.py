@@ -1821,3 +1821,32 @@ config = {
         }
     }
 }
+
+if __name__ == "__main__":
+
+    y_values = (signal.gaussian(500, std=(300 / 2.355)) * 0.2) * 1000
+    #y_values = VSTIRAP_Gaussian_pulse_samples * 1000.0
+    x_values = np.linspace(1, 500, 500)
+
+    y_values2 = PNSA_Exp_Gaussian_samples_N
+
+    # Create the figure and axes
+    fig, ax = plt.subplots()
+    plt.subplots_adjust(bottom=0.30)  # Adjust the bottom margin for the slider
+
+    # Plot the dots
+    #dots, = plt.plot(x_values, y_values, 'bo', label=f"Pulse")
+    #dots, = plt.plot(x_values, y_values, label=f"Pulse")
+    dots2, = plt.plot(y_values2, label=f"Pulse")
+
+
+
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Amplitude")
+
+    ax.set_title("Pulse")
+    #ax.set_ylim(0, 600)  # Set y-axis limits dynamically
+    ax.grid(True)
+    ax.legend()
+
+    plt.show()
