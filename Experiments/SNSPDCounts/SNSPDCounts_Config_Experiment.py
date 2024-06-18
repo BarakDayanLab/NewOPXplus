@@ -40,6 +40,8 @@ IF_AOM_LO = 129.2368e6
 IF_AOMs_MZ = 110e6
 IF_AOM_Anc = 184e6
 IF_AOM_Spectrum = 133.325e6 / 2
+IF_PULSER_VSTIRAP_1_1 = 164.236e6
+
 
 IF_Divert = 20e6
 # IF_AOM_N = 127.1e6
@@ -304,6 +306,25 @@ config = {
             # 'intermediate_frequency': IF_AOM_LO,
             'intermediate_frequency': IF_AOMs_MZ,
         },
+
+        "PULSER_VSTIRAP_1_1": {
+            "singleInput": {
+                "port": (controller, 8),
+            },
+            'digitalInputs': {  # Shutter open (for S/N directional detectors)
+                "Shutter_Switch": {
+                    "port": (controller, 5),
+                    "delay": 0,
+                    "buffer": 0,
+                }
+            },
+            'operations': {
+                'Const_open': "MOT_lock_ON",
+                # 'VSTIRAP_experiment_pulse': "VSTIRAP_seq_pulse",
+            },
+            'intermediate_frequency': IF_PULSER_VSTIRAP_1_1,  # Default Freq
+        },
+
 
         "AOM_Spectrum": {
             'singleInput': {

@@ -51,6 +51,10 @@ def opx_control(obj, qm):
                 # play("Const_open", "PULSER_S")
                 play("Const_open_triggered" * amp(0.4), "PULSER_S")
 
+                # play constant to Vstirap aom
+                # play("Const_open", "PULSER_VSTIRAP_1_1")
+
+
                 # We play either early or late AOMs - to test different system paths efficiencies
                 play("Const_late_open", "PULSER_L")
                 # play("Const_early_open", "PULSER_E")
