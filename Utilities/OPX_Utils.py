@@ -1,7 +1,11 @@
+import numpy as np
+from scipy import signal
 import inspect
 import json
 from qm.qua import *
 from Experiments.Enums.IOParameters import IOParameters as IOP
+from matplotlib import pyplot as plt
+from matplotlib.widgets import RadioButtons
 
 
 # -------------------------------------------------------------------
@@ -30,7 +34,8 @@ def GHz(val):
 class OPX_Utils:
 
     def __init__(self):
-        raise Exception('No need to initialize OPX_Utils class. It used for statis methods only')
+        #raise Exception('No need to initialize OPX_Utils class. It used for static methods only')
+        pass
 
     @staticmethod
     def assign_experiment_variables(self_obj):
@@ -113,3 +118,85 @@ class OPX_Utils:
         for variable in variables[1:]:
             _exp += variable
         wait(4 + 0 * _exp, element)
+
+    def plot_element(self, label_selected):
+        element_name = label_selected
+        element = self.config['elements'][element_name]
+
+        for operation_name, operation_pulse in element['operations'].items():
+
+            operation_pulse = self.config['pulses'][operation_pulse]
+            # TODO - Need to handle cases where it is not 'single', or there are multiple waveforms
+            waveform_name = operation_pulse['waveforms']['single']
+            waveform = self.config['waveforms'][waveform_name]
+
+            if waveform['type'] == 'arbitrary':
+                y_values = waveform['samples']
+            elif waveform['type'] == 'constant':
+                y_values = np.full(shape=operation_pulse['length'], fill_value=waveform['sample'])
+
+            pulse_length = len(y_values)
+
+            #y_values = (signal.gaussian(500, std=(300 / 2.355)) * 0.2) * 2000
+            x_values = np.linspace(1, pulse_length, pulse_length)
+
+            #self.dots.set_ydata(y_values)
+            #self.dots, = plt.plot(x_values, y_values, label=f"Pulse")
+
+            plt.plot(x_values, y_values, label=f"{operation_name}")
+
+            operation_desc = f'{operation_name}: Waveform: {waveform_name} - {waveform["type"]}'
+
+        self.ax.set_title(f'{element_name}')
+        self.fig.canvas.draw_idle()
+        pass
+
+    def plot_element_DEP(self, label_selected):
+
+        element_name = label_selected
+        element = self.config['elements'][element_name]
+
+        y_values = (signal.gaussian(500, std=(300 / 2.355)) * 0.2) * 2000
+        x_values = np.linspace(1, 500, 500)
+
+        self.dots.set_ydata(y_values)
+
+        self.dots, = plt.plot(x_values, y_values, label=f"Pulse")
+
+        self.ax.set_title(f'{element_name}')
+        self.fig.canvas.draw_idle()
+        pass
+
+    def plot_config(self, config):
+
+        self.config = config
+
+        y_values = (signal.gaussian(500, std=(300 / 2.355)) * 0.2) * 1000
+        x_values = np.linspace(1, 500, 500)
+
+        # Create the figure and axes
+        self.fig, self.ax = plt.subplots(figsize=(8, 4))
+
+        # Plot the dots
+        self.dots, = plt.plot(x_values, y_values, label=f"Pulse")
+
+        self.ax.set_xlabel("Time")
+        self.ax.set_ylabel("Amplitude")
+
+        self.ax.set_title("Pulse")
+        # ax.set_ylim(0, 600)  # Set y-axis limits dynamically
+        self.ax.grid(True)
+        self.ax.legend()
+
+        elements_names = list(config["elements"].keys())
+
+        # Add radio buttons
+        radio_ax = plt.axes([0.85, 0.2, 0.2, 0.4], facecolor='lightgoldenrodyellow')  # [Left, Bottom, W, H]
+        radio_buttons = RadioButtons(radio_ax, elements_names)
+
+        # Function to handle radio button selection
+        radio_buttons.on_clicked(self.plot_element)
+
+        plt.show()
+
+        pass
