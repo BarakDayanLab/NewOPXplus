@@ -2515,7 +2515,7 @@ if __name__ == "__main__":
 
     # Playback definitions
     playback_parameters = {
-        "active": True,
+        "active": False,
         #'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240225\173049_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
         #'playback_files_path': r'C:\temp\playback_data\PNSA\20240312\121917_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
 

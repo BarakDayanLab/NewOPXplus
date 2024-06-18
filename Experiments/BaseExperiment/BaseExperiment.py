@@ -165,7 +165,8 @@ class BaseExperiment:
         self.batcher = BDBatch(json_map_path=self.paths_map['cwd'])
 
         # Initialize the BDStreams
-        self.bdstreams = BDStreams(save_raw_data=save_raw_data, max_files_to_load=self.playback['max_files_to_load'], logger=self.logger)
+        max_files_to_load = self.playback['max_files_to_load'] if 'max_files_to_load' in self.playback else -1
+        self.bdstreams = BDStreams(save_raw_data=save_raw_data, max_files_to_load=max_files_to_load, logger=self.logger)
 
         # Load Initial Values and Default Values - merge them together (Default Values prevails!)
         # These will be the experiment values
@@ -315,13 +316,16 @@ class BaseExperiment:
     def initialize_OPX(self):
         if self._opx_skip: return
 
+        qm_host = self.opx_definitions['connection']['host']
+        qm_port = self.opx_definitions['connection']['port']
+        self.logger.info(f'Attempting QM initialization @ {qm_host}:{qm_port}')
         # NOTE: if OPX is failing to start, maybe it requires a restart.
         # - Go to the OPX admin console in the browser
         # - Select the "Gear" icon, go to the "Operations" tab, click "Restart"
         # - Click the "Hardware" icon - wait for the status to turn from "Warning" to "Healthy"
         try:
             self.job = None
-            self.qmm = QuantumMachinesManager(host=self.opx_definitions['connection']['host'], port=self.opx_definitions['connection']['port'])
+            self.qmm = QuantumMachinesManager(host=qm_host, port=qm_port)
             self.qmm.clear_all_job_results()
             self.qmm.reset_data_processing()
             self.qmm.close_all_quantum_machines()
@@ -1080,6 +1084,9 @@ class BaseExperiment:
 
     def prepare_figures(self):
 
+        if not self.bdplots.plotter:
+            return
+
         self.bdplots.create_figures(new_figure=True)
 
         # Set figure title - (a) iteration and sequence (b) current date and time
@@ -1096,6 +1103,9 @@ class BaseExperiment:
         pass
 
     def plot_figures(self):
+
+        if not self.bdplots.plotter:
+            return
 
         # TODO: Move this entire section to "plot_figures" and into BaseExperiment
         if self.playback['active']:

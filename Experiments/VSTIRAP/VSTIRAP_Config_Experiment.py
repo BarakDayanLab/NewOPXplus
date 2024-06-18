@@ -1080,34 +1080,6 @@ config = {
             'intermediate_frequency': IF_AOMs_MZ,
         },
 
-        # "PULSER_ANCILLA": {
-        #     "singleInput": {
-        #         "port": (controller, 8),
-        #     },
-        #     'digitalInputs': {
-        #         # "Shutter_Switch": {
-        #         #     "port": (controller, 5),
-        #         #     "delay": 0,
-        #         #     "buffer": 0,
-        #         # },
-        #         "SouthtoNorth_Shutter": {
-        #             "port": (controller, 9),
-        #             "delay": 0,
-        #             "buffer": 0,
-        #         },
-        #     },
-        #     'operations': {
-        #         'Const_open': "MOT_lock",
-        #         'Const_open_triggered': "MOT_lock_ON",
-        #         'Detection_pulses': "Square_detection_pulses",
-        #         'Homodyne_Pulse': "Homodyne_Pulse",
-        #         # 'Balancing_support': "Balancing_support_Ancilla",
-        #         'PNSA_experiment_pulses_Ancilla': "PNSA_seq_pulse_Ancilla",
-        #         'Spectrum_pulse': "Frequency_Sweep"
-        #     },
-        #     'intermediate_frequency': IF_AOM_ANCILLA,
-        # },
-
         "AOM_Spectrum": {
             'singleInput': {
                 "port": (controller, 8)

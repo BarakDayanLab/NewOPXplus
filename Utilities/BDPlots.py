@@ -12,6 +12,11 @@ class BDPlots:
         # Set logger
         self.logger = logger
 
+        # Check if there's no figures to plot
+        if subplots_settings == {} or subplots_settings == None:
+            self.plotter = None  # Our way of marking - there are no plots to draw
+            return
+
         # Set plotter - the class that implements the plotting functions
         self.plotter = plotter
 
@@ -67,6 +72,9 @@ class BDPlots:
         pass
 
     def create_figures(self, new_figure=True):
+        # If there's nothing to plot
+        if self.plotter is None:
+            return
 
         # Create the figure
         if new_figure:
@@ -93,6 +101,10 @@ class BDPlots:
         pass
 
     def set_figure_title(self, title):
+        # If there's nothing to plot, so nothing to set title to
+        if self.plotter is None:
+            return
+
         self.fig.canvas.manager.set_window_title(title)
 
     def plot_figures(self):
