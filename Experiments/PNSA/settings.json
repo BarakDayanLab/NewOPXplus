@@ -155,6 +155,107 @@
     },
     "menus": {},
     "files": {},
+    "figures": {
+        "display": ["9", "8", "3_1", "4", "5_1", "5_2", "6", "7"],
+        "grid_shape": [3, 4],
+        "subplots": [
+            {
+                "id": "1",
+                "func": "binned_tags_live",
+                "title": "Binned Time Tags (live)",
+                "legend_loc": "upper right",
+                "locx": 0,
+                "locy": 0,
+                "colspan": 2,
+                "rowspan": 1
+            },
+            {
+                "id": "2",
+                "func": "binned_tags_averaged",
+                "title": "Binned Time Tags (averaged)",
+                "legend_loc": "upper right",
+                "locx": 2,
+                "locy": 0,
+                "colspan": 2,
+                "rowspan": 1
+            },
+            {
+                "id": "3_1",
+                "func": "mz_outputs",
+                "title": "MZ Outputs (while locking)",
+                "legend_loc": "upper right",
+                "locx": 0,
+                "locy": 1,
+                "colspan": 2,
+                "rowspan": 1
+            },
+            {
+                "id": "4",
+                "func": "num_reflections_per_sequence",
+                "title": "Number reflections per sequence",
+                "legend_loc": "upper right",
+                "locx": 2,
+                "locy": 1,
+                "colspan": 2,
+                "rowspan": 1
+            },
+            {
+                "id": "5_1",
+                "func": "mz_outputs_around_experiment",
+                "title": "MZ outputs around experiment",
+                "locx": 0,
+                "locy": 2,
+                "colspan": 1,
+                "rowspan": 1
+            },
+            {
+                "id": "5_2",
+                "func": "mz_outputs_during_experiment",
+                "title": "MZ outputs during experiment",
+                "locx": 1,
+                "locy": 2,
+                "colspan": 1,
+                "rowspan": 1
+            },
+            {
+                "id": "6",
+                "func": "transits_per_sequence",
+                "title": "Transits per sequence",
+                "legend_loc": "upper right",
+                "locx": 2,
+                "locy": 2,
+                "colspan": 2,
+                "rowspan": 1
+            },
+            {
+                "id": "7",
+                "func": "phase_correction",
+                "twinx": "3_1"
+            },
+            {
+                "id": "8",
+                "func": "scattering",
+                "description": "The North/South scattering of PI",
+                "title": "North/South Scattering",
+                "legend_loc": "upper right",
+                "locx": 2,
+                "locy": 0,
+                "colspan": 2,
+                "rowspan": 1
+            },
+            {
+                "id": "9",
+                "func": "pulse_shapes",
+                "description": "Input pulses as appear in Config",
+                "title": "Pulses Shapes",
+                "legend_loc": "upper right",
+                "locx": 0,
+                "locy": 0,
+                "colspan": 2,
+                "rowspan": 1
+            }
+        ]
+    },
     "dialogs": {
         "save_dialog": {
             "title": "Experiment Completed",
