@@ -2,7 +2,6 @@ import numpy as np
 from scipy import signal
 import math
 from Utilities.Utils import Utils
-from matplotlib import pyplot as plt
 
 # For SPRINT experiment:
 # Transmission N:
@@ -1824,29 +1823,27 @@ config = {
 
 if __name__ == "__main__":
 
-    y_values = (signal.gaussian(500, std=(300 / 2.355)) * 0.2) * 1000
-    #y_values = VSTIRAP_Gaussian_pulse_samples * 1000.0
-    x_values = np.linspace(1, 500, 500)
+    # from Utilities.BDPlots import BDPlots
+    # settings = {
+    #     "display": ["1"],
+    #     "grid_shape": [1, 1],
+    #     "subplots": [
+    #         {
+    #             "id": "1",
+    #             "func": "binned_tags_live",
+    #             "title": "Binned Time Tags (live)",
+    #             "legend_loc": "upper right",
+    #             "locx": 0,
+    #             "locy": 0,
+    #             "colspan": 2,
+    #             "rowspan": 1
+    #         }
+    #     ]
+    # }
+    # bdplots = BDPlots(settings, plotter=self, logger=None)
 
-    y_values2 = PNSA_Exp_Gaussian_samples_N
+    from Utilities.OPX_Utils import OPX_Utils
+    opx_utils = OPX_Utils()
+    opx_utils.plot_config(config)
 
-    # Create the figure and axes
-    fig, ax = plt.subplots()
-    plt.subplots_adjust(bottom=0.30)  # Adjust the bottom margin for the slider
-
-    # Plot the dots
-    #dots, = plt.plot(x_values, y_values, 'bo', label=f"Pulse")
-    #dots, = plt.plot(x_values, y_values, label=f"Pulse")
-    dots2, = plt.plot(y_values2, label=f"Pulse")
-
-
-
-    ax.set_xlabel("Time")
-    ax.set_ylabel("Amplitude")
-
-    ax.set_title("Pulse")
-    #ax.set_ylim(0, 600)  # Set y-axis limits dynamically
-    ax.grid(True)
-    ax.legend()
-
-    plt.show()
+    pass
