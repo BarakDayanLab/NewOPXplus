@@ -132,17 +132,21 @@ class OPX_Utils:
 
             if waveform['type'] == 'arbitrary':
                 y_values = waveform['samples']
+                pulse_length = len(y_values)
+                x_values = np.linspace(1, pulse_length, pulse_length)
             elif waveform['type'] == 'constant':
-                y_values = np.full(shape=operation_pulse['length'], fill_value=waveform['sample'])
-
-            pulse_length = len(y_values)
+                y = waveform['sample']
+                y_values = [y, y, y]
+                pulse_length = operation_pulse['length']
+                x_values = [0, int(pulse_length/2), pulse_length]
+                #y_values = np.full(shape=operation_pulse['length'], fill_value=waveform['sample'])
 
             #y_values = (signal.gaussian(500, std=(300 / 2.355)) * 0.2) * 2000
-            x_values = np.linspace(1, pulse_length, pulse_length)
 
             #self.dots.set_ydata(y_values)
             #self.dots, = plt.plot(x_values, y_values, label=f"Pulse")
 
+            plt.sca(self.ax)
             plt.plot(x_values, y_values, label=f"{operation_name}")
 
             operation_desc = f'{operation_name}: Waveform: {waveform_name} - {waveform["type"]}'
