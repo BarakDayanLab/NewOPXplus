@@ -765,7 +765,7 @@ config = {
                 7: {'offset': +0.0},  # AOM late
                 8: {'offset': +0.0},  # AOM VSTIRAP (previously Ancilla)
                 9: {'offset': +0.0},  # AOM N
-                10: {'offset': +0.0}, # AOM S
+                10: {'offset': +0.0},  # AOM S
             },
 
             'digital_outputs': {
@@ -1794,25 +1794,6 @@ config = {
 }
 
 if __name__ == "__main__":
-
-    # from Utilities.BDPlots import BDPlots
-    # settings = {
-    #     "display": ["1"],
-    #     "grid_shape": [1, 1],
-    #     "subplots": [
-    #         {
-    #             "id": "1",
-    #             "func": "binned_tags_live",
-    #             "title": "Binned Time Tags (live)",
-    #             "legend_loc": "upper right",
-    #             "locx": 0,
-    #             "locy": 0,
-    #             "colspan": 2,
-    #             "rowspan": 1
-    #         }
-    #     ]
-    # }
-    # bdplots = BDPlots(settings, plotter=self, logger=None)
 
     from Utilities.OPX_Utils import OPX_Utils
     opx_utils = OPX_Utils()

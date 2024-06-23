@@ -6,7 +6,8 @@ from qm.qua import *
 from Experiments.Enums.IOParameters import IOParameters as IOP
 from matplotlib import pyplot as plt
 from matplotlib.widgets import RadioButtons
-
+import matplotlib.ticker as mticker
+import matplotlib as mpl
 
 # -------------------------------------------------------------------
 # OPX Stuff - can be used from different OPX_Code in all experiments
@@ -125,19 +126,34 @@ class OPX_Utils:
         legend_line.set_visible(not legend_line.get_visible())
         self.fig.canvas.draw()
 
+    def digital_marker(self, operation_pulse):
+
+        waveform_name = 'Digital Marker'
+        pulse_length = int(operation_pulse['length'])
+        waveform_name = operation_pulse['digital_marker']
+        samples = self.config['digital_waveforms'][waveform_name]['samples']
+
+        # Create full waveform
+        y_values = np.array([])
+        for sample in samples:
+            if sample[1] == 0:
+                f = pulse_length - len(y_values)
+            else:
+                f = sample[1]
+            y_values = np.concatenate((y_values, np.repeat(sample[0], f)))
+
+        x_values = np.linspace(1, pulse_length, pulse_length)
+        return waveform_name, pulse_length, x_values, y_values
+
+    def waveforms(self, wf_type):
+        pass
+
     def plot_element(self, label_selected):
         element_name = label_selected
         element = self.config['elements'][element_name]
         operations = element['operations'].items()
 
-        #plt.sca(self.ax)
-        #self.ax.cla()
-
-        #plt.title(f'{element_name}')
-
-        # Create a figure with subplots per number of operations
-        #self.fig, self.axs = plt.subplots(len(operations), 1, figsize=(8, 10), sharex=False)
-
+        # Remove all previous axis before we redraw them
         all_curr_axis = plt.gcf().get_axes()
         for axis_index in range(1, len(all_curr_axis)):
             all_curr_axis[axis_index].remove()
@@ -147,39 +163,51 @@ class OPX_Utils:
         i = 0
         for operation_name, operation_pulse_name in element['operations'].items():
 
+            # Create axis and Select-Current-Axis ("sca")
+            self.axs.append(plt.axes([0.1, 0.05 + (i * 0.12), 0.7, 0.08]))  # [Left, Bottom, W, H]
+            plt.sca(self.axs[i])
+
             # Get the pulse
             operation_pulse = self.config['pulses'][operation_pulse_name]
 
-            if 'waveforms' not in operation_pulse:
-                continue
+            # Iterate to draw both digital and waveform signal
+            for signal_type in ['digital_marker', 'waveforms']:
 
-            # TODO - Need to handle cases where it is not 'single', or there are multiple waveforms
-            waveform_name = operation_pulse['waveforms']['single']
-            waveform = self.config['waveforms'][waveform_name]
+                if signal_type == 'digital_marker' and 'digital_marker' in operation_pulse:
+                    waveform_name, pulse_length, x_values, y_values = self.digital_marker(operation_pulse)
+                elif signal_type == 'waveforms' and 'waveforms' in operation_pulse:
 
-            if waveform['type'] == 'arbitrary':
-                y_values = waveform['samples']
-                pulse_length = len(y_values)
-                x_values = np.linspace(1, pulse_length, pulse_length)
-            elif waveform['type'] == 'constant':
-                y = waveform['sample']
-                y_values = [y, y, y]
-                pulse_length = operation_pulse['length']
-                x_values = [0, int(pulse_length/2), pulse_length]
+                    # TODO - Need to handle cases where it is not 'single', or there are multiple waveforms
+                    waveform_name = operation_pulse['waveforms']['single']
+                    waveform = self.config['waveforms'][waveform_name]
 
-            self.axs.append(plt.axes([0.1, 0.05 + (i*0.12), 0.7, 0.08]))  # [Left, Bottom, W, H]
-            plt.sca(self.axs[i])
-            self.axs[i].plot(x_values, y_values, label=f"{operation_name} ({waveform_name})")
+                    if waveform['type'] == 'arbitrary':
+                        y_values = waveform['samples']
+                        pulse_length = len(y_values)
+                        x_values = np.linspace(1, pulse_length, pulse_length)
+                    elif waveform['type'] == 'constant':
+                        y = waveform['sample']
+                        y_values = [y, y, y]
+                        pulse_length = operation_pulse['length']
+                        x_values = [0, int(pulse_length/2), pulse_length]
+                else:
+                    continue
+
+                formatter = mticker.FormatStrFormatter('%d')
+                formatter2 = mpl.ticker.StrMethodFormatter('{x:,.0f}')
+                self.axs[i].xaxis.set_major_formatter(formatter2)
+                #self.axs[i].set_xlabel("Time")
+                self.axs[i].set_ylabel("Amp")
+
+                self.axs[i].plot(x_values, y_values, label=f"{operation_name} ({waveform_name})")
+
+            legend = self.axs[i].legend(loc='upper right')
             i += 1
-            #plt.plot(x_values, y_values, label=f"{operation_name} ({waveform_name})")
 
-            operation_desc = f'{operation_name}: Waveform: {waveform_name} - {waveform["type"]}'
+        plt.title(f'Time [ns]')
 
-        plt.title(f'Operations')
-        #self.ax.set_title(f'{element_name}')
-        #self.ax.legend()
-
-        plt.subplots_adjust(left=0.06, right=0.8, hspace=0.5)
+        # Move subplots to the left, to allow the checkboxes to fit on the right
+        plt.subplots_adjust(left=0.05, right=0.8, hspace=0.5)
 
         self.fig.canvas.draw_idle()
         pass
@@ -189,53 +217,14 @@ class OPX_Utils:
         self.config = config
 
         # Create the figure and axes
-        #self.fig, self.ax = plt.subplots(figsize=(8, 4))
         self.fig = plt.figure()
 
-        #self.ax.grid(True)
-
         elements_names = list(config["elements"].keys())
 
         # Add radio buttons
-        radio_ax = plt.axes([0.85, 0.1, 0.2, 0.6], facecolor='lightgoldenrodyellow')  # [Left, Bottom, W, H]
+        radio_ax = plt.axes([0.83, 0.1, 0.2, 0.6], facecolor='lightgoldenrodyellow')  # [Left, Bottom, W, H]
         radio_buttons = RadioButtons(radio_ax, elements_names)
-
-        # Function to handle radio button selection
-        radio_buttons.on_clicked(self.plot_element)
-
-        plt.show()
-
-        pass
-
-
-    def plot_config_DEP(self, config):
-
-        self.config = config
-
-        #self.plot_element('PULSER_S')
-
-        y_values = (signal.gaussian(500, std=(300 / 2.355)) * 0.2) # * 1000
-        x_values = np.linspace(1, 500, 500)
-
-        # Create the figure and axes
-        self.fig, self.ax = plt.subplots(figsize=(8, 4))
-
-        # Plot the dots
-        self.dots, = plt.plot(x_values, y_values, label=f"Pulse")
-
-        self.ax.set_xlabel("Time")
-        self.ax.set_ylabel("Amplitude")
-
-        self.ax.set_title("Pulse")
-        # ax.set_ylim(0, 600)  # Set y-axis limits dynamically
-        self.ax.grid(True)
-        self.ax.legend()
-
-        elements_names = list(config["elements"].keys())
-
-        # Add radio buttons
-        radio_ax = plt.axes([0.85, 0.2, 0.2, 0.4], facecolor='lightgoldenrodyellow')  # [Left, Bottom, W, H]
-        radio_buttons = RadioButtons(radio_ax, elements_names)
+        radio_ax.set_title('Elements')
 
         # Function to handle radio button selection
         radio_buttons.on_clicked(self.plot_element)
