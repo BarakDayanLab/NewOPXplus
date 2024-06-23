@@ -119,13 +119,40 @@ class OPX_Utils:
             _exp += variable
         wait(4 + 0 * _exp, element)
 
+    # Function to toggle visibility of plot lines
+    def toggle_visibility(self, event):
+        legend_line = event.artist
+        legend_line.set_visible(not legend_line.get_visible())
+        self.fig.canvas.draw()
+
     def plot_element(self, label_selected):
         element_name = label_selected
         element = self.config['elements'][element_name]
+        operations = element['operations'].items()
 
-        for operation_name, operation_pulse in element['operations'].items():
+        #plt.sca(self.ax)
+        #self.ax.cla()
 
-            operation_pulse = self.config['pulses'][operation_pulse]
+        #plt.title(f'{element_name}')
+
+        # Create a figure with subplots per number of operations
+        #self.fig, self.axs = plt.subplots(len(operations), 1, figsize=(8, 10), sharex=False)
+
+        all_curr_axis = plt.gcf().get_axes()
+        for axis_index in range(1, len(all_curr_axis)):
+            all_curr_axis[axis_index].remove()
+
+        self.axs = []
+
+        i = 0
+        for operation_name, operation_pulse_name in element['operations'].items():
+
+            # Get the pulse
+            operation_pulse = self.config['pulses'][operation_pulse_name]
+
+            if 'waveforms' not in operation_pulse:
+                continue
+
             # TODO - Need to handle cases where it is not 'single', or there are multiple waveforms
             waveform_name = operation_pulse['waveforms']['single']
             waveform = self.config['waveforms'][waveform_name]
@@ -139,35 +166,21 @@ class OPX_Utils:
                 y_values = [y, y, y]
                 pulse_length = operation_pulse['length']
                 x_values = [0, int(pulse_length/2), pulse_length]
-                #y_values = np.full(shape=operation_pulse['length'], fill_value=waveform['sample'])
 
-            #y_values = (signal.gaussian(500, std=(300 / 2.355)) * 0.2) * 2000
-
-            #self.dots.set_ydata(y_values)
-            #self.dots, = plt.plot(x_values, y_values, label=f"Pulse")
-
-            plt.sca(self.ax)
-            plt.plot(x_values, y_values, label=f"{operation_name}")
+            self.axs.append(plt.axes([0.1, 0.05 + (i*0.12), 0.7, 0.08]))  # [Left, Bottom, W, H]
+            plt.sca(self.axs[i])
+            self.axs[i].plot(x_values, y_values, label=f"{operation_name} ({waveform_name})")
+            i += 1
+            #plt.plot(x_values, y_values, label=f"{operation_name} ({waveform_name})")
 
             operation_desc = f'{operation_name}: Waveform: {waveform_name} - {waveform["type"]}'
 
-        self.ax.set_title(f'{element_name}')
-        self.fig.canvas.draw_idle()
-        pass
+        plt.title(f'Operations')
+        #self.ax.set_title(f'{element_name}')
+        #self.ax.legend()
 
-    def plot_element_DEP(self, label_selected):
+        plt.subplots_adjust(left=0.06, right=0.8, hspace=0.5)
 
-        element_name = label_selected
-        element = self.config['elements'][element_name]
-
-        y_values = (signal.gaussian(500, std=(300 / 2.355)) * 0.2) * 2000
-        x_values = np.linspace(1, 500, 500)
-
-        self.dots.set_ydata(y_values)
-
-        self.dots, = plt.plot(x_values, y_values, label=f"Pulse")
-
-        self.ax.set_title(f'{element_name}')
         self.fig.canvas.draw_idle()
         pass
 
@@ -175,7 +188,33 @@ class OPX_Utils:
 
         self.config = config
 
-        y_values = (signal.gaussian(500, std=(300 / 2.355)) * 0.2) * 1000
+        # Create the figure and axes
+        #self.fig, self.ax = plt.subplots(figsize=(8, 4))
+        self.fig = plt.figure()
+
+        #self.ax.grid(True)
+
+        elements_names = list(config["elements"].keys())
+
+        # Add radio buttons
+        radio_ax = plt.axes([0.85, 0.1, 0.2, 0.6], facecolor='lightgoldenrodyellow')  # [Left, Bottom, W, H]
+        radio_buttons = RadioButtons(radio_ax, elements_names)
+
+        # Function to handle radio button selection
+        radio_buttons.on_clicked(self.plot_element)
+
+        plt.show()
+
+        pass
+
+
+    def plot_config_DEP(self, config):
+
+        self.config = config
+
+        #self.plot_element('PULSER_S')
+
+        y_values = (signal.gaussian(500, std=(300 / 2.355)) * 0.2) # * 1000
         x_values = np.linspace(1, 500, 500)
 
         # Create the figure and axes
