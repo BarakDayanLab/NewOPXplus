@@ -324,7 +324,15 @@ class QuadRFController:
         if 1 in channels and self.topticaLockWhenUpdating: self.setTopticaLock(True)
 
     def turnChannelsOff(self, channels=(1, 2, 3, 4), holdLocking=True):
-        if 1 in channels and holdLocking: self.setTopticaLock(False)
+        """
+        Turn the QuadRF Channels 'Off' - setting all channels to some default frequencies
+        """
+
+        # If channel '1' is required to turn off and we're holding Toptica locked, we turn off the lock,
+        # set the channel and will turn the lock back on at the end
+        if 1 in channels and holdLocking:
+            self.setTopticaLock(False)
+
         self.prepareChannelsForTable(prepareChannels=channels,reArm=False)  # Deletes all existing tables on QuadRF. Also sets limits [hard coded!] on each channel
         self.logger.debug('Turning all channels off (far detuning them)')
         zeroAmp = '0x0'
@@ -338,5 +346,6 @@ class QuadRFController:
             channelsStr += ',%d' % ch
         self.sendCmd('TABLE,START ' + channelsStr)
 
+        # If we turned off this channel, turn the lock back on
         if 1 in channels and holdLocking:
             self.setTopticaLock(True)

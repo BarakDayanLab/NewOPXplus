@@ -121,13 +121,11 @@ class OPX_Utils:
         wait(4 + 0 * _exp, element)
 
     # Function to toggle visibility of plot lines
-    def toggle_visibility(self, event):
-        legend_line = event.artist
-        legend_line.set_visible(not legend_line.get_visible())
-        self.fig.canvas.draw()
-
-    def digital_marker(self, operation_pulse):
-
+    def _digital_marker(self, operation_pulse):
+        """
+        Return x/y-values after conversion from the OPX formalism - tupples of (value, duration)
+        If the last tuple has duration of 0, it means "to-infinity", so we fill the rest of the wave values with this value
+        """
         waveform_name = 'Digital Marker'
         pulse_length = int(operation_pulse['length'])
         waveform_name = operation_pulse['digital_marker']
@@ -145,10 +143,32 @@ class OPX_Utils:
         x_values = np.linspace(1, pulse_length, pulse_length)
         return waveform_name, pulse_length, x_values, y_values
 
-    def waveforms(self, wf_type):
-        pass
+    def _waveform(self, operation_pulse):
+        """
+        Form the x/y-values of an analogue waveform pulse. If it is constant, we just use 3 values that indicate the constant signal
+        TODO - Need to handle cases where it is not 'single', or there are multiple waveforms (we don't have such cases)
+        """
+        waveform_name = operation_pulse['waveforms']['single']
+        waveform = self.config['waveforms'][waveform_name]
+
+        if waveform['type'] == 'arbitrary':
+            y_values = waveform['samples']
+            pulse_length = len(y_values)
+            x_values = np.linspace(1, pulse_length, pulse_length)
+        elif waveform['type'] == 'constant':
+            y = waveform['sample']
+            y_values = [y, y, y]
+            pulse_length = operation_pulse['length']
+            x_values = [0, int(pulse_length / 2), pulse_length]
+
+        return waveform_name, pulse_length, x_values, y_values
 
     def plot_element(self, label_selected):
+
+        PLOTS_OFFSET_FROM_TOP = 0.13
+        PLOTS_OFFSET_FROM_LEFT = 0.1
+        PLOTS_SPACING_FROM_ANOTHER = 0.12
+
         element_name = label_selected
         element = self.config['elements'][element_name]
         operations = element['operations'].items()
@@ -158,14 +178,14 @@ class OPX_Utils:
         for axis_index in range(1, len(all_curr_axis)):
             all_curr_axis[axis_index].remove()
 
+        # Draw all signals, each as a plot (with both analog and digital waveforms)
         self.axs = []
-
-        i = 0
-        for operation_name, operation_pulse_name in element['operations'].items():
+        for index, (operation_name, operation_pulse_name) in enumerate(element['operations'].items()):
 
             # Create axis and Select-Current-Axis ("sca")
-            self.axs.append(plt.axes([0.1, 0.05 + (i * 0.12), 0.7, 0.08]))  # [Left, Bottom, W, H]
-            plt.sca(self.axs[i])
+            self.axs.append(plt.axes([PLOTS_OFFSET_FROM_LEFT, 1 - (index * PLOTS_SPACING_FROM_ANOTHER) - PLOTS_OFFSET_FROM_TOP, 0.7, 0.08]))  # [Left, Bottom, W, H]
+
+            plt.sca(self.axs[index])
 
             # Get the pulse
             operation_pulse = self.config['pulses'][operation_pulse_name]
@@ -174,37 +194,27 @@ class OPX_Utils:
             for signal_type in ['digital_marker', 'waveforms']:
 
                 if signal_type == 'digital_marker' and 'digital_marker' in operation_pulse:
-                    waveform_name, pulse_length, x_values, y_values = self.digital_marker(operation_pulse)
+                    waveform_name, pulse_length, x_values, y_values = self._digital_marker(operation_pulse)
                 elif signal_type == 'waveforms' and 'waveforms' in operation_pulse:
-
-                    # TODO - Need to handle cases where it is not 'single', or there are multiple waveforms
-                    waveform_name = operation_pulse['waveforms']['single']
-                    waveform = self.config['waveforms'][waveform_name]
-
-                    if waveform['type'] == 'arbitrary':
-                        y_values = waveform['samples']
-                        pulse_length = len(y_values)
-                        x_values = np.linspace(1, pulse_length, pulse_length)
-                    elif waveform['type'] == 'constant':
-                        y = waveform['sample']
-                        y_values = [y, y, y]
-                        pulse_length = operation_pulse['length']
-                        x_values = [0, int(pulse_length/2), pulse_length]
+                    waveform_name, pulse_length, x_values, y_values = self._waveform(operation_pulse)
                 else:
                     continue
 
-                formatter = mticker.FormatStrFormatter('%d')
-                formatter2 = mpl.ticker.StrMethodFormatter('{x:,.0f}')
-                self.axs[i].xaxis.set_major_formatter(formatter2)
-                #self.axs[i].set_xlabel("Time")
-                self.axs[i].set_ylabel("Amp")
+                formatter_1 = mticker.FormatStrFormatter('%d')
+                formatter_2 = mpl.ticker.StrMethodFormatter('{x:,.0f}')
+                self.axs[index].xaxis.set_major_formatter(formatter_2)
+                #self.axs[index].set_xlabel("Time")
+                self.axs[index].set_ylabel("Amp")
 
-                self.axs[i].plot(x_values, y_values, label=f"{operation_name} ({waveform_name})")
+                # Add the intermediate-frequency as title
+                if index == 0:
+                    intermediate_frequency = f' (IF={element["intermediate_frequency"] / 1e6} MHz)' if 'intermediate_frequency' in element else ''
+                    plt.title(f'Time [ns] {intermediate_frequency}')
 
-            legend = self.axs[i].legend(loc='upper right')
-            i += 1
+                # Plot the wave
+                self.axs[index].plot(x_values, y_values, label=f"{operation_name} ({waveform_name})")
 
-        plt.title(f'Time [ns]')
+            legend = self.axs[index].legend(loc='upper right')
 
         # Move subplots to the left, to allow the checkboxes to fit on the right
         plt.subplots_adjust(left=0.05, right=0.8, hspace=0.5)
@@ -221,7 +231,7 @@ class OPX_Utils:
 
         elements_names = list(config["elements"].keys())
 
-        # Add radio buttons
+        # Add radio buttons for all elements
         radio_ax = plt.axes([0.83, 0.1, 0.2, 0.6], facecolor='lightgoldenrodyellow')  # [Left, Bottom, W, H]
         radio_buttons = RadioButtons(radio_ax, elements_names)
         radio_ax.set_title('Elements')

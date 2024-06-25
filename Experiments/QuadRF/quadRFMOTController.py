@@ -30,7 +30,7 @@ class QuadRFPhase:
 
 
 class QuadRFMOTController(QuadRFController):
-    def __init__(self, MOGdevice=None, devPort='169.254.231.196', initialValues=None, updateChannels=(1,2,3,4), armChannels=True, opticalPowerCalibration=None, topticaLockWhenUpdating=False, debugging=False, continuous=False):
+    def __init__(self, MOGdevice=None, devPort='169.254.231.196', initialValues=None, updateChannels=(1,2,3,4), armChannels=True, opticalPowerCalibration=None, topticaLockWhenUpdating=False, debugging=False, continuous=False, turn_channels_off=False):
 
         self.bdlogger = BDLogger()
 
@@ -56,12 +56,12 @@ class QuadRFMOTController(QuadRFController):
         if 'Operation_Mode' in self.initialValues and self.initialValues['Operation_Mode'] == 'Off':
             raise Exception("**** Note - there is code that still uses Operation_Mode['off']. Please check it! *****")
 
-        if continuous:  # run continuous mode then quit
+        if self.continuous:  # run continuous mode then quit
             self.continuousTablesForChannels(updateChannels)
             return
-        #elif self.initialValues['Operation_Mode'] == 'Off':
-        #    self.turnChannelsOff(holdLocking=True)
-        #    return
+        elif turn_channels_off:
+            self.turnChannelsOff(holdLocking=True)
+            return
         else:
             self.uploadMOTTables(values=self.initialValues, updateChannels=updateChannels, armChannels=armChannels)
 
