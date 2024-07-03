@@ -908,7 +908,7 @@ class SpectrumExperiment(BaseExperiment):
         self.histogram_bin_size = Config.frequency_sweep_duration * 2
         self.sequence_duration = Config.frequency_sweep_duration * 2
         self.histogram_bin_number = self.M_time // self.histogram_bin_size # num of bins in cycle of frequency sweep
-        self.time_bins = np.linspace(0, self.M_time, self.histogram_bin_number*2)
+        self.time_bins = np.linspace(start=0, stop=self.M_time, num=self.histogram_bin_number*2)
         self.spectrum_bin_number = self.num_of_different_frequencies
         self.freq_bins = np.linspace((self.frequency_start - Config.IF_AOM_Spectrum) * 2,
                                      (self.frequency_start + self.spectrum_bandwidth - Config.IF_AOM_Spectrum) * 2,
@@ -989,7 +989,7 @@ class SpectrumExperiment(BaseExperiment):
             if self.runs_status != TerminationReason.SUCCESS:
                 break
 
-            # Bin North time-tags (South time-tags were binned in await_for_values
+            # Bin North time-tags (South time-tags were binned in await_for_values)
             self.tt_N_binning = Utils.bin_values(values=self.tt_N_directional_measure, bin_size=Config.frequency_sweep_duration, num_of_bins=self.histogram_bin_number*2)
 
             # Informational printing

@@ -279,6 +279,9 @@ class Utils:
 
     @staticmethod
     def split_to_even_odd_elements(values):
+        """
+        Return two arrays: first - the even-indexed elements & second - the odd-indexed elements
+        """
         even_indexed_elements = Utils.elements_in_even_places(values)
         odd_indexed_elements = Utils.elements_in_odd_places(values)
         return even_indexed_elements, odd_indexed_elements
