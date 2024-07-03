@@ -1258,8 +1258,10 @@ class VSTIRAPExperiment(BaseExperiment):
 
         ax = subplot_def["ax"]
 
-        ax.plot(self.folded_tt_N, label='"N" detectors')
-        ax.plot(self.folded_tt_S, label='"S" detectors')
+        tt_histogram_N, _ = np.histogram(self.tt_N_measure + self.tt_DP_measure + self.tt_BP_measure , bins = 10000)
+        tt_histogram_S, _ = np.histogram(self.tt_S_measure + self.tt_FS_measure , bins = 10000)
+        ax.plot(tt_histogram_N, label='"N" detectors')
+        ax.plot(tt_histogram_S, label='"S" detectors')
         pass
 
     def plots_handler__binned_tags_live(self, subplot_def):
@@ -2544,7 +2546,7 @@ if __name__ == "__main__":
 
     # Playback definitions
     playback_parameters = {
-        "active": True,
+        "active": False,
         #'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240225\173049_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
         #'playback_files_path': r'C:\temp\playback_data\PNSA\20240312\121917_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
 
@@ -2583,13 +2585,13 @@ if __name__ == "__main__":
         'total_iterations': 1,
         'delay_between_iterations': None,  # seconds
         'sequence': [
-            {
-                'name': 'Without Atoms',
-                'parameters': {
-                    'N': 2,
-                    'with_atoms': False
-                }
-            },
+            # {
+            #     'name': 'Without Atoms',
+            #     'parameters': {
+            #         'N': 2,
+            #         'with_atoms': False
+            #     }
+            # },
             {
                 'name': 'With Atoms',
                 'parameters': {
