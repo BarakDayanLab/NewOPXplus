@@ -531,7 +531,7 @@ def VSTIRAP_Exp(m_off_time, m_time, m_window, shutter_open_time,
        :param M_delay: The time delay from end of PGC until the first 2-3' pulse (OD + trigger).
        :param rep: The number of measuring window repetitions, derived from OD measuring duration (M_time/M_window).
        :param m_time: The duration of the entire measurement time.
-       :param m_window: The duration of each measuring window - fpr each window there is 28 nsec "deadtime".
+       :param m_window: The duration of each measuring window - for each window there is 28 nsec "deadtime".
        :param counts_st1: The stream array for the number of photons counted at each measuring window for detector 1.
        :param counts_st2: The stream array for the number of photons counted at each measuring window for detector 2.
        :param counts_st3: The stream array for the number of photons counted at each measuring window for detector 3.
@@ -844,13 +844,19 @@ def opx_control(obj, qm):
                 frame_rotation_2pi(phase_correction, "AOM_Early")
 
                 # Run the experiment part!
-                VSTIRAP_Exp(M_off_time, Pulse_1_duration, obj.M_window, shutter_open_time,
-                         ON_counts_st1, ON_counts_st2, ON_counts_st3,
-                         ON_counts_st4, ON_counts_st5, ON_counts_st6,
-                         ON_counts_st7, ON_counts_st8,
-                         tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st,
-                         Balancing_check_window, len(Config.PNSA_MZ_balance_pulse_Late),
-                         obj.rep_MZ_check, counts_st_B_balanced, counts_st_D_balanced, phase_correction)
+                VSTIRAP_Exp(m_off_time=M_off_time, m_time=Pulse_1_duration, m_window=obj.M_window, shutter_open_time=shutter_open_time,
+                         ON_counts_st1=ON_counts_st1, ON_counts_st2=ON_counts_st2, ON_counts_st3=ON_counts_st3,
+                         ON_counts_st4=ON_counts_st4, ON_counts_st5=ON_counts_st5, ON_counts_st6=ON_counts_st6,
+                         ON_counts_st7=ON_counts_st7, ON_counts_st8=ON_counts_st8,
+                         tt_st_1=tt_st_1, tt_st_2=tt_st_2, tt_st_3=tt_st_3, tt_st_4=tt_st_4,
+                         tt_st_5=tt_st_5, tt_st_6=tt_st_6, tt_st_7=tt_st_7, tt_st_8=tt_st_8,
+                         rep_st=rep_st,
+                         balancing_check_window=Balancing_check_window,
+                         length=len(Config.PNSA_MZ_balance_pulse_Late),
+                         rep_MZ_check=obj.rep_MZ_check,
+                         counts_st_B_balanced=counts_st_B_balanced,
+                         counts_st_D_balanced=counts_st_D_balanced,
+                         phase_correction=phase_correction)
                 align("Dig_detectors", "AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S","AOM_2-2/3'")
 
             save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
