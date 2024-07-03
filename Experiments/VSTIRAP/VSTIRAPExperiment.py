@@ -249,9 +249,9 @@ class VSTIRAPExperiment(BaseExperiment):
         self.avg_north_clicks += (-self.avg_north_clicks + self.total_north_clicks) / (self.counter+5)
         self.avg_south_clicks += (-self.avg_south_clicks + self.total_south_clicks) / (self.counter+5)
 
-        # self.logger.info("total clicks in cycle is %d , average %d " % (self.total_clicks,self.avg_clicks ))
-        # self.logger.info("total clicks in North cycle is %d, average %d" % (self.total_north_clicks,self.avg_north_clicks))
-        # self.logger.info("total clicks in South cycle is %d, average %d" % (self.total_south_clicks,self.avg_south_clicks))
+        self.logger.info("total clicks in cycle is %d , average %d " % (self.total_clicks,self.avg_clicks ))
+        self.logger.info("total clicks in North cycle is %d, average %d" % (self.total_north_clicks,self.avg_north_clicks))
+        self.logger.info("total clicks in South cycle is %d, average %d" % (self.total_south_clicks,self.avg_south_clicks))
 
         # --------------------------
 
@@ -2545,7 +2545,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 0.8,
         'photons_per_det_pulse_threshold': 12,
-        'exp_flag': True,
+        'exp_flag': False,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2557,7 +2557,7 @@ if __name__ == "__main__":
             {
                 'name': 'Without Atoms',
                 'parameters': {
-                    'N': 50,
+                    'N': 2,
                     'with_atoms': False
                 }
             },

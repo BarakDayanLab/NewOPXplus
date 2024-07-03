@@ -29,7 +29,7 @@ def MOT(mot_repetitions):
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
         # play("Const_open", "PULSER_N")
-        # play("OD_FS" * amp(0.5), "AOM_2-2/3'")
+        play("OD_FS" * amp(0.5), "AOM_2-2/3'")
         # play("Const_open" * amp(Config.AOM_Late_Attenuation_From_Const), "AOM_Late")
         # play("Const_open","PULSER_N")
         # play("Const_open","PULSER_S")
@@ -184,7 +184,8 @@ def FreeFall(freefall_duration, coils_timing):
 
     ## Aligning all the different elements used during the freefall time of the experiment ##
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'",
-          "Measurement", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S") # , "Dig_detectors")
+          "PULSER_VSTIRAP_1_1", "PULSER_VSTIRAP_1_0",
+          "Measurement", "AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S") # , "Dig_detectors")
 
     ## Zeeman Coils turn-on sequence ##
     wait(coils_timing, "Zeeman_Coils")
@@ -277,10 +278,8 @@ def MZ_balancing(m_time, m_window, shutter_open_time, phase_rep, points_for_sum,
     assign(phase_correction_start, 0.0)
 
     # align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "PULSER_ANCILLA")
-    # play("Const_open_triggered" * amp(0), "PULSER_ANCILLA", duration=shutter_open_time)
 
-    align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "PULSER_ANCILLA")
-    play("Const_open_triggered" * amp(0), "PULSER_ANCILLA", duration=(m_time-shutter_open_time))
+    align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
 
     with for_each_(i, phase_scan):
         assign(phase_correction_per_scan, phase_correction * i)
@@ -501,7 +500,7 @@ def MZ_balancing_check(m_time, m_window, rep,
 
     t = declare(int)
 
-    align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "PULSER_ANCILLA")
+    align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S")
     # play("Const_open_triggered" * amp(0), "PULSER_ANCILLA", duration=m_time)
     with for_(t, 0, t < rep, t + 1):
         play("MZ_balancing_pulses_N", "PULSER_N")
@@ -570,22 +569,28 @@ def VSTIRAP_Exp(m_off_time, m_time, m_window, shutter_open_time,
     m = declare(int)
 
     # OPX_Utils.assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
-    align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "PULSER_ANCILLA", "Dig_detectors")
+    align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "Dig_detectors")
     play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
     play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
     play("Const_open_triggered" * amp(0), "AOM_Early", duration=shutter_open_time)
+    play("OD_FS" * amp(0), "AOM_2-2/3'")
     # play("Const_open_triggered" * amp(0), "PULSER_ANCILLA", duration=shutter_open_time)
 
-    align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "PULSER_ANCILLA", "Dig_detectors")
-    wait(m_time - shutter_open_time, "PULSER_ANCILLA")
-    play("Const_open_triggered" * amp(0), "PULSER_ANCILLA", duration=(shutter_open_time + m_off_time))
+    align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "Dig_detectors","AOM_2-2/3'")
 
-    with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.PNSA_Exp_Gaussian_samples_S))): #assaf comment debbuging
-        play("VSTIRAP_experiment_pulse", "PULSER_VSTIRAP_1_1")
+
+    # with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.VSTIRAP_Gaussian_pulse_samples))):  ## for VSTIRAP experiment ##
+    with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(Config.OD_pulse_len)): ## for transit experiment ##
+        ## for transit experiment ##
+        play("OD_FS" * amp(0.5), "AOM_2-2/3'")
+
+
+        # play("VSTIRAP_experiment_pulse", "PULSER_VSTIRAP_1_1")
+
         # wait(int(Config.frequency_sweep_duration / 4), "AOM_Spectrum")
-        align("PULSER_VSTIRAP_1_1", "PULSER_VSTIRAP_1_0")
+        # align("PULSER_VSTIRAP_1_1", "PULSER_VSTIRAP_1_0")
         # wait(int(Config.frequency_sweep_duration / 4), "PULSER_ANCILLA")
-        play("VSTIRAP_experiment_pulse", "PULSER_VSTIRAP_1_0")
+        # play("VSTIRAP_experiment_pulse", "PULSER_VSTIRAP_1_0")
 
     # wait(298, "Dig_detectors")
     # wait(300-12, "Dig_detectors")
@@ -762,18 +767,14 @@ def opx_control(obj, qm):
             align(*all_elements)
 
             # Fountain sequence:
-            align("Cooling_Sequence", "PULSER_ANCILLA")
             wait(fountain_duration, "Cooling_Sequence")
-            play("Const_open_triggered", "PULSER_ANCILLA", duration=fountain_duration)
             Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
                                        fountain_pulse_duration_0, fountain_pulse_duration_minus,
                                        fountain_pulse_duration_plus, fountain_aom_chirp_rate,
                                        fountain_delta_f)
 
             # PGC sequence:
-            align("Cooling_Sequence", "PULSER_ANCILLA")
             wait(pgc_duration, "Cooling_Sequence")
-            play("Const_open_triggered", "PULSER_ANCILLA", duration=pgc_duration + 210)
             Pulse_const(pgc_duration)
             align(*all_elements)
 
@@ -798,7 +799,6 @@ def opx_control(obj, qm):
                 ## Trigger QuadRF Sequence #####################
                 play("C_Seq", "Cooling_Sequence", duration=2500)
                 ################################################
-                play("Const_open_triggered", "PULSER_ANCILLA", duration=2500)
 
             align("Cooling_Sequence", "AOM_Early", "AOM_Late")
             # wait(2500, "AOM_2-2'")
@@ -823,7 +823,7 @@ def opx_control(obj, qm):
             with else_():
                 # play("Depump", "AOM_2-2'", duration=PrePulse_duration)
                 wait(PrePulse_duration, "Cooling_Sequence")
-            align(*all_elements, "AOM_2-2/3'", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S", "Dig_detectors")
+            align(*all_elements, "AOM_2-2/3'", "AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "Dig_detectors")
 
             with if_(Trigger_Phase == Phases.PULSE_1):  # when trigger on pulse 1
                 ## Trigger QuadRF Sequence #####################
@@ -838,7 +838,7 @@ def opx_control(obj, qm):
                 align(*all_elements)
 
             with if_((Pulse_1_duration > 0) & Exp_ON):
-                align("Dig_detectors", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S")
+                align("Dig_detectors", "AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S","AOM_2-2/3'")
                 reset_frame("AOM_Early", "AOM_Late", "PULSER_S", "PULSER_N")
                 # frame_rotation_2pi(phase_correction + phase_correction_diff, "AOM_Early")
                 frame_rotation_2pi(phase_correction, "AOM_Early")
@@ -851,7 +851,7 @@ def opx_control(obj, qm):
                          tt_st_1, tt_st_2, tt_st_3, tt_st_4, tt_st_5, tt_st_6, tt_st_7, tt_st_8, rep_st,
                          Balancing_check_window, len(Config.PNSA_MZ_balance_pulse_Late),
                          obj.rep_MZ_check, counts_st_B_balanced, counts_st_D_balanced, phase_correction)
-                align("Dig_detectors", "AOM_Early", "AOM_Late", "PULSER_ANCILLA", "PULSER_N", "PULSER_S")
+                align("Dig_detectors", "AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S","AOM_2-2/3'")
 
             save(AntiHelmholtz_ON, AntiHelmholtz_ON_st)
             with if_(AntiHelmholtz_ON):

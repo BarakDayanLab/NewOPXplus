@@ -726,7 +726,8 @@ Gaussian_pulse_samples = (signal.gaussian(500, std=(300 / 2.355)) * 0.2).tolist(
 Gaussian_pulse_samples2 = (signal.gaussian(500, std=(150 / 2.355)) * 0.2).tolist()
 # Gaussian_pulse_samples = Utils.gauss_adaptive(0.45, 500)
 
-VSTIRAP_Gaussian_pulse_samples = (signal.gaussian(500, std=(300 / 2.355)) * 0.2).tolist()
+VSTIRAP_attenuation = 0.8  # attenuation for amplitude calibration ; 31dBm for 0.8 in constant measurement
+VSTIRAP_Gaussian_pulse_samples = (signal.gaussian(500, std=(100/ 2.355)) * 0.35*VSTIRAP_attenuation).tolist() # in amp 0.35 without attenuation we get ~33dBm
 
 ## Attenuators (global) for AOMs 0, + & - of MOT sequence
 # Factor 0.0-1.0

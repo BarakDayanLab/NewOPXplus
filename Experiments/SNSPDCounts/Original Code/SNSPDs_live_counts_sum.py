@@ -58,7 +58,7 @@ readout_pulse_len = int(50 * 1e3)
 north_const_pulse_len = 500
 south_const_pulse_len = 500
 analyzer_const_pulse_len = 500
-MOT_pulse_len = int(500 * 1e3)
+MOT_pulse_len = int(3000 * 1e3)
 PGC_pulse_len = 500
 Probe_pulse_len = 500
 Fountain_pulse_len = 500
@@ -624,7 +624,7 @@ with program() as dig:
             play("Const_open_triggered", "PULSER_S")
 
             # play constant to Vstirap aom
-            play("Const_open", "PULSER_VSTIRAP_1_1")
+            play("Const_open"*amp(0.8), "PULSER_VSTIRAP_1_1")
 
             # playing early and late AOM's
             play("Const_open", "PULSER_L")
