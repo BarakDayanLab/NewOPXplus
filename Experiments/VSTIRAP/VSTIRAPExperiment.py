@@ -969,27 +969,46 @@ class VSTIRAPExperiment(BaseExperiment):
 
     def fold_tt_histogram(self, exp_sequence_len):
 
+        st = time.time()
+
+        # Zero all vectors
+        # TODO: These are used globally, so maybe it's not the best place to zero them - should be outside this function (somewhere)
         self.folded_tt_S = np.zeros(exp_sequence_len, dtype=int)
         self.folded_tt_N = np.zeros(exp_sequence_len, dtype=int)
         self.folded_tt_BP = np.zeros(exp_sequence_len, dtype=int)
         self.folded_tt_DP = np.zeros(exp_sequence_len, dtype=int)
         self.folded_tt_FS = np.zeros(exp_sequence_len, dtype=int)
+
         self.folded_tt_S_directional = np.zeros(exp_sequence_len, dtype=int)
         self.folded_tt_N_directional = np.zeros(exp_sequence_len, dtype=int)
+
         self.folded_tt_BP_timebins = np.zeros(exp_sequence_len, dtype=int)
         self.folded_tt_DP_timebins = np.zeros(exp_sequence_len, dtype=int)
 
-        for x in [elem for elem in self.tt_S_measure]:
+        # Bin all the time-tags into buckets for all the time-tag sequences we care about
+        for x in self.tt_S_measure:
             self.folded_tt_S[x % exp_sequence_len] += 1
-        for x in [elem for elem in self.tt_N_measure]:
+        for x in self.tt_N_measure:
             self.folded_tt_N[x % exp_sequence_len] += 1
-        for x in [elem for elem in self.tt_BP_measure]:
+        for x in self.tt_BP_measure:
             self.folded_tt_BP[x % exp_sequence_len] += 1
-        for x in [elem for elem in self.tt_DP_measure]:
+        for x in self.tt_DP_measure:
             self.folded_tt_DP[x % exp_sequence_len] += 1
-        for x in [elem for elem in self.tt_FS_measure]:
+        for x in self.tt_FS_measure:
             self.folded_tt_FS[x % exp_sequence_len] += 1
 
+        # for x in [elem for elem in self.tt_S_measure]:
+        #     self.folded_tt_S[x % exp_sequence_len] += 1
+        # for x in [elem for elem in self.tt_N_measure]:
+        #     self.folded_tt_N[x % exp_sequence_len] += 1
+        # for x in [elem for elem in self.tt_BP_measure]:
+        #     self.folded_tt_BP[x % exp_sequence_len] += 1
+        # for x in [elem for elem in self.tt_DP_measure]:
+        #     self.folded_tt_DP[x % exp_sequence_len] += 1
+        # for x in [elem for elem in self.tt_FS_measure]:
+        #     self.folded_tt_FS[x % exp_sequence_len] += 1
+
+        # Directional is South + Fast Switch
         self.folded_tt_S_directional = (np.array(self.folded_tt_S) + np.array(self.folded_tt_FS))
         # self.folded_tt_N_directional = self.folded_tt_N
         # TODO: ask dor -  switched folded_tt_N with folded_tt_N_directional
@@ -1025,6 +1044,9 @@ class VSTIRAPExperiment(BaseExperiment):
                     * np.array(self.folded_tt_DP[
                                self.pulses_location_in_seq[-2][0]:self.pulses_location_in_seq[-2][1]]))
                  )
+
+        et = time.time()
+        self.info(f'fold_tt_histogram took {et-st}')
 
     def plt_pulses_roll(self, delay_det_N, delay_det_S, delay_rf_N, delay_rf_S):
         plt.figure()
@@ -1232,6 +1254,13 @@ class VSTIRAPExperiment(BaseExperiment):
 
         pass
 
+    def plots_handler__binned_tags_live_DROR(self, subplot_def):
+
+        ax = subplot_def["ax"]
+
+        ax.plot(self.folded_tt_N, label='"N" detectors')
+        ax.plot(self.folded_tt_S, label='"S" detectors')
+        pass
 
     def plots_handler__binned_tags_live(self, subplot_def):
 
@@ -2515,18 +2544,18 @@ if __name__ == "__main__":
 
     # Playback definitions
     playback_parameters = {
-        "active": False,
+        "active": True,
         #'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240225\173049_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
         #'playback_files_path': r'C:\temp\playback_data\PNSA\20240312\121917_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
 
-        'playback_files_path': r'C:\temp\playback_data\STIRAP\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
+        'playback_files_path': r'C:\temp\playback_data\STIRAP\131814_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
         #'playback_files_path': r'F:\temp\Weizmann\playback data\STIRAP\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
         "load_config_from_playback": False,  # True,
         "old_format": False,
         "save_results": False,
         "save_results_path": 'C:\\temp\\playback_data',
-        "max_iterations": 100,  # -1 if you want playback to run through entire data
-        "max_files_to_load": 100,  # -1 if you want to load all available playback files in folder
+        "max_iterations": 400,  # -1 if you want playback to run through entire data
+        "max_files_to_load": 400,  # -1 if you want to load all available playback files in folder
         "plot": "LIVE",  # "LIVE", "LAST", "NONE"
         "delay": -1,  # -1,  # 0.5,  # In seconds. Use -1 for not playback delay
     }

@@ -1116,7 +1116,6 @@ class BaseExperiment:
 
         self.bdplots.plot_figures()
 
-
     def _plot(self, sequence_or_sequences, clear=True):
         """
         Debug method for fast plotting of one or more sequences of data

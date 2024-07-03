@@ -1,3 +1,4 @@
+import time
 import traceback
 import matplotlib
 import matplotlib.pyplot as plt
@@ -109,6 +110,8 @@ class BDPlots:
 
     def plot_figures(self):
 
+        plot_start_time = time.time()
+
         if self.subplots_view > 0:
             subplots_values = [self.get_subplot_by_index(self.subplots_view-1)]
         else:
@@ -151,6 +154,9 @@ class BDPlots:
         # Plot the left sidebar
         plot_left_sidebar_func = getattr(self.plotter, BDPlots.PREFIX + "left_sidebar", func_not_found)
         plot_left_sidebar_func(self.subplots_header["ax"])
+
+        plot_end_time = time.time()
+        self.logger.info(f'Plotting took {plot_end_time-plot_start_time} seconds')
 
         # plt.tight_layout()
         plt.pause(0.2)
