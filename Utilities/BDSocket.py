@@ -69,6 +69,10 @@ class BDSocket:
 
         except Exception as e:
             self.logger.error(f"Error when handling client: {e}.")
+            if 'closed by the remote host' in str(e):
+                self.logger.warn('Connection was closed by remote host - check')
+            else:
+                self.logger.warn(f'Connection Error: {e}')
             connection['thread'] = None
         finally:
             client_socket.close()
@@ -121,6 +125,18 @@ class BDSocket:
             self.logger.error(e)
         finally:
             server.close()
+
+    def is_connected(self, connection_name):
+        """
+        Checks if the specific connection-name is connected
+        """
+        if connection_name not in self.connections_map:
+            return False
+
+        if 'thread' not in self.connections_map[connection_name]:
+            return False
+
+        return self.connections_map[connection_name]['thread'] != None
 
     @staticmethod
     def run_client():

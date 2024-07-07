@@ -471,7 +471,6 @@ class BaseExperiment:
 
         # Main Experiment:
         self.switch_atom_no_atoms = 'atoms'
-        self.MOT_on = True
 
         self.TOP2_pulse_len = int(Config.Probe_pulse_len / 4)  # [nsec]
         self.Calibration_time = 10  # [msec]
@@ -888,7 +887,7 @@ class BaseExperiment:
             else:
                 self.MOT_on = False
                 self.switch_atom_no_atoms = '!atoms'
-            self.MOT_switch(with_atoms=MOT_on, update_parameters=True)
+            self.MOT_switch(with_atoms=self.MOT_on, update_parameters=True)
 
     #------------------------------------------------------------------------
     # Updates a specific value - either related to (a) Operation Mode (b) QuadRF or (c) OPX
