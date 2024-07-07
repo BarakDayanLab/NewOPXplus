@@ -471,6 +471,8 @@ class BaseExperiment:
 
         # Main Experiment:
         self.switch_atom_no_atoms = 'atoms'
+        self.MOT_on = True
+
         self.TOP2_pulse_len = int(Config.Probe_pulse_len / 4)  # [nsec]
         self.Calibration_time = 10  # [msec]
 
@@ -858,12 +860,12 @@ class BaseExperiment:
         """
         # Value can be: "atom" or "!atom" or "_atom" or "_!atom"
         if self.switch_atom_no_atoms.startswith('_'):
-            # If first letter after the '_' is '!', we are at no-atoms, so now we will turn MOT ON
+            # If first letter after the '_' is '!', we are at nbo-atoms, so now we will turn MOT ON
             if self.switch_atom_no_atoms[1] == '!':
-                MOT_on = True
+                self.MOT_on = True
                 self.switch_atom_no_atoms = 'atoms'
             else:
-                MOT_on = False
+                self.MOT_on = False
                 self.switch_atom_no_atoms = '!atoms'
             self.MOT_switch(with_atoms=MOT_on, update_parameters=True)
 

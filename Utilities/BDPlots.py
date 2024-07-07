@@ -155,6 +155,10 @@ class BDPlots:
         plot_left_sidebar_func = getattr(self.plotter, BDPlots.PREFIX + "left_sidebar", func_not_found)
         plot_left_sidebar_func(self.subplots_header["ax"])
 
+        # Plot the right sidebar
+        plot_right_sidebar_func = getattr(self.plotter, BDPlots.PREFIX + "right_sidebar", func_not_found)
+        plot_right_sidebar_func(self.subplots_header["ax"])
+
         plot_end_time = time.time()
         self.logger.info(f'Plotting took {plot_end_time-plot_start_time} seconds')
 

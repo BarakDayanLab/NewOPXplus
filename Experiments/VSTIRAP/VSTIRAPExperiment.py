@@ -237,6 +237,10 @@ class VSTIRAPExperiment(BaseExperiment):
         self.tt_S_measure = sorted(sum(self.tt_measure[4:5], []))
         # Unify detectors 6 & 7
         self.tt_FS_measure = sorted(sum(self.tt_measure[5:7], []))
+        # tt's from all North detectors
+        self.tt_N_measure_Total = self.tt_N_measure + self.tt_DP_measure + self.tt_BP_measure
+        # tt's from all South detectors
+        self.tt_S_measure_Total = self.tt_S_measure + self.tt_FS_measure
 
         # --------------------------
 
@@ -967,6 +971,11 @@ class VSTIRAPExperiment(BaseExperiment):
                 SPRINT_pulses_per_seq += 1
         return detection_pulses_per_seq, SPRINT_pulses_per_seq
 
+    def tt_histogram(self, num_of_bins):
+        # plots the tt's histogram at each cycle (Live)
+        self.tt_histogram_N, _ = np.histogram(self.tt_N_measure_Total, bins=num_of_bins)
+        self.tt_histogram_S, _ = np.histogram(self.tt_S_measure_Total, bins=num_of_bins)
+
     def fold_tt_histogram(self, exp_sequence_len):
 
         st = time.time()
@@ -1252,19 +1261,40 @@ class VSTIRAPExperiment(BaseExperiment):
         y0 = 0.5  # or 1.0 in zoom mode
         w = 0.4  # or 0.2 in zoom mode
 
-        pass
+        subplots_view = self.bdplots.get_subplots_view()
 
-    def plots_handler__binned_tags_live_DROR(self, subplot_def):
+        flags = [('t1', 'red'), ('t15', 'green'), ('t12', 'blue')]
+        for i in range(0, len(flags)):
+            flag = flags[i]
+            pad = 1.2
+            text = flag[0]
+            color = flag[1]
+            y = y0 - i * w
 
-        ax = subplot_def["ax"]
+            #props = dict(boxstyle=f"circle,pad={pad}", edgecolor=color, linewidth=2, facecolor=color, alpha=0.5)
+            #ax.text(x0, y, text, ha="center", va="center", transform=ax.transAxes, fontsize=8, bbox=props)
 
-        tt_histogram_N, _ = np.histogram(self.tt_N_measure + self.tt_DP_measure + self.tt_BP_measure , bins = 10000)
-        tt_histogram_S, _ = np.histogram(self.tt_S_measure + self.tt_FS_measure , bins = 10000)
-        ax.plot(tt_histogram_N, label='"N" detectors')
-        ax.plot(tt_histogram_S, label='"S" detectors')
+            props = dict(boxstyle='round', edgecolor=color, linewidth=2, facecolor=color, alpha=0.5)
+            ax.text(x0, y, text, transform=ax.transAxes, verticalalignment='top', fontsize=8, bbox=props)
+
         pass
 
     def plots_handler__binned_tags_live(self, subplot_def):
+
+        ax = subplot_def["ax"]
+        ax.plot(self.tt_histogram_N, label='"N" detectors')
+        ax.plot(self.tt_histogram_S, label='"S" detectors')
+        pass
+
+    def plots_handler__binned_tags_acc(self, subplot_def):
+
+        ax = subplot_def["ax"]
+        ax.plot(np.average(self.batcher["tt_histogram_N_batch"][1:],axis=0), label='"N" detectors')
+        ax.plot(np.average(self.batcher["tt_histogram_S_batch"][1:],axis=0), label='"S" detectors')
+        pass
+
+
+    def plots_handler__binned_tags_live_OLD(self, subplot_def):
 
         ax = subplot_def["ax"]
 
@@ -1715,6 +1745,7 @@ class VSTIRAPExperiment(BaseExperiment):
 
         # fold reflections and transmission
         self.fold_tt_histogram(exp_sequence_len=self.sequence_len)
+        self.tt_histogram(num_of_bins=int(self.M_window/self.bin_size))
 
         # get the average number of photons in detection pulse
         self.avg_num_of_photons_per_pulse_S_live = self.get_avg_num_of_photons_in_seq_pulses(
@@ -1779,6 +1810,10 @@ class VSTIRAPExperiment(BaseExperiment):
         self.folded_tt_N_directional_cumulative_avg = Utils.running_average(self.folded_tt_N_directional_cumulative_avg, self.folded_tt_N_directional, self.counter)
         self.folded_tt_BP_timebins_cumulative_avg = Utils.running_average(self.folded_tt_BP_timebins_cumulative_avg, self.folded_tt_BP_timebins, self.counter)
         self.folded_tt_DP_timebins_cumulative_avg = Utils.running_average(self.folded_tt_DP_timebins_cumulative_avg, self.folded_tt_DP_timebins, self.counter)
+
+        # for vstirap
+
+
         pass
 
     def construct_pulses_sequence_only_from_config(self):
@@ -1875,7 +1910,7 @@ class VSTIRAPExperiment(BaseExperiment):
 
         self.run_parameters = run_parameters
         self.N = run_parameters['N']
-        self.sequence_len = run_parameters['sequence_len'] if 'sequence_len' in run_parameters else len(Config.PNSA_Exp_Square_samples_Late)
+        self.sequence_len = run_parameters['sequence_len'] if 'sequence_len' in run_parameters else len(Config.VSTIRAP_Gaussian_pulse_samples)
         self.pre_comment = run_parameters['pre_comment']
         self.lock_err_threshold = run_parameters['lock_err_threshold']
         self.interference_error_threshold = run_parameters['interference_error_threshold']
@@ -1890,6 +1925,8 @@ class VSTIRAPExperiment(BaseExperiment):
         self.exp_flag = run_parameters['exp_flag'] if 'exp_flag' in run_parameters else False
         self.with_atoms = run_parameters['with_atoms']
         self.MZ_infidelity_threshold = run_parameters['MZ_infidelity_threshold']
+
+        self.bin_size = 1e3 # the size in time of bins for tt's histogram
 
         # Handle pre-comment - keep what we got in parameters or prompt the user for a comment
         if not self.pre_comment:
@@ -2359,14 +2396,6 @@ class VSTIRAPExperiment(BaseExperiment):
 
         # Make something out of the data we received on the streams
         self.ingest_time_tags()
-
-        self.divide_tt_to_reflection_trans_extended()
-        self.divide_BP_and_DP_counts(50)
-        self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S + self.num_of_det_reflections_per_seq_N
-        self.num_of_det_transmissions_per_seq = self.num_of_det_transmissions_per_seq_S + self.num_of_det_transmissions_per_seq_N
-
-        # Summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
-        self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(self.reflection_threshold_time // len(Config.PNSA_Exp_Gaussian_samples_S)):])
 
         # Check if conditions have been met for the completion of the warm-up phase
         warm_up_phase_complete = self.is_warm_up_phase_complete()

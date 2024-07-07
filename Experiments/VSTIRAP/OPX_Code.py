@@ -29,7 +29,7 @@ def MOT(mot_repetitions):
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
         # play("Const_open", "PULSER_N")
-        play("OD_FS" * amp(0.5), "AOM_2-2/3'")
+        # play("OD_FS", "AOM_2-2/3'") #for when we want the 2-2/3' to play doring the MOT
         # play("Const_open" * amp(Config.AOM_Late_Attenuation_From_Const), "AOM_Late")
         # play("Const_open","PULSER_N")
         # play("Const_open","PULSER_S")
@@ -569,21 +569,26 @@ def VSTIRAP_Exp(m_off_time, m_time, m_window, shutter_open_time,
     m = declare(int)
 
     # OPX_Utils.assign_variables_to_element("Dig_detectors", tt_vec1[0], counts1, m_window)
-    align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "Dig_detectors")
-    play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
-    play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
-    play("Const_open_triggered" * amp(0), "AOM_Early", duration=shutter_open_time)
-    play("OD_FS" * amp(0), "AOM_2-2/3'")
-    # play("Const_open_triggered" * amp(0), "PULSER_ANCILLA", duration=shutter_open_time)
+    # align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "Dig_detectors")
+    # play("Const_open_triggered" * amp(0), "PULSER_N", duration=shutter_open_time)
+    # play("Const_open" * amp(0), "PULSER_S", duration=shutter_open_time)
+    # play("Const_open_triggered" * amp(0), "AOM_Early", duration=shutter_open_time)
+    # # play("OD_FS" * amp(0), "AOM_2-2/3'")
+    # # play("Const_open_triggered" * amp(0), "PULSER_ANCILLA", duration=shutter_open_time)
 
-    align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "Dig_detectors","AOM_2-2/3'")
-
+    align("AOM_Early", "AOM_Late", "PULSER_N", "PULSER_S", "Dig_detectors", "AOM_2-2/3'")
+    #Sends trigger to AOM_Late
+    play("Const_open", "AOM_Late", duration=(m_time + m_off_time))
+    # # Sends trigger to FS
+    play("Const_open_triggered", "PULSER_S", duration=(m_time + m_off_time))
+    # #Sends trigger to shutters
+    play("Const_open_triggered"*amp(0), "PULSER_N", duration=(m_time + m_off_time))
+    play("OD_FS_pulse", "AOM_2-2/3'", duration=(m_time + m_off_time))
 
     # with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.VSTIRAP_Gaussian_pulse_samples))):  ## for VSTIRAP experiment ##
-    with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(Config.OD_pulse_len)): ## for transit experiment ##
-        ## for transit experiment ##
-        play("OD_FS" * amp(0.5), "AOM_2-2/3'")
-
+    # with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(Config.vstirap_transits_pulse_len)): ## for transit experiment ##
+    #     ## for transit experiment ##
+    #
 
         # play("VSTIRAP_experiment_pulse", "PULSER_VSTIRAP_1_1")
 

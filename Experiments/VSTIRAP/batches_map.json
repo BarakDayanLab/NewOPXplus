@@ -96,5 +96,12 @@
     },
     "total_north_clicks_batch": {
         "value_name": "total_north_clicks"
+    },
+    "tt_histogram_S_batch": {
+        "value_name": "tt_histogram_S"
+    },
+    "tt_histogram_N_batch": {
+        "value_name": "tt_histogram_N"
     }
+
 }

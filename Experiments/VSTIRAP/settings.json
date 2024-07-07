@@ -161,7 +161,7 @@
     "menus": {},
     "files": {},
     "figures": {
-        "display": ["10", "8", "3_1", "4", "5_1", "5_2", "6", "7"],
+        "display": ["10", "8", "3_1", "4", "5_1", "5_2", "6", "11"],
         "display_ZZZ": ["10", "2", "3_1", "4", "5_1", "5_2", "6", "7"],
         "grid_shape": [3, 4],
         "subplots": [
@@ -262,11 +262,21 @@
             },
             {
                 "id": "10",
-                "func": "binned_tags_live_DROR",
+                "func": "binned_tags_live",
                 "title": "Binned Time Tags (live)",
                 "legend_loc": "upper right",
                 "locx": 0,
                 "locy": 0,
+                "colspan": 2,
+                "rowspan": 1
+            },
+            {
+                "id": "11",
+                "func": "binned_tags_acc",
+                "title": "Binned Time Tags (accumulated)",
+                "legend_loc": "upper right",
+                "locx": 2,
+                "locy": 2,
                 "colspan": 2,
                 "rowspan": 1
             }
