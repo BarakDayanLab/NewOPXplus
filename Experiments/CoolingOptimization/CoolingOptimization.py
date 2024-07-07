@@ -56,10 +56,11 @@ class CoolingSequenceOptimizer(BaseExperiment):
         self.NThrow = 3  # Number of image throwed to garbage we're "skipping" at the begging of each capturing time
         self.NThrow_end = 1 # Number of image throwed to garbage we're "skipping" at the end of each capturing time
         self.imgBounds = (580, 200, 1600, 1450)  # bounds to crop out of the taken pictures
-        # self.mm_to_pxl = 8.5/(830-56)  # measured using ruler in focus 13/11/2022
-        self.mm_to_pxl = 11/(1228-232)  # measured using ruler in focus 15/01/2024
+        self.mm_to_pxl = 10/970  # measured using ruler in focus 03/7/2024
+
         self.sigma_bounds = (15, 100)  # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
-        self.resonator_pxl_position = 20 # TODO: create function for finding the position.
+        self.resonator_pxl_position = 100 # TODO: create function for finding the position.
+
 
     def connect_disconnect_camera(self):
         if self.camera:
@@ -413,6 +414,8 @@ class CoolingSequenceOptimizer(BaseExperiment):
         self.bd_results.create_folders()
         path = self.bd_results.get_folder_path('root')
         extra_files = self.bd_results.get_folder_path('extra_files')
+
+        self.info(f'Images and Fit are in this local folder: {path}')
 
         # Iterate over PrePulse Duration parameters and take photos
         try:
