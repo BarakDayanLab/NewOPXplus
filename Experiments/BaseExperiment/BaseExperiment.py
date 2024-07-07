@@ -706,6 +706,9 @@ class BaseExperiment:
 
     def run_sequence(self, sequence_definitions, run_parameters):
 
+        self.sequence_definitions = sequence_definitions
+        self.run_parameters = run_parameters
+
         # If there was no sequence defined, we create a fictitious sequence with a single iteration an no parameters
         if sequence_definitions is None or self.playback['active']:
             sequence_definitions = {
@@ -770,6 +773,24 @@ class BaseExperiment:
         self.iterations_ended(sequence_definitions)
 
         self.info(f'Completed {num_iterations} iteration(s)! Run status: {run_status}')
+        return run_status
+
+    def rerun(self):
+        """
+        Rerun the experiment (with the same sequence definitions and run parameters WITHOUT re-running MOT/QUAD
+        """
+        # Initialize Experiment Variables
+        self.initialize_experiment_variables()
+
+        # Re-Initialize the BDResults helper - we are collecting results from scratch for this rerun
+        self.bd_results = BDResults(json_map_path=self.paths_map['cwd'], version="0.1", logger=self.logger)
+        self.bd_results.create_experiment_run_folder()
+
+        # Re-Initialize the BDBatch helper - starting batching from scratch
+        self.batcher = BDBatch(json_map_path=self.paths_map['cwd'])
+
+        # Re-run the sequence
+        run_status = self.run_sequence(self.sequence_definitions, self.run_parameters)
         return run_status
 
     def _get_results_from_files(self):
