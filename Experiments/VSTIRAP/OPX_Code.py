@@ -29,7 +29,7 @@ def MOT(mot_repetitions):
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
         # play("Const_open", "PULSER_N")
-        # play("OD_FS", "AOM_2-2/3'") #for when we want the 2-2/3' to play doring the MOT
+        # play("OD_FS"*amp(0.8), "AOM_2-2/3'") #for when we want the 2-2/3' to play doring the MOT
         # play("Const_open" * amp(Config.AOM_Late_Attenuation_From_Const), "AOM_Late")
         # play("Const_open","PULSER_N")
         # play("Const_open","PULSER_S")
@@ -583,7 +583,7 @@ def VSTIRAP_Exp(m_off_time, m_time, m_window, shutter_open_time,
     play("Const_open_triggered", "PULSER_S", duration=(m_time + m_off_time))
     # #Sends trigger to shutters
     play("Const_open_triggered"*amp(0), "PULSER_N", duration=(m_time + m_off_time))
-    play("OD_FS_pulse", "AOM_2-2/3'", duration=(m_time + m_off_time))
+    play("OD_FS_pulse"*amp(0.5), "AOM_2-2/3'", duration=(m_time + m_off_time))
 
     # with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.VSTIRAP_Gaussian_pulse_samples))):  ## for VSTIRAP experiment ##
     # with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(Config.vstirap_transits_pulse_len)): ## for transit experiment ##

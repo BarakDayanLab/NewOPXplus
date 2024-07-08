@@ -242,6 +242,8 @@ class VSTIRAPExperiment(BaseExperiment):
         # tt's from all South detectors
         self.tt_S_measure_Total = self.tt_S_measure + self.tt_FS_measure
 
+        if 0 in self.tt_S_measure_Total:
+            a=1
         # --------------------------
 
         # Calculate the total North/South counts in cycle
@@ -647,6 +649,28 @@ class VSTIRAPExperiment(BaseExperiment):
         plt.plot(sum(np.reshape(self.tt_histogram_S, [int(len(self.tt_histogram_S) / 9), 9])), label='tt_hist_S')
         plt.legend()
 
+    def find_transit_events_transitexp(self, N, transit_time_threshold, transit_counts_threshold):
+        # Find transits and build histogram:
+        current_transit = []
+        self.all_transits = []
+
+        for t in self.tt_S_directional_measure:
+            if not current_transit:  # if the array is empty
+                current_transit.append(t)
+            elif (t - current_transit[-1]) < transit_time_threshold:
+                current_transit.append(t)
+            elif len(current_transit) > transit_counts_threshold:
+                self.all_transits.append(current_transit)
+                current_transit = [t]
+            else:
+                current_transit = [t]
+
+            self.tt_S_transit_events[[i for i in [vec for elem in self.all_transits for vec in elem]]] += 1
+            self.tt_S_transit_events_accumulated = self.tt_S_transit_events_accumulated + self.tt_S_transit_events
+
+            if self.all_transits:
+                self.all_transits_batch = self.all_transits_batch[-(N - 1):] + [self.all_transits]
+
     def find_transits_and_sprint_events(self, detection_condition, num_of_det_pulses, num_of_sprint_pulses):
         '''
         find transits of atoms by searching events with detection_condition[0] photons before
@@ -747,6 +771,37 @@ class VSTIRAPExperiment(BaseExperiment):
             #                                                 for elem in current_transit[:-1]])
             # self.transmission_SPRINT_data_per_transit.append([self.num_of_SPRINT_transmissions_per_seq[elem].tolist()
             #                                                   for elem in current_transit[:-1]])
+
+    def find_transit_events_Old(self, N, transit_time_threshold, transit_counts_threshold, tt_histogram,tt_histogram_bin_size):
+        # this list appends the tt's that are distanced less than transit_time_threshold.gets empty every new transit.
+        current_transit = []
+        # list of all transits that go through the constrain
+        self.all_transits = []
+        # transits time relative to the first click in transit
+        all_transits_aligned_first = []
+        # runnning over all tt's binned
+        for index, value in enumerate(tt_histogram):
+            if not current_transit and value:  # if the array is empty start adding tt's
+                current_transit.append(index)
+            elif value:
+                if ((index - current_transit[0]) *tt_histogram_bin_size) < transit_time_threshold:
+                    current_transit.append(index)
+                elif sum([tt_histogram[i] for i in current_transit]) > transit_counts_threshold:
+                    self.all_transits.append(current_transit)
+                    all_transits_aligned_first.append([x - current_transit[0] for x in current_transit])
+                else:
+                    # Finding if there any index that was saved to current transit and is close enough to the new index
+                    t = [i for i, elem in enumerate(current_transit) if ((index - elem) * 480) < transit_time_threshold]
+                    if t:
+                        current_transit = current_transit[t[0]:] + [index]
+                    else:
+                        current_transit = [index]
+
+        self.tt_S_transit_events[[i for i in [vec for elem in self.all_transits for vec in elem]]] += 1
+
+        if self.all_transits:
+            self.all_transits_batch = self.all_transits_batch[-(N - 1):] + [self.all_transits]
+
 
     def find_transit_events(self, cond=None, minimum_number_of_seq_detected=2):
         '''
@@ -972,9 +1027,8 @@ class VSTIRAPExperiment(BaseExperiment):
         return detection_pulses_per_seq, SPRINT_pulses_per_seq
 
     def tt_histogram(self, num_of_bins):
-        # plots the tt's histogram at each cycle (Live)
-        self.tt_histogram_N, _ = np.histogram(self.tt_N_measure_Total, bins=num_of_bins)
-        self.tt_histogram_S, _ = np.histogram(self.tt_S_measure_Total, bins=num_of_bins)
+        self.tt_histogram_N, _ = np.histogram(self.tt_N_measure_Total, bins=num_of_bins,range =(0,self.M_window))
+        self.tt_histogram_S, _ = np.histogram(self.tt_S_measure_Total, bins=num_of_bins,range =(0,self.M_window))
 
     def fold_tt_histogram(self, exp_sequence_len):
 
@@ -1257,13 +1311,24 @@ class VSTIRAPExperiment(BaseExperiment):
 
     def plots_handler__right_sidebar(self, ax):
 
-        x0 = 2.15
+        x0 = 2.22
         y0 = 0.5  # or 1.0 in zoom mode
         w = 0.4  # or 0.2 in zoom mode
 
         subplots_view = self.bdplots.get_subplots_view()
 
-        flags = [('t1', 'red'), ('t15', 'green'), ('t12', 'blue')]
+        exp_flag = 'green' if self.exp_flag else 'yellow'
+        connection_status = 'green' if self.bdsocket.is_connected('cavity_lock') else 'red'
+        with_atoms = 'green' if self.MOT_on else 'red'
+        spectrum_save_flag = 'green' if ('cavity_lock' in self.comm_messages and self.comm_messages['cavity_lock']['save_succeeded'] and connection_status) else 'red'
+
+        flags = [
+            ('Exp Flag       ', exp_flag),
+            ('Atoms ON      ', with_atoms),
+            ('Locker Sync     ', connection_status),
+            ('Spectrum Save', spectrum_save_flag)
+        ]
+
         for i in range(0, len(flags)):
             flag = flags[i]
             pad = 1.2
@@ -1275,7 +1340,7 @@ class VSTIRAPExperiment(BaseExperiment):
             #ax.text(x0, y, text, ha="center", va="center", transform=ax.transAxes, fontsize=8, bbox=props)
 
             props = dict(boxstyle='round', edgecolor=color, linewidth=2, facecolor=color, alpha=0.5)
-            ax.text(x0, y, text, transform=ax.transAxes, verticalalignment='top', fontsize=8, bbox=props)
+            ax.text(x0, y, text, transform=ax.transAxes, verticalalignment='top', fontsize=12, bbox=props, ha='center', va='center')
 
         pass
 
@@ -1289,8 +1354,8 @@ class VSTIRAPExperiment(BaseExperiment):
     def plots_handler__binned_tags_acc(self, subplot_def):
 
         ax = subplot_def["ax"]
-        ax.plot(np.average(self.batcher["tt_histogram_N_batch"][1:],axis=0), label='"N" detectors')
         ax.plot(np.average(self.batcher["tt_histogram_S_batch"][1:],axis=0), label='"S" detectors')
+        ax.plot(np.average(self.batcher["tt_histogram_N_batch"][1:],axis=0), label='"N" detectors')
         pass
 
 
@@ -1910,7 +1975,7 @@ class VSTIRAPExperiment(BaseExperiment):
 
         self.run_parameters = run_parameters
         self.N = run_parameters['N']
-        self.sequence_len = run_parameters['sequence_len'] if 'sequence_len' in run_parameters else len(Config.VSTIRAP_Gaussian_pulse_samples)
+        self.sequence_len = run_parameters['sequence_len'] if 'sequence_len' in run_parameters else len(Config.PNSA_Exp_Gaussian_samples_N)
         self.pre_comment = run_parameters['pre_comment']
         self.lock_err_threshold = run_parameters['lock_err_threshold']
         self.interference_error_threshold = run_parameters['interference_error_threshold']
@@ -1946,7 +2011,12 @@ class VSTIRAPExperiment(BaseExperiment):
         self.sprint_pulse_len = Config.sprint_pulse_len + Config.num_between_zeros  # TODO: Q: what is num_between_zeros ?
 
         # Flag used to hold the status of with/without atoms - operated by user
+        # NOTE:
+        #   - "self.with_atoms" is a parameter passed for the experiment
+        #   - "self.MOT_on" is the current status - it can be changed (on/off) by the user during the experiment - pressing "a"
+        #     this will be reset on every run (even if user turned it off in prev run)
         self.switch_atom_no_atoms = "atoms" if self.with_atoms else "!atoms"
+        self.MOT_on = self.with_atoms
 
         self.warm_up_cycles = 5  # Should also come as params, with some default. E.g. self.warm_up_cycles = 10 if 'warm_up_cycles' not in params else params['warm_up_cycles']
 
@@ -2397,6 +2467,14 @@ class VSTIRAPExperiment(BaseExperiment):
         # Make something out of the data we received on the streams
         self.ingest_time_tags()
 
+        self.divide_tt_to_reflection_trans_extended()
+        self.divide_BP_and_DP_counts(50)
+        self.num_of_det_reflections_per_seq = self.num_of_det_reflections_per_seq_S + self.num_of_det_reflections_per_seq_N
+        self.num_of_det_transmissions_per_seq = self.num_of_det_transmissions_per_seq_S + self.num_of_det_transmissions_per_seq_N
+
+        # Summing over the reflection from detection pulses of each sequence corresponding the the reflection_threshold_time
+        self.sum_for_threshold = sum(self.num_of_det_reflections_per_seq[-int(self.reflection_threshold_time // len(Config.PNSA_Exp_Gaussian_samples_S)):])
+
         # Check if conditions have been met for the completion of the warm-up phase
         warm_up_phase_complete = self.is_warm_up_phase_complete()
 
@@ -2624,7 +2702,7 @@ if __name__ == "__main__":
             {
                 'name': 'With Atoms',
                 'parameters': {
-                    'N': 500,
+                    'N': 500,  # 500
                     'with_atoms': True
                 }
             },
