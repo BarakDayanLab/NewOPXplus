@@ -32,7 +32,7 @@ def MOT(mot_repetitions, OD_Attenuation):
 
         # OD beam
         # play("OD_FS" * amp(OD_Attenuation), "AOM_2-2/3'")
-        # play("OD_FS" * amp(0.6), "AOM_2-2/3'")
+        # play("OD_FS" * amp(0.9), "AOM_2-2/3'")
         play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
     with for_(m, 1, m <= (mot_repetitions - 1), m + 1):
         measure("Detection", "FLR_detection", None, integration.full("Detection_opt", FLR, "out1"))

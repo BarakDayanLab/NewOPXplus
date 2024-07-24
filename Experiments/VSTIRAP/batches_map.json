@@ -61,8 +61,8 @@
         "value_name": "MZ_S_tot_counts"
     },
 
-    "all_transits_seq_indx_batch": {
-        "value_name": "all_transits_seq_indx"
+    "Tot_transit_events_batch": {
+        "value_name": "Tot_transit_events"
     },
     "seq_with_data_points_batch": {
         "value_name": "seq_with_data_points"

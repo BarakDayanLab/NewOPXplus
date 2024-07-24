@@ -145,6 +145,7 @@ class VSTIRAPExperiment(BaseExperiment):
         self.prepulse_duration = self.Exp_Values['PrePulse_duration']
         self.OD_delay = self.Exp_Values['OD_delay']  # [msec]
         self.M_window = self.Exp_Values['M_window']  # [nsec]
+        self.ignored_marginals = self.Exp_Values['ignored_marginals']  # [nsec] data at the beginning and at the end of a window to "throw away" because of shutters noise
         self.OD_duration_pulse1 = self.Exp_Values['OD_duration_pulse1']  # [msec]
         self.OD_sleep = self.Exp_Values['OD_sleep']  # [msec]
         self.OD_duration_pulse2 = self.Exp_Values['OD_duration_pulse2']  # [msec]
@@ -214,7 +215,8 @@ class VSTIRAPExperiment(BaseExperiment):
             tt_res = self.streams[f'Detector_{detector_index + 1}_Timetags']['results']
             if isinstance(tt_res, np.ndarray):
                 tt_res = tt_res.astype(np.int32) # changing type from int64 to int32
-            normalized_stream = self.bdstreams.normalize_stream(tt_res, detector_index, Config.detector_delays, self.M_window)
+            normalized_stream = self.bdstreams.normalize_stream(tt_res, detector_index, Config.detector_delays,
+                                                                self.M_window, self.ignored_marginals)
             self.tt_measure.append(normalized_stream)
 
         # ------------------------------------------
@@ -649,27 +651,35 @@ class VSTIRAPExperiment(BaseExperiment):
         plt.plot(sum(np.reshape(self.tt_histogram_S, [int(len(self.tt_histogram_S) / 9), 9])), label='tt_hist_S')
         plt.legend()
 
-    def find_transit_events_transitexp(self, N, transit_time_threshold, transit_counts_threshold):
+    def find_transit_events_transitexp(self, N, transit_time_threshold, transit_counts_threshold, tt_vector,
+                                       all_transits_batch,tt_transit_events_accumulated):
+        '''
+         :param tt_vector: The tt's vector on which we want to find transits
+        '''
+
         # Find transits and build histogram:
         current_transit = []
-        self.all_transits = []
+        all_transits = []
+        tt_transit_events = np.zeros(int(self.M_window/self.bin_size))
 
-        for t in self.tt_S_directional_measure:
+        for t in tt_vector:
             if not current_transit:  # if the array is empty
                 current_transit.append(t)
             elif (t - current_transit[-1]) < transit_time_threshold:
                 current_transit.append(t)
             elif len(current_transit) > transit_counts_threshold:
-                self.all_transits.append(current_transit)
+                all_transits.append(current_transit)
                 current_transit = [t]
             else:
                 current_transit = [t]
 
-            self.tt_S_transit_events[[i for i in [vec for elem in self.all_transits for vec in elem]]] += 1
-            self.tt_S_transit_events_accumulated = self.tt_S_transit_events_accumulated + self.tt_S_transit_events
+        tt_transit_events[[int(i//self.bin_size) for i in [vec for elem in all_transits for vec in elem]]] += 1
+        tt_transit_events_accumulated = tt_transit_events_accumulated + tt_transit_events
 
-            if self.all_transits:
-                self.all_transits_batch = self.all_transits_batch[-(N - 1):] + [self.all_transits]
+        if all_transits:
+            all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
+
+        return tt_transit_events, tt_transit_events_accumulated,all_transits_batch
 
     def find_transits_and_sprint_events(self, detection_condition, num_of_det_pulses, num_of_sprint_pulses):
         '''
@@ -1347,7 +1357,7 @@ class VSTIRAPExperiment(BaseExperiment):
     def plots_handler__binned_tags_live(self, subplot_def):
 
         ax = subplot_def["ax"]
-        ax.plot(self.tt_histogram_N, label='"N" detectors')
+        # ax.plot(self.tt_histogram_N, label='"N" detectors')
         ax.plot(self.tt_histogram_S, label='"S" detectors')
         pass
 
@@ -1355,7 +1365,7 @@ class VSTIRAPExperiment(BaseExperiment):
 
         ax = subplot_def["ax"]
         ax.plot(np.average(self.batcher["tt_histogram_S_batch"][1:],axis=0), label='"S" detectors')
-        ax.plot(np.average(self.batcher["tt_histogram_N_batch"][1:],axis=0), label='"N" detectors')
+        # ax.plot(np.average(self.batcher["tt_histogram_N_batch"][1:],axis=0), label='"N" detectors')
         pass
 
 
@@ -1595,16 +1605,18 @@ class VSTIRAPExperiment(BaseExperiment):
 
         ax = subplot_def["ax"]
 
-        ax.plot(range(self.number_of_PNSA_sequences), self.seq_transit_events_batched, label='Transit Events Accumulated')
-        ax.plot(range(self.number_of_PNSA_sequences), self.seq_transit_events_live, label='Transit Events Live')
+        ax.plot(range(len(self.tt_transit_events_accumulated_S)), self.tt_transit_events_accumulated_S, label='Transit South Events Accumulated')
+        # ax.plot(range(len(self.tt_transit_events_accumulated_N)), self.tt_transit_events_accumulated_N, label='Transit North Events Accumulated')
+        ax.plot(range(len(self.tt_transit_events_S)), self.tt_transit_events_S, label='Transit South Events Live')
+        # ax.plot(range(len(self.tt_transit_events_N)), self.tt_transit_events_N, label='Transit North Events Live')
         ax.set(xlabel='Sequence [#]', ylabel='Counts [Photons]')
 
         if self.number_of_transits_live:
-            textstr_transit_counts = r'$N_{Transits} = %s $' % (self.number_of_transits_live,) + r'$[Counts]$'
+            textstr_transit_counts = r'$N_{Transits South} = %s $' % (sum(self.tt_transit_events_S),) + r'$[Counts]$'
         else:
             textstr_transit_counts = r'$N_{Transits} = %s $' % (0,) + r'$[Counts]$'
 
-        textstr_transit_event_counter = r'$N_{Transits Total} = %s $' % (self.number_of_transits_total,) + '[Counts]\n' \
+        textstr_transit_event_counter = r'$N_{Transits Total South} = %s $' % (sum(self.tt_transit_events_accumulated_S),) + '[Counts]\n' \
                                         + textstr_transit_counts
 
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -1991,7 +2003,14 @@ class VSTIRAPExperiment(BaseExperiment):
         self.with_atoms = run_parameters['with_atoms']
         self.MZ_infidelity_threshold = run_parameters['MZ_infidelity_threshold']
 
+        # transits parameters:
         self.bin_size = 1e3 # the size in time of bins for tt's histogram
+        self.transit_time_threshold = 1000 # time between tt's to be in transit [ns]
+        self.transit_counts_threshold = 2 # number of clicks required for transit
+        self.all_transits_batch_N = []
+        self.all_transits_batch_S = []
+        self.tt_transit_events_accumulated_N = np.zeros(int(self.M_window/self.bin_size))
+        self.tt_transit_events_accumulated_S = np.zeros(int(self.M_window/self.bin_size))
 
         # Handle pre-comment - keep what we got in parameters or prompt the user for a comment
         if not self.pre_comment:
@@ -2174,35 +2193,26 @@ class VSTIRAPExperiment(BaseExperiment):
 
                 ### Find transits and build histogram:  ###
                 # self.find_transits_and_sprint_events_changed(cond=self.transit_condition, minimum_number_of_seq_detected=2)
-                self.find_transit_events(cond=self.transit_condition, minimum_number_of_seq_detected=2)
-                self.seq_transit_events_live[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
-                self.seq_transit_events_batched[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
+                self.tt_transit_events_N, self.tt_transit_events_accumulated_N, self.all_transits_batch_N = \
+                    self.find_transit_events_transitexp(self.N, self.transit_time_threshold, self.transit_counts_threshold,
+                                                    self.tt_N_measure_Total, self.all_transits_batch_N,
+                                                        self.tt_transit_events_accumulated_N)
 
-                self.number_of_transits_live = len(self.all_transits_seq_indx)
-                self.number_of_transits_total = len([vec for lst in self.batcher['all_transits_seq_indx_batch'] for vec in lst])
+                self.tt_transit_events_S, self.tt_transit_events_accumulated_S, self.all_transits_batch_S = \
+                    self.find_transit_events_transitexp(self.N, self.transit_time_threshold,
+                                                        self.transit_counts_threshold,
+                                                        self.tt_S_measure_Total, self.all_transits_batch_S,
+                                                        self.tt_transit_events_accumulated_S)
 
-                # Analyze SPRINT data during transits:
-                (self.seq_with_data_points, self.reflection_SPRINT_data, self.transmission_SPRINT_data,
-                 self.BP_counts_SPRINT_data, self.DP_counts_SPRINT_data) = \
-                    self.analyze_SPRINT_data_points(self.all_transits_seq_indx, SPRINT_pulse_number=list(range(1, self.number_of_SPRINT_pulses_per_seq+1)),
-                                                    background=False)  # Enter the index of the SPRINT pulse for which the data should be analyzed
+
+                # self.find_transit_events(cond=self.transit_condition, minimum_number_of_seq_detected=2)
+                # self.seq_transit_events_live[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
+                # self.seq_transit_events_batched[[vec for elem in self.all_transits_seq_indx for vec in elem]] += 1
+                self.Tot_transit_events = self.tt_transit_events_S +self.tt_transit_events_N
+                self.number_of_transits_live = sum(self.Tot_transit_events)
+                self.number_of_transits_total = sum([vec for lst in self.batcher['Tot_transit_events_batch'] for vec in lst])
+
                 # print(self.potential_data)
-                # Analyze SPRINT data when no transit occur:
-                self.all_seq_without_transits = [
-                    np.delete(np.arange(0, self.number_of_PNSA_sequences, 1, dtype='int'),
-                              sum(self.all_transits_seq_indx, [])).tolist()
-                ]
-                (_, self.reflection_SPRINT_data_without_transits, self.transmission_SPRINT_data_without_transits,
-                 self.BP_counts_SPRINT_data_without_transits, self.DP_counts_SPRINT_data_without_transits) = \
-                    self.analyze_SPRINT_data_points(self.all_seq_without_transits, SPRINT_pulse_number=list(range(1, self.number_of_SPRINT_pulses_per_seq+1)),
-                                                    background=True)  # Enter the index of the SPRINT pulse for which the data should be analyzed
-
-                self.num_of_total_SPRINT_reflections = sum(self.reflection_SPRINT_data_without_transits)
-                self.num_of_total_SPRINT_transmissions = sum(self.transmission_SPRINT_data_without_transits)
-                self.num_of_total_SPRINT_BP_counts = sum(self.BP_counts_SPRINT_data_without_transits)
-                self.num_of_total_SPRINT_DP_counts = sum(self.DP_counts_SPRINT_data_without_transits)
-
-                self.calculate_running_averages()
 
                 # get the average number of photons in detection pulse
                 self.avg_num_of_photons_per_pulse_S = self.get_avg_num_of_photons_in_seq_pulses(
@@ -2404,22 +2414,22 @@ class VSTIRAPExperiment(BaseExperiment):
             self.lock_err_flag = False
             return False
 
-        if abs(self.interference_error) > self.interference_error_threshold and not playback:
-            print(self.interference_error)
-            return False
+        # if abs(self.interference_error) > self.interference_error_threshold and not playback:
+        #     print(self.interference_error)
+        #     return False
 
         if abs(self.lock_err) > self.lock_err_threshold and not playback:
             self.lock_err_flag = False
             return False
 
-        if self.k_ex is None and not playback:
-            self.k_ex_flag = False
-            return False
+        # if self.k_ex is None and not playback:
+        #     self.k_ex_flag = False
+        #     return False
 
         # Are we on the right width ?
-        if not np.abs(self.k_ex-self.desired_k_ex) < self.k_ex_err and not playback:
-            self.k_ex_flag = False
-            return False
+        # if not np.abs(self.k_ex-self.desired_k_ex) < self.k_ex_err and not playback:
+        #     self.k_ex_flag = False
+        #     return False
 
         # Is fluorescence strong enough? (assuming we're running with atoms)
         if self.fluorescence_average < self.FLR_threshold and self.with_atoms and not playback:
@@ -2427,8 +2437,8 @@ class VSTIRAPExperiment(BaseExperiment):
             return False
 
         # TODO: should be self.avg... What does the below do?
-        if len(experiment.avg_num_of_photons_per_pulse_live) == 0 or np.average(experiment.avg_num_of_photons_per_pulse_live) > self.photons_per_det_pulse_threshold:
-            return False
+        # if len(experiment.avg_num_of_photons_per_pulse_live) == 0 or np.average(experiment.avg_num_of_photons_per_pulse_live) > self.photons_per_det_pulse_threshold:
+        #     return False
 
         # Are any of the detectors latched?
         if self.latched_detectors() and not playback:
@@ -2437,16 +2447,16 @@ class VSTIRAPExperiment(BaseExperiment):
         if self.saturated_detectors() and not playback:
             return False
 
-        if (self.Infidelity_before > self.MZ_infidelity_threshold) or \
-           (self.Infidelity_after > self.MZ_infidelity_threshold):
-            self.MZ_infidelity_flag = False
-            return False
+        # if (self.Infidelity_before > self.MZ_infidelity_threshold) or \
+        #    (self.Infidelity_after > self.MZ_infidelity_threshold):
+        #     self.MZ_infidelity_flag = False
+        #     return False
 
-        threshold_flag = (self.sum_for_threshold < self.reflection_threshold) and \
-                              (self.Infidelity_before <= self.MZ_infidelity_threshold) and \
-                              (self.Infidelity_after <= self.MZ_infidelity_threshold)
-        if threshold_flag or not self.exp_flag:
-            return True
+        # threshold_flag = (self.sum_for_threshold < self.reflection_threshold) and \
+        #                       (self.Infidelity_before <= self.MZ_infidelity_threshold) and \
+        #                       (self.Infidelity_after <= self.MZ_infidelity_threshold)
+        # if threshold_flag or not self.exp_flag:
+        #     return True
 
         # All is well!
         return True
@@ -2505,8 +2515,8 @@ class VSTIRAPExperiment(BaseExperiment):
             return False
 
         # We stay in warm-up if we're not within threshold
-        if self.exp_flag and self.sum_for_threshold > self.reflection_threshold:
-            return False
+        # if self.exp_flag and self.sum_for_threshold > self.reflection_threshold:
+        #     return False
 
         return True
 
@@ -2581,16 +2591,23 @@ class VSTIRAPExperiment(BaseExperiment):
         self.Infidelity_before = avg_DP_before / (avg_DP_before + avg_BP_before)
         self.Infidelity_after = avg_DP_after / (avg_DP_after + avg_BP_after)
 
-        self.find_transits_and_sprint_events_changed(cond=self.transit_condition, minimum_number_of_seq_detected=2)
+        self.tt_transit_events_N, self.tt_transit_events_accumulated_N, self.all_transits_batch_N = \
+            self.find_transit_events_transitexp(self.N, self.transit_time_threshold, self.transit_counts_threshold,
+                                                self.tt_N_measure_Total, self.all_transits_batch_N,
+                                                self.tt_transit_events_accumulated_N)
 
-        self.seq_transit_events_live[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
-        self.seq_transit_events_batched[[elem for vec in self.all_transits_seq_indx for elem in vec]] += 1
+        self.tt_transit_events_S, self.tt_transit_events_accumulated_S, self.all_transits_batch_S = \
+            self.find_transit_events_transitexp(self.N, self.transit_time_threshold,
+                                                self.transit_counts_threshold,
+                                                self.tt_S_measure_Total, self.all_transits_batch_S,
+                                                self.tt_transit_events_accumulated_S)
 
-        self.number_of_transits_live = len(self.all_transits_seq_indx)
+        self.Tot_transit_events = self.tt_transit_events_S + self.tt_transit_events_N
+        self.number_of_transits_live = sum(self.Tot_transit_events)
 
         self.batcher.batch_all(self)
 
-        self.number_of_transits_total = len([vec for lst in self.batcher['all_transits_seq_indx_batch'] for vec in lst])
+        self.number_of_transits_total = sum([vec for lst in self.batcher['Tot_transit_events_batch'] for vec in lst])
         pass
 
     def maximize_figure(self):
@@ -2673,7 +2690,7 @@ if __name__ == "__main__":
         'N': 500,  # 50,
         'transit_condition': [2, 1, 2],
         'pre_comment': '',  # Put 'None' or '' if you don't want pre-comment prompt
-        'lock_err_threshold': 2,  # [Mhz]
+        'lock_err_threshold': 5,  # [Mhz]
         'interference_error_threshold': 2,  # [MHz]
         'desired_k_ex': 37, # [Mhz]
         'k_ex_err': 3,  # [Mhz]
@@ -2683,7 +2700,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 0.8,
         'photons_per_det_pulse_threshold': 12,
-        'exp_flag': False,
+        'exp_flag': True,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2692,17 +2709,17 @@ if __name__ == "__main__":
         'total_iterations': 1,
         'delay_between_iterations': None,  # seconds
         'sequence': [
-            # {
-            #     'name': 'Without Atoms',
-            #     'parameters': {
-            #         'N': 2,
-            #         'with_atoms': False
-            #     }
-            # },
+            {
+                'name': 'Without Atoms',
+                'parameters': {
+                    'N': 50,
+                    'with_atoms': False
+                }
+            },
             {
                 'name': 'With Atoms',
                 'parameters': {
-                    'N': 500,  # 500
+                    'N': 50,  # 500
                     'with_atoms': True
                 }
             },
