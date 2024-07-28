@@ -664,9 +664,9 @@ def opx_control(obj, qm):
         Exp_ON = declare(bool, value=False)
 
         # VSTIRAP Variables
-        VSTIRAP_beam_amp = declare(int, value=obj.Exp_Values['VSTIRAP_beam_amp'])
-        VSTIRAP_pulser_S_amp = declare(int, value=obj.Exp_Values['VSTIRAP_pulser_S_amp'])
-        VSTIRAP_pulser_N_amp = declare(int, value=obj.Exp_Values['VSTIRAP_pulser_N_amp'])
+        VSTIRAP_beam_amp = declare(fixed, value=obj.Exp_Values['VSTIRAP_beam_amp'])
+        VSTIRAP_pulser_S_amp = declare(fixed, value=obj.Exp_Values['VSTIRAP_pulser_S_amp'])
+        VSTIRAP_pulser_N_amp = declare(fixed, value=obj.Exp_Values['VSTIRAP_pulser_N_amp'])
 
         # MOT variables
         MOT_Repetitions = declare(int, value=obj.Exp_Values['MOT_rep'])
