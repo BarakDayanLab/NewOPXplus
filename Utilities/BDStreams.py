@@ -140,7 +140,7 @@ class BDStreams:
         NOTE: we have today an issue that the stream may still hold values from the previous detections        
     """
 
-    def normalize_stream(self, stream_data, detector_index, detector_delays, M_window):
+    def normalize_stream(self, stream_data, detector_index, detector_delays, M_window, ignored_marginals):
         """
         Given a stream data, normalize it:
         - Remove the first element - the count
@@ -159,7 +159,7 @@ class BDStreams:
                 continue
 
             delayed_time_tag = data + delay
-            if delayed_time_tag < M_window:
+            if ignored_marginals < delayed_time_tag < M_window-ignored_marginals:
                 normalized.append(delayed_time_tag)
 
         normalized.sort()
