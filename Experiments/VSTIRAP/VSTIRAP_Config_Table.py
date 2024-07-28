@@ -40,5 +40,9 @@ Experiment_Values = {
     'CH3_continuous_amp': '31dbm',  # QuadRF
 
     # TODO: we should have a different value here - and fix opx code to use this value
-    'OPX_Quad_Misalignment_Delay': 4000  # = 4us [ns]
+    'OPX_Quad_Misalignment_Delay': 4000,  # = 4us [ns]
+
+    'VSTIRAP_pulser_N_amp': 0.0,
+    'VSTIRAP_pulser_S_amp': 1.0,
+    'VSTIRAP_beam_amp': 0.5
 }

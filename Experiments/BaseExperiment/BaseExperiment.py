@@ -896,6 +896,7 @@ class BaseExperiment:
     #   - self.updateValue("Operation_Mode", "QRAM_Exp")
     #   - self.updateValue("QRAM_Exp_switch", False)
     #
+    #  (*) The key is upper-cased - and then looked-up in the IOParameters
     #  (*) If updating OPX values, we go through Values Factor map - to provide weights
     #------------------------------------------------------------------------
     def updateValue(self, key, value, update_parameters=False):

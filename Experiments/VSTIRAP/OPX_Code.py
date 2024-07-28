@@ -515,6 +515,7 @@ def MZ_balancing_check(m_time, m_window, rep,
         save(counts_D, counts_st_D_balanced)
 
 def VSTIRAP_Exp(m_off_time, m_time, m_window, shutter_open_time,
+             vstirap_beam_amp, vstirap_pulser_s_amp, vstirap_pulser_n_amp,
              ON_counts_st1, ON_counts_st2, ON_counts_st3,
              ON_counts_st4, ON_counts_st5, ON_counts_st6,
              ON_counts_st7, ON_counts_st8,
@@ -580,10 +581,10 @@ def VSTIRAP_Exp(m_off_time, m_time, m_window, shutter_open_time,
     #Sends trigger to AOM_Late
     play("Const_open", "AOM_Late", duration=(m_time + m_off_time))
     # # Sends trigger to FS
-    play("Const_open_triggered", "PULSER_S", duration=(m_time + m_off_time))
+    play("Const_open_triggered"*amp(vstirap_pulser_s_amp), "PULSER_S", duration=(m_time + m_off_time))
     # #Sends trigger to shutters
-    play("Const_open_triggered"*amp(0), "PULSER_N", duration=(m_time + m_off_time))
-    play("OD_FS_pulse"*amp(0.5), "AOM_2-2/3'", duration=(m_time + m_off_time))
+    play("Const_open_triggered"*amp(vstirap_pulser_n_amp), "PULSER_N", duration=(m_time + m_off_time))
+    play("OD_FS_pulse"*amp(vstirap_beam_amp), "AOM_2-2/3'", duration=(m_time + m_off_time))
 
     # with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(len(Config.VSTIRAP_Gaussian_pulse_samples))):  ## for VSTIRAP experiment ##
     # with for_(t, 0, t < (m_time + m_off_time) * 4, t + int(Config.vstirap_transits_pulse_len)): ## for transit experiment ##
@@ -662,6 +663,11 @@ def opx_control(obj, qm):
         AntiHelmholtz_ON = declare(bool, value=True)
         Exp_ON = declare(bool, value=False)
 
+        # VSTIRAP Variables
+        VSTIRAP_beam_amp = declare(int, value=obj.Exp_Values['VSTIRAP_beam_amp'])
+        VSTIRAP_pulser_S_amp = declare(int, value=obj.Exp_Values['VSTIRAP_pulser_S_amp'])
+        VSTIRAP_pulser_N_amp = declare(int, value=obj.Exp_Values['VSTIRAP_pulser_N_amp'])
+
         # MOT variables
         MOT_Repetitions = declare(int, value=obj.Exp_Values['MOT_rep'])
         post_MOT_delay = declare(int, value=int(obj.Exp_Values['Post_MOT_delay'] * 1e6 / 4))
@@ -715,7 +721,7 @@ def opx_control(obj, qm):
         M_off_time = declare(int, value=int(obj.M_off_time / 4))
         shutter_open_time = declare(int, value=int(obj.Shutter_open_time * 1e6 / 4))
 
-        # MZ balancing vaiables:
+        # MZ balancing variables:
         phase_correction = declare(fixed)
         phase_correction_diff = declare(fixed)
         max_counts_MZ = declare(fixed, value=0)
@@ -850,6 +856,7 @@ def opx_control(obj, qm):
 
                 # Run the experiment part!
                 VSTIRAP_Exp(m_off_time=M_off_time, m_time=Pulse_1_duration, m_window=obj.M_window, shutter_open_time=shutter_open_time,
+                         vstirap_beam_amp=VSTIRAP_beam_amp, vstirap_pulser_s_amp=VSTIRAP_pulser_S_amp, vstirap_pulser_n_amp=VSTIRAP_pulser_N_amp,
                          ON_counts_st1=ON_counts_st1, ON_counts_st2=ON_counts_st2, ON_counts_st3=ON_counts_st3,
                          ON_counts_st4=ON_counts_st4, ON_counts_st5=ON_counts_st5, ON_counts_st6=ON_counts_st6,
                          ON_counts_st7=ON_counts_st7, ON_counts_st8=ON_counts_st8,
@@ -878,6 +885,14 @@ def opx_control(obj, qm):
 
             # We will break the loop only when receiving a value of 0 - this marks the end of parameters to be updated
             with while_(i > 0):
+                ## STIRAP Related control
+                with if_(i == IOP.VSTIRAP_BEAM_POWER.value):
+                    assign(VSTIRAP_beam_amp, IO2)
+                with if_(i == IOP.VSTIRAP_PULSER_S.value):
+                    assign(VSTIRAP_pulser_S_amp, IO2)
+                with if_(i == IOP.VSTIRAP_PULSER_N.value):
+                    assign(VSTIRAP_pulser_N_amp, IO2)
+
                 ## Boolean variables control: ##
                 with if_(i == IOP.MOT_SWITCH_ON.value):
                     update_frequency("MOT_AOM_0", Config.IF_AOM_MOT)
