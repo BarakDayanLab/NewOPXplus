@@ -244,8 +244,6 @@ class VSTIRAPExperiment(BaseExperiment):
         # tt's from all South detectors
         self.tt_S_measure_Total = self.tt_S_measure + self.tt_FS_measure
 
-        if 0 in self.tt_S_measure_Total:
-            a=1
         # --------------------------
 
         # Calculate the total North/South counts in cycle
@@ -1230,7 +1228,8 @@ class VSTIRAPExperiment(BaseExperiment):
         matplotlib.mathtext.SHRINK_FACTOR = 0.4
         matplotlib.mathtext.GROW_FACTOR = 1 / 0.4
 
-        #self.maximize_figure()  # TODO: uncomment
+        # Uncomment the below if you want the view to open maximized
+        #self.maximize_figure()
 
         return
 
@@ -2700,7 +2699,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 0.8,
         'photons_per_det_pulse_threshold': 12,
-        'exp_flag': True,
+        'exp_flag': False,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2719,7 +2718,7 @@ if __name__ == "__main__":
             {
                 'name': 'With Atoms',
                 'parameters': {
-                    'N': 50,  # 500
+                    'N': 500,  # 500
                     'with_atoms': True
                 }
             },

@@ -83,8 +83,13 @@ class BaseExperiment:
 
         # Load the settings file
         self.base_settings = Utils.load_json_from_file('../BaseExperiment/settings.json')
+
+        # Attempt to load the specific experiment settings. If available, merge it onto the base settings
         self.experiment_settings = Utils.load_json_from_file('./settings.json')
-        self.settings = Utils.merge_jsons(self.base_settings, self.experiment_settings)
+        if self.experiment_settings is not None:
+            self.settings = Utils.merge_jsons(self.base_settings, self.experiment_settings)
+        else:
+            self.settings = self.base_settings
 
         # Set experiment-mode
         self.experiment_mode = experiment_mode

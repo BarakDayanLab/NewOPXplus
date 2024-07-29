@@ -106,32 +106,33 @@ class SNSPDsCountExperiment(BaseExperiment):
 
         # Set line_width of plots
         self.line_width = 2
+
+        # Uncomment the below if you want the view to open maximized
+        #self.maximize_figure()
+
         pass
 
-    def _plot_figures(self):
-        # Show the plot (if this is the first time)
-        if not self.plot_shown:
-            plt.show(block=False)
-            self.plot_shown = True
+    # -------------------------------------------------------------------------
+    # Experiment Plots
+    # -------------------------------------------------------------------------
 
-        plt.clf()
+    def plots_handler__header(self, ax):
+        return
+
+    def plots_handler__left_sidebar(self, ax):
+        return
+
+    def plots_handler__right_sidebar(self, ax):
+        return
+
+    def plots_handler__average_counts(self, subplot_def):
         plt.plot(self.batcher['north_avg_counts'], linewidth=self.line_width, label='North Counts: ' + self.N_counts + ' Hz')
         plt.plot(self.batcher['south_avg_counts'], linewidth=self.line_width, label='South Counts: ' + self.S_counts + ' Hz')
         plt.plot(self.batcher['spcms_avg_counts'], linewidth=self.line_width, label='SPCMs Counts: ' + self.SPCMs_counts + ' Hz')
-        plt.title("Detectors Counts")
 
         self.font = font_manager.FontProperties(family='Comic Sans MS', weight='bold', style='normal', size=self.font_size)
         plt.legend(loc='upper left', prop=self.font)
 
-        plt.pause(0.1)
-        pass
-
-    def plot_figures(self):
-        try:
-            self._plot_figures()
-        except Exception as err:
-            tb = traceback.format_exc()
-            self.warn(f'Failed on plot_figures: {err}')
         pass
 
     def experiment_calculations(self):

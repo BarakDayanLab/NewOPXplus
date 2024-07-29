@@ -29,7 +29,7 @@ def MOT(mot_repetitions):
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
         # play("Const_open", "PULSER_N")
-        # play("OD_FS"*amp(0.2), "AOM_2-2/3'") #for when we want the 2-2/3' to play doring the MOT
+        # play("OD_FS"*amp(0.8), "AOM_2-2/3'") #for when we want the 2-2/3' to play during the MOT
         # play("Const_open" * amp(Config.AOM_Late_Attenuation_From_Const), "AOM_Late")
         # play("Const_open","PULSER_N")
         # play("Const_open","PULSER_S")

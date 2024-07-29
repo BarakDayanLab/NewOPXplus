@@ -33,6 +33,9 @@ class BDPlots:
         # The subplots grid shape
         self.subplots_shape = subplots_settings['grid_shape']
 
+        # Set the pause value (refresh rate of plots)
+        self.pause_time = 0.2 if 'pause' not in subplots_settings else subplots_settings['pause']
+
         # Iterate over all subplots definitions and create a subplots map
         for subplot in subplots_settings['subplots']:
 
@@ -135,11 +138,12 @@ class BDPlots:
                 if "title" in subplot.keys():
                     ax.set_title(subplot["title"], fontweight="bold")
 
+                # Invoke the experiment bespoke plot function
                 func_name = BDPlots.PREFIX + subplot['func']
                 func = getattr(self.plotter, func_name, func_not_found)
                 func(subplot)
 
-                # Set subplot title and legend
+                # Set subplot legend
                 if "legend_loc" in subplot.keys():
                     ax.legend(loc=subplot["legend_loc"])
 
@@ -160,7 +164,7 @@ class BDPlots:
         plot_right_sidebar_func(self.subplots_header["ax"])
 
         plot_end_time = time.time()
-        self.logger.info(f'Plotting took {plot_end_time-plot_start_time} seconds')
+        self.logger.debug(f'Plotting took {plot_end_time-plot_start_time} seconds')
 
         # plt.tight_layout()
         plt.pause(0.2)
