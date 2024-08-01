@@ -77,11 +77,12 @@ class BDStreams:
 
         for stream in self.streams.values():
             if 'source' in stream and stream['source'] == 'comm':
-                comm_name = stream['name'].lower()
+                comm_name = stream['name']
                 channel = stream['channel']
                 value = stream['default']
-                if comm_messages != {} and comm_name in comm_messages[channel] and comm_messages[channel][comm_name] is not None:
-                    value = comm_messages[channel][comm_name]
+                if comm_messages != {} and channel in comm_messages:
+                    if comm_name in comm_messages[channel] and comm_messages[channel][comm_name] is not None:
+                        value = comm_messages[channel][comm_name]
                 stream['results'] = value
         pass
 

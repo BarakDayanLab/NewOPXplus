@@ -226,8 +226,10 @@ class BaseExperiment:
         # Start listening on sockets (except when in playback mode)
         self.comm_messages = {}
         if self.experiment_mode == ExperimentMode.LIVE:
-            self.bdsocket = BDSocket(connections_map=self.settings['connections'], writeable=self.comm_messages, server_id=self.UUID)
+            self.bdsocket = BDSocket(connections_map=self.settings['connections'], writeable=self.comm_messages, server_id=self.UUID, connection_name='cavity_lock')
             self.bdsocket.run_server()
+            self.bdsocket2 = BDSocket(connections_map=self.settings['connections'], writeable=self.comm_messages, server_id=self.UUID, connection_name='snspds_pc')
+            self.bdsocket2.run_server()
 
         # Attempt to initialize Camera functionality
         if self.experiment_mode == ExperimentMode.LIVE and connect_to_camera:

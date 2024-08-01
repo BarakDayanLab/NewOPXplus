@@ -20,26 +20,26 @@ class BDSocket:
     SERVER_IP_LAB = "132.77.54.212"  # Lab's machine at room 112
     SERVER_IP_LOOPBACK = "127.0.0.1"  # Localhost
 
-    PORT = 5050  # server port number
-
-    def __init__(self, connections_map, writeable, server_id):
+    def __init__(self, connections_map, writeable, server_id, connection_name):
 
         self.logger = BDLogger()
 
         self.server_id = server_id
-
         self.writeable = writeable
 
         self.hostname = socket.gethostname()
         self.my_ip_address = socket.gethostbyname(self.hostname)
 
         self.connections_map = connections_map
+        self.connection = connections_map[connection_name]
+
+        self.connection_name = connection_name
+        self.listen_ip = self.connection['listen_IP']
+        self.listen_port = self.connection['listen_port']
         pass
 
     def handle_client(self, client_socket, addr, connection_name, writeable):
         try:
-            # Get the relevant entry
-            connection = self.connections_map[connection_name]
 
             request = None
             request_unpacked = None
@@ -52,12 +52,12 @@ class BDSocket:
                 request = client_socket.recv(data_size).decode("utf-8")  # 1024
                 request_object = json.loads(request)
 
-                if 'callback' in connection:
-                    connection['callback'](request_object)
+                if 'callback' in self.connection:
+                    self.connection['callback'](request_object)
                     continue
                 else:
                     # Assign the value received
-                    writeable[connection['value_name']] = request_object
+                    writeable[self.connection['value_name']] = request_object
 
                 # Send a message back to the client
                 response_message = f"accepted:{self.server_id}"
@@ -73,13 +73,13 @@ class BDSocket:
                 self.logger.warn('Connection was closed by remote host - check')
             else:
                 self.logger.warn(f'Connection Error: {e}')
-            connection['thread'] = None
+            self.connection['thread'] = None
         finally:
             client_socket.close()
             self.logger.info(f"Connection to client ({addr[0]}:{addr[1]}) closed")
 
     def run_server(self):
-        self.logger.info(f'Socket listening on host {self.hostname} on {self.my_ip_address}:{BDSocket.PORT}')
+        self.logger.info(f'Socket listening for {self.connection_name} on host {self.hostname} @ {self.listen_ip}:{self.listen_port}')
         server_thread = threading.Thread(target=self._run_server)
         server_thread.start()
 
@@ -101,10 +101,10 @@ class BDSocket:
         try:
             server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             # bind the socket to the host and port
-            server.bind((self.my_ip_address, BDSocket.PORT))
+            server.bind((self.listen_ip, self.listen_port))
             # listen for incoming connections
             server.listen()
-            self.logger.info(f'Listening on {self.my_ip_address}:{BDSocket.PORT}')
+            self.logger.info(f'Listening on {self.listen_ip}:{self.listen_port}')
 
             while True:
                 # accept a client connection
@@ -117,7 +117,7 @@ class BDSocket:
                     continue
 
                 # Accept the connection & start the new thread to handle it
-                self.logger.info(f"Accepted connection from {addr[0]}:{addr[1]}")
+                self.logger.warn(f"Accepted connection from {addr[0]}:{addr[1]}")
                 connection_entry['thread'] = threading.Thread(target=self.handle_client, args=(client_socket, addr, connection_name, self.writeable))
                 connection_entry['thread'].start()
 
@@ -147,7 +147,7 @@ class BDSocket:
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # Establish connection with server
-        client.connect((BDSocket.SERVER_IP, BDSocket.PORT))
+        client.connect((BDSocket.SERVER_IP, 5050))
 
         try:
             while True:

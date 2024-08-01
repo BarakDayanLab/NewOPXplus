@@ -104,7 +104,7 @@
             "skip": true
         },
         "Lock_Error": {
-            "name": "Lock_Error",
+            "name": "lock_error",
             "type": "float",
             "save_raw": true,
             "channel": "cavity_lock",
@@ -112,7 +112,7 @@
             "source": "comm"
         },
         "Kappa_Ex": {
-            "name": "K_Ex",
+            "name": "k_ex",
             "type": "float",
             "save_raw": true,
             "channel": "cavity_lock",
@@ -120,10 +120,18 @@
             "source": "comm"
         },
         "Interference": {
-            "name": "Interference_Error",
+            "name": "interference_error",
             "type": "float",
             "save_raw": true,
             "channel": "cavity_lock",
+            "default": 99.9,
+            "source": "comm"
+        },
+        "SNSPDS_T1": {
+            "name": "T1k (K)",
+            "type": "float",
+            "save_raw": false,
+            "channel": "snspds_stats",
             "default": 99.9,
             "source": "comm"
         }
@@ -133,6 +141,15 @@
         "cavity_lock": {
             "description": "Kappa Ex, Lock error, Interference values as calculated from auto fit process",
             "value_name": "cavity_lock",
+            "listen_IP": "169.254.206.248",
+            "listen_port": 5050,
+            "trusted_IP": ["*"]
+        },
+        "snspds_pc": {
+            "description": "Get information of SNSDPs detectors",
+            "value_name": "snspds_stats",
+            "listen_IP": "132.77.54.212",
+            "listen_port": 5051,
             "trusted_IP": ["*"]
         }
     },
