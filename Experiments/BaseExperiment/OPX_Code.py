@@ -35,7 +35,7 @@ def MOT(mot_repetitions, OD_Attenuation):
 
         # In the case of configuring Funnel, we use the OD laser to see if we hit the atom cloud. Therefore, we reduce a bit the amp to the MOT, increasing what goes to the OD
         # (this will "hurt" the MOT a bit)
-        play("OD_FS" * amp(0.2), "AOM_2-2/3'")
+        # play("OD_FS" * amp(0.2), "AOM_2-2/3'")
         play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils")
     with for_(m, 1, m <= (mot_repetitions - 1), m + 1):
         measure("Detection", "FLR_detection", None, integration.full("Detection_opt", FLR, "out1"))

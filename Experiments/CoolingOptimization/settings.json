@@ -133,6 +133,15 @@
         "cavity_lock": {
             "description": "Kappa Ex, Lock error, Interference values as calculated from auto fit process",
             "value_name": "cavity_lock",
+            "listen_IP": "169.254.206.248",
+            "listen_port": 5050,
+            "trusted_IP": ["*"]
+        },
+        "snspds_pc": {
+            "description": "Get information of SNSDPs detectors",
+            "value_name": "snspds_stats",
+            "listen_IP": "132.77.54.212",
+            "listen_port": 5051,
             "trusted_IP": ["*"]
         }
     },

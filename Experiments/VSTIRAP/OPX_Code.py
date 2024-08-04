@@ -25,11 +25,12 @@ def MOT(mot_repetitions):
     m = declare(int)
     play("Detection" * amp(FLR * 0), "FLR_detection", duration=4)  # we dont know why this works, but Yoav from QM made us write this line to solve an alignment problem we had in the next 2 for loops
     with for_(n, 1, n <= mot_repetitions, n + 1):
-        play("MOT_with_EOM" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0")
+        #play("MOT_with_EOM" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0")
+        play("MOT" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0")
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
         # play("Const_open", "PULSER_N")
-        # play("OD_FS"*amp(0.8), "AOM_2-2/3'") #for when we want the 2-2/3' to play during the MOT
+        # play("OD_FS"*amp(0.2), "AOM_2-2/3'") #for when we want the 2-2/3' to play during the MOT
         # play("Const_open" * amp(Config.AOM_Late_Attenuation_From_Const), "AOM_Late")
         # play("Const_open","PULSER_N")
         # play("Const_open","PULSER_S")

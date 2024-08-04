@@ -2005,7 +2005,7 @@ class VSTIRAPExperiment(BaseExperiment):
         # transits parameters:
         self.bin_size = 1e3 # the size in time of bins for tt's histogram
         self.transit_time_threshold = 1000 # time between tt's to be in transit [ns]
-        self.transit_counts_threshold = 2 # number of clicks required for transit
+        self.transit_counts_threshold = 3 # number of clicks required for transit
         self.all_transits_batch_N = []
         self.all_transits_batch_S = []
         self.tt_transit_events_accumulated_N = np.zeros(int(self.M_window/self.bin_size))
@@ -2699,7 +2699,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 0.8,
         'photons_per_det_pulse_threshold': 12,
-        'exp_flag': False,
+        'exp_flag': True,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2711,14 +2711,14 @@ if __name__ == "__main__":
             {
                 'name': 'Without Atoms',
                 'parameters': {
-                    'N': 50,
+                    'N': 30,
                     'with_atoms': False
                 }
             },
             {
                 'name': 'With Atoms',
                 'parameters': {
-                    'N': 500,  # 500
+                    'N': 30,  # 500
                     'with_atoms': True
                 }
             },
