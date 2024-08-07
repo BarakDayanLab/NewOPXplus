@@ -174,11 +174,18 @@ class BDSocket:
 
 if __name__ == "__main__":
 
-    run_as = "client"  # "server"
+    run_as = "server"  # "server" or "client"
 
     if run_as == "server":
         writeable = {}
-        bdsocket = BDSocket(writeable)
+        conn_map = {
+            "snspds_status": {
+                "description": "Get information from detectors machine",
+                "value_name": "snspds_status",
+                "trusted_IP": ["*"]
+            }
+        }
+        bdsocket = BDSocket(connections_map=conn_map, writeable=writeable, server_id='Test Server')
         bdsocket.run_server()
     else:
         # Run a test client
