@@ -75,11 +75,19 @@ class QuadRFMOTController(QuadRFController):
         self.phases_order = values['Phases_Order']
         self.trigger_on_phase = values['Triggering_Phase']
 
+        # adding depump during mot option, should be added via config table
+        DEPUMP_DURING_MOT = True
         AOMOffFreq = values['MOT_AOM_freq'] + values['AOM_Off_Detuning']
+        if DEPUMP_DURING_MOT:
+            DepumpMotFreq = values['PrePulse_CH2_freq']
+            DepumpMotAmp = self.Amp_Ch2
+        else:
+            DepumpMotFreq = AOMOffFreq
+            DepumpMotAmp = self.zeroAmp
 
         # -----------------  MOT ------------------------
         self.MOT = QuadRFPhase(duration=values['MOT_duration'],
-                               initial_values=((values['MOT_freq'], self.Amp_Ch1), (AOMOffFreq, self.zeroAmp), (values['MOT_AOM_freq'], self.Amp_Ch3), (values['AOM_Repump_freq'], self.Amp_Ch4)))
+                               initial_values=((values['MOT_freq'], self.Amp_Ch1), (DepumpMotFreq, DepumpMotAmp), (values['MOT_AOM_freq'], self.Amp_Ch3), (values['AOM_Repump_freq'], self.Amp_Ch4)))
         # MOT Delay (turn everything off, except for repump)
         self.Post_MOT_delay = QuadRFPhase(duration=values['Post_MOT_delay'], initial_values=((values['MOT_freq'], self.Amp_Ch1), (AOMOffFreq, self.zeroAmp),
                                                                                              (AOMOffFreq, self.zeroAmp), (values['AOM_Repump_freq'], self.Amp_Ch4)))

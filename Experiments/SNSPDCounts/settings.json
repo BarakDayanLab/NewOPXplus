@@ -1,0 +1,126 @@
+{
+    "streams": {
+        "Detector_1_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_1_Avg_Counts",
+            "type": "int",
+            "playback": "Det1_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_2_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_2_Avg_Counts",
+            "type": "int",
+            "playback": "Det1_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_3_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_3_Avg_Counts",
+            "type": "int",
+            "playback": "Det1_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_4_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_4_Avg_Counts",
+            "type": "int",
+            "playback": "Det1_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_5_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_5_Avg_Counts",
+            "type": "int",
+            "playback": "Det1_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_6_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_6_Avg_Counts",
+            "type": "int",
+            "playback": "Det1_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_7_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_7_Avg_Counts",
+            "type": "int",
+            "playback": "Det1_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_8_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_8_Avg_Counts",
+            "type": "int",
+            "playback": "Det1_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_9_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_9_Avg_Counts",
+            "type": "int",
+            "playback": "Det1_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        },
+        "Detector_10_Avg_Counts": {
+            "number": 1,
+            "name": "Detector_10_Avg_Counts",
+            "type": "int",
+            "playback": "Det1_avg_counts.npz",
+            "save_raw": false,
+            "source": "opx"
+        }
+    },
+    "batches": {},
+    "connections": {},
+    "keyboard": {
+        "stop_count": {
+            "description": "Stops SNDPs count process",
+            "callback": "stop_count",
+            "keys": ["escape", "Q", "q", "ctrl+q"]
+        },
+        "zoom_in": {
+            "description": "Zoom in",
+            "callback": "zoom_in",
+            "keys": ["+", "="]
+        },
+        "zoom_out": {
+            "description": "Zoom out",
+            "callback": "zoom_out",
+            "keys": ["-"]
+        }
+    },
+    "menus": {},
+    "files": {},
+    "figures": {
+        "display": ["1"],
+        "grid_shape": [1, 1],
+        "pause": 0.1,
+        "subplots": [
+            {
+                "id": "1",
+                "func": "average_counts",
+                "title": "Detectors Counts (live)",
+                "legend_loc_ZZZ": "upper left",
+                "locx": 0,
+                "locy": 0,
+                "colspan": 1,
+                "rowspan": 1
+            }
+        ]
+    },
+    "dialogs": {},
+    "permissions": {
+        "allowed_offline": ["drorg", "dork"]
+    }
+}

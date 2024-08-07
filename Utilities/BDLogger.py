@@ -19,6 +19,7 @@ class BDLogger:
 
     def __init__(self):
         self.log_file = None  # Not saving the log
+        self._is_debug = bool(os.environ.get("IPYTHONENABLE"))
         pass
 
     def __del__(self):
@@ -55,6 +56,9 @@ class BDLogger:
         self._print(time_stamped_msg, formatted_msg)
 
     def debug(self, str=''):
+        if not self._is_debug:
+            return
+
         time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         time_stamped_msg = f'{time_str} - Debug: {str}'
         formatted_msg = self._resolve_format(f'{BDLogger.DEBUG_COLOR}{time_stamped_msg}{BDLogger.END_COLOR}')

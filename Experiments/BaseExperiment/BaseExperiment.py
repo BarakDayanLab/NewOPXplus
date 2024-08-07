@@ -83,8 +83,13 @@ class BaseExperiment:
 
         # Load the settings file
         self.base_settings = Utils.load_json_from_file('../BaseExperiment/settings.json')
+
+        # Attempt to load the specific experiment settings. If available, merge it onto the base settings
         self.experiment_settings = Utils.load_json_from_file('./settings.json')
-        self.settings = Utils.merge_jsons(self.base_settings, self.experiment_settings)
+        if self.experiment_settings is not None:
+            self.settings = Utils.merge_jsons(self.base_settings, self.experiment_settings)
+        else:
+            self.settings = self.base_settings
 
         # Set experiment-mode
         self.experiment_mode = experiment_mode
@@ -221,8 +226,10 @@ class BaseExperiment:
         # Start listening on sockets (except when in playback mode)
         self.comm_messages = {}
         if self.experiment_mode == ExperimentMode.LIVE:
-            self.bdsocket = BDSocket(connections_map=self.settings['connections'], writeable=self.comm_messages, server_id=self.UUID)
+            self.bdsocket = BDSocket(connections_map=self.settings['connections'], writeable=self.comm_messages, server_id=self.UUID, connection_name='cavity_lock')
             self.bdsocket.run_server()
+            self.bdsocket2 = BDSocket(connections_map=self.settings['connections'], writeable=self.comm_messages, server_id=self.UUID, connection_name='snspds_pc')
+            self.bdsocket2.run_server()
 
         # Attempt to initialize Camera functionality
         if self.experiment_mode == ExperimentMode.LIVE and connect_to_camera:

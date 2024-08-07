@@ -244,8 +244,6 @@ class VSTIRAPExperiment(BaseExperiment):
         # tt's from all South detectors
         self.tt_S_measure_Total = self.tt_S_measure + self.tt_FS_measure
 
-        if 0 in self.tt_S_measure_Total:
-            a=1
         # --------------------------
 
         # Calculate the total North/South counts in cycle
@@ -1230,7 +1228,8 @@ class VSTIRAPExperiment(BaseExperiment):
         matplotlib.mathtext.SHRINK_FACTOR = 0.4
         matplotlib.mathtext.GROW_FACTOR = 1 / 0.4
 
-        #self.maximize_figure()  # TODO: uncomment
+        # Uncomment the below if you want the view to open maximized
+        #self.maximize_figure()
 
         return
 
@@ -2006,7 +2005,7 @@ class VSTIRAPExperiment(BaseExperiment):
         # transits parameters:
         self.bin_size = 1e3 # the size in time of bins for tt's histogram
         self.transit_time_threshold = 1000 # time between tt's to be in transit [ns]
-        self.transit_counts_threshold = 2 # number of clicks required for transit
+        self.transit_counts_threshold = 3 # number of clicks required for transit
         self.all_transits_batch_N = []
         self.all_transits_batch_S = []
         self.tt_transit_events_accumulated_N = np.zeros(int(self.M_window/self.bin_size))
@@ -2712,14 +2711,14 @@ if __name__ == "__main__":
             {
                 'name': 'Without Atoms',
                 'parameters': {
-                    'N': 50,
+                    'N': 30,
                     'with_atoms': False
                 }
             },
             {
                 'name': 'With Atoms',
                 'parameters': {
-                    'N': 50,  # 500
+                    'N': 30,  # 500
                     'with_atoms': True
                 }
             },
