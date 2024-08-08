@@ -518,6 +518,21 @@ class Utils:
     # OS related utilities
     # ---------------------------------------------------
 
+    def is_port_established(port):
+        netstat_lines = Utils.get_netstat_lines()
+        results = [line for line in netstat_lines if f':{port} ' in line and 'ESTABLISHED' in line]
+        return len(results) > 0
+
+    @staticmethod
+    def get_netstat_lines():
+        lines = []
+        try:
+            res = subprocess.run(['netstat', '-n'], stdout=subprocess.PIPE)
+            lines = str(res.stdout).split('\\r\\n')
+        except Exception as err:
+            print(f'Failed to launch explorer at path. {err}')
+        return lines
+
     @staticmethod
     def open_windows_explorer(folder):
         """
@@ -587,3 +602,9 @@ class Utils:
     def generate_UUID():
         myuuid = uuid.uuid4()
         return myuuid
+
+if __name__ == "__main__":
+
+    # Test
+    Utils.is_port_established('6232')
+    pass
