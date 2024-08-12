@@ -197,7 +197,7 @@ class BaseExperiment:
 
         # Attempt to dynamically import the OPX-Code file and get opx-control function from the current experiment
         try:
-            OPX_Code_Module = importlib.import_module("OPX_Code")
+            OPX_Code_Module = importlib.import_module(f'{self.experiment_name}_OPX_Code')
             opx_control = OPX_Code_Module.opx_control
         except Exception as err:
             self.info(f'Unable to import OPX_Code file ({err}). Loading __**BaseExperiment**__ opx code instead.')
@@ -732,6 +732,12 @@ class BaseExperiment:
                     }
                 ]
             }
+
+        # If we're in playback mode, load the run parameters from the file
+        if self.playback['active']:
+            run_params_file_path = os.path.join(self.playback['playback_files_path'], '..', 'meta_data', 'run_parameters.json')
+            loaded_run_parameters = Utils.load_json_from_file(run_params_file_path)
+            sequence_definitions['sequence'][0]['parameters'] = loaded_run_parameters
 
         # Notify we started iterations
         self.iterations_started(sequence_definitions)
