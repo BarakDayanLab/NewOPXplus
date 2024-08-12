@@ -225,14 +225,8 @@ class BaseExperiment:
 
         # Check that the ports are not already connected
         if Utils.is_port_established('5050') or Utils.is_port_established('5051'):
-            msg = '=*' * 40
-            self.error(msg)
-            self.error('*=')
-            self.error('=*   Ports 5050/5051 already connected - another process is probably running.')
-            self.error('*=')
-            self.error(msg)
+            self.error(Utils.box_string('Ports 5050/5051 already connected - another process is probably running.'))
             os._exit(1)
-
 
         # Start listening on sockets (except when in playback mode)
         self.comm_messages = {}
@@ -776,7 +770,7 @@ class BaseExperiment:
                 if run_status != TerminationReason.SUCCESS:
                     break
 
-            # Notify we finished the sequence
+            # Notify we finished all the sequence steps
             self.sequence_ended(sequence_definitions)
 
             if run_status != TerminationReason.SUCCESS:

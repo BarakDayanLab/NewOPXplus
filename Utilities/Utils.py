@@ -603,6 +603,16 @@ class Utils:
         myuuid = uuid.uuid4()
         return myuuid
 
+    @staticmethod
+    def box_string(msg):
+        rpt = '=*' * 40
+        str = ('\n' + rpt + '\n')
+        str += '*=\n'
+        str += ('=*   ' + msg + '\n')
+        str += '*=\n'
+        str += (rpt + '\n')
+        return str
+
 if __name__ == "__main__":
 
     # Test
