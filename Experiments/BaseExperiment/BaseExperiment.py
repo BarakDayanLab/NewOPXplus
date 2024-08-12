@@ -223,6 +223,17 @@ class BaseExperiment:
         self.ignore_data = False
         self.runs_status = None  # Uses the TerminationReason enum
 
+        # Check that the ports are not already connected
+        if Utils.is_port_established('5050') or Utils.is_port_established('5051'):
+            msg = '=*' * 40
+            self.error(msg)
+            self.error('*=')
+            self.error('=*   Ports 5050/5051 already connected - another process is probably running.')
+            self.error('*=')
+            self.error(msg)
+            os._exit(1)
+
+
         # Start listening on sockets (except when in playback mode)
         self.comm_messages = {}
         if self.experiment_mode == ExperimentMode.LIVE:
@@ -285,7 +296,7 @@ class BaseExperiment:
                                        updateChannels=[1, 2, 4],
                                        # updateChannels=(1, 4),  # For constant Depump
                                        topticaLockWhenUpdating=False,
-                                       debugging=False,  # True,
+                                       debugging=True,  # True,
                                        #mode=QuadRFMode.DYNAMIC,
                                        continuous=False)
         self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)

@@ -649,11 +649,16 @@ class VSTIRAPExperiment(BaseExperiment):
         plt.plot(sum(np.reshape(self.tt_histogram_S, [int(len(self.tt_histogram_S) / 9), 9])), label='tt_hist_S')
         plt.legend()
 
-    def find_transit_events_transitexp(self, N, transit_time_threshold, transit_counts_threshold, tt_vector,
-                                       all_transits_batch,tt_transit_events_accumulated):
-        '''
+    def find_transit_events_transitexp(self, transit_condition, tt_vector,
+                                       all_transits_batch, tt_transit_events_accumulated):
+        """
          :param tt_vector: The tt's vector on which we want to find transits
-        '''
+         :param transit_condition: consists of two integers: t - the max time allowed between clicks, n - the number of consecutive clicks
+
+         The function checks if there are n consecutive clicks, within a time-frame that does not exceed t
+        """
+        transit_time_threshold = transit_condition[0]
+        transit_counts_threshold = transit_condition[1]
 
         # Find transits and build histogram:
         current_transit = []
@@ -665,7 +670,7 @@ class VSTIRAPExperiment(BaseExperiment):
                 current_transit.append(t)
             elif (t - current_transit[-1]) < transit_time_threshold:
                 current_transit.append(t)
-            elif len(current_transit) > transit_counts_threshold:
+            elif len(current_transit) >= transit_counts_threshold:
                 all_transits.append(current_transit)
                 current_transit = [t]
             else:
@@ -674,8 +679,8 @@ class VSTIRAPExperiment(BaseExperiment):
         tt_transit_events[[int(i//self.bin_size) for i in [vec for elem in all_transits for vec in elem]]] += 1
         tt_transit_events_accumulated = tt_transit_events_accumulated + tt_transit_events
 
-        if all_transits:
-            all_transits_batch = all_transits_batch[-(N - 1):] + [all_transits]
+        if all_transits:  # DROR: why do we need this?
+            all_transits_batch = all_transits_batch[-(self.N - 1):] + [all_transits]
 
         return tt_transit_events, tt_transit_events_accumulated,all_transits_batch
 
@@ -1330,12 +1335,14 @@ class VSTIRAPExperiment(BaseExperiment):
         connection_status = 'green' if self.bdsocket.is_connected('cavity_lock') else 'red'
         with_atoms = 'green' if self.MOT_on else 'red'
         spectrum_save_flag = 'green' if ('cavity_lock' in self.comm_messages and self.comm_messages['cavity_lock']['save_succeeded'] and connection_status) else 'red'
+        snspds_flag = 'orange'
 
         flags = [
             ('Exp Flag       ', exp_flag),
-            ('Atoms ON      ', with_atoms),
+            ('Atoms           ', with_atoms),
             ('Locker Sync     ', connection_status),
-            ('Spectrum Save', spectrum_save_flag)
+            ('Spectrum Save', spectrum_save_flag),
+            ('SNSPDs Temp', snspds_flag)
         ]
 
         for i in range(0, len(flags)):
@@ -1363,8 +1370,8 @@ class VSTIRAPExperiment(BaseExperiment):
     def plots_handler__binned_tags_acc(self, subplot_def):
 
         ax = subplot_def["ax"]
-        ax.plot(np.average(self.batcher["tt_histogram_S_batch"][1:],axis=0), label='"S" detectors')
-        # ax.plot(np.average(self.batcher["tt_histogram_N_batch"][1:],axis=0), label='"N" detectors')
+        ax.plot(np.average(self.batcher["tt_histogram_N_batch"][1:], axis=0), label='"N" detectors', alpha=0.6)
+        ax.plot(np.average(self.batcher["tt_histogram_S_batch"][1:], axis=0), label='"S" detectors', alpha=0.6)
         pass
 
 
@@ -1604,22 +1611,26 @@ class VSTIRAPExperiment(BaseExperiment):
 
         ax = subplot_def["ax"]
 
+        ax.plot(range(len(self.tt_transit_events_accumulated_N)), self.tt_transit_events_accumulated_N, label='Transit North Events Accumulated')
         ax.plot(range(len(self.tt_transit_events_accumulated_S)), self.tt_transit_events_accumulated_S, label='Transit South Events Accumulated')
-        # ax.plot(range(len(self.tt_transit_events_accumulated_N)), self.tt_transit_events_accumulated_N, label='Transit North Events Accumulated')
+        ax.plot(range(len(self.tt_transit_events_N)), self.tt_transit_events_N, label='Transit North Events Live')
         ax.plot(range(len(self.tt_transit_events_S)), self.tt_transit_events_S, label='Transit South Events Live')
-        # ax.plot(range(len(self.tt_transit_events_N)), self.tt_transit_events_N, label='Transit North Events Live')
         ax.set(xlabel='Sequence [#]', ylabel='Counts [Photons]')
 
         if self.number_of_transits_live:
-            textstr_transit_counts = r'$N_{Transits South} = %s $' % (sum(self.tt_transit_events_S),) + r'$[Counts]$'
+            textstr_transit_counts_N = r'$N_{Transits_North} = %s $' % (sum(self.tt_transit_events_N),) + r'$[Counts]$'
+            textstr_transit_counts_S = r'$N_{Transits_South} = %s $' % (sum(self.tt_transit_events_S),) + r'$[Counts]$'
         else:
-            textstr_transit_counts = r'$N_{Transits} = %s $' % (0,) + r'$[Counts]$'
+            textstr_transit_counts_N = r'$N_{Transits} = %s $' % (0,) + r'$[Counts]$'
+            textstr_transit_counts_S = r'$N_{Transits} = %s $' % (0,) + r'$[Counts]$'
 
-        textstr_transit_event_counter = r'$N_{Transits Total South} = %s $' % (sum(self.tt_transit_events_accumulated_S),) + '[Counts]\n' \
-                                        + textstr_transit_counts
+        textstr_transit_event_counter_N = r'$N_{Transits Total North} = %s $' % (sum(self.tt_transit_events_accumulated_N),) + '[Counts]\n' \
+                                        + textstr_transit_counts_N
+        textstr_transit_event_counter_S = r'$N_{Transits Total South} = %s $' % (sum(self.tt_transit_events_accumulated_S),) + '[Counts]\n'\
+                                          + textstr_transit_counts_S
 
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        ax.text(0.02, 0.92, textstr_transit_event_counter, transform=ax.transAxes, fontsize=14,
+        ax.text(0.02, 0.92, f'{textstr_transit_event_counter_S} \n {textstr_transit_event_counter_N}', transform=ax.transAxes, fontsize=14,
                    verticalalignment='top', bbox=props)
 
         pass
@@ -1632,6 +1643,12 @@ class VSTIRAPExperiment(BaseExperiment):
         ax = subplot_def["ax"]
         ax.plot(self.batcher['total_north_clicks_batch'], label='Total North Clicks')
         ax.plot(self.batcher['total_south_clicks_batch'], label='Total South Clicks')
+
+        avg_north = int(np.average(self.batcher['total_north_clicks_batch']))
+        avg_south = int(np.average(self.batcher['total_south_clicks_batch']))
+
+        ax.axhline(y=avg_north, color='b', linestyle='--', linewidth=1, label=f'N_avg:{avg_north}')
+        ax.axhline(y=avg_south, color='y', linestyle='--', linewidth=1, label=f'S_avg: {avg_south}')
 
         pass
 
@@ -2004,10 +2021,8 @@ class VSTIRAPExperiment(BaseExperiment):
 
         # transits parameters:
         self.bin_size = 1e3 # the size in time of bins for tt's histogram
-        self.transit_time_threshold = 1000 # time between tt's to be in transit [ns]
-        self.transit_counts_threshold = 3 # number of clicks required for transit
-        self.all_transits_batch_N = []
-        self.all_transits_batch_S = []
+        self.all_transits_batch_N = []  # DROR: why do we need this?
+        self.all_transits_batch_S = []  # DROR: why do we need this?
         self.tt_transit_events_accumulated_N = np.zeros(int(self.M_window/self.bin_size))
         self.tt_transit_events_accumulated_S = np.zeros(int(self.M_window/self.bin_size))
 
@@ -2191,16 +2206,12 @@ class VSTIRAPExperiment(BaseExperiment):
                 self.seq_transit_events_live = np.zeros(self.number_of_PNSA_sequences)
 
                 ### Find transits and build histogram:  ###
-                # self.find_transits_and_sprint_events_changed(cond=self.transit_condition, minimum_number_of_seq_detected=2)
                 self.tt_transit_events_N, self.tt_transit_events_accumulated_N, self.all_transits_batch_N = \
-                    self.find_transit_events_transitexp(self.N, self.transit_time_threshold, self.transit_counts_threshold,
-                                                    self.tt_N_measure_Total, self.all_transits_batch_N,
+                    self.find_transit_events_transitexp(self.transit_condition, self.tt_N_measure_Total, self.all_transits_batch_N,
                                                         self.tt_transit_events_accumulated_N)
 
                 self.tt_transit_events_S, self.tt_transit_events_accumulated_S, self.all_transits_batch_S = \
-                    self.find_transit_events_transitexp(self.N, self.transit_time_threshold,
-                                                        self.transit_counts_threshold,
-                                                        self.tt_S_measure_Total, self.all_transits_batch_S,
+                    self.find_transit_events_transitexp(self.transit_condition, self.tt_S_measure_Total, self.all_transits_batch_S,
                                                         self.tt_transit_events_accumulated_S)
 
 
@@ -2591,14 +2602,11 @@ class VSTIRAPExperiment(BaseExperiment):
         self.Infidelity_after = avg_DP_after / (avg_DP_after + avg_BP_after)
 
         self.tt_transit_events_N, self.tt_transit_events_accumulated_N, self.all_transits_batch_N = \
-            self.find_transit_events_transitexp(self.N, self.transit_time_threshold, self.transit_counts_threshold,
-                                                self.tt_N_measure_Total, self.all_transits_batch_N,
+            self.find_transit_events_transitexp(self.transit_condition, self.tt_N_measure_Total, self.all_transits_batch_N,
                                                 self.tt_transit_events_accumulated_N)
 
         self.tt_transit_events_S, self.tt_transit_events_accumulated_S, self.all_transits_batch_S = \
-            self.find_transit_events_transitexp(self.N, self.transit_time_threshold,
-                                                self.transit_counts_threshold,
-                                                self.tt_S_measure_Total, self.all_transits_batch_S,
+            self.find_transit_events_transitexp(self.transit_condition, self.tt_S_measure_Total, self.all_transits_batch_S,
                                                 self.tt_transit_events_accumulated_S)
 
         self.Tot_transit_events = self.tt_transit_events_S + self.tt_transit_events_N
@@ -2687,7 +2695,7 @@ if __name__ == "__main__":
 
     run_parameters = {
         'N': 500,  # 50,
-        'transit_condition': [2, 1, 2],
+        'transit_condition': [1000, 3],
         'pre_comment': '',  # Put 'None' or '' if you don't want pre-comment prompt
         'lock_err_threshold': 5,  # [Mhz]
         'interference_error_threshold': 2,  # [MHz]
@@ -2711,14 +2719,14 @@ if __name__ == "__main__":
             {
                 'name': 'Without Atoms',
                 'parameters': {
-                    'N': 30,
+                    'N': 40,
                     'with_atoms': False
                 }
             },
             {
                 'name': 'With Atoms',
                 'parameters': {
-                    'N': 30,  # 500
+                    'N': 80,  # 500
                     'with_atoms': True
                 }
             },
