@@ -244,9 +244,12 @@ class VSTIRAPExperiment(BaseExperiment):
         # tt's from all South detectors
         self.tt_S_measure_Total = self.tt_S_measure + self.tt_FS_measure
 
+        self.tt_N_measure_Total.sort()
+        self.tt_S_measure_Total.sort()
+
         # --------------------------
 
-        # Calculate the total North/South counts in cycle
+        # Calculate thbe total North/South counts in cycle
         self.total_south_clicks = len(self.tt_S_measure) + len(self.tt_FS_measure)
         self.total_north_clicks = len(self.tt_BP_measure) + len(self.tt_DP_measure) + len(self.tt_N_measure)
         self.total_clicks = self.total_north_clicks + self.total_south_clicks
@@ -682,7 +685,7 @@ class VSTIRAPExperiment(BaseExperiment):
         if all_transits:  # DROR: why do we need this?
             all_transits_batch = all_transits_batch[-(self.N - 1):] + [all_transits]
 
-        return tt_transit_events, tt_transit_events_accumulated,all_transits_batch
+        return tt_transit_events, tt_transit_events_accumulated, all_transits_batch
 
     def find_transits_and_sprint_events(self, detection_condition, num_of_det_pulses, num_of_sprint_pulses):
         '''
@@ -1632,6 +1635,21 @@ class VSTIRAPExperiment(BaseExperiment):
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
         ax.text(0.02, 0.92, f'{textstr_transit_event_counter_S} \n {textstr_transit_event_counter_N}', transform=ax.transAxes, fontsize=14,
                    verticalalignment='top', bbox=props)
+
+        pass
+
+    def plots_handler__detectors_timetags(self, subplot_def):
+        # Plot the raw detector time tags
+        ax = subplot_def["ax"]
+        #ax.plot(self.tt_S_measure_Total, label='South Timetags Total')
+        # ax.plot(self.tt_N_measure_Total, label='North Timetags Total')
+        ax.plot(self.tt_S_measure, label='S_measure')
+        ax.plot(self.tt_FS_measure, label='FS_measure')
+
+        ax.plot(self.tt_N_measure, label='N_measure')
+        ax.plot(self.tt_BP_measure, label='BP_measure')
+        ax.plot(self.tt_DP_measure, label='DP_measure')
+
 
         pass
 
@@ -2699,9 +2717,9 @@ if __name__ == "__main__":
 
     run_parameters = {
         'N': 500,  # 50,
-        'transit_condition': [1000, 3],
+        'transit_condition': [1000, 8],
         'pre_comment': '',  # Put 'None' or '' if you don't want pre-comment prompt
-        'lock_err_threshold': 5,  # [Mhz]
+        'lock_err_threshold': 2,  # [Mhz]
         'interference_error_threshold': 2,  # [MHz]
         'desired_k_ex': 37, # [Mhz]
         'k_ex_err': 3,  # [Mhz]
@@ -2711,7 +2729,7 @@ if __name__ == "__main__":
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 0.8,
         'photons_per_det_pulse_threshold': 12,
-        'exp_flag': True,
+        'exp_flag': False,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2720,13 +2738,13 @@ if __name__ == "__main__":
         'total_iterations': 1,
         'delay_between_iterations': None,  # seconds
         'sequence': [
-            {
-                'name': 'Without Atoms',
-                'parameters': {
-                    'N': 40,
-                    'with_atoms': False
-                }
-            },
+            # {
+            #     'name': 'Without Atoms',
+            #     'parameters': {
+            #         'N': 40,
+            #         'with_atoms': False
+            #     }
+            # },
             {
                 'name': 'With Atoms',
                 'parameters': {

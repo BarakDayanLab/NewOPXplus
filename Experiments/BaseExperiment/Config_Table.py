@@ -22,6 +22,7 @@ Initial_Values = {
     'AOM_Repump_freq': 78.4735e6,
     'AOM_Depump_freq': 133.325e6,
     'Repump_PGC_freq': 78.4735e6,  # The final frequency of the Repump in the PGC sequence
+    'AOM_Repump_freq_Off': 78.4735e6+50e6,  # The final frequency of the Repump +a lot to kill the repump
 
     # MOT parameters:
     'MOT_freq': 113e6,
@@ -134,7 +135,7 @@ Initial_Values = {
     'opticalPowerCalibrationFunction': None,  # calibrationData  # Used for calibration of the power of the lock AOM (TOP1)
 
     # OD Related
-    'OD_continuous_attenuation': 0.0,  # Put on 0 to turn beam off
+    'OD_continuous_attenuation': 0.9,  # Put on 0 to turn beam off
 
     'CH3_continuous_freq': '90MHz',  # QuadRF
     'CH3_continuous_amp': '31dbm',  # QuadRF

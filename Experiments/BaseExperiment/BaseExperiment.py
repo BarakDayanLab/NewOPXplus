@@ -197,7 +197,7 @@ class BaseExperiment:
 
         # Attempt to dynamically import the OPX-Code file and get opx-control function from the current experiment
         try:
-            OPX_Code_Module = importlib.import_module("OPX_Code")
+            OPX_Code_Module = importlib.import_module(f'{self.experiment_name}_OPX_Code')
             opx_control = OPX_Code_Module.opx_control
         except Exception as err:
             self.info(f'Unable to import OPX_Code file ({err}). Loading __**BaseExperiment**__ opx code instead.')
@@ -733,6 +733,12 @@ class BaseExperiment:
                 ]
             }
 
+        # If we're in playback mode, load the run parameters from the file
+        if self.playback['active']:
+            run_params_file_path = os.path.join(self.playback['playback_files_path'], '..', 'meta_data', 'run_parameters.json')
+            loaded_run_parameters = Utils.load_json_from_file(run_params_file_path)
+            sequence_definitions['sequence'][0]['parameters'] = loaded_run_parameters
+
         # Notify we started iterations
         self.iterations_started(sequence_definitions)
 
@@ -1151,7 +1157,7 @@ class BaseExperiment:
 
         self.bdplots.plot_figures()
 
-    def _plot(self, sequence_or_sequences, clear=True):
+    def _plot(self, sequence_or_sequences, clear=True, transpose=False):
         """
         Debug method for fast plotting of one or more sequences of data
 
@@ -1167,6 +1173,10 @@ class BaseExperiment:
         if clear:
             plt.clf()
 
+        if transpose:
+            plt.gca().invert_xaxis()
+            plt.gca().invert_yaxis()
+
         if self.dbg_plot==None or clear==True:
             plt.figure(1)
             self.dbg_plot = True
@@ -1175,6 +1185,7 @@ class BaseExperiment:
             for seq in sequence_or_sequences:
                 plt.plot(seq)
             return
+
         plt.plot(sequence_or_sequences)
 
 # ------------------ Utility/Fast-Access Functions
