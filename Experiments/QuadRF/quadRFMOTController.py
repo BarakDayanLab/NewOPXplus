@@ -76,7 +76,7 @@ class QuadRFMOTController(QuadRFController):
         self.trigger_on_phase = values['Triggering_Phase']
 
         # adding depump during mot option, should be added via config table
-        DEPUMP_DURING_MOT = True
+        DEPUMP_DURING_MOT = False
         AOMOffFreq = values['MOT_AOM_freq'] + values['AOM_Off_Detuning']
         if DEPUMP_DURING_MOT:
             DepumpMotFreq = values['PrePulse_CH2_freq']
@@ -168,12 +168,12 @@ class QuadRFMOTController(QuadRFController):
         PostPulsesDuration = values['FreeFall_duration'] - values['PrePulse_duration'] - values['Pulse_1_duration'] - values['M_off_time'] - values['Pulse_2_duration'] - values['InterPulses_duration']
         if PostPulsesDuration > 0:
             # self.PostPulses = QuadRFPhase(duration=PostPulsesDuration, initial_values=((values['MOT_freq'], -20), (AOMOffFreq, self.Amp_Ch2),(AOMOffFreq, self.Amp_Ch3), (AOMOffFreq, self.Amp_Ch4)))
-            self.PostPulses = QuadRFPhase(duration=PostPulsesDuration, initial_values=((values['MOT_freq'], self.Amp_Ch1), (AOMOffFreq, self.zeroAmp), (AOMOffFreq, self.Amp_Ch3), (values['AOM_Repump_freq'], self.Amp_Ch4)))
+            self.PostPulses = QuadRFPhase(duration=PostPulsesDuration, initial_values=((values['MOT_freq'], self.Amp_Ch1), (AOMOffFreq, self.zeroAmp), (AOMOffFreq, self.Amp_Ch3), (values['Pulse_1_CH4_Freq'], self.Amp_Ch4 + Pulse_1_delta_amp_Repump) ))
             # self.PostPulses = QuadRFPhase(duration=PostPulsesDuration, initial_values=((values['MOT_freq'], self.zeroAmp), (AOMOffFreq, self.zeroAmp), (AOMOffFreq, self.Amp_Ch3), (values['AOM_Repump_freq'], self.Amp_Ch4)))
 
         else:
             self.PostPulses = QuadRFPhase(initial_values=((values['MOT_freq'], self.Amp_Ch1), (AOMOffFreq, self.zeroAmp),
-                                                          (values['Flash_freq'], self.Amp_Ch3), (values['AOM_Repump_freq'], self.Amp_Ch4)))
+                                                          (values['Flash_freq'], self.Amp_Ch3), (values['Pulse_1_CH4_Freq'], self.Amp_Ch4 + Pulse_1_delta_amp_Repump)))
 
         self.changeLastPhaseDuration()
 

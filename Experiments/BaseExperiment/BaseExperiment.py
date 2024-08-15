@@ -1157,7 +1157,7 @@ class BaseExperiment:
 
         self.bdplots.plot_figures()
 
-    def _plot(self, sequence_or_sequences, clear=True):
+    def _plot(self, sequence_or_sequences, clear=True, transpose=False):
         """
         Debug method for fast plotting of one or more sequences of data
 
@@ -1173,6 +1173,10 @@ class BaseExperiment:
         if clear:
             plt.clf()
 
+        if transpose:
+            plt.gca().invert_xaxis()
+            plt.gca().invert_yaxis()
+
         if self.dbg_plot==None or clear==True:
             plt.figure(1)
             self.dbg_plot = True
@@ -1181,6 +1185,7 @@ class BaseExperiment:
             for seq in sequence_or_sequences:
                 plt.plot(seq)
             return
+
         plt.plot(sequence_or_sequences)
 
 # ------------------ Utility/Fast-Access Functions

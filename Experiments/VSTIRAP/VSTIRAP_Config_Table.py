@@ -12,7 +12,7 @@ Experiment_Values = {
     'Phases_Order': [Phases.MOT, Phases.FOUNTAIN, Phases.PGC, Phases.FREE_FALL, Phases.PULSE_1, Phases.INTER_PULSES, Phases.PULSE_2, Phases.POST_PULSE],
     'MOT_rep': int(np.ceil((Initial_Values['MOT_duration'] * 1e6) / Config.MOT_pulse_len)),
     # 'Fountain_final_Delta_freq': 0.33e6,  # 0.37e6 - until 26.02.24
-    'Fountain_final_Delta_freq': 0.42e6,  # 0.315e6 - until 07.07.24
+      'Fountain_final_Delta_freq': 0.46e6,
     # 'Fountain_final_Delta_freq': 0.35e6,  # 0.315e6 - until 28.02.24
     'PrePulse_Repump_amp': 0.000001,  # relative  (QuadRF)
     'PrePulse_CH2_freq': 133.325e6,  # Hz  (QuadRF - Depump)
@@ -24,7 +24,7 @@ Experiment_Values = {
     'Buffer_Cycles': 0,
     'Imaging_Phase': Phases.PULSE_1,
     # 'PrePulse_duration': 4,  # [msec]
-    'PrePulse_duration': 14,  # [msec]
+    'PrePulse_duration': 20,  # [msec]
     # 'PrePulse_duration': 20,  # [msec]
     'Shutter_open_time': 1,  # [msec]
     'Pulse_1_duration': int(max(Config.readout_pulse_sprint_len_N, Config.readout_pulse_sprint_len_S)) / 1e6,  # [msec]
@@ -34,16 +34,19 @@ Experiment_Values = {
     'M_window': int(max(Config.readout_pulse_sprint_len_N, Config.readout_pulse_sprint_len_S)),  # [nsec]
     'ignored_marginals': 5e5,  # [nsec] data at the beginning and at the end of a window to "throw away" because of shutters noise
     'M_time': int(max(Config.readout_pulse_sprint_len_N, Config.readout_pulse_sprint_len_S)) / 1e6,
-    # Pulse_length[nsec] * 1000 repetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
+    # Pulse_length[nsec] * 1000 repbetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
     'M_off_time': 1.5,  # [msec] - should be at least 5 ms, to sync quadrf and OPX
 
-    'CH3_continuous_freq': '125MHz',  # QuadRF
+    # TOP F1 pulser freq - for transits 2-3' experiment using the pulser as repump
+    'CH3_continuous_freq': '130MHz',  # QuadRF # This is used in QuadRF as ch3 that goes to TopF1 pulser
     'CH3_continuous_amp': '31dbm',  # QuadRF
 
     # TODO: we should have a different value here - and fix opx code to use this value
     'OPX_Quad_Misalignment_Delay': 4000,  # = 4us [ns]
 
+
     'VSTIRAP_pulser_N_amp': 0.0,
-    'VSTIRAP_pulser_S_amp': 1.0,
-    'VSTIRAP_beam_amp': 0.08
+    'VSTIRAP_pulser_S_amp': 0.0,
+    'VSTIRAP_beam_amp': 0.015
+    # 'VSTIRAP_beam_amp': 0.015
 }

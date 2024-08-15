@@ -8,7 +8,7 @@ from Utilities.OPX_Utils import OPX_Utils
 all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]
 
 
-def MOT(mot_repetitions):
+def MOT(mot_repetitions,vstirap_beam_amp):
     """
     The MOT function is used to play the MOT. To that end, we send RF signal to AOM_0, AOM_+, AOM_- for the duration of the MOT.
 
@@ -30,7 +30,7 @@ def MOT(mot_repetitions):
         play("MOT" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-")
         play("MOT" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+")
         # play("Const_open", "PULSER_N")
-        # play("OD_FS"*amp(0.2), "AOM_2-2/3'") #for when we want the 2-2/3' to play during the MOT
+        # play("OD_FS"*amp(vstirap_beam_amp), "AOM_2-2/3'") #for when we want the 2-2/3' to play during the MOT
         # play("Const_open" * amp(Config.AOM_Late_Attenuation_From_Const), "AOM_Late")
         # play("Const_open","PULSER_N")
         # play("Const_open","PULSER_S")
@@ -771,7 +771,7 @@ def opx_control(obj, qm):
 
             # MOT sequence:
 
-            FLR = MOT(MOT_Repetitions)
+            FLR = MOT(MOT_Repetitions,vstirap_beam_amp=VSTIRAP_beam_amp)
             play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
 
             # Delay before fountain:

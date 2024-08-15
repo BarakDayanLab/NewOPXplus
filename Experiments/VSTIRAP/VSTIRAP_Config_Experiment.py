@@ -286,8 +286,10 @@ IF_AOM_OD = 92675000 # (226 - 266.65 / 2) * 1e6
 # IF_AOM_OD = 133.325e6
 IF_AOM_Depump = 133.325e6
 IF_AOM_Repump = 78.4735e6
-# IF_AOM_N = 89.2368e6
+
 IF_AOM_N = 129e6
+# crossover(laser locked) to 2' differece = 78.4738; we go 130*2=260 up with topf1 pulser, and now down (260-78.4738)/2 = 90.7631
+# IF_AOM_N_FOR_VSTIRAP_TRANSITS = 90.7631e6 # for sending 1-2' through funnel launcher
 # IF_AOM_S = 89.2368e6
 # IF_AOM_S = 129.2368e6
 IF_AOM_S = 129e6
@@ -306,6 +308,8 @@ IF_Divert = 20e6
 
 IF_PULSER_VSTIRAP_1_1 = 164.236e6
 IF_PULSER_VSTIRAP_1_0 = 200.345e6  # TODO: Requires amplitude fixing of  ...
+IF_PULSER_VSTIRAP_1_2 = 125e6
+
 
 # Waveforms
 
@@ -1103,7 +1107,7 @@ config = {
                 }
             },
             'operations': {
-                #'Const_open': "MOT_lock",
+                'Const_open': "MOT_lock",
                 'VSTIRAP_experiment_pulse': "VSTIRAP_seq_pulse",
             },
             'intermediate_frequency': IF_PULSER_VSTIRAP_1_1,  # Default Freq

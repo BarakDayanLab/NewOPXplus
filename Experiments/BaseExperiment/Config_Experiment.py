@@ -124,6 +124,7 @@ Gaussian_pulse_samples = gauss_adaptive(0.2, 1000)
 ## Attenuators (global) for AOMs 0, + & - of MOT sequence
 # Factor 0.0-1.0
 AOM_0_Attenuation = 1 # 0.85 seems to be about right, for 0.8 the slopes are exactly the same
+AOM_0_Attenuation_pulse_1 = 0.03 # Attenuating the 0 MOT beams during image acquistion
 AOM_Plus_Attenuation = 0.42
 # AOM_Plus_Attenuation = 0.38
 AOM_Minus_Attenuation = 1 # 0.85 seems to be about right, for 0.8 the slopes are exactly the same
