@@ -1332,7 +1332,7 @@ class VSTIRAPExperiment(BaseExperiment):
         subplots_view = self.bdplots.get_subplots_view()
 
         exp_flag = 'green' if self.exp_flag else 'yellow'
-        connection_status = 'green' if self.bdsocket.is_connected('cavity_lock') else 'red'
+        connection_status = 'green' if (self.playback['active'] or self.bdsocket.is_connected('cavity_lock')) else 'red'
         with_atoms = 'green' if self.MOT_on else 'red'
         spectrum_save_flag = 'green' if ('cavity_lock' in self.comm_messages and self.comm_messages['cavity_lock']['save_succeeded'] and connection_status) else 'red'
         snspds_flag = 'orange'
@@ -2681,9 +2681,13 @@ if __name__ == "__main__":
         #'playback_files_path': r'C:\temp\refactor_debug\Experiment_results\PNSA\20240225\173049_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
         #'playback_files_path': r'C:\temp\playback_data\PNSA\20240312\121917_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
 
-        'playback_files_path': r'C:\temp\playback_data\STIRAP\131814_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
+        # 14-Aug-2024
+        'playback_files_path': r'C:\temp\playback_data\STIRAP\20240808\143855_Photon_TimeTags\NSNSNSnn-X\Iter_1_Seq_2__With Atoms\playback',
+        # --> 'playback_files_path': r'C:\temp\playback_data\STIRAP\20240808\143855_Photon_TimeTags\NSNSNSnn-X\Iter_1_Seq_1__Without Atoms\playback',
+
+        #'playback_files_path': r'C:\temp\playback_data\STIRAP\131814_Photon_TimeTags\Iter_1_Seq_2__With Atoms\playback',
         #'playback_files_path': r'F:\temp\Weizmann\playback data\STIRAP\100843_Photon_TimeTags\Iter_1_Seq_1__Without Atoms\playback',
-        "load_config_from_playback": False,  # True,
+        "load_config_from_playback": True,  # True,
         "old_format": False,
         "save_results": False,
         "save_results_path": 'C:\\temp\\playback_data',

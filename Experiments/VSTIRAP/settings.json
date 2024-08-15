@@ -133,7 +133,8 @@
             "save_raw": false,
             "channel": "snspds_stats",
             "default": 99.9,
-            "source": "comm"
+            "source": "comm",
+            "skip": true
         }
     },
     "batches": {},
