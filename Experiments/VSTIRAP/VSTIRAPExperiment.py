@@ -145,7 +145,7 @@ class VSTIRAPExperiment(BaseExperiment):
         self.prepulse_duration = self.Exp_Values['PrePulse_duration']
         self.OD_delay = self.Exp_Values['OD_delay']  # [msec]
         self.M_window = self.Exp_Values['M_window']  # [nsec]
-        self.ignored_marginals = self.Exp_Values['ignored_marginals']  # [nsec] data at the beginning and at the end of a window to "throw away" because of shutters noise
+        self.ignored_marginals = int(self.Exp_Values['ignored_marginals'])  # [nsec] data at the beginning and at the end of a window to "throw away" because of shutters noise
         self.OD_duration_pulse1 = self.Exp_Values['OD_duration_pulse1']  # [msec]
         self.OD_sleep = self.Exp_Values['OD_sleep']  # [msec]
         self.OD_duration_pulse2 = self.Exp_Values['OD_duration_pulse2']  # [msec]
@@ -1272,6 +1272,11 @@ class VSTIRAPExperiment(BaseExperiment):
         else:
             lck_str = r'LckErr: N/A'
 
+        if self.coupling_ok:
+            cpl_str = '$CC$'
+        else:
+            cpl_str = r'$\bfNo CC$'
+
         if self.k_ex is not None:
             if self.k_ex_flag:
                 k_ex_str = '$\kappa_{ex}: %.1f$' % self.k_ex
@@ -1283,7 +1288,7 @@ class VSTIRAPExperiment(BaseExperiment):
         status_str = f'[Warm Up: {self.warm_up_cycles}]' if self.warm_up else f'# {self.counter} ({eff_str})'
         playback_str = 'P: ' if self.playback['active'] else ''
 
-        header_text = f'{playback_str} {self.experiment_type}, {status_str} - {flr_str}, {lck_str}, {k_ex_str} {pause_str}'
+        header_text = f'{playback_str} {self.experiment_type}, {status_str} - {flr_str}, {lck_str}, {k_ex_str} {cpl_str} {pause_str}'
 
         # Threshold Box:
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -2426,6 +2431,7 @@ class VSTIRAPExperiment(BaseExperiment):
 
     def is_acquired(self):
 
+        self.coupling_ok = True
         self.lock_err_flag = True
         self.k_ex_flag = True
         self.fluorescence_flag = True
@@ -2442,13 +2448,18 @@ class VSTIRAPExperiment(BaseExperiment):
             self.lock_err_flag = False
             return False
 
-        # if abs(self.interference_error) > self.interference_error_threshold and not playback:
-        #     print(self.interference_error)
-        #     return False
-
         if abs(self.lock_err) > self.lock_err_threshold and not playback:
             self.lock_err_flag = False
             return False
+
+        # is there less than transmission threshold clicks (for transit experiment)
+        if self.total_south_clicks > self.reflection_threshold and not playback:
+            self.coupling_ok = False
+            return False
+
+        # if abs(self.interference_error) > self.interference_error_threshold and not playback:
+        #     print(self.interference_error)
+        #     return False
 
         # if self.k_ex is None and not playback:
         #     self.k_ex_flag = False
@@ -2531,6 +2542,8 @@ class VSTIRAPExperiment(BaseExperiment):
         - We haven't yet completed WARMUP_CYCLES
         - We haven't yet acquired a lock on resonance
         - We are in experiment, and the threshold is not yet filled
+
+        Returns Success/Fail
         """
 
         # Did we finish going through all warm-up cycles? If not, we're still in warm-up -> return True
@@ -2713,19 +2726,19 @@ if __name__ == "__main__":
 
     run_parameters = {
         'N': 500,  # 50,
-        'transit_condition': [1000, 8],
+        'transit_condition': [800, 8],
         'pre_comment': '',  # Put 'None' or '' if you don't want pre-comment prompt
         'lock_err_threshold': 2,  # [Mhz]
         'interference_error_threshold': 2,  # [MHz]
         'desired_k_ex': 37, # [Mhz]
         'k_ex_err': 3,  # [Mhz]
         'filter_delay': [0, 0, 0],
-        'reflection_threshold': 2550,
+        'reflection_threshold': 1200,
         'reflection_threshold_time': 9e6,
         'FLR_threshold': -0.01,
         'MZ_infidelity_threshold': 0.8,
         'photons_per_det_pulse_threshold': 12,
-        'exp_flag': False,
+        'exp_flag': True,
         'with_atoms': True
     }
     # do sequence of runs('total cycles') while changing parameters after defined number of runs ('N')
@@ -2734,13 +2747,13 @@ if __name__ == "__main__":
         'total_iterations': 1,
         'delay_between_iterations': None,  # seconds
         'sequence': [
-            # {
-            #     'name': 'Without Atoms',
-            #     'parameters': {
-            #         'N': 40,
-            #         'with_atoms': False
-            #     }
-            # },
+            {
+                'name': 'Without Atoms',
+                'parameters': {
+                    'N': 40,
+                    'with_atoms': False
+                }
+            },
             {
                 'name': 'With Atoms',
                 'parameters': {
