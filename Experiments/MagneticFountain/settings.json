@@ -1,0 +1,233 @@
+{
+    "streams": {
+        "Detector_1_Timetags": {
+            "number": 1,
+            "name": "Detector_1_Timetags",
+            "type": "int",
+            "playback": "Det1_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_2_Timetags": {
+            "number": 2,
+            "name": "Detector_2_Timetags",
+            "type": "int",
+            "playback": "Det2_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_3_Timetags": {
+            "number": 3,
+            "name": "Detector_3_Timetags",
+            "type": "int",
+            "playback": "Det3_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_4_Timetags": {
+            "number": 4,
+            "name": "Detector_4_Timetags",
+            "type": "int",
+            "playback": "Det4_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_5_Timetags": {
+            "number": 5,
+            "name": "Detector_5_Timetags",
+            "type": "int",
+            "playback": "Det5_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_6_Timetags": {
+            "number": 6,
+            "name": "Detector_6_Timetags",
+            "type": "int",
+            "playback": "Det6_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_7_Timetags": {
+            "number": 7,
+            "name": "Detector_7_Timetags",
+            "type": "int",
+            "playback": "Det7_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Detector_8_Timetags": {
+            "number": 8,
+            "name": "Detector_8_Timetags",
+            "type": "int",
+            "playback": "Det8_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Bright_Port_Counts": {
+            "name": "Bright_Port_Counts",
+            "type": "int",
+            "playback": "Bright(1,2)\\Bright_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Dark_Port_Counts": {
+            "name": "Dark_Port_Counts",
+            "type": "int",
+            "playback": "Dark(3,4)\\Bright_timetags.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Phase_Correction_array": {
+            "name": "Phase_Correction_array",
+            "type": "int",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "Max_counts": {
+            "name": "Max_counts",
+            "type": "int",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "FLR_measure": {
+            "name": "FLR_measure",
+            "type": "float",
+            "playback": "Flouresence.npz",
+            "save_raw": true,
+            "source": "opx"
+        },
+        "antihelmholtz_on": {
+            "name": "antihelmholtz_on",
+            "save_raw": false,
+            "source": "opx",
+            "skip": true
+        },
+        "Lock_Error": {
+            "name": "Lock_Error",
+            "type": "float",
+            "save_raw": true,
+            "channel": "cavity_lock",
+            "default": 99.9,
+            "source": "comm"
+        },
+        "Kappa_Ex": {
+            "name": "Kappa_Ex",
+            "type": "float",
+            "save_raw": true,
+            "channel": "cavity_lock",
+            "default": 99.9,
+            "source": "comm"
+        },
+        "Interference": {
+            "name": "Interference",
+            "type": "float",
+            "save_raw": true,
+            "channel": "cavity_lock",
+            "default": 99.9,
+            "source": "comm"
+        }
+    },
+    "batches": {},
+    "connections": {
+        "cavity_lock": {
+            "description": "Kappa Ex, Lock error, Interference values as calculated from auto fit process",
+            "value_name": "cavity_lock",
+            "listen_IP": "169.254.206.248",
+            "listen_port": 5050,
+            "trusted_IP": ["*"]
+        },
+        "snspds_pc": {
+            "description": "Get information of SNSDPs detectors",
+            "value_name": "snspds_stats",
+            "listen_IP": "132.77.54.212",
+            "listen_port": 5051,
+            "trusted_IP": ["*"]
+        }
+    },
+    "keyboard": {},
+    "menus": {
+      "infinite": true,
+      "menu_items": [
+            {
+              "order": 1,
+              "display": "Measure Temperature",
+              "action": "measure_temperature",
+              "args": [
+                {
+                  "name": "pre_pulse_durations",
+                  "type": "array_of_float",
+                  "default": [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
+                }
+              ]
+            },
+            {
+              "order": 2,
+              "display": "Optimize PGC",
+              "action": "optimizePGC"
+            },
+            {
+              "order": 3,
+              "display": "Connect/Disconnect from camera",
+              "action": "connect_disconnect_camera"
+            },
+            {
+              "order": 4,
+              "display": "Update PrePulse Duration",
+              "action": "update_value_in_opx",
+              "args": [
+                {
+                  "name": "prepulse_duration",
+                  "type": "float",
+                  "default": "1.0"
+                }
+              ]
+            },
+            {
+              "order": 5,
+              "display": "Perform Fit (from files in folder)",
+              "action": "perform_fit",
+              "args": [
+                {
+                  "name": "path",
+                  "type": "string",
+                  "default": "Most recent snapshots"
+                }
+              ]
+            },
+            {
+              "order": 6,
+              "display": "Image Density Check",
+              "action": "density_check",
+              "args": [
+                {
+                  "name": "folder",
+                  "type": "string",
+                  "default": "C:\\temp\\playback_data\\Temperature\\20240314_143258"
+                }
+              ]
+            },
+            {
+              "spacer": true
+            },
+            {
+              "order": 7,
+              "display": "Open Windows Explorer on last Measurement folder",
+              "action": "open_windows_explorer"
+            },
+            {
+              "spacer": true
+            },
+            {
+              "order": 9,
+              "display": "Exit",
+              "action": "exit"
+            }
+          ]
+    },
+    "files": {},
+    "figures": {},
+    "permissions": {
+        "allowed_offline": ["drorg", "dork"]
+    }
+}

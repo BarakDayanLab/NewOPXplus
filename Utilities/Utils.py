@@ -50,6 +50,21 @@ class Utils:
         return [float(x) for x in gauss_wave]
 
     @staticmethod
+    def solve_quadratic_equation(a, b, c):
+
+        d = b ** 2 - 4 * a * c  # discriminant
+
+        if d < 0:
+            return None
+        elif d == 0:
+            x = (-b + math.sqrt(b ** 2 - 4 * a * c)) / 2 * a
+            return np.array(x)
+        else:
+            x1 = (-b + math.sqrt((b ** 2) - (4 * (a * c)))) / (2 * a)
+            x2 = (-b - math.sqrt((b ** 2) - (4 * (a * c)))) / (2 * a)
+            return np.array([x1, x2])
+
+    @staticmethod
     def calc_cmat(correction_vars):
         """
         Calculating the correction matrix required for IQ mixer using the variable \theta   k
