@@ -71,6 +71,7 @@ ValuesFactor = {
     # "QRAM_Exp_switch": [bool, None, QRAM_Exp_switch],
 
     "Experiment_Switch": [bool],
+    "Magnetic_Fountain_On": [bool],
 
     # TODO: do we need these? Just for updating values thru the console? Are we switching modes during experiment?
     "Transit_Exp_switch": [bool],
@@ -93,7 +94,8 @@ ValuesFactor = {
     ## Fountain parameters ##
     "Pre_PGC_Fountain_duration": [int, 1e6 / 4],
     "Fountain_duration": [int, 1e6 / 4],
-    
+    "Magnetic_fountain_duration": [int, 1e6 / 4],
+
     # TODO - do we need these for SPECTRUM experiment? OR - we can stay w/o the function calls
     # "Fountain_prep_duration": [int, None, update_fountain_prep_time],
     # "Fountain_final_Delta_freq": [float, None, update_fountain_Delta_freq],

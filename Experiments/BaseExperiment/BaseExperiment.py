@@ -290,7 +290,7 @@ class BaseExperiment:
                                        updateChannels=[1, 2, 4],
                                        # updateChannels=(1, 4),  # For constant Depump
                                        topticaLockWhenUpdating=False,
-                                       debugging=True,  # True,
+                                       debugging=False,  # True,
                                        #mode=QuadRFMode.DYNAMIC,
                                        continuous=False)
         self.QuadRFControllers.append(qrfContr)  # updates values on QuadRF (uploads table)
@@ -416,6 +416,7 @@ class BaseExperiment:
 
         self.fountain_duration = int(self.Exp_Values['Fountain_duration'] * 1e6 / 4)
         self.fountain_prep_duration = int(self.Exp_Values['Fountain_prep_duration'] * 1e6 / 4)
+        self.magnetic_fountain_duration = int(self.Exp_Values['Magnetic_fountain_duration'] * 1e6 / 4)
         if self.Exp_Values['Fountain_initial_amp_0'] == self.Exp_Values['Fountain_final_amp_0']:
             self.fountain_pulse_duration_0 = self.fountain_prep_duration
             self.fountain_pulse_duration_minus = self.fountain_prep_duration
@@ -629,15 +630,21 @@ class BaseExperiment:
     # -------------------------------------------------------
     # Camera connection methods
     # -------------------------------------------------------
-    def connect_camera(self):
+    def connect_camera(self, device_serial=None):
         """
         Attempt to connect to camera. Return if connected.
+
+        param: device_serial: the camera we're looking at
+
         :return: True - if connected, False - failed to connect
         """
         self.camera = None
+        self.device_serial = 'FF006524' if device_serial is None else device_serial
         try:
             from UtilityResources import MvCameraController
-            self.camera = MvCameraController.MvCameraController()
+            # Default camera: deviceSerial = 'FF006583'
+            # Second camera: deviceSerial = 'FF006524'
+            self.camera = MvCameraController.MvCameraController(deviceSerial='FF006524')
         except Exception as e:
             self.warn(f'Could not connect to camera ({e})')
         return self.camera is not None

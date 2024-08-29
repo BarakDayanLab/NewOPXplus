@@ -524,6 +524,13 @@ class Utils:
             size = (width, height)
             img_array.append(img)
 
+        # Test this further. Currently not working :-(
+        # From here: https://stackoverflow.com/questions/30509573/writing-an-mp4-video-using-python-opencv
+        # out = cv2.VideoWriter(filename=os.path.join(path, 'video.mp4'),
+        #                       fourcc=cv2.VideoWriter_fourcc(*'MP4V'),
+        #                       fps=20.0,
+        #                       frameSize=(640, 480))
+
         out = cv2.VideoWriter(filename=save_file_path, fourcc=cv2.VideoWriter_fourcc(*'DIVX'), fps=3, frameSize=size)
         for i in range(len(img_array)):
             out.write(img_array[i])

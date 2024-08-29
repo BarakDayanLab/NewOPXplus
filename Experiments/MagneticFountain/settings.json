@@ -163,8 +163,8 @@
             },
             {
               "order": 2,
-              "display": "Optimize PGC",
-              "action": "optimizePGC"
+              "display": "Switch camera device",
+              "action": "switch_camera_device"
             },
             {
               "order": 3,
@@ -197,21 +197,27 @@
             },
             {
               "order": 6,
-              "display": "Image Density Check",
-              "action": "density_check",
+              "display": "Update Magnetic Fountain Duration",
+              "action": "update_value_in_opx_2",
               "args": [
                 {
-                  "name": "folder",
-                  "type": "string",
-                  "default": "C:\\temp\\playback_data\\Temperature\\20240314_143258"
+                  "name": "magnetic_fountain_duration",
+                  "type": "float",
+                  "default": "1.0"
                 }
               ]
             },
             {
+              "order": 7,
+              "display": "Turn ON/OFF magnetic fountain",
+              "action": "turn_on_off_magnetic_fountain"
+            },
+
+            {
               "spacer": true
             },
             {
-              "order": 7,
+              "order": 8,
               "display": "Open Windows Explorer on last Measurement folder",
               "action": "open_windows_explorer"
             },

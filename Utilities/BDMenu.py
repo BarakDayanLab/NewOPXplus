@@ -63,6 +63,10 @@ class BDMenu:
         # Wait for input
         selection = input(">> ")
 
+        tokens = selection.split(' ')
+        if len(tokens) >= 2:
+            selection = tokens[0]
+
         if not selection.isnumeric():
             print('>>> Please choose one of the menu options.')
             return None
@@ -83,20 +87,23 @@ class BDMenu:
 
         args = {}
         if "args" in call_map[selection]:
-            for arg in call_map[selection]["args"]:
+            for idx, arg in enumerate(call_map[selection]["args"]):
                 prompt = arg['name']
-                # Is there a default value suggested?
-                if arg['default']:
-                    default_values_str = self._values_to_str(arg['default'])
-                    prompt = f'{prompt} (Press <Enter> for Default: {default_values_str}) >>'
-                value_str = input(prompt)
-                # Should we be using default values? (if user just pressed <enter> w/o entering a value
-                if len(value_str) == 0:
-                    value_str = default_values_str
-                value = self._convert_input(value_str, arg['type'])
+                if len(tokens) >= 2:
+                    args[arg['name'].lower()] = self._convert_input(tokens[idx+1], arg['type'])
+                else:
+                    # Is there a default value suggested?
+                    if arg['default']:
+                        default_values_str = self._values_to_str(arg['default'])
+                        prompt = f'{prompt} (Press <Enter> for Default: {default_values_str}) >>'
+                    value_str = input(prompt)
+                    # Should we be using default values? (if user just pressed <enter> w/o entering a value
+                    if len(value_str) == 0:
+                        value_str = default_values_str
+                    value = self._convert_input(value_str, arg['type'])
 
-                # Note - we always use lowercase for the arguments - so make sure the update function has lowercase args
-                args[arg['name'].lower()] = value
+                    # Note - we always use lowercase for the arguments - so make sure the update function has lowercase args
+                    args[arg['name'].lower()] = value
 
         # Invoke the method/action
         func = getattr(self.caller, func_name, self.func_not_found)

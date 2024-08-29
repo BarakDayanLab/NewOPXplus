@@ -15,7 +15,11 @@
 	"files": [
 
 		{
-			"# NO FILES": "-----------------------------------"
+            "description": "The experiments config values",
+			"data": "experiment_config_values",
+			"file_name": "Exp_config_values_{current_date}_{current_time}",
+			"folder": ".\\",
+			"type": "json"
 		}
 	],
 	"folders": [

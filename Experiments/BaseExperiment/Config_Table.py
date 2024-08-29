@@ -54,6 +54,7 @@ Initial_Values = {
     'Fountain_final_freq': -1,  # By default, should be taken from next (?) phase
     'Fountain_duration': 0,        # [msec]
     'Fountain_prep_duration': 1,   # [msec], Can't be zero!!!
+    'Magnetic_fountain_duration': 1,  # [msec]
     'Fountain_initial_amp_0': 1,  # Relative amplitude between 0 to 1;
     'Fountain_initial_amp_minus': 1,  # Relative amplitude between 0 to 1;
     'Fountain_initial_amp_plus': 1,
