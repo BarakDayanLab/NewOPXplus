@@ -639,12 +639,20 @@ class BaseExperiment:
         :return: True - if connected, False - failed to connect
         """
         self.camera = None
-        self.device_serial = 'FF006524' if device_serial is None else device_serial
+
+        # If device serial was not defined and invocation did not request any, choose default:
+        if not hasattr(self, 'device_serial') and not device_serial:
+            self.device_serial = 'FF006524'
+
+        # If device serial was not defined and invocation DOES request, take it
+        if hasattr(self, 'device_serial') and device_serial is not None:
+            self.device_serial = device_serial
+
         try:
             from UtilityResources import MvCameraController
             # Default camera: deviceSerial = 'FF006583'
             # Second camera: deviceSerial = 'FF006524'
-            self.camera = MvCameraController.MvCameraController(deviceSerial='FF006524')
+            self.camera = MvCameraController.MvCameraController(deviceSerial=self.device_serial)
         except Exception as e:
             self.warn(f'Could not connect to camera ({e})')
         return self.camera is not None
