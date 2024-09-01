@@ -47,6 +47,20 @@ class MagneticFountainExperiment(BaseExperiment):
         self.sigma_bounds = (15, 100)  # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
         self.resonator_pxl_position = 100 # TODO: create function for finding the position.
 
+        self.magnetic_fountain_on = True
+
+
+    def switch_camera_device(self):
+        self.disconnect_camera()
+        if self.device_serial is None or self.device_serial == 'FF006524':
+            self.device_serial = 'FF006583'
+        else:
+            self.device_serial = 'FF006524'
+        success = self.connect_camera(self.device_serial)
+        if success:
+            self.info(f'Switched to MV camera {self.device_serial}!')
+        else:
+            self.info('Attempted to switch to MV camera {self.device_serial}, but failed. Check if app is in use.')
 
     def connect_disconnect_camera(self):
         if self.camera:
@@ -58,6 +72,16 @@ class MagneticFountainExperiment(BaseExperiment):
                 self.info('Connected to MV camera!')
             else:
                 self.info('Attempted to connect to MV camera, but failed. Check if app is in use.')
+
+    def turn_on_off_magnetic_fountain(self):
+        self.magnetic_fountain_on = not self.magnetic_fountain_on
+        if self.magnetic_fountain_on:
+            self.updateValue('Magnetic_Fountain_ON', True, True)
+        else:
+            self.updateValue('Magnetic_Fountain_ON', False, True)
+
+        str = 'ON' if self.magnetic_fountain_on else 'OFF'
+        self.logger.info(f'Magnetic Fountain: {str}')
 
     def createPathForTemperatureMeasurement(self, path=None, saveConfig=False):
         extraFilesPath = ''
@@ -383,7 +407,7 @@ class MagneticFountainExperiment(BaseExperiment):
             cv2.destroyWindow(win_name)
         pass
 
-    def measure_temperature(self, pre_pulse_durations=np.arange(1, 9), create_video=False, perform_fit=True):
+    def measure_temperature(self, pre_pulse_durations=np.arange(1, 9), create_video=True, perform_fit=False):
         """
         Runs a loop over array of PrePulse Duration values.
         For each setting, takes an image and saves in a folder.
@@ -434,83 +458,14 @@ class MagneticFountainExperiment(BaseExperiment):
         if perform_fit:
             self.perform_fit(path)
 
+        # Save files
+        results = {
+            "experiment_config_values": self.Exp_Values,
+        }
+        self.bd_results.save_results(results, extra_files)
+
+
         pass
-
-    def optimizePGC(self, PrePulseDurations=np.arange(0.5,5,0.5),PGC_final_freq_params = np.linspace(97e6, 90e6, 7),PGC_final_amp_params = np.linspace(0.3, 0.05, 7)):
-        """
-        This is used to run with different parameters. They are defined within the function
-
-        :param PrePulseDurations:
-        :return: <TBD>
-        """
-        path, extraFilesPath = self.createPathForTemperatureMeasurement()
-
-        # ---- Take background picture ----
-        self.updateValue("PrePulse_duration", float(50),
-                         update_parameters=True)  # Presumably, after 20ms there's no visible cloud.
-        self.camera.saveAverageImage(os.path.join(extraFilesPath, 'background.bmp'), NAvg=self.NAvg, NThrow=self.NThrow,NThrow_end=self.NThrow_end, RGB=False)
-
-        # ---- Define parameters space ------
-        xs_key = "PGC_final_freq"
-        xs = PGC_final_freq_params  # e.g., PGCFinalFreq
-        ys_key = "PGC_final_amp"
-        ys = PGC_final_amp_params  # e.g., PGCFinalAmp
-
-        # --- Begin measurement -----
-        for ppd in PrePulseDurations:
-            self.updateValue("PrePulse_duration", float(ppd))
-            for x in xs:
-                self.updateValue(xs_key, float(x))
-                for y in ys:
-                    self.updateValue(ys_key, float(y))
-                    self.update_parameters()
-                    imgName = 'PrePulse=%s;%s=%s;%s=%s.bmp' %(str(ppd), str(xs_key), str(x), str(ys_key), str(y))
-                    self.camera.saveAverageImage(os.path.join(path, imgName), NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
-
-        print('Finished  optimizePGC. running analyzePGCOptimization...')
-        return self.analyzePGCOptimization(path=path)
-
-    def analyzePGCOptimization(self, path, backgroundPath=None):
-        # ---- fit gaussians to all photos -----
-        gaussianFitsAndParams = self.gaussianFitAllPicturesInPath(path, backgroundPath, saveFitsPath=None, imgBounds=self.imgBounds)
-        np.save(os.path.join(path, 'gasuusainFitResultsresults.npy'), gaussianFitsAndParams, allow_pickle=True)
-        # ----- extract the parameters we ran over (say, PGC_final_freq, PGC_final_amp) as xs and ys, and the prePulse_duration (ppds) for each photos ----
-        xs = np.array([item[1] for item in gaussianFitsAndParams])
-        ys = np.array([item[2] for item in gaussianFitsAndParams])
-        prePulseD = np.array([item[0] for item in gaussianFitsAndParams])
-        # -----
-        gaussian_amp = np.array([item[-1][0] for item in gaussianFitsAndParams])
-        sigmas_x = np.array([item[-1][3] for item in gaussianFitsAndParams])
-        sigmas_y = np.array([item[-1][4] for item in gaussianFitsAndParams])
-
-        uniqueXs = np.unique(xs)
-        uniqueYs = np.unique(ys)
-        uniqueTemperatures =[]
-        xs_for_plot, ys_for_plot = [],[]
-        for x in uniqueXs:
-            for y in uniqueYs:
-                indices = np.argwhere((xs == x) & (ys == y))
-                ppds, s_xs_perParam, s_ys_perParam = [],[],[]
-                for i in indices:
-                    i= i[0] # since np.argwhere returns an array with the index inside
-                    s_xs_perParam.append(sigmas_x[i])
-                    s_ys_perParam.append(sigmas_y[i])
-                    ppds.append(prePulseD[i])
-                # ---- sort these lists according to the pre-pulse duration
-                s_xs_perParam = [s_xs_perParam for _, s_xs_perParam in sorted(zip(ppds, s_xs_perParam))]
-                s_ys_perParam = [s_ys_perParam for _, s_ys_perParam in sorted(zip(ppds, s_ys_perParam))]
-                ppds = sorted(ppds)
-                # ----- fit for temperature!
-                T_x, T_y = self.fitTemperaturesFromSigmasResults(time_vector=ppds, sigma_x_vector=s_xs_perParam, sigma_y_vector=s_ys_perParam, alpha=self.mm_to_pxl, plotResults=False)
-                temp = np.sqrt(T_x**2 + T_y**2)
-                # ---- Arrange data for plotting
-                xs_for_plot.append(x)
-                ys_for_plot.append(y)
-                uniqueTemperatures.append(temp)
-                print('Results for x = {}, y = {} are: {}K'.format(str(x), str(y), str(temp)))
-
-        self.plot3D(xs_for_plot, ys_for_plot, uniqueTemperatures)
-        return (xs_for_plot, ys_for_plot, uniqueTemperatures)
 
     # TODO: we may want to move this to Utils - so everyone can enjoy :-)
     def create_video_from_path(self, path, save_file_path=None):
@@ -832,6 +787,13 @@ class MagneticFountainExperiment(BaseExperiment):
             return None
 
         return coor
+
+    def update_magnetic_fountain_duration(self, magnetic_fountain_duration):
+        """
+        This method is invoked directly from the Menu (and not referenced here in the code)
+        :param magnetic_fountain_duration: The duration before we take the image
+        """
+        self.updateValue("Magnetic_fountain_duration", float(magnetic_fountain_duration), update_parameters=True)
 
     def update_value_in_opx(self, prepulse_duration):
         """

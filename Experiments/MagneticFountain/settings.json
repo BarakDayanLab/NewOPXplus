@@ -198,7 +198,7 @@
             {
               "order": 6,
               "display": "Update Magnetic Fountain Duration",
-              "action": "update_value_in_opx_2",
+              "action": "update_magnetic_fountain_duration",
               "args": [
                 {
                   "name": "magnetic_fountain_duration",
