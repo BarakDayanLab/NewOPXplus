@@ -467,9 +467,12 @@ class MagneticFountainExperiment(BaseExperiment):
 
         pass
 
-    # TODO: we may want to move this to Utils - so everyone can enjoy :-)
     def create_video_from_path(self, path, save_file_path=None):
+        """
+        Create both an .avi and .mp4 videos from the files in the folder
+        """
         Utils.create_video_from_path(path, save_file_path)
+        Utils.create_mp4_from_path(path, save_file_path)
         pass
 
     def open_windows_explorer(self):
