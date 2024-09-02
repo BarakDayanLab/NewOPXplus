@@ -14,12 +14,24 @@ Experiment_Values = {
     'Pulse_1_CH1_Freq_f': Initial_Values['Flash_freq'],
     'Pulse_1_CH4_Freq': Initial_Values['AOM_Repump_freq_Off'],
     # Fountain
-    'Fountain_duration': 0.5,  # [msec]
+    'Fountain_duration': 0,  # [msec]
+    # 'Fountain_duration': 0.5,  # [msec]
     'Fountain_prep_duration': 0.5,  # [msec], Can't be zero!!!
+
+    'Magnetic_fountain_duration': 4,  # 5 [msec]
+    # 'Magnetic_fountain_duration': 0,  # 5 [msec]
+    'PGC_duration': 12,  # 7  10
+    'PGC_prep_duration': 8,  # 5  8
+    'PGC_final_amp': 0.15, # 0.05 - till 15.01.23,         # Relative AOM amplitude between 0 to 1 - (0.12 yields 3.5 mW)
+
+    #'AntiHelmholtz_delay': 0.1,  # 0.1 [msec]
+    'Post_MOT_delay': 1,
+
+
     # Imaging
     'Imaging_Phase': Phases.PULSE_1,
     'PrePulse_duration': 1,  # [msec]
-    'Pulse_1_duration': 0.2,  # [msec]
+    'Pulse_1_duration': 0.5, # 0.2,  # [msec]
 
     # 'OPX_Quad_Misalignment_Delay': 4000  # = 4us [ns]
     'OPX_Quad_Misalignment_Delay': 4000 - 140000,  # = 4us [ns]
