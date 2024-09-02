@@ -4,7 +4,7 @@ from Experiments.Enums.Phases import Phases
 from Utilities.OPX_Utils import OPX_Utils
 from qm.qua import *
 
-all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement"]
+all_elements = ["Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Measurement", "Magnetic_Fountain"]
 
 
 def MOT(mot_repetitions, OD_Attenuation):
@@ -19,7 +19,8 @@ def MOT(mot_repetitions, OD_Attenuation):
     # OPX_Utils.assign_variables_to_element("FLR_detection", FLR)
 
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "AntiHelmholtz_Coils", "Zeeman_Coils",
-          "AOM_2-2/3'", "AOM_2-3'_for_interference", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors_spectrum", "Dig_detectors") # , "PULSER_N", "PULSER_S")
+          "AOM_2-2/3'", "AOM_2-3'_for_interference", "AOM_2-2'", "FLR_detection", "Measurement",
+          "Magnetic_Fountain") # , "Dig_detectors_spectrum", "Dig_detectors") # , "PULSER_N", "PULSER_S")
 
     ## MOT build-up ##
     n = declare(int)
@@ -47,6 +48,14 @@ def MOT(mot_repetitions, OD_Attenuation):
           "AOM_2-2/3'", "AOM_2-2'", "FLR_detection", "Measurement") # , "Dig_detectors", "Dig_detectors_spectrum") #, "PULSER_N", "PULSER_S")
 
     return FLR
+
+
+def PGC(total_pulse_duration):
+    """
+    The PGC process is controlled both by OPX and QuadRF.
+    The OPX code mainly sends a constant pulse to the AOMs
+    """
+    Pulse_const(total_pulse_duration)
 
 
 def Pulse_const(total_pulse_duration):
@@ -122,7 +131,11 @@ def Pulse_with_prep(total_pulse_duration, prep_duration, zero_pulse_duration, pl
              duration=(total_pulse_duration - prep_duration))
 
 
-def Magnetic_Fountain(fountain_duration):
+def Magnetic_Fountain(fountain_duration, prep_duration, zero_pulse_duration, plus_pulse_duration,
+                               minus_pulse_duration, aom_chirp_rate, magnetic_fountain_duration):
+
+    align("MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Magnetic_Fountain")
+    play("Const_open" * amp(1.0), "Magnetic_Fountain", duration=magnetic_fountain_duration)
     pass
 
 def Pulse_with_prep_with_chirp(fountain_duration, prep_duration, zero_pulse_duration, plus_pulse_duration,
@@ -149,11 +162,7 @@ def Pulse_with_prep_with_chirp(fountain_duration, prep_duration, zero_pulse_dura
     """
 
     ## Playing the pulses to the AOMs for the preparation sequence. (Qua) ##
-    align("MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Magnetic_Fountain")
-
-    # Play the magnetic fountain
-    play("Const_open" * amp(1.0), "Magnetic_Fountain", duration=fountain_duration)
-
+    align("MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+")
     with if_(prep_duration > 0):
         with if_(zero_pulse_duration == prep_duration):
             play("Const" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0", duration=prep_duration)
@@ -181,6 +190,57 @@ def Pulse_with_prep_with_chirp(fountain_duration, prep_duration, zero_pulse_dura
         play("Const" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+",
              duration=(fountain_duration - prep_duration))
 
+def Pulse_with_prep_without_0_at_pgc(pulse_duration, prep_duration, zero_pulse_duration, plus_pulse_duration,
+                               minus_pulse_duration, aom_chirp_rate, delta_f):
+    """
+    This pulse id divided to two parts:
+        1) Preparation sequence where different parameters changes such as amplitudes and frequencies of the 0 - + AOMs (scan each separately)
+        2) Part where we keep the different values constant for the 0 - + AOMs
+
+    Parameters
+    ----------
+    :param fountain_duration: duration of the whole pulse.
+    :param prep_duration: duration of the preparation part of the pulse
+    :param initial_amp_0: the initial amplitude of the RF signal to AOM 0 which in turn control the MOT Beams intensity.
+    :param initial_amp_minus: the initial amplitude of the RF signal to AOM + which in turn control the MOT Beams intensity.
+    :param initial_amp_plus: the initial amplitude of the RF signal to AOM - which in turn control the MOT Beams intensity.
+    :param final_amp_0: the final amplitude of the RF signal to AOM 0 which in turn control the MOT Beams intensity.
+    :param final_amp_plus: the final amplitude of the RF signal to AOM + which in turn control the MOT Beams intensity.
+    :param final_amp_minus: the final amplitude of the RF signal to AOM - which in turn control the MOT Beams intensity.
+    :param zero_pulse_duration: derived from both the exact preparation duration and the final relative amplitude of the RF signal to the AOM 0 which in turn control the MOT Beams intensity.
+    :param plus_pulse_duration: derived from both the exact preparation duration and the final relative amplitude of the RF signal to the AOM + which in turn control the MOT Beams intensity.
+    :param minus_pulse_duration: derived from both the exact preparation duration and the final relative amplitude of the RF signal to the AOM - which in turn control the MOT Beams intensity.
+    :param aom_chirp_rate: the slope at which the pulse reach it's final frequency. The final frequency of the RF signals to AOMs + and - which in turn control the relative frame of reference for the atoms.
+    """
+
+    ## Playing the pulses to the AOMs for the preparation sequence. (Qua) ##
+    align("MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+")
+    with if_(prep_duration > 0):
+        with if_(zero_pulse_duration == prep_duration):
+            play("Const" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0", duration=prep_duration)
+            play("Const" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-", duration=prep_duration)
+            play("Const" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+", duration=prep_duration)
+        with else_():
+            play("Linear" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0", duration=zero_pulse_duration,
+                 truncate=prep_duration)
+            play("Linear" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-", duration=minus_pulse_duration,
+                 truncate=prep_duration, chirp=(aom_chirp_rate, "mHz/nsec"))
+            play("Linear" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+", duration=plus_pulse_duration,
+                 truncate=prep_duration, chirp=(-aom_chirp_rate, "mHz/nsec"))
+
+
+    ## Playing the pulses to the AOMs for the constant part. (Qua) ##
+    align("MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+")
+    update_frequency("MOT_AOM_-", Config.IF_AOM_MOT)
+    update_frequency("MOT_AOM_+", Config.IF_AOM_MOT)
+    with if_(pulse_duration > prep_duration):
+        # play("Const" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0",
+        #      duration=(pulse_duration - prep_duration))
+        play("Const" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-",
+             duration=(pulse_duration - prep_duration))
+        play("Const" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+",
+             duration=(pulse_duration - prep_duration))
+
 
 def FreeFall(freefall_duration, coils_timing):
     """
@@ -199,7 +259,7 @@ def FreeFall(freefall_duration, coils_timing):
 
     ## Aligning all the different elements used during the freefall time of the experiment ##
     align("Cooling_Sequence", "MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Zeeman_Coils", "AOM_2-2/3'", "AOM_2-2'",
-          "Measurement") # , "Dig_detectors", "Dig_detectors_spectrum")
+          "Measurement", "Magnetic_Fountain") # , "Dig_detectors", "Dig_detectors_spectrum")
 
     ## Zeeman Coils turn-on sequence ##
     wait(coils_timing, "Zeeman_Coils")
@@ -254,10 +314,7 @@ def opx_control(obj, qm):
         Imaging_Phase = declare(int, value=int(obj.Exp_Values['Imaging_Phase']))
 
         # Boolean variables:
-        MOT_ON = declare(bool, value=True)
-        AntiHelmholtz_delay_ON = declare(bool, value=False)
-        AntiHelmholtz_ON = declare(bool, value=True)
-        Linear_PGC_ON = declare(bool, value=True)
+        Magnetic_Fountain_ON = declare(bool, value=True)
 
         # MOT variables
         MOT_Repetitions = declare(int, value=obj.Exp_Values['MOT_rep'])
@@ -277,6 +334,8 @@ def opx_control(obj, qm):
 
         # Fountain variables:
         fountain_duration = declare(int, value=int(obj.fountain_duration))
+        magnetic_fountain_duration = declare(int, value=int(obj.magnetic_fountain_duration))
+
         # TODO: pre_PGC_fountain_duration = declare(int, value=int(obj.pre_PGC_fountain_duration))
         fountain_prep_time = declare(int, value=int(obj.fountain_prep_duration))  # Can't be used with Chirp!!!
         fountain_pulse_duration_0 = declare(int, value=int(obj.fountain_pulse_duration_0))  # The relative duration to reach the desired amplitude
@@ -369,7 +428,7 @@ def opx_control(obj, qm):
 
             # MOT sequence:
             FLR = MOT(MOT_Repetitions, OD_attenuation)
-            play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
+            # play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
 
             # Delay before fountain:
 
@@ -379,18 +438,31 @@ def opx_control(obj, qm):
             align(*all_elements)
 
             # Fountain sequence:
-            wait(fountain_duration, "Cooling_Sequence")
-
-            #Magnetic_Fountain(fountain_duration)
-
-            Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
-                                       fountain_pulse_duration_0, fountain_pulse_duration_minus,
-                                       fountain_pulse_duration_plus, fountain_aom_chirp_rate,
-                                       fountain_delta_f)
+            with if_(fountain_duration > 0):
+                wait(fountain_duration, "Cooling_Sequence")
+                Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
+                                           fountain_pulse_duration_0, fountain_pulse_duration_minus,
+                                           fountain_pulse_duration_plus, fountain_aom_chirp_rate,
+                                           fountain_delta_f)
 
             # PGC sequence:
-            wait(pgc_duration, "Cooling_Sequence")
-            Pulse_const(pgc_duration)
+
+            align(*all_elements)
+
+            with if_(magnetic_fountain_duration > 0):
+                # We distance the magnetic fountain a bit after the pgc_prep ended
+                wait(obj.pgc_prep_duration + us(50), "Magnetic_Fountain")
+                #wait(us(8200), "Magnetic_Fountain")
+                play("Const_open" * amp(1.0), "Magnetic_Fountain", duration=magnetic_fountain_duration)
+
+            # wait(pgc_duration, "Cooling_Sequence")
+            # PGC(pgc_duration)
+
+            Pulse_with_prep_without_0_at_pgc(pgc_duration, obj.pgc_prep_duration,
+                                             obj.pgc_prep_duration, obj.pgc_prep_duration,
+                                             obj.pgc_prep_duration, fountain_aom_chirp_rate,
+                                             fountain_delta_f)
+
             align(*all_elements)
 
             # TODO: make the opx_quadrf_misalignment_delay a parameter
@@ -438,12 +510,8 @@ def opx_control(obj, qm):
                     update_frequency("MOT_AOM_0", Config.IF_AOM_MOT)
                 with if_(i == IOP.MOT_SWITCH_OFF.value):
                     update_frequency("MOT_AOM_0", Config.IF_AOM_MOT_OFF)
-                # with if_(i == 3):
-                #     assign(Transits_Exp_ON, IO2)  # TODO: uncomment this when we will make it generic
-                # with if_(i == 4):
-                #     assign(CRUS_Exp_ON, IO2)  # TODO: uncomment this when we will make it generic
-                # with if_(i == 6):
-                #     assign(Probe_max_counts_Exp_ON, IO2)  # TODO: uncomment this when we will make it generic
+                with if_(i == IOP.MAGNETIC_FOUNTAIN_ON.value):
+                    assign(Magnetic_Fountain_ON, IO2)
                 ## AntiHelmholtz control ##
                 with if_(i == IOP.ANTIHELMHOLTZ_DELAY.value):
                     assign(antihelmholtz_delay, IO2)
@@ -485,6 +553,8 @@ def opx_control(obj, qm):
                     assign(Trigger_delay, IO2)
                 with if_(i == IOP.PREPULSE_DURATION.value):
                     assign(PrePulse_duration, IO2)
+                with if_(i == IOP.MAGNETIC_FOUNTAIN_DURATION.value):
+                    assign(magnetic_fountain_duration, IO2)
                 with if_(i == IOP.PULSE_1_DURATION.value):
                     assign(Pulse_1_duration, IO2)
                 with if_(i == IOP.PULSE_1_DECAY_DURATION.value):
