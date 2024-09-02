@@ -50,12 +50,24 @@ def MOT(mot_repetitions, OD_Attenuation):
     return FLR
 
 
-def PGC(total_pulse_duration):
+def PGC(pgc_duration, pgc_prep_duration, pgc_beams_0_off_duration, fountain_aom_chirp_rate):
     """
     The PGC process is controlled both by OPX and QuadRF.
-    The OPX code mainly sends a constant pulse to the AOMs
+    - The OPX code controls the AOMs (either by constant pulse, or turning on/off the 0 beams
+    - The Quad code controls the gradient and plateau for the Eilam Pulser shifting the frequency
     """
-    Pulse_const(total_pulse_duration)
+
+    # There are 3 options to run PGC:
+
+    # --- Option 1 ----
+    # Pulse_const(pgc_duration)
+
+    # --- Option 2 ----
+    # Pulse_with_prep_without_0_at_pgc(pgc_duration, pgc_prep_duration, pgc_prep_duration, pgc_prep_duration,
+    #                                  pgc_prep_duration, fountain_aom_chirp_rate)
+
+    # --- Option 3 ----
+    Three_stage_pgc(pgc_duration, pgc_prep_duration, pgc_beams_0_off_duration)
 
 
 def Pulse_const(total_pulse_duration):
@@ -191,7 +203,7 @@ def Pulse_with_prep_with_chirp(fountain_duration, prep_duration, zero_pulse_dura
              duration=(fountain_duration - prep_duration))
 
 def Pulse_with_prep_without_0_at_pgc(pulse_duration, prep_duration, zero_pulse_duration, plus_pulse_duration,
-                               minus_pulse_duration, aom_chirp_rate, delta_f):
+                               minus_pulse_duration, aom_chirp_rate):
     """
     This pulse id divided to two parts:
         1) Preparation sequence where different parameters changes such as amplitudes and frequencies of the 0 - + AOMs (scan each separately)
@@ -240,6 +252,48 @@ def Pulse_with_prep_without_0_at_pgc(pulse_duration, prep_duration, zero_pulse_d
              duration=(pulse_duration - prep_duration))
         play("Const" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+",
              duration=(pulse_duration - prep_duration))
+
+
+def Three_stage_pgc(pgc_duration, pgc_prep_duration, pgc_beams_off_duration):
+
+    """
+    This pulse id divided to two parts:
+        1) Preparation sequence where different parameters changes such as amplitudes and frequencies of the 0 - + AOMs (scan each separately)
+        2) Part where we keep the different values constant for the 0 - + AOMs
+
+    Parameters
+    ----------
+    :param pgc_duration: duration of the whole pulse.
+    :param pgc_prep_duration: duration of the preparation part of the pulse
+    """
+
+    # pgc_duration => The total time of the PGC process
+    # - pgc_prep_duration => the gradient descent part
+    # - pgc_beams_off_duration => the plateau part - 0 beams are turned OFF
+    # - pgc_duration - pgc_prep_duration - pgc_beams_off_duration -> the plateau part - 0 beams are turned ON
+
+    ## Playing the pulses to the AOMs for the preparation sequence. (Qua) ##
+    align("MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+")
+    with if_(pgc_prep_duration > 0):
+        play("Const" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0", duration=pgc_prep_duration)
+        play("Const" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-", duration=pgc_prep_duration)
+        play("Const" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+", duration=pgc_prep_duration)
+
+    align("MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+")
+    update_frequency("MOT_AOM_-", Config.IF_AOM_MOT)
+    update_frequency("MOT_AOM_+", Config.IF_AOM_MOT)
+    with if_(pgc_duration > pgc_prep_duration):
+        play("Const" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0", duration=(pgc_duration - pgc_prep_duration - pgc_beams_off_duration))
+        play("Const" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-", duration=(pgc_duration - pgc_prep_duration - pgc_beams_off_duration))
+        play("Const" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+", duration=(pgc_duration - pgc_prep_duration - pgc_beams_off_duration))
+
+    align("MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+")
+    update_frequency("MOT_AOM_-", Config.IF_AOM_MOT)
+    update_frequency("MOT_AOM_+", Config.IF_AOM_MOT)
+    with if_(pgc_beams_off_duration > 0):
+        # play("Const" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0", duration=pgc_beams_off_duration)
+        play("Const" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-", duration=pgc_beams_off_duration)
+        play("Const" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+", duration=pgc_beams_off_duration)
 
 
 def FreeFall(freefall_duration, coils_timing):
@@ -327,7 +381,9 @@ def opx_control(obj, qm):
 
         # PGC variables:
         pgc_duration = declare(int, value=int(obj.pgc_duration))
-        pgc_prep_time = declare(int, value=int(obj.pgc_prep_duration))
+        pgc_prep_duration = declare(int, value=int(obj.pgc_prep_duration))
+        pgc_beams_0_off_duration = declare(int, value=int(obj.pgc_beams_0_off_duration))
+
         pgc_pulse_duration_0 = declare(int, value=int(obj.pgc_pulse_duration_0))  # The relative duration to reach the desired amplitude
         pgc_pulse_duration_minus = declare(int, value=int(obj.pgc_pulse_duration_minus))  # The relative duration to reach the desired amplitude
         pgc_pulse_duration_plus = declare(int, value=int(obj.pgc_pulse_duration_plus))  # The relative duration to reach the desired amplitude
@@ -437,7 +493,7 @@ def opx_control(obj, qm):
 
             align(*all_elements)
 
-            # Fountain sequence:
+            # Optical Fountain sequence:
             with if_(fountain_duration > 0):
                 wait(fountain_duration, "Cooling_Sequence")
                 Pulse_with_prep_with_chirp(fountain_duration, obj.fountain_prep_duration,
@@ -445,23 +501,17 @@ def opx_control(obj, qm):
                                            fountain_pulse_duration_plus, fountain_aom_chirp_rate,
                                            fountain_delta_f)
 
-            # PGC sequence:
-
             align(*all_elements)
 
+            # Magnetic Fountain
             with if_(magnetic_fountain_duration > 0):
                 # We distance the magnetic fountain a bit after the pgc_prep ended
-                wait(obj.pgc_prep_duration + us(50), "Magnetic_Fountain")
-                #wait(us(8200), "Magnetic_Fountain")
+                wait( (pgc_duration - pgc_beams_0_off_duration) + us(50), "Magnetic_Fountain")
+                #wait(obj.pgc_prep_duration + us(50), "Magnetic_Fountain")
                 play("Const_open" * amp(1.0), "Magnetic_Fountain", duration=magnetic_fountain_duration)
 
             # wait(pgc_duration, "Cooling_Sequence")
-            # PGC(pgc_duration)
-
-            Pulse_with_prep_without_0_at_pgc(pgc_duration, obj.pgc_prep_duration,
-                                             obj.pgc_prep_duration, obj.pgc_prep_duration,
-                                             obj.pgc_prep_duration, fountain_aom_chirp_rate,
-                                             fountain_delta_f)
+            PGC(pgc_duration, pgc_prep_duration, pgc_beams_0_off_duration, fountain_aom_chirp_rate)
 
             align(*all_elements)
 
@@ -526,13 +576,15 @@ def opx_control(obj, qm):
                 with if_(i == IOP.PGC_DURATION.value):  # Live control over the PGC duration
                     assign(pgc_duration, IO2)
                 with if_(i == IOP.PGC_PREP_DURATION.value):  # Live control over the preparation time of the PGC
-                    assign(pgc_prep_time, IO2)
+                    assign(pgc_prep_duration, IO2)
                 with if_(i == IOP.PGC_PULSE_DURATION_0.value):  # Live control over the final amplitude of the PGC AOM 0
                     assign(pgc_pulse_duration_0, IO2)
                 with if_(i == IOP.PGC_PULSE_DURATION_MINUS.value):  # Live control over the final amplitude of the PGC AOM -
                     assign(pgc_pulse_duration_minus, IO2)
                 with if_(i == IOP.PGC_PULSE_DURATION_PLUS.value):  # Live control over the final amplitude of the PGC AOM +
                     assign(pgc_pulse_duration_plus, IO2)
+                with if_(i == IOP.PGC_BEAMS_0_OFF_DURATION.value):
+                    assign(pgc_beams_0_off_duration, IO2)
 
                 ## Fountain variables control: ##
                 with if_(i == IOP.FOUNTAIN_DURATION.value):  # Live control over the fountain duration

@@ -47,7 +47,9 @@ class MagneticFountainExperiment(BaseExperiment):
         self.sigma_bounds = (15, 100)  # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
         self.resonator_pxl_position = 100 # TODO: create function for finding the position.
 
+        # Initialize magnetic fountain related parameters
         self.magnetic_fountain_on = True
+        self.pgc_beams_0_off_duration = int(self.Exp_Values['PGC_beams_0_off_duration'] * 1e6 / 4)
 
 
     def switch_camera_device(self):
@@ -455,15 +457,14 @@ class MagneticFountainExperiment(BaseExperiment):
         if create_video:
             self.create_video_from_path(path, save_file_path=os.path.join(extra_files, 'video.avi'))
 
-        if perform_fit:
-            self.perform_fit(path)
-
         # Save files
         results = {
             "experiment_config_values": self.Exp_Values,
         }
         self.bd_results.save_results(results, extra_files)
 
+        if perform_fit:
+            self.perform_fit(path)
 
         pass
 

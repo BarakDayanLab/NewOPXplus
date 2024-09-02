@@ -23,6 +23,7 @@ Experiment_Values = {
     'PGC_duration': 12,  # 7  10
     'PGC_prep_duration': 8,  # 5  8
     'PGC_final_amp': 0.15, # 0.05 - till 15.01.23,         # Relative AOM amplitude between 0 to 1 - (0.12 yields 3.5 mW)
+    'PGC_beams_0_off_duration': 1,
 
     #'AntiHelmholtz_delay': 0.1,  # 0.1 [msec]
     'Post_MOT_delay': 1,
