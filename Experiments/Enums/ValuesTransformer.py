@@ -90,6 +90,7 @@ ValuesFactor = {
     ## PGC parameters ##
     "PGC_duration": [int, 1e6 / 4],  # [msec]
     "PGC_prep_duration": [int, 1e6 / 4],
+    "PGC_beams_0_off_duration": [int, 1e6 / 4],
 
     ## Fountain parameters ##
     "Pre_PGC_Fountain_duration": [int, 1e6 / 4],

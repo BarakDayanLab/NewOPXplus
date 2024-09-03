@@ -443,7 +443,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
 
         # If required, create video from images
         if create_video:
-            self.create_video_from_path(path, save_file_path=os.path.join(extra_files, 'video.avi'))
+            self.create_video_from_path(path, save_file_path=extra_files)
 
         if perform_fit:
             self.perform_fit(path)
@@ -529,6 +529,7 @@ class CoolingSequenceOptimizer(BaseExperiment):
     # TODO: we may want to move this to Utils - so everyone can enjoy :-)
     def create_video_from_path(self, path, save_file_path=None):
         Utils.create_video_from_path(path, save_file_path)
+        Utils.create_mp4_from_path(path, save_file_path)
         pass
 
     def open_windows_explorer(self):

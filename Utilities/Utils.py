@@ -55,7 +55,7 @@ class Utils:
         d = b ** 2 - 4 * a * c  # discriminant
 
         if d < 0:
-            return None
+            return []
         elif d == 0:
             x = (-b + math.sqrt(b ** 2 - 4 * a * c)) / 2 * a
             return np.array(x)
@@ -504,10 +504,15 @@ class Utils:
     # ---------------------------------------------------
 
     @staticmethod
-    def create_mp4_from_path(path, save_file_path=None, fps=4):
+    def create_mp4_from_path(input_path, output_path=None, fps=4):
+
+        extension = 'mp4'  # 'mp4'
+
+        if output_path is None:
+            output_path = os.path.join(input_path, f'video.{extension}')
 
         img_array = []
-        file_names = glob.glob(os.path.join(path, '*.bmp'))
+        file_names = glob.glob(os.path.join(input_path, '*.bmp'))
         file_names.sort()
         the_size = (640, 480)
         for filename in file_names:
@@ -516,12 +521,9 @@ class Utils:
             the_size = (width, height)
             img_array.append(img)
 
-        extension = 'mp4'  # 'mp4'
         fourcc = 'MP42'  # 'MP42', 'MP4V', 'DIVX'
-        out = cv2.VideoWriter(filename=os.path.join(path, f'video.{extension}'),
-                              fourcc=cv2.VideoWriter_fourcc(*fourcc),
-                              fps=fps,
-                              frameSize=the_size)
+        video_file_path = os.path.join(output_path, f'video.{extension}')
+        out = cv2.VideoWriter(filename=video_file_path, fourcc=cv2.VideoWriter_fourcc(*fourcc), fps=fps, frameSize=the_size)
         for i in range(len(img_array)):
             out.write(img_array[i])
 
@@ -529,7 +531,7 @@ class Utils:
         pass
 
     @staticmethod
-    def create_video_from_path(path, save_file_path=None):
+    def create_video_from_path(input_path, output_path=None):
         """
         Creates a video from .bmp files in a given path
         - path - where the .bmp files are
@@ -538,25 +540,24 @@ class Utils:
 
         - Taken from: https://theailearner.com/2018/10/15/creating-video-from-images-using-opencv-python/
         """
-        if save_file_path is None:
-            save_file_path = os.path.join(path, 'video.avi')
+        extension = 'avi'
+
+        if output_path is None:
+            output_path = input_path
+
         img_array = []
-        file_names = glob.glob(os.path.join(path, '*.bmp'))
+        file_names = glob.glob(os.path.join(input_path, '*.bmp'))
         file_names.sort()
+        the_size = (640, 480)
         for filename in file_names:
             img = cv2.imread(filename)
             height, width, layers = img.shape
-            size = (width, height)
+            the_size = (width, height)
             img_array.append(img)
 
-        # Test this further. Currently not working :-(
-        # From here: https://stackoverflow.com/questions/30509573/writing-an-mp4-video-using-python-opencv
-        # out = cv2.VideoWriter(filename=os.path.join(path, 'video.mp4'),
-        #                       fourcc=cv2.VideoWriter_fourcc(*'MP4V'),
-        #                       fps=20.0,
-        #                       frameSize=(640, 480))
-
-        out = cv2.VideoWriter(filename=save_file_path, fourcc=cv2.VideoWriter_fourcc(*'DIVX'), fps=3, frameSize=size)
+        video_file_path = os.path.join(output_path, f'video.{extension}')
+        fourcc = 'DIVX'
+        out = cv2.VideoWriter(filename=video_file_path, fourcc=cv2.VideoWriter_fourcc(*fourcc), fps=3, frameSize=the_size)
         for i in range(len(img_array)):
             out.write(img_array[i])
         out.release()

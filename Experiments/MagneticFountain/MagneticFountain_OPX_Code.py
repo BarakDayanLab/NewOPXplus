@@ -50,7 +50,7 @@ def MOT(mot_repetitions, OD_Attenuation):
     return FLR
 
 
-def PGC(pgc_duration, pgc_prep_duration, pgc_beams_0_off_duration, fountain_aom_chirp_rate):
+def PGC(pgc_duration, pgc_prep_duration, pgc_beams_0_off_duration, fountain_aom_chirp_rate, magnetic_fountain_duration):
     """
     The PGC process is controlled both by OPX and QuadRF.
     - The OPX code controls the AOMs (either by constant pulse, or turning on/off the 0 beams
@@ -59,15 +59,15 @@ def PGC(pgc_duration, pgc_prep_duration, pgc_beams_0_off_duration, fountain_aom_
 
     # There are 3 options to run PGC:
 
-    # --- Option 1 ----
+    # --- Option 1 ---- => Plateau only
     # Pulse_const(pgc_duration)
 
-    # --- Option 2 ----
+    # --- Option 2 ---- => Gradient Descent and then Plateau
     # Pulse_with_prep_without_0_at_pgc(pgc_duration, pgc_prep_duration, pgc_prep_duration, pgc_prep_duration,
     #                                  pgc_prep_duration, fountain_aom_chirp_rate)
 
-    # --- Option 3 ----
-    Three_stage_pgc(pgc_duration, pgc_prep_duration, pgc_beams_0_off_duration)
+    # --- Option 3 ---- => Gradient Descent and then Plateau with a period at the end turning off 0-beams
+    Three_stage_pgc(pgc_duration, pgc_prep_duration, pgc_beams_0_off_duration, magnetic_fountain_duration)
 
 
 def Pulse_const(total_pulse_duration):
@@ -254,7 +254,7 @@ def Pulse_with_prep_without_0_at_pgc(pulse_duration, prep_duration, zero_pulse_d
              duration=(pulse_duration - prep_duration))
 
 
-def Three_stage_pgc(pgc_duration, pgc_prep_duration, pgc_beams_off_duration):
+def Three_stage_pgc(pgc_duration, pgc_prep_duration, pgc_beams_off_duration, magnetic_fountain_duration):
 
     """
     This pulse id divided to two parts:
@@ -280,16 +280,16 @@ def Three_stage_pgc(pgc_duration, pgc_prep_duration, pgc_beams_off_duration):
         play("Const" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+", duration=pgc_prep_duration)
 
     align("MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+")
-    update_frequency("MOT_AOM_-", Config.IF_AOM_MOT)
-    update_frequency("MOT_AOM_+", Config.IF_AOM_MOT)
-    with if_(pgc_duration > pgc_prep_duration):
+    with if_(pgc_duration > pgc_prep_duration+pgc_beams_off_duration):
         play("Const" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0", duration=(pgc_duration - pgc_prep_duration - pgc_beams_off_duration))
         play("Const" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-", duration=(pgc_duration - pgc_prep_duration - pgc_beams_off_duration))
         play("Const" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+", duration=(pgc_duration - pgc_prep_duration - pgc_beams_off_duration))
 
-    align("MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+")
-    update_frequency("MOT_AOM_-", Config.IF_AOM_MOT)
-    update_frequency("MOT_AOM_+", Config.IF_AOM_MOT)
+    align("MOT_AOM_0", "MOT_AOM_-", "MOT_AOM_+", "Magnetic_Fountain")
+
+    wait(us(50), "Magnetic_Fountain")
+    play("Const_open" * amp(1.0), "Magnetic_Fountain", duration=magnetic_fountain_duration)
+
     with if_(pgc_beams_off_duration > 0):
         # play("Const" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0", duration=pgc_beams_off_duration)
         play("Const" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-", duration=pgc_beams_off_duration)
@@ -503,15 +503,8 @@ def opx_control(obj, qm):
 
             align(*all_elements)
 
-            # Magnetic Fountain
-            with if_(magnetic_fountain_duration > 0):
-                # We distance the magnetic fountain a bit after the pgc_prep ended
-                wait( (pgc_duration - pgc_beams_0_off_duration) + us(50), "Magnetic_Fountain")
-                #wait(obj.pgc_prep_duration + us(50), "Magnetic_Fountain")
-                play("Const_open" * amp(1.0), "Magnetic_Fountain", duration=magnetic_fountain_duration)
-
             # wait(pgc_duration, "Cooling_Sequence")
-            PGC(pgc_duration, pgc_prep_duration, pgc_beams_0_off_duration, fountain_aom_chirp_rate)
+            PGC(pgc_duration, pgc_prep_duration, pgc_beams_0_off_duration, fountain_aom_chirp_rate, magnetic_fountain_duration)
 
             align(*all_elements)
 

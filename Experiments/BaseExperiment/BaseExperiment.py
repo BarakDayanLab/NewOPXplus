@@ -642,7 +642,7 @@ class BaseExperiment:
 
         # If device serial was not defined and invocation did not request any, choose default:
         if not hasattr(self, 'device_serial') and not device_serial:
-            self.device_serial = 'FF006524'
+            self.device_serial = 'FF006583'
 
         # If device serial was not defined and invocation DOES request, take it
         if hasattr(self, 'device_serial') and device_serial is not None:
