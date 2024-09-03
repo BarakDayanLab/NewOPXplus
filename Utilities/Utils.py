@@ -607,6 +607,31 @@ class Utils:
         return existed
 
     @staticmethod
+    def remove_empty_experiment_folders(root_folder):
+        """
+        Cleans-up empty experiment folders. These are folders that contain only a single file: log.txt
+        """
+
+        folders = Utils.get_folders_in_path(root_folder)
+
+        # Iterate over all folders and check which one has only a single file: "log.txt"
+        folders_to_remove = []
+        for folder in folders:
+            all_files = Utils.get_files_in_path(folder, return_full_path=False)
+            if len(all_files) == 1 and all_files[0] == 'log.txt':
+                folders_to_remove.append(folder)
+
+        # Remove the folders with only "log.txt" file
+        for folder in folders_to_remove:
+            try:
+                os.remove(folder)
+                print(f'- Removed {folder}')
+            except Exception as err:
+                print(f'*** Failed to remove folder {folder}. {err}')
+
+        pass
+
+    @staticmethod
     def get_files_in_path(path, opt_in_filter=None, opt_out_filter=None, return_full_path=False):
         """
         Returns all files that are in a given path.
