@@ -113,8 +113,11 @@ class MagneticFountainExperiment(BaseExperiment):
         bounds = (-np.inf, np.inf)
         # bounds = (-np.inf, np.inf) if fit_for_alpha else ([9.8e-6/2/self.mm_to_pxl * 1e3, -np.inf,0],[9.8001e-6/2/self.mm_to_pxl * 1e3, np.inf, np.inf])   # fit for the acceleration of the quadratic
         # if fit_for_alpha is FALSE, set acceleration to BE g. not trikim no shtikim
+        try:
+            v_launch_popt, v_launch_cov = opt.curve_fit(fitFunc, time_vector, y_position_vector, bounds=bounds)
+        except Exception as err:
+            print(f'failed to perform fit to center of mass movement due to: {err}')
 
-        v_launch_popt, v_launch_cov = opt.curve_fit(fitFunc, time_vector, y_position_vector, bounds=bounds)
         alpha = 9.8e-6 / 2 / v_launch_popt[0] * 1e3 if fit_for_alpha else self.mm_to_pxl  # mm/pixel
         v_launch = v_launch_popt[0] * self.mm_to_pxl # mm/ms = m/s
         v_launch_std = np.sqrt(np.diag(v_launch_cov))[0] * self.mm_to_pxl
@@ -124,7 +127,7 @@ class MagneticFountainExperiment(BaseExperiment):
         v_1ms = (-v_launch * 1000) - 9.81 * 1000 * 1e-3
         # solving quadratic equation 0 = h_1ms + v_1ms*t - g*t^2/2: a=-g/2[mm/s^2], b=v_1ms[mm/s], c=h_1ms[mm]
         t_arrival = Utils.solve_quadratic_equation((-9.81 * 1000 / 2), v_1ms, h_1ms)
-        if t_arrival.any():
+        if len(t_arrival) > 0:
             t_arrival_str = '%.1f' % (t_arrival.min() * 1e3 + 1)  #  + 1 due to the fact that we estimated the arrival time for the cloud after 1ms so we added the 1 ms for the arrival time from end of PGC.
         else:
             t_arrival_str = '$ \infty $'
@@ -196,11 +199,11 @@ class MagneticFountainExperiment(BaseExperiment):
         y_position_vector = np.array([res[-1][2] for res in gaussianFitResult])
 
         # ------ Use v-launch fit to go from px to mm ------
-        gaussian_amplitude_vector = alpha * np.array([res[-1][0] for res in gaussianFitResult])
-        y_position_vector = alpha * y_position_vector
-        x_position_vector = alpha * np.array([res[-1][1] for res in gaussianFitResult])
-        sigma_x_vector = alpha * np.array([res[-1][3] for res in gaussianFitResult])
-        sigma_y_vector = alpha * np.array([res[-1][4] for res in gaussianFitResult])
+        # gaussian_amplitude_vector = alpha * np.array([res[-1][0] for res in gaussianFitResult])
+        # y_position_vector = alpha * y_position_vector
+        # x_position_vector = alpha * np.array([res[-1][1] for res in gaussianFitResult])
+        # sigma_x_vector = alpha * np.array([res[-1][3] for res in gaussianFitResult])
+        # sigma_y_vector = alpha * np.array([res[-1][4] for res in gaussianFitResult])
 
         # -------- Fit for x and y temperatures ----
         T_x, T_y = self.fitTemperaturesFromGaussianFitResults(gaussianFitResult, alpha, extra_files, plotResults=True)
@@ -455,7 +458,7 @@ class MagneticFountainExperiment(BaseExperiment):
 
         # If required, create video from images
         if create_video:
-            self.create_video_from_path(path, save_file_path=os.path.join(extra_files, 'video.avi'))
+            self.create_video_from_path(path, save_file_path=extra_files)
 
         # Save files
         results = {
@@ -560,7 +563,8 @@ class MagneticFountainExperiment(BaseExperiment):
         return (res)
 
 
-    def GaussianFit(self, file_name_for_fit, background_file, saveFitsPath=None, imgBounds=None, X_PIXEL_LEN=1544, Y_PIXEL_LEN=2064, CROP_IMG_SIZE=180 ,PLOT_IMG=False, PLOT_SLICE=False, SHOW_CROP=False):
+    def GaussianFit(self, file_name_for_fit, background_file, saveFitsPath=None, imgBounds=None, X_PIXEL_LEN=1544,
+                    Y_PIXEL_LEN=2064, CROP_IMG_SIZE=180 ,PLOT_IMG=False, PLOT_SLICE=False, SHOW_CROP=False):
         """
         Fit a gaussian to subtracted images
          INPUT:
@@ -664,9 +668,9 @@ class MagneticFountainExperiment(BaseExperiment):
             # plot slice
             mtl.figure()
             data_noisy_mat = data_noisy.reshape(EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN)
-            Slice = data_noisy_mat[int(EFFECTIVE_X_PIXEL_LEN / 2) - 10]
+            Slice = data_noisy_mat[int(EFFECTIVE_Y_PIXEL_LEN / 2) - 10]
             mtl.plot(Slice)
-            mtl.plot(data_fitted.reshape(EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN)[int(EFFECTIVE_X_PIXEL_LEN / 2) - 10])
+            mtl.plot(data_fitted.reshape(EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN)[int(EFFECTIVE_Y_PIXEL_LEN / 2) - 10])
             plt.show()
 
         # return original x-y
@@ -813,11 +817,7 @@ if __name__ == "__main__":
     experiment = MagneticFountainExperiment()
 
     # Display menu to get action
-    settings = Utils.load_json_from_file(r'./settings.json')
-    selection = BDMenu(caller=experiment, menu_file=None, menu_json=settings['menus']).display()
-
-    # TODO: insert this into the cycles/runs schema
-    #experiment.measureTemperature()
-    #experiment.optimizePGC()
+    # settings = Utils.load_json_from_file(r'./settings.json')
+    # selection = BDMenu(caller=experiment, menu_file=None, menu_json=settings['menus']).display()
 
     pass
