@@ -26,6 +26,14 @@
 		{
             "description": "Folder for the MOT images and fit data",
   			"name": "extra_files"
+		},
+		{
+            "description": "Folder for MOT images of camera 0",
+  			"name": "camera_0"
+		},
+				{
+            "description": "Folder for MOT images of camera 1",
+  			"name": "camera_1"
 		}
 	]
 }

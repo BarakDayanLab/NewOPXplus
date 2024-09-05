@@ -504,7 +504,7 @@ class Utils:
     # ---------------------------------------------------
 
     @staticmethod
-    def create_mp4_from_path(input_path, output_path=None, fps=4):
+    def create_mp4_from_path(input_path, output_path=None, file_name='video', fps=4):
 
         extension = 'mp4'  # 'mp4'
 
@@ -522,7 +522,7 @@ class Utils:
             img_array.append(img)
 
         fourcc = 'MP42'  # 'MP42', 'MP4V', 'DIVX'
-        video_file_path = os.path.join(output_path, f'video.{extension}')
+        video_file_path = os.path.join(output_path, f'{file_name}.{extension}')
         out = cv2.VideoWriter(filename=video_file_path, fourcc=cv2.VideoWriter_fourcc(*fourcc), fps=fps, frameSize=the_size)
         for i in range(len(img_array)):
             out.write(img_array[i])
@@ -531,7 +531,7 @@ class Utils:
         pass
 
     @staticmethod
-    def create_video_from_path(input_path, output_path=None):
+    def create_video_from_path(input_path, output_path=None, file_name='video'):
         """
         Creates a video from .bmp files in a given path
         - path - where the .bmp files are
@@ -555,7 +555,7 @@ class Utils:
             the_size = (width, height)
             img_array.append(img)
 
-        video_file_path = os.path.join(output_path, f'video.{extension}')
+        video_file_path = os.path.join(output_path, f'{file_name}.{extension}')
         fourcc = 'DIVX'
         out = cv2.VideoWriter(filename=video_file_path, fourcc=cv2.VideoWriter_fourcc(*fourcc), fps=3, frameSize=the_size)
         for i in range(len(img_array)):

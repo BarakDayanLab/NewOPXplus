@@ -37,9 +37,9 @@ class MvCameraController:
     def __init__(self, deviceSerial='FF006583'):
         try:
             self.camera = MvCamera.MvCamera(deviceSerial=deviceSerial)
-            printGreen("connected to camera")
+            printGreen(f'Connected to camera {deviceSerial}')
         except Exception as err:
-            printError(f'Could not connect to camera, probably connected/acquired by application. If not, try killing all Python tasks via TaskManager. ({err})')
+            printError(f'Could not connect to camera {deviceSerial}, probably connected/acquired by application. If not, try killing all Python tasks via TaskManager. ({err})')
             raise Exception('Unable to connect to camera - probably already connected.')
 
     def captureImage(self):
