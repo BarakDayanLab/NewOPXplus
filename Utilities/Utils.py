@@ -617,6 +617,7 @@ class Utils:
         # Iterate over all folders and check which one has only a single file: "log.txt"
         folders_to_remove = []
         for folder in folders:
+            folder = os.path.join(root_folder, folder)
             all_files = Utils.get_files_in_path(folder, return_full_path=False)
             if len(all_files) == 1 and all_files[0] == 'log.txt':
                 folders_to_remove.append(folder)
@@ -624,7 +625,8 @@ class Utils:
         # Remove the folders with only "log.txt" file
         for folder in folders_to_remove:
             try:
-                os.remove(folder)
+                os.remove(os.path.join(folder, 'log.txt'))
+                os.rmdir(folder)
                 print(f'- Removed {folder}')
             except Exception as err:
                 print(f'*** Failed to remove folder {folder}. {err}')
@@ -689,5 +691,5 @@ class Utils:
 if __name__ == "__main__":
 
     # Test
-    Utils.is_port_established('6232')
+    Utils.remove_empty_experiment_folders(r'C:\temp\refactor_debug\Experiment_results\Temperature')
     pass

@@ -24,7 +24,7 @@ Experiment_Values = {
     'Buffer_Cycles': 0,
     'Imaging_Phase': Phases.PULSE_1,
     # 'PrePulse_duration': 4,  # [msec]
-    'PrePulse_duration': 20,  # [msec]
+    'PrePulse_duration': 17,  # [msec]
     # 'PrePulse_duration': 20,  # [msec]
     'Shutter_open_time': 1,  # [msec]
     'Pulse_1_duration': int(max(Config.readout_pulse_sprint_len_N, Config.readout_pulse_sprint_len_S)) / 1e6,  # [msec]
@@ -32,7 +32,7 @@ Experiment_Values = {
     'Fountain_duration': 0.5,  # [msec]
     'Fountain_prep_duration': 0.5,  # [msec], Can't be zero!!!
     'M_window': int(max(Config.readout_pulse_sprint_len_N, Config.readout_pulse_sprint_len_S)),  # [nsec]
-    'ignored_marginals': 5e5,  # [nsec] data at the beginning and at the end of a window to "throw away" because of shutters noise
+    'ignored_marginals': 1e6,  # [nsec] data at the beginning and at the end of a window to "throw away" because of shutters noise
     'M_time': int(max(Config.readout_pulse_sprint_len_N, Config.readout_pulse_sprint_len_S)) / 1e6,
     # Pulse_length[nsec] * 1000 repbetitions * (Bandwidth[MHz] * frequency steps[MHz]) * 4 / 1e6[nsec/msec] - [msec]
     'M_off_time': 1.5,  # [msec] - should be at least 5 ms, to sync quadrf and OPX

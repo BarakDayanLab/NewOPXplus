@@ -588,8 +588,8 @@ config = {
 
         "fast_switch_TTL_on": {
             'operation': 'control',
-            'length': 1e6,
-            'digital_marker': 'ON'
+            'length': 2e6,
+            'digital_marker': 'ON'  # ON
         },
 
         "Probe_lock": {

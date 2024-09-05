@@ -31,39 +31,6 @@ class MagneticFountainExperiment(BaseExperiment):
         super().__init__(playback_parameters=None, save_raw_data=False, connect_to_camera=True, experiment_mode=experiment_mode)
         pass
 
-    def connect_camera(self, device_serial=None):
-        """
-        Override the base class "connect_camera" method
-        Connect to both cameras simultaneously
-
-        Instead of self.camera, this method will initiate self.camera_0 and self.camera_1
-        """
-
-        try:
-            from UtilityResources import MvCameraController
-            self.camera_0 = MvCameraController.MvCameraController(deviceSerial='FF006583')
-        except Exception as e:
-            self.warn(f'Could not connect to camera FF006583 ({e})')
-
-        try:
-            from UtilityResources import MvCameraController
-            self.camera_1 = MvCameraController.MvCameraController(deviceSerial='FF006524')
-        except Exception as e:
-            self.warn(f'Could not connect to camera FF006524 ({e})')
-
-        pass
-
-    def disconnect_camera(self):
-        self.camera_0 = None
-        self.camera_1 = None
-        pass
-
-    def is_camera_connected(self):
-        return self.camera_0 is not None and self.camera_1 is not None
-
-    def is_camera_disconnected(self):
-        return not self.is_camera_connected()
-
     def initialize_experiment_variables(self):
 
         # Ensure we initialize the basic OPX experiment variables (required for standard MOT)
@@ -83,7 +50,6 @@ class MagneticFountainExperiment(BaseExperiment):
         # Initialize magnetic fountain related parameters
         self.magnetic_fountain_on = True
         self.pgc_beams_0_off_duration = int(self.Exp_Values['PGC_beams_0_off_duration'] * 1e6 / 4)
-
 
     def switch_camera_device(self):
         self.disconnect_camera()
@@ -220,7 +186,7 @@ class MagneticFountainExperiment(BaseExperiment):
         background_image_path = os.path.join(extra_files, 'background.bmp')
 
         # Gaussian Fit to results (for each photo)
-        gaussianFitResult = self.gaussianFitAllPicturesInPath(path, backgroundPath=background_image_path, saveFitsPath=extra_files, imgBounds=self.imgBounds)
+        gaussianFitResult = self.gaussianFitAllPicturesInPath(path, backgroundPath=path, saveFitsPath=extra_files, imgBounds=self.imgBounds)
 
         if len(gaussianFitResult) == 0:
             self.warn('No Gaussian fit on images, not trying any fits. Skipping.')
@@ -475,27 +441,32 @@ class MagneticFountainExperiment(BaseExperiment):
 
                 # Capture and average images
                 image_name = 'PrePulse_duration={:04.1f}.bmp'.format(ppd)
-                # image_full_path = os.path.join(camera_0_folder, image_name)
+
+                # image_full_path = os.path.join(path, image_name)
                 # self.camera.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, NThrow_end=self.NThrow_end, RGB=False)
 
                 image_full_path = os.path.join(camera_0_folder, image_name)
-                self.camera_0.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, NThrow_end=self.NThrow_end, RGB=False)
+                self.camera.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, NThrow_end=self.NThrow_end, RGB=False)
+
+                self.switch_camera_device()
 
                 image_full_path = os.path.join(camera_1_folder, image_name)
-                self.camera_1.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, NThrow_end=self.NThrow_end, RGB=False)
+                self.camera.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, NThrow_end=self.NThrow_end, RGB=False)
+
+                self.switch_camera_device()
 
         except Exception as err:
             self.warn(f'Failed to get images - {err}')
 
-        # Take background picture (after such a long delay, we should have no visible cloud)
+        # Take background picture (after such a long delay, we should have no visible cloud :-)
         self.updateValue("PrePulse_duration", float(50), update_parameters=True)
 
-        #background_image_path = os.path.join(extra_files, 'background.bmp')
-        #self.camera.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
         background_image_path = os.path.join(camera_0_folder, 'background.bmp')
-        self.camera_0.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+        self.camera.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+        self.switch_camera_device()
         background_image_path = os.path.join(camera_1_folder, 'background.bmp')
-        self.camera_1.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+        self.camera.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+        self.switch_camera_device()
 
         # Update back the pre_pulse_duration to the Config original value
         ppd_at_start = float(self.Exp_Values['PrePulse_duration'])
@@ -504,9 +475,8 @@ class MagneticFountainExperiment(BaseExperiment):
 
         # If required, create video from images
         if create_video:
-            # self.create_video_from_path(path, save_file_path=extra_files)
-            self.create_video_from_path(camera_0_folder, save_file_path=camera_0_folder, file_name='video_cam_0')
-            self.create_video_from_path(camera_1_folder, save_file_path=camera_1_folder, file_name='video_cam_1')
+            self.create_video_from_path(camera_0_folder, save_file_path=extra_files, file_name='video_cam_0')
+            self.create_video_from_path(camera_1_folder, save_file_path=extra_files, file_name='video_cam_1')
 
         # Save files
         results = {
@@ -865,7 +835,7 @@ if __name__ == "__main__":
     experiment = MagneticFountainExperiment()
 
     # Display menu to get action
-    # settings = Utils.load_json_from_file(r'./settings.json')
-    # selection = BDMenu(caller=experiment, menu_file=None, menu_json=settings['menus']).display()
+    settings = Utils.load_json_from_file(r'./settings.json')
+    selection = BDMenu(caller=experiment, menu_file=None, menu_json=settings['menus']).display()
 
     pass

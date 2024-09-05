@@ -292,6 +292,7 @@ def Three_stage_pgc(pgc_duration, pgc_prep_duration, pgc_beams_off_duration, mag
 
     with if_(pgc_beams_off_duration > 0):
         # play("Const" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0", duration=pgc_beams_off_duration)
+
         play("Const" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-", duration=pgc_beams_off_duration)
         play("Const" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+", duration=pgc_beams_off_duration)
 
