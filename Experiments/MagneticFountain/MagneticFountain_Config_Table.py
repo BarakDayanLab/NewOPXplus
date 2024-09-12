@@ -18,12 +18,13 @@ Experiment_Values = {
     # 'Fountain_duration': 0.5,  # [msec]
     'Fountain_prep_duration': 0.5,  # [msec], Can't be zero!!!
 
-    'Magnetic_fountain_duration': 3, # 5 [msec]
+    'Magnetic_fountain_duration': 5, # 5 [msec]
     # 'Magnetic_fountain_duration': 0,  # 5 [msec]
-    'PGC_duration': 12,  # 7  10
-    'PGC_prep_duration': 9,  # 5  8
-    'PGC_final_amp': 0.14, # 0.05 - till 15.01.23,         # Relative AOM amplitude between 0 to 1 - (0.12 yields 3.5 mW)
-    'PGC_beams_0_off_duration': 2,
+    'PGC_duration': 9,  # 7  10
+    'PGC_prep_duration': 6,  # 5  8
+    'PGC_final_amp': 0.11, # 0.05 - till 15.01.23,         # Relative AOM amplitude between 0 to 1 - (0.12 yields 3.5 mW)
+    'PGC_beams_0_off_duration': 1.5,
+    'AOM_0_att_3rd_stage': 0.08,
 
     #'AntiHelmholtz_delay': 0.1,  # 0.1 [msec]
     'Post_MOT_delay': 1,
@@ -31,7 +32,7 @@ Experiment_Values = {
 
     # Imaging
     'Imaging_Phase': Phases.PULSE_1,
-    'PrePulse_duration': 7,  # [msec]
+    'PrePulse_duration': 12,  # [msec]
     'Pulse_1_duration': 0.2, # 0.2,  # [msec]
 
     # 'OPX_Quad_Misalignment_Delay': 4000  # = 4us [ns]

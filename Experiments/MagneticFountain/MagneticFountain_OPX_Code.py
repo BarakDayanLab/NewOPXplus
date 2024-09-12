@@ -50,7 +50,7 @@ def MOT(mot_repetitions, OD_Attenuation):
     return FLR
 
 
-def PGC(pgc_duration, pgc_prep_duration, pgc_beams_0_off_duration, fountain_aom_chirp_rate, magnetic_fountain_duration):
+def PGC(pgc_duration, pgc_prep_duration, pgc_beams_0_off_duration, fountain_aom_chirp_rate, magnetic_fountain_duration,AOM_0_att_3rd_stage):
     """
     The PGC process is controlled both by OPX and QuadRF.
     - The OPX code controls the AOMs (either by constant pulse, or turning on/off the 0 beams
@@ -67,7 +67,7 @@ def PGC(pgc_duration, pgc_prep_duration, pgc_beams_0_off_duration, fountain_aom_
     #                                  pgc_prep_duration, fountain_aom_chirp_rate)
 
     # --- Option 3 ---- => Gradient Descent and then Plateau with a period at the end turning off 0-beams
-    Three_stage_pgc(pgc_duration, pgc_prep_duration, pgc_beams_0_off_duration, magnetic_fountain_duration)
+    Three_stage_pgc(pgc_duration, pgc_prep_duration, pgc_beams_0_off_duration, magnetic_fountain_duration,AOM_0_att_3rd_stage)
 
 
 def Pulse_const(total_pulse_duration):
@@ -246,15 +246,15 @@ def Pulse_with_prep_without_0_at_pgc(pulse_duration, prep_duration, zero_pulse_d
     update_frequency("MOT_AOM_-", Config.IF_AOM_MOT)
     update_frequency("MOT_AOM_+", Config.IF_AOM_MOT)
     with if_(pulse_duration > prep_duration):
-        # play("Const" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0",
-        #      duration=(pulse_duration - prep_duration))
+        play("Const" * amp(0.15), "MOT_AOM_0",
+             duration=(pulse_duration - prep_duration))
         play("Const" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-",
              duration=(pulse_duration - prep_duration))
         play("Const" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+",
              duration=(pulse_duration - prep_duration))
 
 
-def Three_stage_pgc(pgc_duration, pgc_prep_duration, pgc_beams_off_duration, magnetic_fountain_duration):
+def Three_stage_pgc(pgc_duration, pgc_prep_duration, pgc_beams_off_duration, magnetic_fountain_duration,AOM_0_att_3rd_stage):
 
     """
     This pulse id divided to two parts:
@@ -291,8 +291,7 @@ def Three_stage_pgc(pgc_duration, pgc_prep_duration, pgc_beams_off_duration, mag
     play("Const_open" * amp(1.0), "Magnetic_Fountain", duration=magnetic_fountain_duration)
 
     with if_(pgc_beams_off_duration > 0):
-        # play("Const" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0", duration=pgc_beams_off_duration)
-
+        play("Const" * amp(0.08), "MOT_AOM_0", duration=pgc_beams_off_duration)
         play("Const" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-", duration=pgc_beams_off_duration)
         play("Const" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+", duration=pgc_beams_off_duration)
 
@@ -392,6 +391,7 @@ def opx_control(obj, qm):
         # Fountain variables:
         fountain_duration = declare(int, value=int(obj.fountain_duration))
         magnetic_fountain_duration = declare(int, value=int(obj.magnetic_fountain_duration))
+        AOM_0_att_3rd_stage = obj.Exp_Values['AOM_0_att_3rd_stage']
 
         # TODO: pre_PGC_fountain_duration = declare(int, value=int(obj.pre_PGC_fountain_duration))
         fountain_prep_time = declare(int, value=int(obj.fountain_prep_duration))  # Can't be used with Chirp!!!
@@ -505,7 +505,8 @@ def opx_control(obj, qm):
             align(*all_elements)
 
             # wait(pgc_duration, "Cooling_Sequence")
-            PGC(pgc_duration, pgc_prep_duration, pgc_beams_0_off_duration, fountain_aom_chirp_rate, magnetic_fountain_duration)
+            PGC(pgc_duration, pgc_prep_duration, pgc_beams_0_off_duration, fountain_aom_chirp_rate,
+                magnetic_fountain_duration,AOM_0_att_3rd_stage)
 
             align(*all_elements)
 

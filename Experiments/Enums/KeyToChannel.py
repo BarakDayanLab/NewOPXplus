@@ -29,6 +29,11 @@ KeyToChannel = {
     'Repump_PGC_freq': [4],     # The final frequency of the Repump in the PGC sequence
     'Fountain_duration': [1, 4],    # [msec]
     'Fountain_prep_duration': [1, 4],          # [msec]
+
+    # magnetic fountain:
+    'PGC_beams_0_off_duration': [],  # [msec]
+    'AOM_0_att_3rd_stage':[],
+
     'Fountain_initial_amp_0': [],  # (also minus) Relative AOM amplitude between 0 to 1
     'Fountain_initial_amp_plus': [],
     'Fountain_initial_amp_minus': [],

@@ -41,11 +41,11 @@ class MagneticFountainExperiment(BaseExperiment):
         self.NAvg = 1  # Number of photos captured to create an average image
         self.NThrow = 3  # Number of image throwed to garbage we're "skipping" at the begging of each capturing time
         self.NThrow_end = 1 # Number of image throwed to garbage we're "skipping" at the end of each capturing time
-        self.imgBounds = (580, 200, 1600, 1450)  # bounds to crop out of the taken pictures
-        self.mm_to_pxl = 10/970  # measured using ruler in focus 03/7/2024
+        self.imgBounds = (280, 200, 1600, 1450)  # bounds to crop out of the taken pictures
+        self.mm_to_pxl = 10/(1260-504)  # measured using ruler in focus 03/7/2024
 
         self.sigma_bounds = (15, 100)  # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
-        self.resonator_pxl_position = 100 # TODO: create function for finding the position.
+        self.resonator_pxl_position = 65 # TODO: create function for finding the position.
 
         # Initialize magnetic fountain related parameters
         self.magnetic_fountain_on = True
@@ -186,7 +186,13 @@ class MagneticFountainExperiment(BaseExperiment):
         background_image_path = os.path.join(extra_files, 'background.bmp')
 
         # Gaussian Fit to results (for each photo)
+        print(path)
         gaussianFitResult = self.gaussianFitAllPicturesInPath(path, backgroundPath=path, saveFitsPath=extra_files, imgBounds=self.imgBounds)
+
+        # Ayelet's patch so temp measurement will work:
+        # cam_0_path = os.path.join(path, 'camera_0')
+        # gaussianFitResult = self.gaussianFitAllPicturesInPath(cam_0_path, backgroundPath=cam_0_path, saveFitsPath=extra_files, imgBounds=self.imgBounds)
+        # print(cam_0_path)
 
         if len(gaussianFitResult) == 0:
             self.warn('No Gaussian fit on images, not trying any fits. Skipping.')
@@ -448,12 +454,13 @@ class MagneticFountainExperiment(BaseExperiment):
                 image_full_path = os.path.join(camera_0_folder, image_name)
                 self.camera.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, NThrow_end=self.NThrow_end, RGB=False)
 
-                self.switch_camera_device()
-
-                image_full_path = os.path.join(camera_1_folder, image_name)
-                self.camera.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, NThrow_end=self.NThrow_end, RGB=False)
-
-                self.switch_camera_device()
+                # LETAKEN DROR Le-2 matzlemot!!
+                # self.switch_camera_device()
+                #
+                # image_full_path = os.path.join(camera_1_folder, image_name)
+                # self.camera.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, NThrow_end=self.NThrow_end, RGB=False)
+                #
+                # self.switch_camera_device()
 
         except Exception as err:
             self.warn(f'Failed to get images - {err}')
@@ -463,10 +470,11 @@ class MagneticFountainExperiment(BaseExperiment):
 
         background_image_path = os.path.join(camera_0_folder, 'background.bmp')
         self.camera.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
-        self.switch_camera_device()
-        background_image_path = os.path.join(camera_1_folder, 'background.bmp')
-        self.camera.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
-        self.switch_camera_device()
+        # LETAKEN DROR Le-2 matzlemot!!
+        # self.switch_camera_device()
+        # background_image_path = os.path.join(camera_1_folder, 'background.bmp')
+        # self.camera.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+        # self.switch_camera_device()
 
         # Update back the pre_pulse_duration to the Config original value
         ppd_at_start = float(self.Exp_Values['PrePulse_duration'])
@@ -485,7 +493,9 @@ class MagneticFountainExperiment(BaseExperiment):
         self.bd_results.save_results(results, extra_files)
 
         if perform_fit:
-            self.perform_fit(path)
+            # LETAKEN DROR Le-2 matzlemot!!
+            self.perform_fit(camera_0_folder)
+            self.perform_fit(camera_1_folder)
 
         pass
 
@@ -548,6 +558,8 @@ class MagneticFountainExperiment(BaseExperiment):
     def gaussianFitAllPicturesInPath(self, path, backgroundPath=None, saveFitsPath=None, imgBounds=None):
         if backgroundPath is None:
             backgroundPath = os.path.join(path, 'extra_files', 'background.bmp')
+        else:
+            backgroundPath = os.path.join(path, 'background.bmp')
 
         if imgBounds is None:
             imgBounds = self.imgBounds
@@ -559,8 +571,8 @@ class MagneticFountainExperiment(BaseExperiment):
                 fullFileName = os.path.join(path, f)
                 fileRes = []
                 f = f.replace('.jpeg', '').replace('.bmp', '').replace(',', ';')
-                if f.find('background'):
-                    pass
+                if 'background' in f:
+                    continue
                 ## -- get x and y values from file name ----
                 keysAndValues = f.split(';')
                 keys = []
@@ -593,6 +605,8 @@ class MagneticFountainExperiment(BaseExperiment):
         """
         fileName = Path(file_name_for_fit).stem
         backgroundImg = cv2.imread(background_file, 0)
+        if backgroundImg is None:
+            raise Exception('There is no background image')
         ImgToFit = cv2.imread(file_name_for_fit, 0)
         ImgToFit = cv2.subtract(ImgToFit, backgroundImg)
 
@@ -652,11 +666,14 @@ class MagneticFountainExperiment(BaseExperiment):
         sigma = [popt[3], popt[4]]
         sb = self.sigma_bounds
         if sb and (not sb[0] < sigma[0] < sb[1] or not sb[0] < sigma[1] < sb[1]):  # if either of the sigmas is out of bounds...
-            print('In gaussian git, sigma out of bounds. Discarding this result')
+            print('In gaussian fit, sigma out of bounds. Discarding this result')
             return None
 
         # ---- plot the results ----
         data_fitted = self.twoD_Gaussian((x, y), *popt)
+
+        if not os.path.exists(saveFitsPath):
+            os.makedirs(saveFitsPath)
 
         if PLOT_IMG or saveFitsPath:
             fig, ax = plt.subplots(1, 1)
@@ -836,6 +853,6 @@ if __name__ == "__main__":
 
     # Display menu to get action
     settings = Utils.load_json_from_file(r'./settings.json')
-    selection = BDMenu(caller=experiment, menu_file=None, menu_json=settings['menus']).display()
-
+    # selection = BDMenu(caller=experiment, menu_file=None, menu_json=settings['menus']).display()
+    experiment.measure_temperature(pre_pulse_durations=[3, 3.5, 4], create_video=True, perform_fit=True)
     pass

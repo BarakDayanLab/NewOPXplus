@@ -33,7 +33,7 @@ Initial_Values = {
     'Post_MOT_delay': 1,  # [msec] All lights are off (except depump) between MOT and PGC prep stages
 
     # PGC parameters:
-    'PGC_final_freq': 93e6, #91e6 - until 15.01.23,
+    'PGC_final_freq': 91e6, #91e6 - until 15.01.23,
     'PGC_initial_freq': -1,  # By default, taken from previous phase (see @Operation_Modes['DefaulValues'])
     'PGC_duration': 2,# 4 until 15.01.22
     # 'PGC_prep_duration': 2.5,        # [msec]
