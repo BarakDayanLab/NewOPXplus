@@ -44,6 +44,9 @@ class MagneticFountainExperiment(BaseExperiment):
         self.imgBounds = (280, 200, 1600, 1450)  # bounds to crop out of the taken pictures
         self.mm_to_pxl = 10/(1260-504)  # measured using ruler in focus 03/7/2024
 
+        # Here we can define the factor for the 2 cameras
+        self.mm_to_pxl_arr = [self.mm_to_pxl, self.mm_to_pxl]
+
         self.sigma_bounds = (15, 100)  # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
         self.resonator_pxl_position = 65 # TODO: create function for finding the position.
 
@@ -83,6 +86,22 @@ class MagneticFountainExperiment(BaseExperiment):
 
         str = 'ON' if self.magnetic_fountain_on else 'OFF'
         self.logger.info(f'Magnetic Fountain: {str}')
+
+    def plot_cloud_position_over_time(self, images_folder, camera_id):
+
+        out_image = os.path.join(images_folder, 'extra_files', f'trajectory_cam_{camera_id}.jpg')
+
+
+        # Get the mm_to_pxl ration per camera id
+        mm_to_pxl = self.mm_to_pxl_arr[camera_id]
+        Utils.plot_cloud_position_over_time(images_folder=images_folder, out_path=out_image,
+                                            x_start=800, x_end=1200, y_start=600, y_end=1200,
+                                            mm_to_pixel=mm_to_pxl, start_image=0, skip_images=2,
+                                            show=True, debug=False)
+
+        self.logger.info(f'Trajectory chart for camera {camera_id} save at {out_image}')
+
+        pass
 
     def createPathForTemperatureMeasurement(self, path=None, saveConfig=False):
         extraFilesPath = ''
