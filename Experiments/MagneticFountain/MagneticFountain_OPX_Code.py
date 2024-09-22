@@ -291,7 +291,7 @@ def Three_stage_pgc(pgc_duration, pgc_prep_duration, pgc_beams_off_duration, mag
     play("Const_open" * amp(1.0), "Magnetic_Fountain", duration=magnetic_fountain_duration)
 
     with if_(pgc_beams_off_duration > 0):
-        play("Const" * amp(0.08), "MOT_AOM_0", duration=pgc_beams_off_duration)
+        play("Const" * amp(Config.AOM_0_Attenuation), "MOT_AOM_0", duration=pgc_beams_off_duration)
         play("Const" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-", duration=pgc_beams_off_duration)
         play("Const" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+", duration=pgc_beams_off_duration)
 
@@ -391,7 +391,7 @@ def opx_control(obj, qm):
         # Fountain variables:
         fountain_duration = declare(int, value=int(obj.fountain_duration))
         magnetic_fountain_duration = declare(int, value=int(obj.magnetic_fountain_duration))
-        AOM_0_att_3rd_stage = obj.Exp_Values['AOM_0_att_3rd_stage']
+        AOM_0_att_3rd_stage = declare(fixed,value=obj.Exp_Values['AOM_0_att_3rd_stage'])
 
         # TODO: pre_PGC_fountain_duration = declare(int, value=int(obj.pre_PGC_fountain_duration))
         fountain_prep_time = declare(int, value=int(obj.fountain_prep_duration))  # Can't be used with Chirp!!!
@@ -602,6 +602,9 @@ def opx_control(obj, qm):
                     assign(PrePulse_duration, IO2)
                 with if_(i == IOP.MAGNETIC_FOUNTAIN_DURATION.value):
                     assign(magnetic_fountain_duration, IO2)
+                with if_(i == IOP.AOM_0_ATT_3RD_STAGE.value):
+                    assign(AOM_0_att_3rd_stage, IO2)
+
                 with if_(i == IOP.PULSE_1_DURATION.value):
                     assign(Pulse_1_duration, IO2)
                 with if_(i == IOP.PULSE_1_DECAY_DURATION.value):

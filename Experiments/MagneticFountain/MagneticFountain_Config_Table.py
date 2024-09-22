@@ -20,11 +20,11 @@ Experiment_Values = {
 
     'Magnetic_fountain_duration': 5, # 5 [msec]
     # 'Magnetic_fountain_duration': 0,  # 5 [msec]
-    'PGC_duration': 9,  # 7  10
-    'PGC_prep_duration': 6,  # 5  8
-    'PGC_final_amp': 0.11, # 0.05 - till 15.01.23,         # Relative AOM amplitude between 0 to 1 - (0.12 yields 3.5 mW)
-    'PGC_beams_0_off_duration': 1.5,
-    'AOM_0_att_3rd_stage': 0.08,
+    'PGC_duration': 12,  # 7  10
+    'PGC_prep_duration': 3,  # 5  8
+    'PGC_final_amp': 0.08, # 0.05 - till 15.01.23,         # Relative AOM amplitude between 0 to 1 - (0.12 yields 3.5 mW)
+    'PGC_beams_0_off_duration': 5,
+    'AOM_0_att_3rd_stage': 0,
 
     #'AntiHelmholtz_delay': 0.1,  # 0.1 [msec]
     'Post_MOT_delay': 1,

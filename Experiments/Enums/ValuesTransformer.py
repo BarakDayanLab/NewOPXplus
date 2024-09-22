@@ -96,6 +96,7 @@ ValuesFactor = {
     "Pre_PGC_Fountain_duration": [int, 1e6 / 4],
     "Fountain_duration": [int, 1e6 / 4],
     "Magnetic_fountain_duration": [int, 1e6 / 4],
+    'AOM_0_att_3rd_stage': [float],
 
     # TODO - do we need these for SPECTRUM experiment? OR - we can stay w/o the function calls
     # "Fountain_prep_duration": [int, None, update_fountain_prep_time],

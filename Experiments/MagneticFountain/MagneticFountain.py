@@ -40,7 +40,7 @@ class MagneticFountainExperiment(BaseExperiment):
         self.camera = None
         self.NAvg = 1  # Number of photos captured to create an average image
         self.NThrow = 3  # Number of image throwed to garbage we're "skipping" at the begging of each capturing time
-        self.NThrow_end = 1 # Number of image throwed to garbage we're "skipping" at the end of each capturing time
+        self.NThrow_end = 0 # Number of image throwed to garbage we're "skipping" at the end of each capturing time
         self.imgBounds = (280, 200, 1600, 1450)  # bounds to crop out of the taken pictures
         self.mm_to_pxl = 10/(1260-504)  # measured using ruler in focus 03/7/2024
 
@@ -439,6 +439,7 @@ class MagneticFountainExperiment(BaseExperiment):
 
         self.info(f'Images and Fit are in this local folder: {path}')
 
+        ppd_at_start = float(self.Exp_Values['PrePulse_duration'])
         # Iterate over PrePulse Duration parameters and take photos
         try:
             for ppd in pre_pulse_durations:
@@ -454,13 +455,12 @@ class MagneticFountainExperiment(BaseExperiment):
                 image_full_path = os.path.join(camera_0_folder, image_name)
                 self.camera.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, NThrow_end=self.NThrow_end, RGB=False)
 
-                # LETAKEN DROR Le-2 matzlemot!!
-                # self.switch_camera_device()
-                #
-                # image_full_path = os.path.join(camera_1_folder, image_name)
-                # self.camera.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, NThrow_end=self.NThrow_end, RGB=False)
-                #
-                # self.switch_camera_device()
+                self.switch_camera_device()
+
+                image_full_path = os.path.join(camera_1_folder, image_name)
+                self.camera.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, NThrow_end=self.NThrow_end, RGB=False)
+
+                self.switch_camera_device()
 
         except Exception as err:
             self.warn(f'Failed to get images - {err}')
@@ -470,14 +470,13 @@ class MagneticFountainExperiment(BaseExperiment):
 
         background_image_path = os.path.join(camera_0_folder, 'background.bmp')
         self.camera.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
-        # LETAKEN DROR Le-2 matzlemot!!
-        # self.switch_camera_device()
-        # background_image_path = os.path.join(camera_1_folder, 'background.bmp')
-        # self.camera.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
-        # self.switch_camera_device()
+
+        self.switch_camera_device()
+        background_image_path = os.path.join(camera_1_folder, 'background.bmp')
+        self.camera.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+        self.switch_camera_device()
 
         # Update back the pre_pulse_duration to the Config original value
-        ppd_at_start = float(self.Exp_Values['PrePulse_duration'])
         self.info(f'Updating PrePulse Duration back to {ppd_at_start}')
         self.updateValue("PrePulse_duration", float(ppd_at_start), update_parameters=True)
 
@@ -495,9 +494,104 @@ class MagneticFountainExperiment(BaseExperiment):
         if perform_fit:
             # LETAKEN DROR Le-2 matzlemot!!
             self.perform_fit(camera_0_folder)
-            self.perform_fit(camera_1_folder)
+            # self.perform_fit(camera_1_folder)
 
         pass
+    def optimizePGC(self, PrePulseDurations=np.arange(0.5,5,0.5),PGC_final_freq_params = np.linspace(97e6, 90e6, 7),PGC_final_amp_params = np.linspace(0.3, 0.05, 7)):
+        """
+        This is used to run with different parameters. They are defined within the function
+
+        :param PrePulseDurations:
+        :return: <TBD>
+        """
+        # path, extraFilesPath = self.createPathForTemperatureMeasurement()
+
+        # Connect to camera. Notify if we fail to connect.
+        self.connect_camera()
+        if self.is_camera_disconnected():
+            self.warn('Cannot connect to camera - maybe app is open?')
+            return
+
+        # Create the folders for the images to be saved
+        self.bd_results.create_folders()
+        path = self.bd_results.get_folder_path('root')
+        extra_files = self.bd_results.get_folder_path('extra_files')
+        camera_1_folder = self.bd_results.get_folder_path('camera_1')
+
+        self.info(f'Images and Fit are in this local folder: {path}')
+
+        ppd_at_start = float(self.Exp_Values['PrePulse_duration'])
+
+        # Iterate over PrePulse Duration parameters and take photos
+
+        # ---- Take background picture ----
+        self.updateValue("PrePulse_duration", float(50),
+                         update_parameters=True)  # Presumably, after 20ms there's no visible cloud.
+        background_image_path = os.path.join(camera_1_folder, 'background.bmp')
+        self.camera.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+
+        # ---- Define parameters space ------
+        xs_key = "PGC_final_freq"
+        xs = PGC_final_freq_params  # e.g., PGCFinalFreq
+        ys_key = "PGC_final_amp"
+        ys = PGC_final_amp_params  # e.g., PGCFinalAmp
+
+        # --- Begin measurement -----
+        for ppd in PrePulseDurations:
+            self.updateValue("PrePulse_duration", float(ppd))
+            for x in xs:
+                self.updateValue(xs_key, float(x))
+                for y in ys:
+                    self.updateValue(ys_key, float(y))
+                    self.update_parameters()
+                    imgName = 'PrePulse=%s;%s=%s;%s=%s.bmp' %(str(ppd), str(xs_key), str(x), str(ys_key), str(y))
+                    self.camera.saveAverageImage(os.path.join(path, imgName), NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
+
+        print('Finished  optimizePGC. running analyzePGCOptimization...')
+        return self.analyzePGCOptimization(path=path)
+
+    def analyzePGCOptimization(self, path, backgroundPath=None):
+        # ---- fit gaussians to all photos -----
+        gaussianFitsAndParams = self.gaussianFitAllPicturesInPath(path, backgroundPath, saveFitsPath=(os.path.join(path, 'gaussian_fits')), imgBounds=self.imgBounds)
+        np.save(os.path.join(path, 'gasuusainFitResultsresults.npy'), gaussianFitsAndParams, allow_pickle=True)
+        # ----- extract the parameters we ran over (say, PGC_final_freq, PGC_final_amp) as xs and ys, and the prePulse_duration (ppds) for each photos ----
+        xs = np.array([item[1] for item in gaussianFitsAndParams])
+        ys = np.array([item[2] for item in gaussianFitsAndParams])
+        prePulseD = np.array([item[0] for item in gaussianFitsAndParams])
+        # -----
+        gaussian_amp = np.array([item[-1][0] for item in gaussianFitsAndParams])
+        sigmas_x = np.array([item[-1][3] for item in gaussianFitsAndParams])
+        sigmas_y = np.array([item[-1][4] for item in gaussianFitsAndParams])
+
+        uniqueXs = np.unique(xs)
+        uniqueYs = np.unique(ys)
+        uniqueTemperatures =[]
+        xs_for_plot, ys_for_plot = [],[]
+        for x in uniqueXs:
+            for y in uniqueYs:
+                indices = np.argwhere((xs == x) & (ys == y))
+                ppds, s_xs_perParam, s_ys_perParam = [],[],[]
+                for i in indices:
+                    i= i[0] # since np.argwhere returns an array with the index inside
+                    s_xs_perParam.append(sigmas_x[i])
+                    s_ys_perParam.append(sigmas_y[i])
+                    ppds.append(prePulseD[i])
+                # ---- sort these lists according to the pre-pulse duration
+                s_xs_perParam = [s_xs_perParam for _, s_xs_perParam in sorted(zip(ppds, s_xs_perParam))]
+                s_ys_perParam = [s_ys_perParam for _, s_ys_perParam in sorted(zip(ppds, s_ys_perParam))]
+                ppds = sorted(ppds)
+                # ----- fit for temperature!
+                T_x, T_y = self.fitTemperaturesFromSigmasResults(time_vector=ppds, sigma_x_vector=s_xs_perParam, sigma_y_vector=s_ys_perParam, alpha=self.mm_to_pxl, plotResults=False)
+                temp = np.sqrt(T_x**2 + T_y**2)
+                # ---- Arrange data for plotting
+                xs_for_plot.append(x)
+                ys_for_plot.append(y)
+                uniqueTemperatures.append(temp)
+                print('Results for x = {}, y = {} are: {}K'.format(str(x), str(y), str(temp)))
+
+        self.plot3D(xs_for_plot, ys_for_plot, uniqueTemperatures)
+        return (xs_for_plot, ys_for_plot, uniqueTemperatures)
+
 
     def create_video_from_path(self, path, save_file_path, file_name):
         """
@@ -853,6 +947,6 @@ if __name__ == "__main__":
 
     # Display menu to get action
     settings = Utils.load_json_from_file(r'./settings.json')
-    # selection = BDMenu(caller=experiment, menu_file=None, menu_json=settings['menus']).display()
-    experiment.measure_temperature(pre_pulse_durations=[3, 3.5, 4], create_video=True, perform_fit=True)
+    selection = BDMenu(caller=experiment, menu_file=None, menu_json=settings['menus']).display()
+    # experiment.measure_temperature(pre_pulse_durations=np.arange(0.5, 1.0, 0.5), create_video=True, perform_fit=True)
     pass
