@@ -1,16 +1,19 @@
 import os
+import re
 import math
 import json
 import uuid
 import cv2, glob
 import numpy as np
+from scipy import ndimage
 import itertools
 from pkgutil import iter_modules
 import pathlib
 import collections.abc
 import inspect
 import subprocess
-
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 class Utils:
 
@@ -688,8 +691,153 @@ class Utils:
         str += (rpt + '\n')
         return str
 
+    @staticmethod
+    def _extract_key_value_pairs_from_file_name(file_name):
+        # Remove extensions and change comma to semi-colon
+        file_name = file_name.replace('.jpeg', '').replace('.bmp', '').replace(',', ';')
+
+        key_and_values = file_name.split(';')
+        key_value_pairs = []
+        for key_str in key_and_values:
+            value = key_str[key_str.find('=') + 1:]
+            key = key_str[:key_str.find('=')]
+            key_value_pair = (key, float(value))
+            key_value_pairs.append(key_value_pair)
+        return key_value_pairs
+
+    @staticmethod
+    def _extract_ppd_from_file_name(file_name):
+        match = re.search(r'[-+]?\d*\.\d+|\d+', file_name)
+        ppd = float(match.group())
+        return ppd
+
+    @staticmethod
+    def _crop_around_center(self, image, center, crop_img_size):
+
+        X_PIXEL_LEN = 1544
+        Y_PIXEL_LEN = 2064
+
+        X_UPPER_BOUND = int(center[0] + crop_img_size)
+        X_LOWER_BOUND = int(center[0] - crop_img_size)
+        if X_LOWER_BOUND < 0:
+            X_LOWER_BOUND = 0
+        if X_UPPER_BOUND > X_PIXEL_LEN:
+            X_UPPER_BOUND = X_PIXEL_LEN
+
+        Y_UPPER_BOUND = int(center[1] + crop_img_size)
+        Y_LOWER_BOUND = int(center[1] - crop_img_size)
+        if Y_LOWER_BOUND < 0:
+            Y_LOWER_BOUND = 0
+        if Y_UPPER_BOUND > Y_PIXEL_LEN:
+            Y_UPPER_BOUND = Y_PIXEL_LEN
+
+        # Crop the image
+        img = image[Y_LOWER_BOUND:Y_UPPER_BOUND, X_LOWER_BOUND:X_UPPER_BOUND]
+        return img
+
+    @staticmethod
+    def plot_cloud_position_over_time(images_folder, out_path, x_start, x_end, y_start, y_end,
+                                      mm_to_pixel, start_image, skip_images, show, debug):
+
+        mpl.rcParams['figure.dpi'] = 300
+
+        MM_TO_PXL = 10/1000  # 10 / 970
+
+        # Load the background image
+        backgroundImg = cv2.imread(os.path.join(images_folder, 'background.bmp'), 0)
+
+        # Get the files we want to show
+        files = [f for f in os.listdir(images_folder) if
+                 os.path.isfile(os.path.join(images_folder, f)) and 'PrePulse_duration' in f]
+        files = files[start_image::skip_images]
+
+        fig, ax = plt.subplots(nrows=1, ncols=1)
+
+        all_images = []
+        ppds = []
+        y_centers = []
+        for index, f in enumerate(files):
+
+            # Extract the ppd value
+            ppd = Utils._extract_ppd_from_file_name(f)
+            ppds.append(ppd)
+
+            # Load the image and subtract the background from it
+            full_file_name = os.path.join(images_folder, f)
+            ImgToFit = cv2.imread(full_file_name, 0)
+            ImgToFit = cv2.subtract(ImgToFit, backgroundImg)
+
+            # Crop the image
+            ImgToFit = ImgToFit[y_start:y_end, x_start:x_end]
+
+            # Append the cloud center (found by max intensity)
+            img_y_max_index = np.argmax(np.sum(ImgToFit, axis=1))
+            y_centers.append(img_y_max_index)
+
+            # Find center of mass
+            # res = ndimage.measurements.center_of_mass(ImgToFit)
+            # ImgToFit = cv2.circle(ImgToFit, (int(res[0]), int(res[1])), radius=3, color=(0, 0, 255), thickness=-1)
+
+            # Add PrePulseDuration value on image
+            image_with_text = cv2.putText(ImgToFit, text=f'TOF={ppd} ms', org=(50,50), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                                fontScale=1, color=(255, 0, 0), thickness=2, lineType=cv2.LINE_AA)
+
+            # Append image to array of images
+            all_images.append(image_with_text)
+
+            if debug:
+                cv2.imshow(f'ppd={ppd}, y={img_y_max_index}', ImgToFit)
+                cv2.waitKey(0)
+            pass
+
+        # Concatenate all images horizontally
+        concatenated_images = cv2.hconcat(all_images)
+
+        delta = y_centers[0]
+        y_top = 0 + delta
+        y_bottom = -(y_end - y_start) + delta
+
+        # Translate pixels to millimeters
+        y_top *= mm_to_pixel
+        y_bottom *= mm_to_pixel
+
+        ax.imshow(concatenated_images, extent=[0, 40, y_bottom, y_top], aspect=1)  # Min/Max, Max/Min
+
+        # Graph Cosmetics
+        plt.title('Cloud positions in different timings', fontsize=6)
+        plt.gca().axes.get_xaxis().set_visible(False)
+        plt.ylabel('Z Position (mm)', fontsize=6)
+        plt.tick_params(axis='y', labelsize=6)
+
+        # Set y-axis ticks with 0.5 intervals and Celsius labels
+        yticks = np.arange(4, -2, -1)
+        plt.yticks(yticks)
+        #plt.yticks(yticks, labels=[f'{(5 / 9) * (f - 32):.1f}°C' for f in yticks])
+
+        if out_path is not None:
+            plt.savefig(out_path, dpi=300, bbox_inches=None, pad_inches=0.05)
+            # plt.savefig(out_path, dpi=300, bbox_inches='tight', pad_inches=0.2)
+            # plt.savefig(out_path, dpi=300)
+
+        if show:
+            plt.show()
+
+        pass
+
+
 if __name__ == "__main__":
 
+    #images_folder = r'C:\temp\bitmaps_for_sunrise_chart'
+    #images_folder = r'C:\temp\bitmaps_for_sunrise_chart_2'
+    images_folder = r'C:\temp\bitmaps_for_sunrise_20240903_181633'
+
+    out_image = os.path.join(images_folder, 'MOT_trajectory.jpg')
+    Utils.plot_cloud_position_over_time(images_folder=images_folder, out_path=out_image,
+                # x_start=800, x_end=1200, y_start=1000, y_end=1500,
+                x_start=800, x_end=1200, y_start=600, y_end=1200,
+                mm_to_pixel=10/970, start_image=0, skip_images=2,
+                show=True, debug=False)
+
     # Test
-    Utils.remove_empty_experiment_folders(r'C:\temp\refactor_debug\Experiment_results\Temperature')
+    # Utils.remove_empty_experiment_folders(r'C:\temp\refactor_debug\Experiment_results\Temperature')
     pass
