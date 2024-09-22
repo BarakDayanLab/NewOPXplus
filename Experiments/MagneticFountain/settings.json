@@ -209,8 +209,20 @@
             },
             {
               "order": 7,
-              "display": "Turn ON/OFF magnetic fountain",
-              "action": "turn_on_off_magnetic_fountain"
+              "display": "Plot cloud position over time",
+              "action": "plot_cloud_position_over_time",
+              "args": [
+                {
+                  "name": "images_folder",
+                  "type": "string",
+                  "default": "Most recent snapshots"
+                },
+                {
+                  "name": "camera_id",
+                  "type": "int",
+                  "default": "0"
+                }
+              ]
             },
 
             {
