@@ -45,7 +45,7 @@ class MagneticFountainExperiment(BaseExperiment):
         self.mm_to_pxl = 10/(970)  # measured using ruler in focus 03/7/2024
 
         # Here we can define the factor for the 2 cameras
-        self.mm_to_pxl_arr = [self.mm_to_pxl, self.mm_to_pxl]
+        self.mm_to_pxl_arr = [1/104, self.mm_to_pxl]
 
         self.sigma_bounds = (15, 100)  # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
         self.resonator_pxl_position = 65 # TODO: create function for finding the position.
@@ -119,61 +119,63 @@ class MagneticFountainExperiment(BaseExperiment):
             #     self.save_config_table(path=extraFilesPath)
         return (path, extraFilesPath)
 
-    def fitV_0FromGaussianFitResults(self,x_or_y, gaussianFitResult, extraFilesPath, fit_for_alpha=False, plotResults = True):
-        time_vector = np.array([res[0] for res in gaussianFitResult])
-        if x_or_y == 'x':
-            position_vector = np.array([res[-1][1] for res in gaussianFitResult])
-        elif x_or_y == 'y':
-            position_vector = np.array([res[-1][2] for res in gaussianFitResult])
 
-        mm_to_pxl = self.mm_to_pxl
-        linearFreeFall = lambda t, b, c: 9.8e-6 / 2 / mm_to_pxl * 1e3 * t ** 2 + b * t + c
-        linearFreeFall_mm = lambda t, b, c: -(
-                    9.8e-6 / 2 / mm_to_pxl * 1e3 * t ** 2 + b * t + c - self.resonator_pxl_position) * mm_to_pxl  # -1 due to resonator position
-        quadraticFunc = lambda t, a, b, c: a * t ** 2 + b * t + c
-        fitFunc = quadraticFunc if fit_for_alpha else linearFreeFall
+    def fit_Vx_0(self, gaussianFitResult, extraFilesPath, fit_for_alpha=False, plotResults = True):
+
+        mm_to_pxl = self.mm_to_pxl_arr[0]
+
+        time_vector = np.array([res[0] for res in gaussianFitResult])
+
+        # the position of the center of cloud at given times
+        position_vector = np.array([res[-1][1] for res in gaussianFitResult])
+        linearMotion = lambda t, b, c: b * t + c
+        linearMotion_mm = lambda t, b, c: (b * t + c)*mm_to_pxl
         bounds = (-np.inf, np.inf)
         # bounds = (-np.inf, np.inf) if fit_for_alpha else ([9.8e-6/2/self.mm_to_pxl * 1e3, -np.inf,0],[9.8001e-6/2/self.mm_to_pxl * 1e3, np.inf, np.inf])   # fit for the acceleration of the quadratic
         # if fit_for_alpha is FALSE, set acceleration to BE g. not trikim no shtikim
+
         try:
-            v_launch_popt, v_launch_cov = opt.curve_fit(fitFunc, time_vector, position_vector, bounds=bounds)
+            v_launch_popt, v_launch_cov = opt.curve_fit(linearMotion, time_vector, position_vector, bounds=bounds)
         except Exception as err:
             print(f'failed to perform fit to center of mass movement due to: {err}')
 
-        alpha = 9.8e-6 / 2 / v_launch_popt[0] * 1e3 if fit_for_alpha else self.mm_to_pxl  # mm/pixel
-        v_launch = v_launch_popt[0] * self.mm_to_pxl  # mm/ms = m/s
-        v_launch_std = np.sqrt(np.diag(v_launch_cov))[0] * self.mm_to_pxl
-        position_vector_mm = -(
-                    position_vector - self.resonator_pxl_position) * self.mm_to_pxl  # -10 due to resonator position
+        alpha = mm_to_pxl # mm/pixel
+        v_launch = v_launch_popt[0] * mm_to_pxl  # mm/ms = m/s
+        v_launch_std = np.sqrt(np.diag(v_launch_cov))[0] * mm_to_pxl
+        position_vector_mm = position_vector * mm_to_pxl  # -10 due to resonator position
 
-        h_1ms = position_vector_mm[0]
-        v_1ms = (-v_launch * 1000) - 9.81 * 1000 * 1e-3
+        #-----If we want to find the position related to the x value of the resonator position-----#
+        # h_1ms = position_vector_mm[0]
+        # v_1ms = (-v_launch * 1000) - 9.81 * 1000 * 1e-3
         # solving quadratic equation 0 = h_1ms + v_1ms*t - g*t^2/2: a=-g/2[mm/s^2], b=v_1ms[mm/s], c=h_1ms[mm]
-        t_arrival = Utils.solve_quadratic_equation((-9.81 * 1000 / 2), v_1ms, h_1ms)
-        if len(t_arrival) > 0:
-            t_arrival_str = '%.1f' % (
-                        t_arrival.min() * 1e3 + 1)  # + 1 due to the fact that we estimated the arrival time for the cloud after 1ms so we added the 1 ms for the arrival time from end of PGC.
-        else:
-            t_arrival_str = '$ \infty $'
+        # t_arrival = Utils.solve_quadratic_equation((-9.81 * 1000 / 2), v_1ms, h_1ms)
+        # if len(t_arrival) > 0:
+        #     t_arrival_str = '%.1f' % (
+        #                 t_arrival.min() * 1e3 + 1)  # + 1 due to the fact that we estimated the arrival time for the cloud after 1ms so we added the 1 ms for the arrival time from end of PGC.
+        # else:
+        #     t_arrival_str = '$ \infty $'
+        t_arrival_str = '$ \infty $'
+        #-------------------------------------------------------------------------------------------#
 
         if plotResults:
-            titlestr_v = x_or_y + r' position fit;' + r' $\bf{\alpha = %.3f}$' % alpha + '[mm/pixel]'  # + '\n $v_0 = %.1f$' % v_launch * 100 + r'[cm/s]; $\alpha = %.3f$' % alpha + '[mm/pixel]'
-            resstr_v = r'$v_0 = %.1f$' % (-v_launch * 100) + r'$\pm$ %.1f[cm/s]' % (v_launch_std * 100) + '\n' + \
+            titlestr_v =  r'x position fit;' + r' $\bf{\alpha = %.3f}$' % alpha + '[mm/pixel]'  # + '\n $v_0 = %.1f$' % v_launch * 100 + r'[cm/s]; $\alpha = %.3f$' % alpha + '[mm/pixel]'
+            resstr_v = r'$v_0 = %.1f$' % (v_launch * 100) + r'$\pm$ %.1f[cm/s]' % (v_launch_std * 100) + '\n' + \
                        '$t_{arrival} = $' + t_arrival_str + '[ms]'
             # self.plotDataAndFit(time_vector, y_position_vector, fitFunc=fitFunc, fitParams=v_launch_popt,
-            self.plotDataAndFit(time_vector, position_vector_mm, fitFunc=linearFreeFall_mm, fitParams=v_launch_popt,
+            self.plotDataAndFit(time_vector, position_vector_mm, fitFunc=linearMotion_mm, fitParams=v_launch_popt,
                                 # title=f'Y position fit \n V_launch = {v_launch}; alpha = {alpha}', ylabel='Y_center [px]',
                                 # title=titlestr_v, props_str=resstr_v, ylabel='$Y_{center} [px]$',
-                                title=titlestr_v, props_str=resstr_v, ylabel=x_or_y + r'$\bf{_{center} [mm]}$',
-                                saveFilePath=os.path.join(extraFilesPath, x_or_y + r'_position.png'), show=False)
+                                title=titlestr_v, props_str=resstr_v, ylabel= r'x$\bf{_{center} [mm]}$',
+                                saveFilePath=os.path.join(extraFilesPath, r'x_position.png'), show=False)
         return (v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str)
 
 
-    def fitVy_0FromGaussianFitResults(self, gaussianFitResult, extraFilesPath,fit_for_alpha=False, plotResults = True):
-        time_vector = np.array([res[0] for res in gaussianFitResult])
-        y_position_vector = np.array([res[-1][2] for res in gaussianFitResult])
+    def fit_Vz_0(self, gaussianFitResult, extraFilesPath,fit_for_alpha=False, plotResults = True):
 
-        mm_to_pxl = self.mm_to_pxl
+        time_vector = np.array([res[0] for res in gaussianFitResult])
+        z_position_vector = np.array([res[-1][2] for res in gaussianFitResult])
+
+        mm_to_pxl = self.mm_to_pxl_arr[1]
         linearFreeFall = lambda t, b, c: 9.8e-6 / 2 / mm_to_pxl * 1e3 * t ** 2 + b * t + c
         linearFreeFall_mm = lambda t, b, c: -(9.8e-6 / 2 / mm_to_pxl * 1e3 * t ** 2 + b * t + c-self.resonator_pxl_position) * mm_to_pxl  # -1 due to resonator position
         quadraticFunc = lambda t, a, b, c: a * t ** 2 + b * t + c
@@ -182,16 +184,16 @@ class MagneticFountainExperiment(BaseExperiment):
         # bounds = (-np.inf, np.inf) if fit_for_alpha else ([9.8e-6/2/self.mm_to_pxl * 1e3, -np.inf,0],[9.8001e-6/2/self.mm_to_pxl * 1e3, np.inf, np.inf])   # fit for the acceleration of the quadratic
         # if fit_for_alpha is FALSE, set acceleration to BE g. not trikim no shtikim
         try:
-            v_launch_popt, v_launch_cov = opt.curve_fit(fitFunc, time_vector, y_position_vector, bounds=bounds)
+            v_launch_popt, v_launch_cov = opt.curve_fit(fitFunc, time_vector, z_position_vector, bounds=bounds)
         except Exception as err:
             print(f'failed to perform fit to center of mass movement due to: {err}')
 
         alpha = 9.8e-6 / 2 / v_launch_popt[0] * 1e3 if fit_for_alpha else self.mm_to_pxl  # mm/pixel
         v_launch = v_launch_popt[0] * self.mm_to_pxl # mm/ms = m/s
         v_launch_std = np.sqrt(np.diag(v_launch_cov))[0] * self.mm_to_pxl
-        y_position_vector_mm = -(y_position_vector - self.resonator_pxl_position) * self.mm_to_pxl  # -10 due to resonator position
+        z_position_vector_mm = -(z_position_vector - self.resonator_pxl_position) * self.mm_to_pxl  # -10 due to resonator position
 
-        h_1ms = y_position_vector_mm[0]
+        h_1ms = z_position_vector_mm[0]
         v_1ms = (-v_launch * 1000) - 9.81 * 1000 * 1e-3
         # solving quadratic equation 0 = h_1ms + v_1ms*t - g*t^2/2: a=-g/2[mm/s^2], b=v_1ms[mm/s], c=h_1ms[mm]
         t_arrival = Utils.solve_quadratic_equation((-9.81 * 1000 / 2), v_1ms, h_1ms)
@@ -201,50 +203,58 @@ class MagneticFountainExperiment(BaseExperiment):
             t_arrival_str = '$ \infty $'
 
         if plotResults:
-            titlestr_v = r'Y position fit;' + r' $\bf{\alpha = %.3f}$' % alpha + '[mm/pixel]' #+ '\n $v_0 = %.1f$' % v_launch * 100 + r'[cm/s]; $\alpha = %.3f$' % alpha + '[mm/pixel]'
+            titlestr_v = r'Z position fit;' + r' $\bf{\alpha = %.3f}$' % alpha + '[mm/pixel]' #+ '\n $v_0 = %.1f$' % v_launch * 100 + r'[cm/s]; $\alpha = %.3f$' % alpha + '[mm/pixel]'
             resstr_v = r'$v_0 = %.1f$' % (-v_launch * 100) + r'$\pm$ %.1f[cm/s]' % (v_launch_std * 100) + '\n' +\
                        '$t_{arrival} = $' + t_arrival_str + '[ms]'
             # self.plotDataAndFit(time_vector, y_position_vector, fitFunc=fitFunc, fitParams=v_launch_popt,
-            self.plotDataAndFit(time_vector, y_position_vector_mm, fitFunc=linearFreeFall_mm, fitParams=v_launch_popt,
+            self.plotDataAndFit(time_vector, z_position_vector_mm, fitFunc=linearFreeFall_mm, fitParams=v_launch_popt,
                                 # title=f'Y position fit \n V_launch = {v_launch}; alpha = {alpha}', ylabel='Y_center [px]',
                                 # title=titlestr_v, props_str=resstr_v, ylabel='$Y_{center} [px]$',
-                                title=titlestr_v, props_str=resstr_v, ylabel=r'$\bf{Y_{center} [mm]}$',
-                                saveFilePath=os.path.join(extraFilesPath, 'Y_position.png'), show=False)
+                                title=titlestr_v, props_str=resstr_v, ylabel=r'$\bf{z_{center} [mm]}$',
+                                saveFilePath=os.path.join(extraFilesPath, 'z_position.png'), show=False)
         return (v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str)
+
+    def fitV_0FromGaussianFitResults(self,x_or_z, gaussianFitResult, extraFilesPath, fit_for_alpha=False, plotResults = True):
+        if x_or_z == 'x':
+            v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str = self.fit_Vx_0(gaussianFitResult, extraFilesPath, fit_for_alpha=False, plotResults=True)
+        elif x_or_z == 'z':
+            v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str = self.fit_Vz_0(gaussianFitResult, extraFilesPath, fit_for_alpha=False, plotResults=True)
+
+        return v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str
 
     def fitTemperaturesFromGaussianFitResults(self, gaussianFitResult, alpha=None, extraFilesPath=None, plotResults=True):
         if alpha is None: alpha = self.mm_to_pxl
         time_vector = np.array([res[0] for res in gaussianFitResult])
         sigma_x_vector = alpha * np.array([res[-1][3] for res in gaussianFitResult])
-        sigma_y_vector = alpha * np.array([res[-1][4] for res in gaussianFitResult])
-        return self.fitTemperaturesFromSigmasResults(time_vector, sigma_x_vector, sigma_y_vector, alpha = None, extraFilesPath = extraFilesPath, plotResults = plotResults)
+        sigma_z_vector = alpha * np.array([res[-1][4] for res in gaussianFitResult])
+        return self.fitTemperaturesFromSigmasResults(time_vector, sigma_x_vector, sigma_z_vector, alpha = None, extraFilesPath = extraFilesPath, plotResults = plotResults)
 
-    def fitTemperaturesFromSigmasResults(self, time_vector, sigma_x_vector, sigma_y_vector, alpha = None, extraFilesPath = None, plotResults = True):
+    def fitTemperaturesFromSigmasResults(self, time_vector, sigma_x_vector, sigma_z_vector, alpha = None, extraFilesPath = None, plotResults = True):
         if alpha:
             sigma_x_vector = alpha * np.array(sigma_x_vector)
-            sigma_y_vector = alpha * np.array(sigma_y_vector)
+            sigma_z_vector = alpha * np.array(sigma_z_vector)
         tempFromSigmaFunc = lambda t, a, b: np.sqrt(a + b * t ** 2)
         x_temp_popt, x_temp_cov = opt.curve_fit(tempFromSigmaFunc, time_vector, sigma_x_vector, bounds=(0, np.inf))
-        y_temp_popt, y_temp_cov = opt.curve_fit(tempFromSigmaFunc, time_vector, sigma_y_vector, bounds=(0, np.inf))
-        T_x, T_y = x_temp_popt[1] * _m / _Kb * 1e6, y_temp_popt[1] * _m / _Kb * 1e6  # [uK]
-        std_x, std_y = np.sqrt(np.diag(x_temp_cov))[1] * _m / _Kb * 1e6, np.sqrt(np.diag(y_temp_cov))[1] * _m / _Kb * 1e6
+        z_temp_popt, z_temp_cov = opt.curve_fit(tempFromSigmaFunc, time_vector, sigma_z_vector, bounds=(0, np.inf))
+        T_x, T_z = x_temp_popt[1] * _m / _Kb * 1e6, z_temp_popt[1] * _m / _Kb * 1e6  # [uK]
+        std_x, std_z = np.sqrt(np.diag(x_temp_cov))[1] * _m / _Kb * 1e6, np.sqrt(np.diag(z_temp_cov))[1] * _m / _Kb * 1e6
 
         if plotResults:
             titlestr_x = r'$\bf{T_x}$ fit; $\bf{\sigma_x}$[mm]  vs. Time [ms]'  # + '\n$T_x$ = %.2f' % T_x + '$\pm %.2f[uK]$' % std_x
-            titlestr_y = r'$\bf{T_y}$ fit; $\bf{\sigma_y}$[mm]  vs. Time [ms]'  # + '\n$T_y$ = %.2f' % T_y + '$\pm %.2f[uK]$' % std_y
+            titlestr_z = r'$\bf{T_z}$ fit; $\bf{\sigma_z}$[mm]  vs. Time [ms]'  # + '\n$T_y$ = %.2f' % T_y + '$\pm %.2f[uK]$' % std_y
             resstr_x = '$T_x$ = %.2f' % T_x + '$\pm %.2f[\mu K]$' % std_x
-            resstr_y = '$T_y$ = %.2f' % T_y + '$\pm %.2f[\mu K]$' % std_y
+            resstr_z = '$T_z$ = %.2f' % T_z + '$\pm %.2f[\mu K]$' % std_z
             self.plotDataAndFit(time_vector, sigma_x_vector, fitFunc=tempFromSigmaFunc, fitParams=x_temp_popt,
                                 # title=f'X Temperature fit, Sigma_x[mm]  vs. Time [ms]\n %T_x% = {T_x} [uK]',
                                 # ylabel=f'Sigma_x [mm]', saveFilePath=os.path.join(extraFilesPath, 'X_temp_fit.png'), show=False)
                                 title=titlestr_x, props_str=resstr_x,
                                 ylabel=r'$\bf{\sigma_x}$ [mm]', saveFilePath=os.path.join(extraFilesPath, 'X_temp_fit.png'), show=False)
-            self.plotDataAndFit(time_vector, sigma_y_vector, fitFunc=tempFromSigmaFunc, fitParams=y_temp_popt,
+            self.plotDataAndFit(time_vector, sigma_z_vector, fitFunc=tempFromSigmaFunc, fitParams=z_temp_popt,
                                 # title=f'Y Temperature fit, Sigma_y[mm]  vs. Time [ms]\n %T_y% = {T_y} [uK]',
                                 # ylabel=f'Sigma_y [mm]', saveFilePath=os.path.join(extraFilesPath, 'Y_temp_fit.png'), show=False)
-                                title=titlestr_y, props_str=resstr_y,
-                                ylabel=r'$\bf{\sigma_y}$ [mm]', saveFilePath=os.path.join(extraFilesPath, 'Y_temp_fit.png'), show=False)
-        return T_x, T_y
+                                title=titlestr_z, props_str=resstr_z,
+                                ylabel=r'$\bf{\sigma_z}$ [mm]', saveFilePath=os.path.join(extraFilesPath, 'Z_temp_fit.png'), show=False)
+        return T_x, T_z
 
     def perform_fit(self, path, fit_for_alpha=False):
         """
@@ -268,11 +278,11 @@ class MagneticFountainExperiment(BaseExperiment):
             return
 
         # ---- Take Gaussian fit results and get temperature (x,y) and launch speed -----------
-        self.fitV_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult, x_or_y='x', extraFilesPath=extra_files, plotResults=True)
-        v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival = self.fitV_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult, x_or_y='y', extraFilesPath=extra_files, plotResults=True)
+        v_x_launch, alpha, v_x_launch_popt, v_x_launch_cov, t_x_arrival = self.fitV_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult, x_or_z='x', extraFilesPath=extra_files, plotResults=True)
+        v_z_launch, alpha, v_z_launch_popt, v_z_launch_cov, t_z_arrival = self.fitV_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult, x_or_z='z', extraFilesPath=extra_files, plotResults=True)
         # v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival = self.fitVy_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult, extraFilesPath=extra_files, plotResults=True)
         time_vector = np.array([res[0] for res in gaussianFitResult])
-        y_position_vector = np.array([res[-1][2] for res in gaussianFitResult])
+        z_position_vector = np.array([res[-1][2] for res in gaussianFitResult])
 
         # ------ Use v-launch fit to go from px to mm ------
         # gaussian_amplitude_vector = alpha * np.array([res[-1][0] for res in gaussianFitResult])
@@ -281,14 +291,15 @@ class MagneticFountainExperiment(BaseExperiment):
         # sigma_x_vector = alpha * np.array([res[-1][3] for res in gaussianFitResult])
         # sigma_y_vector = alpha * np.array([res[-1][4] for res in gaussianFitResult])
 
-        # -------- Fit for x and y temperatures ----
-        T_x, T_y = self.fitTemperaturesFromGaussianFitResults(gaussianFitResult, alpha, extra_files, plotResults=True)
+        # -------- Fit for x and z temperatures ----
+        T_x, T_z = self.fitTemperaturesFromGaussianFitResults(gaussianFitResult, alpha, extra_files, plotResults=True)
 
         d = {
-            'V_y Launch': -v_launch*100,  # [cm/s]
+            'V_z Launch': -v_z_launch*100,  # [cm/s]
+            'V_x Launch': -v_x_launch * 100,  # [cm/s]
             'T_x': T_x,  # [K]
-            'T_y': T_y,  # [K]
-            't_arrival': t_arrival,  # [ms]
+            'T_z': T_z,  # [K]
+            't_z_arrival': t_z_arrival,  # [ms]
             'alpha': alpha  # [mm/pxl]
         }
         print(d)
@@ -1014,7 +1025,7 @@ if __name__ == "__main__":
 
     # Initiate the experiment
     # Change to ExperimentMode.OFFLINE if you wish to run outside the lab
-    experiment = MagneticFountainExperiment()
+    experiment = MagneticFountainExperiment(ExperimentMode.OFFLINE)
 
     # Display menu to get action
     settings = Utils.load_json_from_file(r'./settings.json')
