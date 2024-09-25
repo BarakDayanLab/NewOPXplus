@@ -48,7 +48,7 @@ class MagneticFountainExperiment(BaseExperiment):
         self.mm_to_pxl_arr = [1/104, self.mm_to_pxl]
 
         self.sigma_bounds = (15, 100)  # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
-        self.resonator_pxl_position = 65 # TODO: create function for finding the position.
+        self.resonator_pxl_position = 1138 # TODO: create function for finding the position.
 
         # Initialize magnetic fountain related parameters
         self.magnetic_fountain_on = True
@@ -163,9 +163,7 @@ class MagneticFountainExperiment(BaseExperiment):
                        '$t_{arrival} = $' + t_arrival_str + '[ms]'
             # self.plotDataAndFit(time_vector, y_position_vector, fitFunc=fitFunc, fitParams=v_launch_popt,
             self.plotDataAndFit(time_vector, position_vector_mm, fitFunc=linearMotion_mm, fitParams=v_launch_popt,
-                                # title=f'Y position fit \n V_launch = {v_launch}; alpha = {alpha}', ylabel='Y_center [px]',
-                                # title=titlestr_v, props_str=resstr_v, ylabel='$Y_{center} [px]$',
-                                title=titlestr_v, props_str=resstr_v, ylabel= r'x$\bf{_{center} [mm]}$',
+                                y_axis_range = [9,10.2], title=titlestr_v, props_str=resstr_v, ylabel= r'x$\bf{_{center} [mm]}$',
                                 saveFilePath=os.path.join(extraFilesPath, r'x_position.png'), show=False)
         return (v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str)
 
@@ -207,7 +205,7 @@ class MagneticFountainExperiment(BaseExperiment):
             resstr_v = r'$v_0 = %.1f$' % (-v_launch * 100) + r'$\pm$ %.1f[cm/s]' % (v_launch_std * 100) + '\n' +\
                        '$t_{arrival} = $' + t_arrival_str + '[ms]'
             # self.plotDataAndFit(time_vector, y_position_vector, fitFunc=fitFunc, fitParams=v_launch_popt,
-            self.plotDataAndFit(time_vector, z_position_vector_mm, fitFunc=linearFreeFall_mm, fitParams=v_launch_popt,
+            self.plotDataAndFit(time_vector, z_position_vector_mm, fitFunc=linearFreeFall_mm, fitParams=v_launch_popt, y_axis_range=[-1,6],
                                 # title=f'Y position fit \n V_launch = {v_launch}; alpha = {alpha}', ylabel='Y_center [px]',
                                 # title=titlestr_v, props_str=resstr_v, ylabel='$Y_{center} [px]$',
                                 title=titlestr_v, props_str=resstr_v, ylabel=r'$\bf{z_{center} [mm]}$',
@@ -244,12 +242,12 @@ class MagneticFountainExperiment(BaseExperiment):
             titlestr_z = r'$\bf{T_z}$ fit; $\bf{\sigma_z}$[mm]  vs. Time [ms]'  # + '\n$T_y$ = %.2f' % T_y + '$\pm %.2f[uK]$' % std_y
             resstr_x = '$T_x$ = %.2f' % T_x + '$\pm %.2f[\mu K]$' % std_x
             resstr_z = '$T_z$ = %.2f' % T_z + '$\pm %.2f[\mu K]$' % std_z
-            self.plotDataAndFit(time_vector, sigma_x_vector, fitFunc=tempFromSigmaFunc, fitParams=x_temp_popt,
+            self.plotDataAndFit(time_vector, sigma_x_vector, fitFunc=tempFromSigmaFunc, fitParams=x_temp_popt,y_axis_range = [0.5,1.1],
                                 # title=f'X Temperature fit, Sigma_x[mm]  vs. Time [ms]\n %T_x% = {T_x} [uK]',
                                 # ylabel=f'Sigma_x [mm]', saveFilePath=os.path.join(extraFilesPath, 'X_temp_fit.png'), show=False)
                                 title=titlestr_x, props_str=resstr_x,
                                 ylabel=r'$\bf{\sigma_x}$ [mm]', saveFilePath=os.path.join(extraFilesPath, 'X_temp_fit.png'), show=False)
-            self.plotDataAndFit(time_vector, sigma_z_vector, fitFunc=tempFromSigmaFunc, fitParams=z_temp_popt,
+            self.plotDataAndFit(time_vector, sigma_z_vector, fitFunc=tempFromSigmaFunc, fitParams=z_temp_popt, y_axis_range = [0.3,0.7],
                                 # title=f'Y Temperature fit, Sigma_y[mm]  vs. Time [ms]\n %T_y% = {T_y} [uK]',
                                 # ylabel=f'Sigma_y [mm]', saveFilePath=os.path.join(extraFilesPath, 'Y_temp_fit.png'), show=False)
                                 title=titlestr_z, props_str=resstr_z,
@@ -908,7 +906,7 @@ class MagneticFountainExperiment(BaseExperiment):
         # Plot the surface
         ax.plot_trisurf(xs, ys, zs)
 
-    def plotDataAndFit(self, x_data, y_data, fitFunc, fitParams, title='', props_str='', ylabel='', xlabel='Time [ms]',
+    def plotDataAndFit(self, x_data, y_data, fitFunc, fitParams, y_axis_range=[-1,4], title='', props_str='', ylabel='', xlabel='Time [ms]',
                        saveFilePath=None, show=False):
         x_vector_for_fit = np.linspace(min(x_data), max(x_data), 100)
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -919,6 +917,8 @@ class MagneticFountainExperiment(BaseExperiment):
         ax.set_ylabel(ylabel, fontsize=12, fontweight='bold')
         ax.set_title(title, fontsize=18, fontweight='bold')
         ax.legend()
+        ax.set_ylim(y_axis_range)
+
         ax.text(0.5, 0.95, props_str, transform=ax.transAxes, fontsize=18, horizontalalignment='center',  verticalalignment='top')
         if saveFilePath:
             plt.savefig(saveFilePath)
