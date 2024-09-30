@@ -42,13 +42,14 @@ class MagneticFountainExperiment(BaseExperiment):
         self.NThrow = 3  # Number of image throwed to garbage we're "skipping" at the begging of each capturing time
         self.NThrow_end = 0 # Number of image throwed to garbage we're "skipping" at the end of each capturing time
         self.imgBounds = (280, 200, 1600, 1450)  # bounds to crop out of the taken pictures
-        self.mm_to_pxl = 10/(970)  # measured using ruler in focus 03/7/2024
+        self.mm_to_pxl_cam1 = 10/(970)  # side camera (perpendicular to 0 beams)
+        self.mm_to_pxl_cam0 = 1/104  # 0 camera (parallel to 0 beams)
 
         # Here we can define the factor for the 2 cameras
-        self.mm_to_pxl_arr = [1/104, self.mm_to_pxl]
+        self.mm_to_pxl_arr = [self.mm_to_pxl_cam0, self.mm_to_pxl_cam1]
 
         self.sigma_bounds = (15, 100)  # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
-        self.resonator_pxl_position = 1138 # TODO: create function for finding the position.
+        self.resonator_pxl_position = 952 # the cloud position # TODO: create function for finding the position.
 
         # Initialize magnetic fountain related parameters
         self.magnetic_fountain_on = True
@@ -120,9 +121,7 @@ class MagneticFountainExperiment(BaseExperiment):
         return (path, extraFilesPath)
 
 
-    def fit_Vx_0(self, gaussianFitResult, extraFilesPath, fit_for_alpha=False, plotResults = True):
-
-        mm_to_pxl = self.mm_to_pxl_arr[0]
+    def fit_Vx_0(self, gaussianFitResult, extraFilesPath,mm_to_pxl, fit_for_alpha=False, plotResults = True):
 
         time_vector = np.array([res[0] for res in gaussianFitResult])
 
@@ -163,17 +162,16 @@ class MagneticFountainExperiment(BaseExperiment):
                        '$t_{arrival} = $' + t_arrival_str + '[ms]'
             # self.plotDataAndFit(time_vector, y_position_vector, fitFunc=fitFunc, fitParams=v_launch_popt,
             self.plotDataAndFit(time_vector, position_vector_mm, fitFunc=linearMotion_mm, fitParams=v_launch_popt,
-                                y_axis_range = [9,10.2], title=titlestr_v, props_str=resstr_v, ylabel= r'x$\bf{_{center} [mm]}$',
+                                y_axis_range=[4.5, 7], title=titlestr_v, props_str=resstr_v, ylabel= r'x$\bf{_{center} [mm]}$',
                                 saveFilePath=os.path.join(extraFilesPath, r'x_position.png'), show=False)
         return (v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str)
 
 
-    def fit_Vz_0(self, gaussianFitResult, extraFilesPath,fit_for_alpha=False, plotResults = True):
+    def fit_Vz_0(self, gaussianFitResult, extraFilesPath, mm_to_pxl, fit_for_alpha=False, plotResults = True):
 
         time_vector = np.array([res[0] for res in gaussianFitResult])
         z_position_vector = np.array([res[-1][2] for res in gaussianFitResult])
 
-        mm_to_pxl = self.mm_to_pxl_arr[1]
         linearFreeFall = lambda t, b, c: 9.8e-6 / 2 / mm_to_pxl * 1e3 * t ** 2 + b * t + c
         linearFreeFall_mm = lambda t, b, c: -(9.8e-6 / 2 / mm_to_pxl * 1e3 * t ** 2 + b * t + c-self.resonator_pxl_position) * mm_to_pxl  # -1 due to resonator position
         quadraticFunc = lambda t, a, b, c: a * t ** 2 + b * t + c
@@ -186,10 +184,10 @@ class MagneticFountainExperiment(BaseExperiment):
         except Exception as err:
             print(f'failed to perform fit to center of mass movement due to: {err}')
 
-        alpha = 9.8e-6 / 2 / v_launch_popt[0] * 1e3 if fit_for_alpha else self.mm_to_pxl  # mm/pixel
-        v_launch = v_launch_popt[0] * self.mm_to_pxl # mm/ms = m/s
-        v_launch_std = np.sqrt(np.diag(v_launch_cov))[0] * self.mm_to_pxl
-        z_position_vector_mm = -(z_position_vector - self.resonator_pxl_position) * self.mm_to_pxl  # -10 due to resonator position
+        alpha = 9.8e-6 / 2 / v_launch_popt[0] * 1e3 if fit_for_alpha else mm_to_pxl  # mm/pixel
+        v_launch = v_launch_popt[0] * mm_to_pxl # mm/ms = m/s
+        v_launch_std = np.sqrt(np.diag(v_launch_cov))[0] * mm_to_pxl
+        z_position_vector_mm = -(z_position_vector - self.resonator_pxl_position) * mm_to_pxl  # -10 due to resonator position
 
         h_1ms = z_position_vector_mm[0]
         v_1ms = (-v_launch * 1000) - 9.81 * 1000 * 1e-3
@@ -212,16 +210,18 @@ class MagneticFountainExperiment(BaseExperiment):
                                 saveFilePath=os.path.join(extraFilesPath, 'z_position.png'), show=False)
         return (v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str)
 
-    def fitV_0FromGaussianFitResults(self,x_or_z, gaussianFitResult, extraFilesPath, fit_for_alpha=False, plotResults = True):
+    def fitV_0FromGaussianFitResults(self,x_or_z, gaussianFitResult, extraFilesPath,mm_to_pxl, fit_for_alpha=False, plotResults = True):
         if x_or_z == 'x':
-            v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str = self.fit_Vx_0(gaussianFitResult, extraFilesPath, fit_for_alpha=False, plotResults=True)
+            v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str = self.fit_Vx_0(gaussianFitResult, extraFilesPath,
+                                                                                        mm_to_pxl=mm_to_pxl, fit_for_alpha=False, plotResults=True)
         elif x_or_z == 'z':
-            v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str = self.fit_Vz_0(gaussianFitResult, extraFilesPath, fit_for_alpha=False, plotResults=True)
+            v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str = self.fit_Vz_0(gaussianFitResult, extraFilesPath,mm_to_pxl=mm_to_pxl, fit_for_alpha=False, plotResults=True)
 
         return v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str
 
-    def fitTemperaturesFromGaussianFitResults(self, gaussianFitResult, alpha=None, extraFilesPath=None, plotResults=True):
-        if alpha is None: alpha = self.mm_to_pxl
+    def fitTemperaturesFromGaussianFitResults(self, gaussianFitResult,mm_to_pxl, alpha=None, extraFilesPath=None, plotResults=True):
+        if alpha is None:
+            alpha = mm_to_pxl
         time_vector = np.array([res[0] for res in gaussianFitResult])
         sigma_x_vector = alpha * np.array([res[-1][3] for res in gaussianFitResult])
         sigma_z_vector = alpha * np.array([res[-1][4] for res in gaussianFitResult])
@@ -242,19 +242,19 @@ class MagneticFountainExperiment(BaseExperiment):
             titlestr_z = r'$\bf{T_z}$ fit; $\bf{\sigma_z}$[mm]  vs. Time [ms]'  # + '\n$T_y$ = %.2f' % T_y + '$\pm %.2f[uK]$' % std_y
             resstr_x = '$T_x$ = %.2f' % T_x + '$\pm %.2f[\mu K]$' % std_x
             resstr_z = '$T_z$ = %.2f' % T_z + '$\pm %.2f[\mu K]$' % std_z
-            self.plotDataAndFit(time_vector, sigma_x_vector, fitFunc=tempFromSigmaFunc, fitParams=x_temp_popt,y_axis_range = [0.5,1.1],
+            self.plotDataAndFit(time_vector, sigma_x_vector, fitFunc=tempFromSigmaFunc, fitParams=x_temp_popt,y_axis_range = [0.3,1.2],
                                 # title=f'X Temperature fit, Sigma_x[mm]  vs. Time [ms]\n %T_x% = {T_x} [uK]',
                                 # ylabel=f'Sigma_x [mm]', saveFilePath=os.path.join(extraFilesPath, 'X_temp_fit.png'), show=False)
                                 title=titlestr_x, props_str=resstr_x,
                                 ylabel=r'$\bf{\sigma_x}$ [mm]', saveFilePath=os.path.join(extraFilesPath, 'X_temp_fit.png'), show=False)
-            self.plotDataAndFit(time_vector, sigma_z_vector, fitFunc=tempFromSigmaFunc, fitParams=z_temp_popt, y_axis_range = [0.3,0.7],
+            self.plotDataAndFit(time_vector, sigma_z_vector, fitFunc=tempFromSigmaFunc, fitParams=z_temp_popt, y_axis_range = [0.3,1.2],
                                 # title=f'Y Temperature fit, Sigma_y[mm]  vs. Time [ms]\n %T_y% = {T_y} [uK]',
                                 # ylabel=f'Sigma_y [mm]', saveFilePath=os.path.join(extraFilesPath, 'Y_temp_fit.png'), show=False)
                                 title=titlestr_z, props_str=resstr_z,
                                 ylabel=r'$\bf{\sigma_z}$ [mm]', saveFilePath=os.path.join(extraFilesPath, 'Z_temp_fit.png'), show=False)
         return T_x, T_z
 
-    def perform_fit(self, path, fit_for_alpha=False):
+    def perform_fit(self, path, mm_to_pxl=None):
         """
         TODO: <TBD>
         """
@@ -264,7 +264,8 @@ class MagneticFountainExperiment(BaseExperiment):
 
         # Gaussian Fit to results (for each photo)
         print(path)
-        gaussianFitResult = self.gaussianFitAllPicturesInPath(path, backgroundPath=path, saveFitsPath=extra_files, imgBounds=self.imgBounds)
+        gaussianFitResult = self.gaussianFitAllPicturesInPath(path, backgroundPath=path, saveFitsPath=extra_files,
+                                                              imgBounds=self.imgBounds, mm_to_pxl=mm_to_pxl)
 
         # Ayelet's patch so temp measurement will work:
         # cam_0_path = os.path.join(path, 'camera_0')
@@ -276,8 +277,12 @@ class MagneticFountainExperiment(BaseExperiment):
             return
 
         # ---- Take Gaussian fit results and get temperature (x,y) and launch speed -----------
-        v_x_launch, alpha, v_x_launch_popt, v_x_launch_cov, t_x_arrival = self.fitV_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult, x_or_z='x', extraFilesPath=extra_files, plotResults=True)
-        v_z_launch, alpha, v_z_launch_popt, v_z_launch_cov, t_z_arrival = self.fitV_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult, x_or_z='z', extraFilesPath=extra_files, plotResults=True)
+        v_x_launch, alpha, v_x_launch_popt, v_x_launch_cov, t_x_arrival = \
+            self.fitV_0FromGaussianFitResults(mm_to_pxl=mm_to_pxl, gaussianFitResult=gaussianFitResult, x_or_z='x',
+                                              extraFilesPath=extra_files, plotResults=True)
+        v_z_launch, alpha, v_z_launch_popt, v_z_launch_cov, t_z_arrival =\
+            self.fitV_0FromGaussianFitResults(mm_to_pxl=mm_to_pxl,gaussianFitResult=gaussianFitResult, x_or_z='z',
+                                              extraFilesPath=extra_files, plotResults=True)
         # v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival = self.fitVy_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult, extraFilesPath=extra_files, plotResults=True)
         time_vector = np.array([res[0] for res in gaussianFitResult])
         z_position_vector = np.array([res[-1][2] for res in gaussianFitResult])
@@ -290,7 +295,8 @@ class MagneticFountainExperiment(BaseExperiment):
         # sigma_y_vector = alpha * np.array([res[-1][4] for res in gaussianFitResult])
 
         # -------- Fit for x and z temperatures ----
-        T_x, T_z = self.fitTemperaturesFromGaussianFitResults(gaussianFitResult, alpha, extra_files, plotResults=True)
+        T_x, T_z = self.fitTemperaturesFromGaussianFitResults(gaussianFitResult,
+                                                              alpha, mm_to_pxl, extra_files, plotResults=True)
 
         d = {
             'V_z Launch': -v_z_launch*100,  # [cm/s]
@@ -532,12 +538,12 @@ class MagneticFountainExperiment(BaseExperiment):
                 # image_full_path = os.path.join(path, image_name)
                 # self.camera.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, NThrow_end=self.NThrow_end, RGB=False)
 
-                image_full_path = os.path.join(camera_0_folder, image_name)
+                image_full_path = os.path.join(camera_1_folder, image_name)
                 self.camera.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, NThrow_end=self.NThrow_end, RGB=False)
 
                 self.switch_camera_device()
 
-                image_full_path = os.path.join(camera_1_folder, image_name)
+                image_full_path = os.path.join(camera_0_folder, image_name)
                 self.camera.saveAverageImage(image_full_path, NAvg=self.NAvg, NThrow=self.NThrow, NThrow_end=self.NThrow_end, RGB=False)
 
                 self.switch_camera_device()
@@ -548,11 +554,11 @@ class MagneticFountainExperiment(BaseExperiment):
         # Take background picture (after such a long delay, we should have no visible cloud :-)
         self.updateValue("PrePulse_duration", float(50), update_parameters=True)
 
-        background_image_path = os.path.join(camera_0_folder, 'background.bmp')
+        background_image_path = os.path.join(camera_1_folder, 'background.bmp')
         self.camera.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
 
         self.switch_camera_device()
-        background_image_path = os.path.join(camera_1_folder, 'background.bmp')
+        background_image_path = os.path.join(camera_0_folder, 'background.bmp')
         self.camera.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
         self.switch_camera_device()
 
@@ -572,9 +578,8 @@ class MagneticFountainExperiment(BaseExperiment):
         self.bd_results.save_results(results, extra_files)
 
         if perform_fit:
-            # LETAKEN DROR Le-2 matzlemot!!
-            self.perform_fit(camera_0_folder)
-            # self.perform_fit(camera_1_folder)
+            self.perform_fit(camera_1_folder, mm_to_pxl=self.mm_to_pxl_cam1)
+            # self.perform_fit(camera_1_folder, ,mm_to_pxl=self.mm_to_pxl_cam1)
 
         pass
     def optimizePGC(self, PrePulseDurations=np.arange(0.5,5,0.5),PGC_final_freq_params = np.linspace(97e6, 90e6, 7),PGC_final_amp_params = np.linspace(0.3, 0.05, 7)):
@@ -694,7 +699,7 @@ class MagneticFountainExperiment(BaseExperiment):
         self.info(f'Opened Windows Explorer at {most_recent_folder}')
         pass
 
-    def gaussian_fit_all_pictures_in_path(self, path, backgroundPath=None, saveFitsPath=None, imgBounds=None):
+    def gaussian_fit_all_pictures_in_path(self, path, mm_to_pxl, backgroundPath=None, saveFitsPath=None, imgBounds=None):
         if backgroundPath is None:
             backgroundPath = os.path.join(path, 'extra_files', 'background.bmp')
 
@@ -718,7 +723,7 @@ class MagneticFountainExperiment(BaseExperiment):
                     fileRes.append(float(value))
                     keys.append(only_key)
                 ## -- get z value from gaussian fit ----
-                gaussianFit = self.GaussianFit(full_file_name, background_file=backgroundPath, saveFitsPath=saveFitsPath, imgBounds=imgBounds)
+                gaussianFit = self.GaussianFit(full_file_name, background_file=backgroundPath, saveFitsPath=saveFitsPath, imgBounds=imgBounds, mm_to_pxl = mm_to_pxl)
                 if gaussianFit is None:
                     continue  # if fit returned None, meaning the fit failed (sigma is out of self.sigma_bounds), discard this results and continue to the next fit
                 fileRes.append(keys)
@@ -729,7 +734,7 @@ class MagneticFountainExperiment(BaseExperiment):
 
         pass
 
-    def gaussianFitAllPicturesInPath(self, path, backgroundPath=None, saveFitsPath=None, imgBounds=None):
+    def gaussianFitAllPicturesInPath(self, path, mm_to_pxl, backgroundPath=None, saveFitsPath=None, imgBounds=None):
         if backgroundPath is None:
             backgroundPath = os.path.join(path, 'extra_files', 'background.bmp')
         else:
@@ -756,7 +761,8 @@ class MagneticFountainExperiment(BaseExperiment):
                     fileRes.append(float(value))
                     keys.append(only_key)
                 ## -- get z value from gaussian fit ----
-                gaussianFit = self.GaussianFit(fullFileName, background_file=backgroundPath, saveFitsPath=saveFitsPath, imgBounds=imgBounds)
+                gaussianFit = self.GaussianFit(fullFileName, background_file=backgroundPath, saveFitsPath=saveFitsPath,
+                                               imgBounds=imgBounds, mm_to_pxl = mm_to_pxl)
                 if gaussianFit is None:
                     continue  # if fit returned None, meaning the fit failed (sigma is out of self.sigma_bounds), discard this results and continue to the next fit
                 fileRes.append(keys)
@@ -767,7 +773,7 @@ class MagneticFountainExperiment(BaseExperiment):
         return (res)
 
 
-    def GaussianFit(self, file_name_for_fit, background_file, saveFitsPath=None, imgBounds=None, X_PIXEL_LEN=1544,
+    def GaussianFit(self, file_name_for_fit, background_file, mm_to_pxl, saveFitsPath=None, imgBounds=None, X_PIXEL_LEN=1544,
                     Y_PIXEL_LEN=2064, CROP_IMG_SIZE=180 ,PLOT_IMG=False, PLOT_SLICE=False, SHOW_CROP=False):
         """
         Fit a gaussian to subtracted images
@@ -853,18 +859,18 @@ class MagneticFountainExperiment(BaseExperiment):
             fig, ax = plt.subplots(1, 1)
             # plt.title(fileName)
             ax.set_title('Free-fall duration = ' + fileName.split('=')[1] + '[ms]', fontsize=16, fontweight='bold')
-            plt.text(0.95, 0.95, r'$\sigma_x$ = %.2f[mm]' % (sigma[0] * self.mm_to_pxl) + '\n' +
-                     r'$\sigma_y$ = %.2f[mm]' % (sigma[1] * self.mm_to_pxl), color='white',
+            plt.text(0.95, 0.95, r'$\sigma_x$ = %.2f[mm]' % (sigma[0] * mm_to_pxl) + '\n' +
+                     r'$\sigma_y$ = %.2f[mm]' % (sigma[1] * mm_to_pxl), color='white',
                      fontsize=16, horizontalalignment='right', verticalalignment='top',
                      transform=ax.transAxes, bbox=dict(facecolor='gray', alpha=0.5))
             ax.imshow(data_noisy.reshape(EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN), cmap=plt.cm.jet, origin='lower',
                       extent=(x.min(), x.max(), y.min(), y.max()))
             ax.contour(x, y, data_fitted.reshape(EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN), 8, colors='w')
-            plt.xticks(np.arange(((x.min() * self.mm_to_pxl)//0.5) * 0.5, x.max() * self.mm_to_pxl, 0.5, dtype=float) /
-                       self.mm_to_pxl, np.arange(((x.min() * self.mm_to_pxl)//0.5) * 0.5, x.max() * self.mm_to_pxl, 0.5,
+            plt.xticks(np.arange(((x.min() * mm_to_pxl)//0.5) * 0.5, x.max() * mm_to_pxl, 0.5, dtype=float) /
+                       mm_to_pxl, np.arange(((x.min() * mm_to_pxl)//0.5) * 0.5, x.max() * mm_to_pxl, 0.5,
                                                  dtype=float))
-            plt.yticks(np.arange(((y.min() * self.mm_to_pxl)//0.5) * 0.5, y.max() * self.mm_to_pxl, 0.5, dtype=float) /
-                       self.mm_to_pxl, np.arange(((y.min() * self.mm_to_pxl)//0.5) * 0.5, y.max() * self.mm_to_pxl, 0.5,
+            plt.yticks(np.arange(((y.min() * mm_to_pxl)//0.5) * 0.5, y.max() * mm_to_pxl, 0.5, dtype=float) /
+                       mm_to_pxl, np.arange(((y.min() * mm_to_pxl)//0.5) * 0.5, y.max() * mm_to_pxl, 0.5,
                                                  dtype=float))
             ax.set_xlabel('X [mm]', fontsize=12, fontweight='bold')
             ax.set_ylabel('Y [mm]', fontsize=12, fontweight='bold')
@@ -1025,10 +1031,20 @@ if __name__ == "__main__":
 
     # Initiate the experiment
     # Change to ExperimentMode.OFFLINE if you wish to run outside the lab
-    experiment = MagneticFountainExperiment(ExperimentMode.OFFLINE)
+    experiment = MagneticFountainExperiment()
 
     # Display menu to get action
     settings = Utils.load_json_from_file(r'./settings.json')
-    selection = BDMenu(caller=experiment, menu_file=None, menu_json=settings['menus']).display()
+    # selection = BDMenu(caller=experiment, menu_file=None, menu_json=settings['menus']).display()
     # experiment.measure_temperature(pre_pulse_durations=np.arange(0.5, 1.0, 0.5), create_video=True, perform_fit=True)
-    pass
+
+    # base_path = r"U:\Lab_2023\Magnetic Fountain\Results\190924\New fits - 250924"
+    # voltage_values = range(200, 1300, 100)
+    # # for ii in voltage_values:
+    #     path = fr"{base_path}\{ii}mV\camera_0"
+    #     experiment.perform_fit(path=path)
+    # # pass
+    # # path_cam_0 = r"200mV\camera_0"
+    # # experiment.create_video_from_path( fr"{base_path}\200mV\camera_0", save_file_path=r"U:\Lab_2023\Magnetic Fountain\Results\190924\New fits - 250924\200mV\extra_files", file_name='video_cam_0')
+    # path = fr"{base_path}\0 measure\camera_0"
+    # experiment.perform_fit(path=r'U:\Lab_2023\Magnetic Fountain\Results\190924\New fits - 250924\1000mV\camera_0_no_last_meas')
