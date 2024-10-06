@@ -711,6 +711,10 @@ class Utils:
         ppd = float(match.group())
         return ppd
 
+    # ---------------------------------------------------
+    # Plot related Utilities
+    # ---------------------------------------------------
+
     @staticmethod
     def _crop_around_center(self, image, center, crop_img_size):
 
@@ -736,8 +740,56 @@ class Utils:
         return img
 
     @staticmethod
+    def draw_dashed_horizontal_line(img, x0, x1, y, color, stroke=5, gap=5):
+        stride = stroke + gap
+        for x in range(x0, x1):
+            if (x % stride) < stroke:
+                img[y, x] = color
+
+        # cv2.imshow('Dashed line', img)
+
+        return img
+
+    @staticmethod
+    def draw_dashed_vertical_line(img, x, y0, y1, color, stroke=5, gap=5):
+        stride = stroke + gap
+        for y in range(y0, y1):
+            if (y % stride) < stroke:
+                img[y, x] = color
+
+        cv2.imshow('Dashed line', img)
+
+        return img
+
+    @staticmethod
+    def show_image_with_rectangle(image, top_left_point, bottom_right_point):
+
+        line_thickness = 3
+        line_color = (255, 255, 255)  # White
+        image_with_bounds = image.copy()
+        image_with_bounds = cv2.rectangle(image_with_bounds, top_left_point, bottom_right_point, line_color, line_thickness)
+        cv2.imshow("Fit Crop Bounds", image_with_bounds)
+        cv2.waitKey(0)
+
+    @staticmethod
     def plot_cloud_position_over_time(images_folder, out_path, x_start, x_end, y_start, y_end,
                                       mm_to_pixel, start_image, skip_images, show, debug):
+        """
+        Creates a time-series of images showing the atom cloud in different TOF parameters.
+        - image_folder: where to find the cloud images
+        - out_path: where to store the resulting plot
+        - x_start/x_end/y_start/y_end - where to crop the image
+        - skip_images - how many images to skip (e.g. skip=2 -> 0.5, 2.5, 4.5, 6.5, 8.5, 10.5)
+        - debug - if True, shows each individual cropped image, so one can understand if bound are correct
+        - show - if True, shows the result plot of all concatenated images
+
+        NOTE:
+            In order to find the correct bounds, use Console and run:
+
+               Utils.show_image_with_rectangle(image, top_left_point, bottom_right_point)
+
+            This will plot the image with a rectangle showing the crop boundry
+        """
 
         mpl.rcParams['figure.dpi'] = 300
 
@@ -797,6 +849,9 @@ class Utils:
         y_top = 0 + delta
         y_bottom = -(y_end - y_start) + delta
 
+        #Utils.draw_dashed_horizontal_line(concatenated_images, x0=0, x1=concatenated_images.shape[1], y=y_bottom, color=200, stroke=10, gap=10)
+        Utils.draw_dashed_horizontal_line(concatenated_images, x0=0, x1=concatenated_images.shape[1], y=y_top, color=200, stroke=10, gap=10)
+
         # Translate pixels to millimeters
         y_top *= mm_to_pixel
         y_bottom *= mm_to_pixel
@@ -804,10 +859,10 @@ class Utils:
         ax.imshow(concatenated_images, extent=[0, 40, y_bottom, y_top], aspect=1)  # Min/Max, Max/Min
 
         # Graph Cosmetics
-        plt.title('Cloud positions in different timings', fontsize=6)
+        plt.title('Cloud Position vs Time of Flight', fontsize=6)
         plt.gca().axes.get_xaxis().set_visible(False)
         plt.ylabel('Z Position (mm)', fontsize=6)
-        plt.tick_params(axis='y', labelsize=6)
+        plt.tick_params(axis='y', labelsize=6, labelright=True)
 
         # Set y-axis ticks with 0.5 intervals and Celsius labels
         yticks = np.arange(4, -2, -1)
