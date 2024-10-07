@@ -849,8 +849,9 @@ class Utils:
         y_top = 0 + delta
         y_bottom = -(y_end - y_start) + delta
 
-        #Utils.draw_dashed_horizontal_line(concatenated_images, x0=0, x1=concatenated_images.shape[1], y=y_bottom, color=200, stroke=10, gap=10)
-        Utils.draw_dashed_horizontal_line(concatenated_images, x0=0, x1=concatenated_images.shape[1], y=y_top, color=200, stroke=10, gap=10)
+        # Draw horizontal lines where first and last atom clouds are
+        Utils.draw_dashed_horizontal_line(concatenated_images, x0=0, x1=concatenated_images.shape[1], y=y_centers[0], color=200, stroke=10, gap=10)
+        Utils.draw_dashed_horizontal_line(concatenated_images, x0=0, x1=concatenated_images.shape[1], y=y_centers[-1], color=200, stroke=10, gap=10)
 
         # Translate pixels to millimeters
         y_top *= mm_to_pixel
