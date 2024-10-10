@@ -43,13 +43,14 @@ class MagneticFountainExperiment(BaseExperiment):
         self.camera = None
         self.NAvg = 1  # Number of photos captured to create an average image
         self.NThrow = 3  # Number of image throwed to garbage we're "skipping" at the begging of each capturing time
-        self.NThrow_end = 0  # Number of image throwed to garbage we're "skipping" at the end of each capturing time
+        self.NThrow_end = 0 # Number of image throwed to garbage we're "skipping" at the end of each capturing time
 
         # 2 cameras parameters
-        self.imgBoundsCam0 = (700, 100, 2000, 1200)  # bounds to crop out of the taken pictures
-        self.imgBoundsCam1 = (480, 100, 1600, 1450)  # bounds to crop out of the taken pictures
-        self.mm_to_pxl_cam1 = 10 / 792  # side camera (perpendicular to 0 beams) # 06.10.24
-        # self.mm_to_pxl_cam1 = 10 / (970)  # side camera (perpendicular to 0 beams)
+        self.imgBoundsCam0 = {"x_start": 700, "y_start": 100, "x_end": 2000, "y_end": 1200}
+        # self.imgBoundsCam1 = {"x_start": 480, "y_start": 100, "x_end": 1600, "y_end": 1450}
+        self.imgBoundsCam1 = {"x_start": 300, "y_start": 200, "x_end": 1000, "y_end": 1450}
+
+        self.mm_to_pxl_cam1 = 10 / 792  # side camera (perpendicular to 0 beams)
         self.mm_to_pxl_cam0 = 1 / 104  # 0 camera (parallel to 0 beams)
 
         self.sigma_bounds = (15, 100)  # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
@@ -103,12 +104,12 @@ class MagneticFountainExperiment(BaseExperiment):
 
     def plot_cloud_position_over_time(self, images_folder, camera_id):
 
-        out_image = os.path.join(images_folder, 'extra_files', f'trajectory_cam_{camera_id}.jpg')
+        out_image = os.path.join(images_folder, '..', 'extra_files', f'trajectory_cam_{camera_id}.jpg')
 
         # Get the mm_to_pxl ration per camera id
-        mm_to_pxl = self.mm_to_pxl_arr[camera_id]
+        mm_to_pxl = self.mm_to_pxl_cam0 if camera_id == 0 else self.mm_to_pxl_cam1
         Utils.plot_cloud_position_over_time(images_folder=images_folder, out_path=out_image,
-                                            x_start=800, x_end=1200, y_start=600, y_end=1200,
+                                            x_start=400, x_end=1000, y_start=300, y_end=1000,
                                             mm_to_pixel=mm_to_pxl, start_image=0, skip_images=2,
                                             show=True, debug=False)
 
@@ -137,7 +138,7 @@ class MagneticFountainExperiment(BaseExperiment):
         time_vector = np.array([res[0] for res in gaussianFitResult])
 
         # the position of the center of cloud at given times
-        position_vector = np.array([res[-1][1] for res in gaussianFitResult])
+        position_vector = np.array([res[2][1] for res in gaussianFitResult])
         linearMotion = lambda t, b, c: b * t + c
         linearMotion_mm = lambda t, b, c: (b * t + c) * mm_to_pxl
         bounds = (-np.inf, np.inf)
@@ -176,12 +177,12 @@ class MagneticFountainExperiment(BaseExperiment):
                                 y_axis_range=[4.5, 7], title=titlestr_v, props_str=resstr_v,
                                 ylabel=r'x$\bf{_{center} [mm]}$',
                                 saveFilePath=os.path.join(extraFilesPath, r'x_position.png'), show=False)
-        return (v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str)
+        return (v_launch, alpha, v_launch_popt, v_launch_cov)
 
     def fit_Vz_0(self, gaussianFitResult, extraFilesPath, mm_to_pxl, fit_for_alpha=False, plotResults=True):
 
         time_vector = np.array([res[0] for res in gaussianFitResult])
-        z_position_vector = np.array([res[-1][2] for res in gaussianFitResult])
+        z_position_vector = np.array([res[2][2] for res in gaussianFitResult])
 
         linearFreeFall = lambda t, b, c: 9.8e-6 / 2 / mm_to_pxl * 1e3 * t ** 2 + b * t + c
         linearFreeFall_mm = lambda t, b, c: -(
@@ -223,34 +224,25 @@ class MagneticFountainExperiment(BaseExperiment):
                                 # title=titlestr_v, props_str=resstr_v, ylabel='$Y_{center} [px]$',
                                 title=titlestr_v, props_str=resstr_v, ylabel=r'$\bf{z_{center} [mm]}$',
                                 saveFilePath=os.path.join(extraFilesPath, 'z_position.png'), show=False)
-        return (v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str)
+        return (v_launch, alpha, v_launch_popt, v_launch_cov)
 
     def fitV_0FromGaussianFitResults(self, x_or_z, gaussianFitResult, extraFilesPath, mm_to_pxl, fit_for_alpha=False,
                                      plotResults=True):
         if x_or_z == 'x':
-            v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str = self.fit_Vx_0(gaussianFitResult,
-                                                                                        extraFilesPath,
-                                                                                        mm_to_pxl=mm_to_pxl,
-                                                                                        fit_for_alpha=False,
-                                                                                        plotResults=True)
+            v_launch, alpha, v_launch_popt, v_launch_cov = self.fit_Vx_0(gaussianFitResult, extraFilesPath, mm_to_pxl=mm_to_pxl, fit_for_alpha=False, plotResults=plotResults)
         elif x_or_z == 'z':
-            v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str = self.fit_Vz_0(gaussianFitResult,
-                                                                                        extraFilesPath,
-                                                                                        mm_to_pxl=mm_to_pxl,
-                                                                                        fit_for_alpha=False,
-                                                                                        plotResults=True)
+            v_launch, alpha, v_launch_popt, v_launch_cov = self.fit_Vz_0(gaussianFitResult, extraFilesPath, mm_to_pxl=mm_to_pxl, fit_for_alpha=False, plotResults=plotResults)
 
-        return v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str
+        return v_launch, alpha, v_launch_popt, v_launch_cov
 
     def fitTemperaturesFromGaussianFitResults(self, gaussianFitResult, mm_to_pxl, alpha=None, extraFilesPath=None,
                                               plotResults=True):
         if alpha is None:
             alpha = mm_to_pxl
         time_vector = np.array([res[0] for res in gaussianFitResult])
-        sigma_x_vector = alpha * np.array([res[-1][3] for res in gaussianFitResult])
-        sigma_z_vector = alpha * np.array([res[-1][4] for res in gaussianFitResult])
-        return self.fitTemperaturesFromSigmasResults(time_vector, sigma_x_vector, sigma_z_vector, alpha=None,
-                                                     extraFilesPath=extraFilesPath, plotResults=plotResults)
+        sigma_x_vector = alpha * np.array([res[2][3] for res in gaussianFitResult])
+        sigma_z_vector = alpha * np.array([res[2][4] for res in gaussianFitResult])
+        return self.fitTemperaturesFromSigmasResults(time_vector, sigma_x_vector, sigma_z_vector, alpha = None, extraFilesPath=extraFilesPath, plotResults=plotResults)
 
     def fitTemperaturesFromSigmasResults(self, time_vector, sigma_x_vector, sigma_z_vector, alpha=None,
                                          extraFilesPath=None, plotResults=True):
@@ -296,28 +288,31 @@ class MagneticFountainExperiment(BaseExperiment):
 
         # Gaussian Fit to results (for each photo)
         print(path)
-        gaussianFitResult = self.gaussianFitAllPicturesInPath(path, backgroundPath=path, saveFitsPath=extra_files,
+        gaussianFitResult = self.gaussian_fit_all_pictures_in_path(path, backgroundPath=path, saveFitsPath=extra_files,
                                                               imgBounds=imgBounds, mm_to_pxl=mm_to_pxl)
 
         # Ayelet's patch so temp measurement will work:
         # cam_0_path = os.path.join(path, 'camera_0')
-        # gaussianFitResult = self.gaussianFitAllPicturesInPath(cam_0_path, backgroundPath=cam_0_path, saveFitsPath=extra_files, imgBounds=self.imgBounds)
+        # gaussianFitResult = self.gaussianFitAllPicturesInPath(cam_0_path, backgroundPath=cam_0_path, saveFitsPath=extra_files, imgBounds=imgBounds)
         # print(cam_0_path)
+
+        # Create a plot of cloud intensity (sum of all pixels)
+        self.plot_sum_over_time(path, gaussianFitResult, extra_files)
 
         if len(gaussianFitResult) == 0:
             self.warn('No Gaussian fit on images, not trying any fits. Skipping.')
             return
 
         # ---- Take Gaussian fit results and get temperature (x,y) and launch speed -----------
-        v_x_launch, alpha, v_x_launch_popt, v_x_launch_cov, t_x_arrival = \
+        v_x_launch, alpha, v_x_launch_popt, v_x_launch_cov = \
             self.fitV_0FromGaussianFitResults(mm_to_pxl=mm_to_pxl, gaussianFitResult=gaussianFitResult, x_or_z='x',
                                               extraFilesPath=extra_files, plotResults=True)
-        v_z_launch, alpha, v_z_launch_popt, v_z_launch_cov, t_z_arrival = \
-            self.fitV_0FromGaussianFitResults(mm_to_pxl=mm_to_pxl, gaussianFitResult=gaussianFitResult, x_or_z='z',
+        v_z_launch, alpha, v_z_launch_popt, v_z_launch_cov =\
+            self.fitV_0FromGaussianFitResults(mm_to_pxl=mm_to_pxl,gaussianFitResult=gaussianFitResult, x_or_z='z',
                                               extraFilesPath=extra_files, plotResults=True)
         # v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival = self.fitVy_0FromGaussianFitResults(gaussianFitResult=gaussianFitResult, extraFilesPath=extra_files, plotResults=True)
         time_vector = np.array([res[0] for res in gaussianFitResult])
-        z_position_vector = np.array([res[-1][2] for res in gaussianFitResult])
+        z_position_vector = np.array([res[2][2] for res in gaussianFitResult])
 
         # ------ Use v-launch fit to go from px to mm ------
         # gaussian_amplitude_vector = alpha * np.array([res[-1][0] for res in gaussianFitResult])
@@ -327,15 +322,13 @@ class MagneticFountainExperiment(BaseExperiment):
         # sigma_y_vector = alpha * np.array([res[-1][4] for res in gaussianFitResult])
 
         # -------- Fit for x and z temperatures ----
-        T_x, T_z = self.fitTemperaturesFromGaussianFitResults(gaussianFitResult,
-                                                              alpha, mm_to_pxl, extra_files, plotResults=True)
+        T_x, T_z = self.fitTemperaturesFromGaussianFitResults(gaussianFitResult, alpha, mm_to_pxl, extra_files, plotResults=True)
 
         d = {
             'V_z Launch': -v_z_launch * 100,  # [cm/s]
             'V_x Launch': -v_x_launch * 100,  # [cm/s]
             'T_x': T_x,  # [K]
             'T_z': T_z,  # [K]
-            't_z_arrival': t_z_arrival,  # [ms]
             'alpha': alpha  # [mm/pxl]
         }
         print(d)
@@ -743,9 +736,11 @@ class MagneticFountainExperiment(BaseExperiment):
                                           imgBounds=None):
         if backgroundPath is None:
             backgroundPath = os.path.join(path, 'extra_files', 'background.bmp')
+        else:
+            backgroundPath = os.path.join(path, 'background.bmp')
 
         if imgBounds is None:
-            imgBounds = self.imgBounds
+            imgBounds = self.imgBoundsCam1
 
         # Get all files in folder (except the 'background' file)
         files = Utils.get_files_in_path(path, opt_out_filter='background', return_full_path=True)
@@ -753,67 +748,23 @@ class MagneticFountainExperiment(BaseExperiment):
         res = []
         for full_file_name in files:
             try:
-                f = Path(full_file_name).stem.replace(',', ';')
-                fileRes = []
-                ## -- get x and y values from file name ----
-                keysAndValues = f.split(';')
-                keys = []
-                for key in keysAndValues:
-                    value = key[key.find('=') + 1:]
-                    only_key = key[:key.find('=')]
-                    fileRes.append(float(value))
-                    keys.append(only_key)
-                ## -- get z value from gaussian fit ----
-                gaussianFit = self.GaussianFit(full_file_name, background_file=backgroundPath,
-                                               saveFitsPath=saveFitsPath, imgBounds=imgBounds, mm_to_pxl=mm_to_pxl)
+                f = Path(full_file_name).stem
+                val_key_data = []
+                val_key_data.append(float(Utils._extract_ppd_from_file_name(f)))
+                val_key_data.append(['PrePulse_duration'])
+
+                # Get gaussian fit values
+                sum, gaussianFit = self.GaussianFit(full_file_name, background_file=backgroundPath, saveFitsPath=saveFitsPath, imgBounds=imgBounds, mm_to_pxl=mm_to_pxl, SHOW_CROP=False)
                 if gaussianFit is None:
                     continue  # if fit returned None, meaning the fit failed (sigma is out of self.sigma_bounds), discard this results and continue to the next fit
-                fileRes.append(keys)
-                fileRes.append(gaussianFit)
-                res.append(fileRes)
+                val_key_data.append(gaussianFit)
+                val_key_data.append(sum)
+
+                res.append(val_key_data)
             except Exception as e:
                 print(e)
 
-        pass
-
-    def gaussianFitAllPicturesInPath(self, path, mm_to_pxl, backgroundPath=None, saveFitsPath=None, imgBounds=None):
-        if backgroundPath is None:
-            backgroundPath = os.path.join(path, 'extra_files', 'background.bmp')
-        else:
-            backgroundPath = os.path.join(path, 'background.bmp')
-
-        if imgBounds is None:
-            imgBounds = self.imgBoundsCam1
-
-        files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-        res = []
-        for f in files:
-            try:
-                fullFileName = os.path.join(path, f)
-                fileRes = []
-                f = f.replace('.jpeg', '').replace('.bmp', '').replace(',', ';')
-                if 'background' in f:
-                    continue
-                ## -- get x and y values from file name ----
-                keysAndValues = f.split(';')
-                keys = []
-                for key in keysAndValues:
-                    value = key[key.find('=') + 1:]
-                    only_key = key[:key.find('=')]
-                    fileRes.append(float(value))
-                    keys.append(only_key)
-                ## -- get z value from gaussian fit ----
-                gaussianFit = self.GaussianFit(fullFileName, background_file=backgroundPath, saveFitsPath=saveFitsPath,
-                                               imgBounds=imgBounds, mm_to_pxl=mm_to_pxl, SHOW_CROP=False,
-                                               PLOT_SLICE=False, PLOT_IMG=False)
-                if gaussianFit is None:
-                    continue  # if fit returned None, meaning the fit failed (sigma is out of self.sigma_bounds), discard this results and continue to the next fit
-                fileRes.append(keys)
-                fileRes.append(gaussianFit)
-                res.append(fileRes)
-            except Exception as e:
-                print(e)
-        return (res)
+        return res
 
     def GaussianFit(self, file_name_for_fit, background_file, mm_to_pxl, saveFitsPath=None, imgBounds=None,
                     X_PIXEL_LEN=1544,
@@ -835,21 +786,20 @@ class MagneticFountainExperiment(BaseExperiment):
 
         if not imgBounds:
             h, w = ImgToFit.shape
-            imgBounds = (0, 0, w, h)  # that is, don't crop image
+            imgBounds = {"x_start": 0, "y_start": 0, "x_end": w, "y_end": h}
 
-        # Show the img bounds on top of the image taken with atoms
+
+        # Show the image where we're about to crop
         if SHOW_CROP:
-            line_thickness = 3
-            line_color = (255, 255, 255)  # White
-            image_with_bounds = ImgToFit.copy()
-            top_left_point = (imgBounds[0], imgBounds[1])
-            bottom_right_point = (imgBounds[2], imgBounds[3])
-            image_with_bounds = cv2.rectangle(image_with_bounds, top_left_point, bottom_right_point, line_color,
-                                              line_thickness)
-            cv2.imshow("Fit Crop Bounds", image_with_bounds)
+            img_with_rect = Utils.show_image_with_rectangle(image=ImgToFit,
+                                                            top_left_point=(imgBounds['x_start'], imgBounds['y_start']),
+                                                            bottom_right_point=(imgBounds['x_end'], imgBounds['y_end']))
+            cv2.imshow("First Crop (press any key)", img_with_rect)
             cv2.waitKey(0)
 
-        if imgBounds: ImgToFit = ImgToFit[imgBounds[1]:imgBounds[3], imgBounds[0]:imgBounds[2]]  #
+        if imgBounds:
+            ImgToFit = ImgToFit[imgBounds['y_start']:imgBounds['y_end'], imgBounds['x_start']:imgBounds['x_end']]
+
         img_max_index = [np.argmax(np.sum(ImgToFit, axis=0)), np.argmax(np.sum(ImgToFit, axis=1))]
 
         # img_max_index[1] = np.argmax(np.sum(ImgToFit[10:][img_max_index[0]-CROP_IMG_SIZE:img_max_index[0]+CROP_IMG_SIZE], axis=1))
@@ -873,9 +823,12 @@ class MagneticFountainExperiment(BaseExperiment):
         x, y = np.meshgrid(x, y)
         # crop an effective image
         EffectiveImg = ImgToFit[Y_LOWER_BOUND:Y_UPPER_BOUND, X_LOWER_BOUND:X_UPPER_BOUND]
-        # plt.imshow(EffectiveImg)
-        # plt.show()
         data_noisy = EffectiveImg.ravel()
+
+        # Show the img after the second crop
+        if SHOW_CROP:
+            cv2.imshow("Second Crop (press any key)", EffectiveImg)
+            cv2.waitKey(0)
 
         # fit the data
         img_max_index = [np.argmax(np.sum(EffectiveImg, axis=0)), np.argmax(np.sum(EffectiveImg, axis=1))]
@@ -938,10 +891,13 @@ class MagneticFountainExperiment(BaseExperiment):
             plt.show()
 
         # return original x-y
-        popt[1] = popt[1] + X_LOWER_BOUND + imgBounds[0]
-        popt[2] = popt[2] + Y_LOWER_BOUND + imgBounds[1]
+        popt[1] = popt[1] + X_LOWER_BOUND + imgBounds['x_start']  # imgBounds[0]
+        popt[2] = popt[2] + Y_LOWER_BOUND + imgBounds['y_start']  # imgBounds[1]
 
-        return popt
+        # Sum the cloud
+        sum = np.sum(EffectiveImg)
+
+        return sum, popt
 
     # define model function and pass independent variables x and y as a list
     def twoD_Gaussian(self, x_y, amplitude, xo, yo, sigma_x, sigma_y, theta, offset):
@@ -961,6 +917,27 @@ class MagneticFountainExperiment(BaseExperiment):
         ax = fig.add_subplot(111, projection='3d')
         # Plot the surface
         ax.plot_trisurf(xs, ys, zs)
+
+    def plot_sum_over_time(self, path, results, saveFilePath=None):
+
+        stem = Path(path).stem
+
+        ppds = [x[0] for x in results]
+        sums = [x[3]/1e5 for x in results]
+
+        fig, ax = plt.subplots()
+        ax.plot(ppds, sums, 'x', label='Data')
+
+        ax.set_xlabel('Time [ms]', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Intensity', fontsize=12, fontweight='bold')
+        ax.set_title(f'{stem}: Intensity over Time', fontsize=18, fontweight='bold')
+
+        # ax.legend()
+
+        if saveFilePath:
+            plt.savefig(os.path.join(saveFilePath, 'Intensity.png'))
+
+        pass
 
     def plotDataAndFit(self, x_data, y_data, fitFunc, fitParams, y_axis_range=[-1, 4], title='', props_str='', ylabel='', xlabel='Time [ms]',
                        saveFilePath=None, show=False):
@@ -1085,7 +1062,7 @@ if __name__ == "__main__":
     # Display menu to get action
     settings = Utils.load_json_from_file(r'./settings.json')
     # selection = BDMenu(caller=experiment, menu_file=None, menu_json=settings['menus']).display()
-
+    # experiment.measure_temperature(pre_pulse_durations=np.arange(0.5, 1.0, 0.5), create_video=True, perform_fit=True)
 
     # base_path = r"U:\Lab_2023\Magnetic Fountain\Results\190924\New fits - 250924"
     # voltage_values = range(200, 1300, 100)
