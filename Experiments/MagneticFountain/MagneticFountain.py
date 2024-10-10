@@ -47,8 +47,7 @@ class MagneticFountainExperiment(BaseExperiment):
 
         # 2 cameras parameters
         self.imgBoundsCam0 = {"x_start": 700, "y_start": 100, "x_end": 2000, "y_end": 1200}
-        # self.imgBoundsCam1 = {"x_start": 480, "y_start": 100, "x_end": 1600, "y_end": 1450}
-        self.imgBoundsCam1 = {"x_start": 300, "y_start": 200, "x_end": 1000, "y_end": 1450}
+        self.imgBoundsCam1 = {"x_start": 480, "y_start": 100, "x_end": 1600, "y_end": 1450}
 
         self.mm_to_pxl_cam1 = 10 / 792  # side camera (perpendicular to 0 beams)
         self.mm_to_pxl_cam0 = 1 / 104  # 0 camera (parallel to 0 beams)
