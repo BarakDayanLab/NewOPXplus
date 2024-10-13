@@ -47,7 +47,7 @@ class MagneticFountainExperiment(BaseExperiment):
 
         # 2 cameras parameters
         self.imgBoundsCam0 = (700, 100, 2000, 1200)  # bounds to crop out of the taken pictures
-        self.imgBoundsCam1 = (480, 100, 1600, 1450)  # bounds to crop out of the taken pictures
+        self.imgBoundsCam1 = (780, 100, 1400, 1450)  # bounds to crop out of the taken pictures
         self.mm_to_pxl_cam1 = 10 / 792  # side camera (perpendicular to 0 beams) # 06.10.24
         # self.mm_to_pxl_cam1 = 10 / (970)  # side camera (perpendicular to 0 beams)
         self.mm_to_pxl_cam0 = 1 / 104  # 0 camera (parallel to 0 beams)
@@ -178,7 +178,7 @@ class MagneticFountainExperiment(BaseExperiment):
                                 saveFilePath=os.path.join(extraFilesPath, r'x_position.png'), show=False)
         return (v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str)
 
-    def fit_Vz_0(self, gaussianFitResult, extraFilesPath, mm_to_pxl, fit_for_alpha=False, plotResults=True):
+    def fit_Vz_0(self, gaussianFitResult, extraFilesPath, mm_to_pxl, fit_for_alpha=True, plotResults=True):
 
         time_vector = np.array([res[0] for res in gaussianFitResult])
         z_position_vector = np.array([res[-1][2] for res in gaussianFitResult])
@@ -197,10 +197,12 @@ class MagneticFountainExperiment(BaseExperiment):
             print(f'failed to perform fit to center of mass movement due to: {err}')
 
         alpha = 9.8e-6 / 2 / v_launch_popt[0] * 1e3 if fit_for_alpha else mm_to_pxl  # mm/pixel
-        v_launch = v_launch_popt[0] * mm_to_pxl  # mm/ms = m/s
-        v_launch_std = np.sqrt(np.diag(v_launch_cov))[0] * mm_to_pxl
+        quadraticFunc_mm = lambda t, a, b, c: (a * t ** 2 + b * t + c)*alpha
+
+        v_launch = v_launch_popt[0] * alpha  # mm/ms = m/s
+        v_launch_std = np.sqrt(np.diag(v_launch_cov))[0] * alpha
         z_position_vector_mm = -(
-                    z_position_vector - self.resonator_pxl_position) * mm_to_pxl  # -10 due to resonator position
+                    z_position_vector - self.resonator_pxl_position) * alpha  # -10 due to resonator position
 
         h_1ms = z_position_vector_mm[0]
         v_1ms = (-v_launch * 1000) - 9.81 * 1000 * 1e-3
@@ -217,7 +219,7 @@ class MagneticFountainExperiment(BaseExperiment):
             resstr_v = r'$v_0 = %.1f$' % (-v_launch * 100) + r'$\pm$ %.1f[cm/s]' % (v_launch_std * 100) + '\n' + \
                        '$t_{arrival} = $' + t_arrival_str + '[ms]'
             # self.plotDataAndFit(time_vector, y_position_vector, fitFunc=fitFunc, fitParams=v_launch_popt,
-            self.plotDataAndFit(time_vector, z_position_vector_mm, fitFunc=linearFreeFall_mm, fitParams=v_launch_popt,
+            self.plotDataAndFit(time_vector, z_position_vector_mm, fitFunc=quadraticFunc_mm, fitParams=v_launch_popt,
                                 y_axis_range=[-1, 6],
                                 # title=f'Y position fit \n V_launch = {v_launch}; alpha = {alpha}', ylabel='Y_center [px]',
                                 # title=titlestr_v, props_str=resstr_v, ylabel='$Y_{center} [px]$',
@@ -237,7 +239,7 @@ class MagneticFountainExperiment(BaseExperiment):
             v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str = self.fit_Vz_0(gaussianFitResult,
                                                                                         extraFilesPath,
                                                                                         mm_to_pxl=mm_to_pxl,
-                                                                                        fit_for_alpha=False,
+                                                                                        fit_for_alpha=True,
                                                                                         plotResults=True)
 
         return v_launch, alpha, v_launch_popt, v_launch_cov, t_arrival_str
@@ -327,8 +329,8 @@ class MagneticFountainExperiment(BaseExperiment):
         # sigma_y_vector = alpha * np.array([res[-1][4] for res in gaussianFitResult])
 
         # -------- Fit for x and z temperatures ----
-        T_x, T_z = self.fitTemperaturesFromGaussianFitResults(gaussianFitResult,
-                                                              alpha, mm_to_pxl, extra_files, plotResults=True)
+        T_x, T_z = self.fitTemperaturesFromGaussianFitResults(gaussianFitResult,mm_to_pxl=mm_to_pxl,
+                                                              alpha=alpha, extraFilesPath=extra_files, plotResults=True)
 
         d = {
             'V_z Launch': -v_z_launch * 100,  # [cm/s]
@@ -585,7 +587,7 @@ class MagneticFountainExperiment(BaseExperiment):
             self.warn(f'Failed to get images - {err}')
 
         # Take background picture (after such a long delay, we should have no visible cloud :-)
-        self.updateValue("PrePulse_duration", float(50), update_parameters=True)
+        self.updateValue("PrePulse_duration", float(70), update_parameters=True)
 
         background_image_path = os.path.join(camera_1_folder, 'background.bmp')
         self.camera.saveAverageImage(background_image_path, NAvg=self.NAvg, NThrow=self.NThrow, RGB=False)
@@ -612,7 +614,7 @@ class MagneticFountainExperiment(BaseExperiment):
 
         if perform_fit:
             self.perform_fit(camera_1_folder, camera=SIDE_CAM)
-            # self.perform_fit(camera_0_folder,camera=ZERO_BEAMS_CAM)
+            # self.perform_fit(camera_1_folder,camera=ZERO_BEAMS_CAM)
 
         pass
 
@@ -817,7 +819,7 @@ class MagneticFountainExperiment(BaseExperiment):
 
     def GaussianFit(self, file_name_for_fit, background_file, mm_to_pxl, saveFitsPath=None, imgBounds=None,
                     X_PIXEL_LEN=1544,
-                    Y_PIXEL_LEN=2064, CROP_IMG_SIZE=180, PLOT_IMG=False, PLOT_SLICE=False, SHOW_CROP=False):
+                    Y_PIXEL_LEN=2064, CROP_IMG_SIZE=210, PLOT_IMG=False, PLOT_SLICE=False, SHOW_CROP=False):
         """
         Fit a gaussian to subtracted images
          INPUT:
@@ -883,12 +885,12 @@ class MagneticFountainExperiment(BaseExperiment):
         # img_max_index = [np.argmax(np.sum(EffectiveImg, axis=1)), np.argmax(np.sum(EffectiveImg, axis=0))]
         initial_guess = (
         EffectiveImg[img_max_index[1]][img_max_index[0]], img_max_index[1], img_max_index[0], EFFECTIVE_X_PIXEL_LEN / 8,
-        EFFECTIVE_Y_PIXEL_LEN / 8, 0, 10)
+        EFFECTIVE_Y_PIXEL_LEN / 8, 0, 10,0,0)
         fitBounds = [0, (
         255, EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN, EFFECTIVE_X_PIXEL_LEN , EFFECTIVE_Y_PIXEL_LEN,
-        2 * np.pi, 255)]
+        2 * np.pi, 255,10,10)]
         # print(initial_guess)
-        popt, pcov = opt.curve_fit(self.twoD_Gaussian, (x, y), data_noisy, p0=initial_guess, bounds=fitBounds)
+        popt, pcov = opt.curve_fit(self.twoD_Gaussian_tilted, (x, y), data_noisy, p0=initial_guess, bounds=fitBounds)
 
         # --- Check sigmas are in-bound ----
         sigma = [popt[3], popt[4]]
@@ -899,7 +901,7 @@ class MagneticFountainExperiment(BaseExperiment):
             return None
 
         # ---- plot the results ----
-        data_fitted = self.twoD_Gaussian((x, y), *popt)
+        data_fitted = self.twoD_Gaussian_tilted((x, y), *popt)
 
         if not os.path.exists(saveFitsPath):
             os.makedirs(saveFitsPath)
@@ -930,16 +932,30 @@ class MagneticFountainExperiment(BaseExperiment):
 
         if PLOT_SLICE:
             # plot slice
-            mtl.figure()
             data_noisy_mat = data_noisy.reshape(EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN)
-            Slice = data_noisy_mat[int(EFFECTIVE_Y_PIXEL_LEN / 2) - 10]
-            mtl.plot(Slice)
-            mtl.plot(data_fitted.reshape(EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN)[int(EFFECTIVE_Y_PIXEL_LEN / 2) - 10])
+            Slice = data_noisy_mat[img_max_index[1]]
+
+            from scipy.signal import savgol_filter
+            # Smooth the vector using Savitzky-Golay filter
+            window_length = 201  # Must be odd
+            poly_order = 7  # Polynomial order for the filter
+            y_smooth = savgol_filter(Slice, window_length, poly_order)
+            # Plot the original and smoothed data
+            plt.figure(figsize=(12, 6))
+            plt.plot(Slice, label='Original Data', alpha=0.5)
+            plt.plot(y_smooth, label='Smoothed Data', color='red')
+            plt.plot(data_fitted.reshape(EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN)[img_max_index[1]], label='fit Data', color='blue')
+            plt.xlabel('X')
+            plt.ylabel('Y')
+            plt.title('Original vs Smoothed Data')
+            plt.legend()
+            plt.grid(True)
             plt.show()
 
         # return original x-y
         popt[1] = popt[1] + X_LOWER_BOUND + imgBounds[0]
         popt[2] = popt[2] + Y_LOWER_BOUND + imgBounds[1]
+
 
         return popt
 
@@ -956,6 +972,21 @@ class MagneticFountainExperiment(BaseExperiment):
         g = offset + amplitude * np.exp(- ((x - xo) / (np.sqrt(2) * sigma_x)) ** 2 - ((y - yo) / (np.sqrt(2) * sigma_y)) ** 2)
         return g.ravel()
 
+    def twoD_Gaussian_tilted(self, x_y, amplitude, xo, yo, sigma_x, sigma_y, theta, offset,tilt_x,tilt_y):
+        '''
+        tilt_x: an x linear profile with change rate of tilt_x
+        tilt_y: an x linear profile with change rate of tilt_x
+        '''
+        x, y = x_y
+        xo = float(xo)
+        yo = float(yo)
+        a = (np.cos(theta) ** 2) / (2 * sigma_x ** 2) + (np.sin(theta) ** 2) / (2 * sigma_y ** 2)
+        b = -(np.sin(2 * theta)) / (4 * sigma_x ** 2) + (np.sin(2 * theta)) / (4 * sigma_y ** 2)
+        c = (np.sin(theta) ** 2) / (2 * sigma_x ** 2) + (np.cos(theta) ** 2) / (2 * sigma_y ** 2)
+        # g = offset + amplitude * np.exp(- (a * ((x - xo) ** 2) + 2 * b * (x - xo) * (y - yo)
+        #                                    + c * ((y - yo) ** 2)))
+        g = offset + tilt_x*x + tilt_y*y + amplitude * np.exp(- ((x - xo) / (np.sqrt(2) * sigma_x)) ** 2 - ((y - yo) / (np.sqrt(2) * sigma_y)) ** 2)
+        return g.ravel()
     def plot3D(self, xs, ys, zs):
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
@@ -1096,4 +1127,4 @@ if __name__ == "__main__":
     # # path_cam_0 = r"200mV\camera_0"
     # # experiment.create_video_from_path( fr"{base_path}\200mV\camera_0", save_file_path=r"U:\Lab_2023\Magnetic Fountain\Results\190924\New fits - 250924\200mV\extra_files", file_name='video_cam_0')
     # path = fr"{base_path}\0 measure\camera_0"
-    # experiment.perform_fit(path=r'C:\temp\refactor_debug\Experiment_results\Temperature\20241009_180635\camera_1', camera=SIDE_CAM)
+    # experiment.perform_fit(path=r'U:\Lab_2023\Magnetic Fountain\Results\101024\20241010_185412\camera_1', camera=SIDE_CAM)
