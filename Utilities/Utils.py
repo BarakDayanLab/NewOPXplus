@@ -768,8 +768,7 @@ class Utils:
         line_color = (255, 255, 255)  # White
         image_with_bounds = image.copy()
         image_with_bounds = cv2.rectangle(image_with_bounds, top_left_point, bottom_right_point, line_color, line_thickness)
-        cv2.imshow("Fit Crop Bounds", image_with_bounds)
-        cv2.waitKey(0)
+        return image_with_bounds
 
     @staticmethod
     def plot_cloud_position_over_time(images_folder, out_path, x_start, x_end, y_start, y_end,
