@@ -805,7 +805,7 @@ class MagneticFountainExperiment(BaseExperiment):
         if imgBounds:
             ImgToFit = ImgToFit[imgBounds['y_start']:imgBounds['y_end'], imgBounds['x_start']:imgBounds['x_end']]
 
-        img_max_index = [np.argmax(np.sum(ImgToFit, axis=0)), np.argmax(np.sum(ImgToFit, axis=1))]
+        img_max_index = [np.argmax(np.sum(ImgToFit, axis=1)), np.argmax(np.sum(ImgToFit, axis=0))]
 
         # img_max_index[1] = np.argmax(np.sum(ImgToFit[10:][img_max_index[0]-CROP_IMG_SIZE:img_max_index[0]+CROP_IMG_SIZE], axis=1))
         print(img_max_index)
@@ -813,21 +813,21 @@ class MagneticFountainExperiment(BaseExperiment):
         X_UPPER_BOUND = int(img_max_index[0] + CROP_IMG_SIZE)
         X_LOWER_BOUND = int(img_max_index[0] - CROP_IMG_SIZE)
         if X_LOWER_BOUND < 0: X_LOWER_BOUND = 0
-        if X_UPPER_BOUND > X_PIXEL_LEN: X_UPPER_BOUND = X_PIXEL_LEN
+        if X_UPPER_BOUND > ImgToFit.shape[0]: X_UPPER_BOUND =ImgToFit.shape[0]
         EFFECTIVE_X_PIXEL_LEN = X_UPPER_BOUND - X_LOWER_BOUND
 
         Y_UPPER_BOUND = int(img_max_index[1] + CROP_IMG_SIZE)
         Y_LOWER_BOUND = int(img_max_index[1] - CROP_IMG_SIZE)
         if Y_LOWER_BOUND < 0: Y_LOWER_BOUND = 0
-        if Y_UPPER_BOUND > Y_PIXEL_LEN: Y_UPPER_BOUND = Y_PIXEL_LEN
+        if Y_UPPER_BOUND > ImgToFit.shape[1]: Y_UPPER_BOUND = ImgToFit.shape[1]
         EFFECTIVE_Y_PIXEL_LEN = Y_UPPER_BOUND - Y_LOWER_BOUND
 
         # Create x and y indices
-        x = np.linspace(0, EFFECTIVE_Y_PIXEL_LEN - 1, EFFECTIVE_Y_PIXEL_LEN)
-        y = np.linspace(0, EFFECTIVE_X_PIXEL_LEN - 1, EFFECTIVE_X_PIXEL_LEN)
+        x = np.linspace(0, EFFECTIVE_X_PIXEL_LEN - 1, EFFECTIVE_X_PIXEL_LEN)
+        y = np.linspace(0, EFFECTIVE_Y_PIXEL_LEN - 1, EFFECTIVE_Y_PIXEL_LEN)
         x, y = np.meshgrid(x, y)
         # crop an effective image
-        EffectiveImg = ImgToFit[Y_LOWER_BOUND:Y_UPPER_BOUND, X_LOWER_BOUND:X_UPPER_BOUND]
+        EffectiveImg = ImgToFit[ X_LOWER_BOUND:X_UPPER_BOUND, Y_LOWER_BOUND:Y_UPPER_BOUND]
         # plt.imshow(EffectiveImg)
         # plt.show()
         data_noisy = EffectiveImg.ravel()
@@ -842,7 +842,7 @@ class MagneticFountainExperiment(BaseExperiment):
 
         # img_max_index = [np.argmax(np.sum(EffectiveImg, axis=1)), np.argmax(np.sum(EffectiveImg, axis=0))]
         initial_guess = (
-        EffectiveImg[img_max_index[1]][img_max_index[0]], img_max_index[1], img_max_index[0], EFFECTIVE_X_PIXEL_LEN / 8,
+        EffectiveImg[img_max_index[0]][img_max_index[1]], img_max_index[0], img_max_index[1], EFFECTIVE_X_PIXEL_LEN / 8,
         EFFECTIVE_Y_PIXEL_LEN / 8, 0, 10,0,0)
         fitBounds = [0, (
         255, EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN, EFFECTIVE_X_PIXEL_LEN , EFFECTIVE_Y_PIXEL_LEN,
@@ -1108,4 +1108,4 @@ if __name__ == "__main__":
     # # path_cam_0 = r"200mV\camera_0"
     # # experiment.create_video_from_path( fr"{base_path}\200mV\camera_0", save_file_path=r"U:\Lab_2023\Magnetic Fountain\Results\190924\New fits - 250924\200mV\extra_files", file_name='video_cam_0')
     # path = fr"{base_path}\0 measure\camera_0"
-    experiment.perform_fit(path=r'\\isi.storwis.weizmann.ac.il\Labs\baraklab\Lab_2023\Magnetic Fountain\Results\131024\20241013_120617\camera_1', camera=SIDE_CAM)
+    experiment.perform_fit(path=r'C:\temp\refactor_debug\magnetic_fountain\throwing to the right\141024\amp=~800mV\camera_1', camera=SIDE_CAM)
