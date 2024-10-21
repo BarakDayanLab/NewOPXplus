@@ -140,9 +140,9 @@ def Pulse_with_prep(total_pulse_duration, prep_duration, zero_pulse_duration, pl
     with if_(total_pulse_duration > prep_duration):
         # play("Const" * amp(Config.AOM_0_Attenuation_pulse_1), "MOT_AOM_0",
         #      duration=(total_pulse_duration - prep_duration))
-        # play("Const" * amp(0.1*Config.AOM_Minus_Attenuation), "MOT_AOM_-",
+        # play("Const" * amp(Config.AOM_Minus_Attenuation), "MOT_AOM_-",
         #      duration=(total_pulse_duration - prep_duration))
-        # play("Const" * amp(0.1*Config.AOM_Plus_Attenuation), "MOT_AOM_+",
+        # play("Const" * amp(Config.AOM_Plus_Attenuation), "MOT_AOM_+",
         #      duration=(total_pulse_duration - prep_duration))
         play("OD" * amp(0.4), "AOM_2-2/3'", duration=(total_pulse_duration - prep_duration))
 
@@ -489,7 +489,7 @@ def opx_control(obj, qm):
 
             # MOT sequence:
             FLR = MOT(MOT_Repetitions, OD_attenuation)
-            # play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
+            play("AntiHelmholtz_MOT", "AntiHelmholtz_Coils", duration=antihelmholtz_delay)
 
             # Delay before fountain:
 

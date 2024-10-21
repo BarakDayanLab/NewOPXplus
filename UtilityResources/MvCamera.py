@@ -108,20 +108,20 @@ class MvCamera:
             print("Exposure:", self.genIcamAcqCtrl.exposureTime.read())
 
             # Define the AnalogControl Parameters
-            genIcamAlgCtrl = acquire.AnalogControl(self.pDev)
+            self.genIcamAlgCtrl = acquire.AnalogControl(self.pDev)
 
             # Write the Gain Settings to the Camera
             # genIcamAlgCtrl.gain.write(40.000)
 
             # Read the Gain Settings in the Camera
-            print("Gain:", genIcamAlgCtrl.gain.read())
+            print("Gain:", self.genIcamAlgCtrl.gain.read())
 
             # Write the Black Level Settings to the Camera
-            genIcamAlgCtrl.blackLevelSelector.writeS("All")
+            self.genIcamAlgCtrl.blackLevelSelector.writeS("All")
             # genIcamAlgCtrl.blackLevel.write(10.00)
 
             # Read the Black Level Settings in the Camera
-            print("BlackLevel:", genIcamAlgCtrl.blackLevel.read())
+            print("BlackLevel:", self.genIcamAlgCtrl.blackLevel.read())
 
             # Set the Trigger Mode Option for Camera
             self.genIcamAcqCtrl.triggerSelector.writeS("FrameStart")
