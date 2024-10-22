@@ -2586,6 +2586,4 @@ if __name__ == "__main__":
     }
 
     experiment = PNSAExperiment(playback_parameters=playback_parameters, save_raw_data=True)
-    run_status = experiment.run_sequence(sequence_definitions, run_parameters)
-
-    pass
+    run_status = experiment.run_sequence(sequence_definitions, run_para

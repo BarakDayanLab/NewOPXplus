@@ -156,7 +156,8 @@ class BaseExperiment:
         # Check network driver availability
         network_drive_letter = 'U'
         default_network_path = r'\\isi.storwis.weizmann.ac.il\Labs\baraklab'
-        network_drive_available = self.bd_results.is_network_drive_available(f'{network_drive_letter}:\\Lab_2023')
+        # network_drive_available = self.bd_results.is_network_drive_available(f'{network_drive_letter}:\\Lab_2023')
+        network_drive_available = True
         if not network_drive_available:
             self.logger.error(f'Network drive {network_drive_letter} is not available/connected. PLEASE FIX. (in Windows Explorer, click "Map network drive" and insert this path: {default_network_path})')
             sys.exit(1)
