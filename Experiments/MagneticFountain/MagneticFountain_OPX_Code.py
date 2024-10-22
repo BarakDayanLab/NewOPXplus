@@ -537,14 +537,14 @@ def opx_control(obj, qm):
                 ## Trigger QuadRF Sequence #####################
                 play("C_Seq", "Cooling_Sequence", duration=us(10))
                 ################################################
-
-            # For taking an image:
             with if_(Pulse_1_duration > 0):
                 align(*all_elements, "AOM_2-2/3'")
                 Pulse_with_prep(Pulse_1_duration, Pulse_1_decay_time, pulse_1_duration_0,
                                 pulse_1_duration_minus, pulse_1_duration_plus)
                 Measure(Pulse_1_duration)  # This triggers camera (Control 7)
                 align(*all_elements, "AOM_2-2/3'")
+            # For taking an image:
+
 
             assign(N_Snaps, 1)
             assign(Buffer_Cycles, 0)
