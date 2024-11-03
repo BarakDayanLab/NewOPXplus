@@ -790,9 +790,9 @@ class MagneticFountainExperiment(BaseExperiment):
                 # Get gaussian fit values
                 sum, gaussianFit,gaussianFit_cov = self.GaussianFit(full_file_name, background_file=backgroundPath,
                                                                     saveFitsPath=saveFitsPath, imgBounds=imgBounds,
-                                                                    mm_to_pxl=mm_to_pxl, SHOW_CROP=True, PLOT_IMG=True)
+                                                                    mm_to_pxl=mm_to_pxl, SHOW_CROP=False, PLOT_IMG=False)
                 if gaussianFit is None:
-                    continue  # if fit returned None, meaning the fit failed (sigma is out of self.sigma_bounds), discard this results and continue to the next fit
+                    continue  # if fit returned None, meaning the fit failed (sigma is out of self.sigma_bounds), discard this results and continue to the next fit                val_key_data.append(gaussianFit)
                 val_key_data.append(gaussianFit)
                 val_key_data.append(sum)
                 val_key_data.append(gaussianFit_cov)
@@ -877,10 +877,9 @@ class MagneticFountainExperiment(BaseExperiment):
         initial_guess = (
         amp_guess, img_max_index[0], img_max_index[1], EFFECTIVE_X_PIXEL_LEN / 10,
         EFFECTIVE_Y_PIXEL_LEN /10, 10,0,0)
-        # fitBounds = [0, (
-        # 255, EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN, EFFECTIVE_X_PIXEL_LEN , EFFECTIVE_Y_PIXEL_LEN, 255,10,10)]
-        fitBounds = [[0,img_max_index[0]-CROP_IMG_SIZE/20, img_max_index[1]-CROP_IMG_SIZE/20,0,0,0,0,0], [
-        255, img_max_index[0]+CROP_IMG_SIZE/20, img_max_index[1]+CROP_IMG_SIZE/20, EFFECTIVE_X_PIXEL_LEN , EFFECTIVE_Y_PIXEL_LEN, 255,10,10]]
+        fitBounds = [0, (
+        255, EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN, EFFECTIVE_X_PIXEL_LEN , EFFECTIVE_Y_PIXEL_LEN, 255,10,10)]
+
         # print(initial_guess)
         popt, pcov = opt.curve_fit(self.twoD_Gaussian_tilted, (x, y), data_noisy, p0=initial_guess, bounds=fitBounds)
 
@@ -929,7 +928,7 @@ class MagneticFountainExperiment(BaseExperiment):
             ax.set_ylabel('Y [mm]', fontsize=12, fontweight='bold')
             ax.xaxis.set_minor_locator(AutoMinorLocator())
             ax.yaxis.set_minor_locator(AutoMinorLocator())
-            plt.savefig(os.path.join(saveFitsPath, fileName + '.png'))
+            plt.savefig(os.path.join(saveFitsPath, fileName + '.tiff'), dpi=300)
             if PLOT_IMG: plt.show()
 
         if PLOT_SLICE:
@@ -1227,27 +1226,27 @@ class MagneticFountainExperiment(BaseExperiment):
 if __name__ == "__main__":
     # Initiate the experiment
     # Change to ExperimentMode.OFFLINE if you wish to run outside the lab
-    experiment = MagneticFountainExperiment(ExperimentMode.LIVE)
+    experiment = MagneticFountainExperiment(ExperimentMode.OFFLINE)
 
     # Display menu to get action
     settings = Utils.load_json_from_file(r'./settings.json')
-    selection = BDMenu(caller=experiment, menu_file=None, menu_json=settings['menus']).display()
+    # selection = BDMenu(caller=experiment, menu_file=None, menu_json=settings['menus']).display()
 
-
-    # base_path = r"C:\temp\refactor_debug\magnetic_fountain\throwing to the right\201024"
+    #
+    base_path = r"U:\Lab_2023\Magnetic Fountain\Results\201024_updated results"
     # voltage_values = list(range(200, 1000, 100))+[0]
-    # voltage_values = [0,200,330,465,564,705,840,900,1000,1100,1200,1300]
-    # voltage_values.sort()
-    # # for ii in voltage_values:
-    #     path = fr"{base_path}\amp=~{ii}mV\camera_1"
-    #     experiment.perform_fit(path=path,  camera=SIDE_CAM)
-    # pass
+    voltage_values = [0,200,330,465,705,840,900,1000,1100,1200,1300]
+    voltage_values.sort()
+    for ii in voltage_values:
+        path = fr"{base_path}\amp=~{ii}mV\camera_1"
+        experiment.perform_fit(path=path,  camera=SIDE_CAM)
+    pass
     # path_cam_0 = r"200mV\camera_0"
     # experiment.create_video_from_path( fr"{base_path}\200mV\camera_0", save_file_path=r"U:\Lab_2023\Magnetic Fountain\Results\190924\New fits - 250924\200mV\extra_files", file_name='video_cam_0')
     # path = fr"{base_path}\0 measure\camera_0"
-    # experiment.perform_fit(path=r'U:\Lab_2023\Magnetic Fountain\Results\201024_updated results\amp=~0mV\camera_1', camera=SIDE_CAM)
+    experiment.perform_fit(path=r'U:\Lab_2023\Magnetic Fountain\Results\201024_updated results\amp=~705mV\camera_1', camera=SIDE_CAM)
     # result =     voltage_values = [200,330,465,585,705,840,1000]
   # Create the list from the range
     # result = list(range(200, 330, 100))+[0]  # Create the list from the range
     # result.sort()  # Add 0 to the end of the list
-    # experiment.export_to_xl(path = r"U:\Lab_2023\Magnetic Fountain\Results\201024_updated results", currents_vec = voltage_values)
+    experiment.export_to_xl(path = r"U:\Lab_2023\Magnetic Fountain\Results\201024_updated results", currents_vec = voltage_values)
