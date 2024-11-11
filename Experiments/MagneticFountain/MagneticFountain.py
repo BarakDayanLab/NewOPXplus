@@ -1,3 +1,5 @@
+import sys
+
 from Experiments.BaseExperiment.BaseExperiment import BaseExperiment
 from Experiments.Enums.ExperimentMode import ExperimentMode as ExperimentMode
 
@@ -16,6 +18,7 @@ import scipy.optimize as opt
 import matplotlib
 import matplotlib.pyplot as mtl
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
+from matplotlib.patches import Ellipse
 import pylab as plt
 from Utilities.BDMenu import BDMenu
 from mpl_toolkits.mplot3d import Axes3D
@@ -52,6 +55,8 @@ class MagneticFountainExperiment(BaseExperiment):
 
         self.mm_to_pxl_cam1 = 10 / 792  # side camera (perpendicular to 0 beams)
         self.mm_to_pxl_cam0 = 1 / 104  # 0 camera (parallel to 0 beams)
+
+        self.theta = np.radians(33)
 
         self.sigma_bounds = (15, 100)  # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
         self.resonator_pxl_position = 956  # the cloud position # TODO: create function for finding the position.
@@ -942,13 +947,25 @@ class MagneticFountainExperiment(BaseExperiment):
         # img_max_index = [np.argmax(np.sum(EffectiveImg, axis=1)), np.argmax(np.sum(EffectiveImg, axis=0))]
         amp_guess = EffectiveImg[img_max_index[1]][img_max_index[0]] if EffectiveImg[img_max_index[1]][img_max_index[0]]>20 else 100
         initial_guess = (
-        amp_guess, img_max_index[0], img_max_index[1], EFFECTIVE_X_PIXEL_LEN / 10,
-        EFFECTIVE_Y_PIXEL_LEN /10, 10,0,0)
-        fitBounds = [0, (
-        255, EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN, EFFECTIVE_X_PIXEL_LEN , EFFECTIVE_Y_PIXEL_LEN, 255,10,10)]
+            amp_guess,  # amplitude
+            img_max_index[0], img_max_index[1],  # x0, y0
+            EFFECTIVE_X_PIXEL_LEN / 10, EFFECTIVE_Y_PIXEL_LEN / 10,  # sigma_x, sigma_y
+            10,  # offset
+            # 0,  # tilt_x
+            # 0,  # tilt_y
+            # 45  # theta
+        )
+        # fitBounds = [0, (255, EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN, EFFECTIVE_X_PIXEL_LEN , EFFECTIVE_Y_PIXEL_LEN, 255, 10, 10, 45)]
+        fitBounds = [0, (255, EFFECTIVE_X_PIXEL_LEN, EFFECTIVE_Y_PIXEL_LEN, EFFECTIVE_X_PIXEL_LEN , EFFECTIVE_Y_PIXEL_LEN, 255)]
 
         # print(initial_guess)
-        popt, pcov = opt.curve_fit(self.twoD_Gaussian_tilted, (x, y), data_noisy, p0=initial_guess, bounds=fitBounds)
+        # popt, pcov = opt.curve_fit(self.twoD_Gaussian_tilted, (x, y), data_noisy, p0=initial_guess, bounds=fitBounds)
+        popt, pcov = opt.curve_fit(f=self.twoD_fixed_angle_Gaussian, xdata=(x, y), ydata=data_noisy, p0=initial_guess, bounds=fitBounds)
+
+        amplitude, xo, yo, sigma_x, sigma_y, offset = popt
+
+        # xo += (X_LOWER_BOUND + imgBounds['x_start'])
+        # yo += (Y_LOWER_BOUND + imgBounds['y_start'])
 
         # --- Check sigmas are in-bound ----
         sigma = [popt[3], popt[4]]
@@ -958,30 +975,63 @@ class MagneticFountainExperiment(BaseExperiment):
             return None
 
         # ---- plot the results ----
-        # return original x-y
+        # Offset the coordinates back to original x, y (before 2 crop actions)
         popt[1] = popt[1] + X_LOWER_BOUND + imgBounds['x_start']  # imgBounds[0]
         popt[2] = popt[2] + Y_LOWER_BOUND + imgBounds['y_start']  # imgBounds[1]
-        print(f'in original image, fit cloud center is at {popt[1:3]} ')
+        print(f'In original image, fit cloud center is at {popt[1:3]} ')
 
+        # 0 = Height,  1 = Width
         x_original = np.linspace(0, ImgToFit.shape[1] - 1, ImgToFit.shape[1])
         y_original = np.linspace(0, ImgToFit.shape[0] - 1, ImgToFit.shape[0])
-        x_original,y_original = np.meshgrid(x_original, y_original)
-        data_fitted = self.twoD_Gaussian_tilted((x_original, y_original), *popt)
+        x_original, y_original = np.meshgrid(x_original, y_original)
+
+        # Perform fit
+        # data_fitted = self.twoD_Gaussian_tilted((x_original, y_original), *popt)
+        data_fitted = self.twoD_fixed_angle_Gaussian((x_original, y_original), *popt)
 
         if not os.path.exists(saveFitsPath):
             os.makedirs(saveFitsPath)
 
-        if PLOT_IMG or saveFitsPath:
+        if PLOT_IMG := True or saveFitsPath:
             fig, ax = plt.subplots(1, 1)
             # plt.title(fileName)
             ax.set_title('Free-fall duration = ' + fileName.split('=')[1] + '[ms]', fontsize=16, fontweight='bold')
-            plt.text(0.95, 0.95, r'$\sigma_x$ = %.2f[mm]' % (sigma[0] * mm_to_pxl) + '\n' +
-                     r'$\sigma_y$ = %.2f[mm]' % (sigma[1] * mm_to_pxl), color='white',
+            sigma_x_str = r'$\sigma_x$ = %.2f[mm]' % (sigma[0] * mm_to_pxl)
+            sigma_z_str = r'$\sigma_z$ = %.2f[mm]' % (sigma[1] * mm_to_pxl)
+            theta_str = r'$\theta$ = %.2f[deg]' % np.degrees(self.theta)
+            text = f'{sigma_x_str}\n{sigma_z_str}\n{theta_str}'
+
+            plt.text(0.95, 0.95, s=text, color='white',
                      fontsize=16, horizontalalignment='right', verticalalignment='top',
                      transform=ax.transAxes, bbox=dict(facecolor='gray', alpha=0.5))
-            ax.imshow(ImgToFit, cmap='gray',
-                      extent=(x_original.min(), x_original.max(), y_original.min(), y_original.max()))
-            ax.contour(x_original, y_original, np.flipud(data_fitted.reshape(ImgToFit.shape[0], ImgToFit.shape[1])), 8, colors='w')
+            ax.imshow(ImgToFit, cmap='gray', extent=(x_original.min(), x_original.max(), y_original.min(), y_original.max()))
+            #ax.contour(x_original, y_original, np.flipud(data_fitted.reshape(ImgToFit.shape[0], ImgToFit.shape[1])), 8, colors='w', alpha=0.5)
+            ax.contourf(x_original, y_original, np.flipud(data_fitted.reshape(ImgToFit.shape[0], ImgToFit.shape[1])), 8, colors=None, cmap='rainbow', alpha=0.2)
+
+            sigma_x *= 2
+            sigma_y *= 2
+
+            # Draw sigma_x and sigma_z
+            ellipse = Ellipse((xo, yo), 2 * sigma_x, 2 * sigma_y, angle=np.degrees(self.theta), facecolor='none', edgecolor='g', linestyle='--')
+            ax.add_patch(ellipse)
+
+            # Draw arrows for sigma_x and sigma_y
+            cos_theta, sin_theta = np.cos(self.theta), np.sin(self.theta)
+            arrow_scale = 0.9  # Scale factor for arrow length
+            dx_x, dy_x = sigma_x * cos_theta * arrow_scale, sigma_x * sin_theta * arrow_scale
+            dx_y, dy_y = -sigma_y * sin_theta * arrow_scale, sigma_y * cos_theta * arrow_scale
+
+            # ax.arrow(xo, yo, dx_x, dy_x, color='g', width=0.1, head_width=1.8, head_length=0.3)
+            # ax.arrow(xo, yo, dx_y, dy_y, color='g', width=0.1, head_width=1.8, head_length=0.3)
+            ax.arrow(xo, yo, dx_x, dy_x, color='g', width=0.1, head_width=8)
+            ax.arrow(xo, yo, dx_y, dy_y, color='g', width=0.1, head_width=8)
+
+            # Add labels for sigma_x and sigma_y
+            label_offset = 25  # Offset for label position
+            ax.text(xo + dx_x + label_offset * cos_theta, yo + dy_x + label_offset * sin_theta,
+                     r'$\sigma_x$', color='g', fontsize=10, ha='center', va='center')
+            ax.text(xo + dx_y - label_offset * sin_theta, yo + dy_y + label_offset * cos_theta,
+                     r'$\sigma_z$', color='g', fontsize=10, ha='center', va='center')
 
             arr1 = np.arange((x_original.min() * mm_to_pxl), x_original.max() * mm_to_pxl, 0.5, dtype=float)
             arr2 = np.arange(((x_original.min() * mm_to_pxl) // 0.5) * 0.5, x_original.max() * mm_to_pxl, 0.5, dtype=float)
@@ -993,8 +1043,14 @@ class MagneticFountainExperiment(BaseExperiment):
             ax.set_ylabel('Y [mm]', fontsize=12, fontweight='bold')
             ax.xaxis.set_minor_locator(AutoMinorLocator())
             ax.yaxis.set_minor_locator(AutoMinorLocator())
+
+            # Save figure
             plt.savefig(os.path.join(saveFitsPath, fileName + '.tiff'), dpi=300)
-            if PLOT_IMG: plt.show()
+
+            # Plot the figure
+            if PLOT_IMG := False:
+                plt.show()
+
 
         if PLOT_SLICE:
             # plot slice
@@ -1043,6 +1099,32 @@ class MagneticFountainExperiment(BaseExperiment):
         # g = offset + amplitude * np.exp(- (a * ((x - xo) ** 2) + 2 * b * (x - xo) * (y - yo)
         #                                    + c * ((y - yo) ** 2)))
         g = offset + amplitude * np.exp(- ((x - xo) / (np.sqrt(2) * sigma_x)) ** 2 - ((y - yo) / (np.sqrt(2) * sigma_y)) ** 2)
+        return g.ravel()
+
+    def twoD_tilted_Gaussian(self, x_y, amplitude, xo, yo, sigma_x, sigma_y, offset, tilt_x, tilt_y, theta):
+
+        # if not hasattr(self, 'aw'):
+        #     self.aw = 10
+
+        x, y = x_y
+        xo = float(xo)
+        yo = float(yo)
+        a = (np.cos(theta) ** 2) / (2 * sigma_x ** 2) + (np.sin(theta) ** 2) / (2 * sigma_y ** 2)
+        b = -(np.sin(2 * theta)) / (4 * sigma_x ** 2) + (np.sin(2 * theta)) / (4 * sigma_y ** 2)
+        c = (np.sin(theta) ** 2) / (2 * sigma_x ** 2) + (np.cos(theta) ** 2) / (2 * sigma_y ** 2)
+        g = offset + amplitude * np.exp(- (a * ((x - xo) ** 2) + 2 * b * (x - xo) * (y - yo) + c * ((y - yo) ** 2)))
+
+        return g.ravel()
+
+    def twoD_fixed_angle_Gaussian(self, x_y, amplitude, xo, yo, sigma_x, sigma_y, offset):
+        x, y = x_y
+        xo = float(xo)
+        yo = float(yo)
+        theta = self.theta
+        a = (np.cos(theta) ** 2) / (2 * sigma_x ** 2) + (np.sin(theta) ** 2) / (2 * sigma_y ** 2)
+        b = -(np.sin(2 * theta)) / (4 * sigma_x ** 2) + (np.sin(2 * theta)) / (4 * sigma_y ** 2)
+        c = (np.sin(theta) ** 2) / (2 * sigma_x ** 2) + (np.cos(theta) ** 2) / (2 * sigma_y ** 2)
+        g = offset + amplitude * np.exp(- (a * ((x - xo) ** 2) + 2 * b * (x - xo) * (y - yo) + c * ((y - yo) ** 2)))
         return g.ravel()
 
     def twoD_Gaussian_tilted(self, x_y, amplitude, xo, yo, sigma_x, sigma_y, offset, tilt_x, tilt_y):
@@ -1354,13 +1436,16 @@ if __name__ == "__main__":
 
 
     # my_path = r'C:\temp\fit_crop_check\cloud to diagonal\20241009_120544\camera_1'
-    my_path = r'C:\temp\Ayelet'
+    my_path = r'C:\temp\test_gaussian_x_z_fit'
+    # my_path = r'C:\temp\Ayelet'
 
     # Test the overlay function
     #my_path = r'C:\temp\fit_crop_check\800mv'
     #experiment.overlay_all_images(my_path)
 
     experiment.perform_fit(path=my_path,  camera=SIDE_CAM)
+
+    sys.exit('Exited')
 
     base_path = r"C:\temp\refactor_debug\magnetic_fountain\throwing to the right\201024"
     voltage_values = list(range(200, 1000, 100))+[0]
