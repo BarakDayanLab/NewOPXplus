@@ -56,7 +56,7 @@ class MagneticFountainExperiment(BaseExperiment):
         self.mm_to_pxl_cam1 = 10 / 792  # side camera (perpendicular to 0 beams)
         self.mm_to_pxl_cam0 = 1 / 104  # 0 camera (parallel to 0 beams)
 
-        self.theta = np.radians(33)
+        self.theta = np.radians(0)
 
         self.sigma_bounds = (15, 100)  # This bounds sigma (x & y) of the Gaussian sigma. If value is out of bounds, fit is considered bad and not used in temp-fit
         self.resonator_pxl_position = 956  # the cloud position # TODO: create function for finding the position.
@@ -96,6 +96,11 @@ class MagneticFountainExperiment(BaseExperiment):
         if camera is ZERO_BEAMS_CAM:
             mm_to_pxl = self.mm_to_pxl_cam0
             imgBounds = self.imgBoundsCam0
+
+        # If results file was loaded (maybe we're running a fit on previously done experiment, set it
+        if hasattr(self, 'results') and self.results is not None:
+            mm_to_pixel = self.results['alpha']
+
         return (mm_to_pxl, imgBounds)
 
     def turn_on_off_magnetic_fountain(self):
@@ -300,10 +305,33 @@ class MagneticFountainExperiment(BaseExperiment):
                                 saveFilePath=os.path.join(extraFilesPath, 'Z_temp_fit.png'), show=False)
         return T_x, T_z
 
+    def load_results_file(self, path):
+        """
+        Search for the file results.json and load it
+        """
+        self.results = None
+
+        # Search for the file
+        files = glob.glob(f'{path}/**/results.json', recursive=True)
+
+        if not files or len(files)!=1:
+            raise Exception('Could not find results.json file or found more than one such file. Cannot set mm_to_pixel')
+
+        # Read the json and set the value
+        with open(files[0], 'r') as file:
+            results = json.load(file)
+
+        self.results = results
+        pass
+
     def perform_fit(self, path, camera=1):
         """
         TODO: <TBD>
         """
+
+        # Find and load the results file
+        self.load_results_file(path)
+
         mm_to_pxl, imgBounds = self.get_camera_params(camera)
         # Set the folders we need
         extra_files = os.path.join(path, 'extra_files')
@@ -822,7 +850,7 @@ class MagneticFountainExperiment(BaseExperiment):
 
         return res
 
-    def save_image_with_center_highlighted(self, file_name, img_bounds, img_max_index, popt, text, out_path=None, debug=False):
+    def save_image_with_center_highlighted(self, file_name, img_bounds, img_max_index, CROP_IMG_SIZE, popt, text, out_path=None, debug=False):
 
         # Read the file
         img_to_highlight = cv2.imread(file_name, 0)
@@ -841,9 +869,35 @@ class MagneticFountainExperiment(BaseExperiment):
         color = (0, 255, 0)  # Green
         thickness = 2
 
+        # Draw a rectangle that shows the crop bounds
+        line_thickness = 1
+        line_color = (0, 255, 0)  # White
+        top_left_point = (center_intensity_x-CROP_IMG_SIZE, center_intensity_y-CROP_IMG_SIZE)
+        bottom_right_point = (center_intensity_x+CROP_IMG_SIZE, center_intensity_y+CROP_IMG_SIZE)
+        cv2.rectangle(img_to_highlight, top_left_point, bottom_right_point, line_color, line_thickness)
+
         # Draw the circles on the image
         cv2.circle(img_to_highlight, (center_intensity_x, center_intensity_y), radius, color, thickness)
         cv2.circle(img_to_highlight, (center_gaussian_x_0, center_gaussian_y_0), radius, (0, 0, 200), thickness)
+
+        if False and ('PrePulse_duration=01.0' not in file_name):
+            # Draw the circle and arrow of the first image
+            cloud_tof_0_x = img_bounds['x_start'] + self.cloud_tof_0_coords[0]
+            cloud_tof_0_y = img_bounds['y_start'] + self.cloud_tof_0_coords[1]
+            cv2.circle(img_to_highlight, (cloud_tof_0_x, cloud_tof_0_y), radius, (0, 0, 255), thickness)
+
+            # Draw the arrow
+            color = (255, 0, 0)  # Blue color in BGR
+            thickness = 1  # Thickness of the arrow line
+            line_type = cv2.LINE_AA  # Anti-aliased line for smoother appearance
+            cv2.arrowedLine(img_to_highlight, (cloud_tof_0_x, cloud_tof_0_y), (center_gaussian_x_0, center_gaussian_y_0), color, thickness, line_type)
+
+            # Calc angle
+            delta_x = center_gaussian_x_0 - cloud_tof_0_x
+            delta_y = center_gaussian_y_0 - cloud_tof_0_y
+            angle = np.degrees(np.arctan(delta_x / delta_y))
+        else:
+            angle = 0
 
         # Write the parameters on the image
         height, width, _ = img_to_highlight.shape
@@ -854,7 +908,9 @@ class MagneticFountainExperiment(BaseExperiment):
         text_x = 10  # 10 pixels from the left edge
         text_y = height - 10  # 10 pixels from the bottom edge
         (text_width, text_height), _ = cv2.getTextSize(text, font, font_scale, text_thickness)
-        cv2.putText(img_to_highlight, text, (text_x, text_y), font, font_scale, text_color, text_thickness)
+
+        # text += f' angle={angle}'
+        # cv2.putText(img_to_highlight, text, (text_x, text_y), font, font_scale, text_color, text_thickness)
 
         if debug:
             plt.imshow(img_to_highlight)
@@ -870,6 +926,13 @@ class MagneticFountainExperiment(BaseExperiment):
             cv2.imwrite(out_path, img_to_highlight)
 
         pass
+
+    def find_maximum_intensity(self, image):
+        """
+        # Create a sum intensity of every row and sum intensity of every column, and find the coordinate where it maxes
+        """
+        img_max_index = [np.argmax(np.sum(image, axis=0)), np.argmax(np.sum(image, axis=1))]
+        return img_max_index
 
     def GaussianFit(self, file_name_for_fit, background_file, mm_to_pxl, saveFitsPath=None, imgBounds=None,
                     X_PIXEL_LEN=1544, Y_PIXEL_LEN=2064,
@@ -905,6 +968,9 @@ class MagneticFountainExperiment(BaseExperiment):
             ImgCropped1 = ImgToFit[imgBounds['y_start']:imgBounds['y_end'], imgBounds['x_start']:imgBounds['x_end']]
 
         img_max_index = [np.argmax(np.sum(ImgCropped1, axis=0)), np.argmax(np.sum(ImgCropped1, axis=1))]
+
+        if 'PrePulse_duration=01.0' in fileName:
+            self.cloud_tof_0_coords = img_max_index
 
         # img_max_index[1] = np.argmax(np.sum(ImgToFit[10:][img_max_index[0]-CROP_IMG_SIZE:img_max_index[0]+CROP_IMG_SIZE], axis=1))
         print(f'{fileName}: {img_max_index} (the brightest pixel after first crop)')
@@ -1084,7 +1150,7 @@ class MagneticFountainExperiment(BaseExperiment):
         tof = Utils._extract_ppd_from_file_name(os.path.basename(file_name_for_fit))
         alpha = '{:.3f}'.format(mm_to_pxl)
         text = f'TOF: {tof} ms, Camera:{camera}, Alpha: {alpha}, Sat: {sum}'
-        self.save_image_with_center_highlighted(file_name_for_fit, imgBounds, img_max_index, popt, text=text, out_path=saveFitsPath, debug=True)
+        self.save_image_with_center_highlighted(file_name_for_fit, imgBounds, img_max_index, CROP_IMG_SIZE, popt, text=text, out_path=saveFitsPath, debug=True)
 
         return sum, popt, pcov
 
@@ -1436,8 +1502,13 @@ if __name__ == "__main__":
 
 
     # my_path = r'C:\temp\fit_crop_check\cloud to diagonal\20241009_120544\camera_1'
-    my_path = r'C:\temp\test_gaussian_x_z_fit'
-    # my_path = r'C:\temp\Ayelet'
+
+    # Folder for tilted Gaussian
+    #my_path = r'C:\temp\test_gaussian_x_z_fit'
+
+    # Folder from Dor - to test intensity
+    # my_path = r'C:\temp\201024 - cloud splitting vs current to z\201024\26_5_Ohm_on_z\camera_1'
+    my_path = r'C:\temp\201024 - cloud splitting vs current to z\271024 - OD\inf\700mV\camera_1'
 
     # Test the overlay function
     #my_path = r'C:\temp\fit_crop_check\800mv'
