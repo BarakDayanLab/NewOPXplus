@@ -104,7 +104,7 @@ class CurvedSurface(Surface):
         plt.gca().add_patch(arc)
 
         # Draw a vertical line and add a label near the vertical line with index of refraction
-        plt.axvline(x=self.z, color='blue', linewidth=2.5, linestyle='--')
+        #plt.axvline(x=self.z, color='blue', linewidth=2.5, linestyle='--')
 
         plt.text(self.z+0.5, 0, f'n={self.n}', color='blue', fontsize=8, verticalalignment='center', horizontalalignment='left')
         pass
@@ -141,6 +141,9 @@ class CurvedSurface(Surface):
 
         ray.theta = np.degrees(theta_t)
 
+        if self.R_c < 1:
+            ray.theta = -ray.theta
+
         # Index of refraction at exit is the Surface index of refraction
         ray.n = np.full(ray.num_of_beams, self.n)
 
@@ -168,7 +171,7 @@ class RayTracer:
         interim_ray = copy.deepcopy(ray)
         for element in self.elements:
             interim_ray = element.propagate(interim_ray)
-            journey.append(interim_ray)
+            journey.append(copy.deepcopy(interim_ray))
         return journey
 
 
@@ -248,13 +251,13 @@ class RayStudio:
             self.original_ray = copy.deepcopy(self.ray)
 
         if event.key == 'y':
-            self.ray.y -= 2
+            self.ray.y -= 1
         elif event.key == 'Y':
-            self.ray.y += 2
+            self.ray.y += 1
         elif event.key == 'z':
-            self.ray.z -= 5
+            self.ray.z -= 1
         elif event.key == 'Z':
-            self.ray.z += 5
+            self.ray.z += 1
         elif event.key == 'n':
             self.ray.n = self.ray.n - 0.5
         elif event.key == 'N':
@@ -271,6 +274,11 @@ class RayStudio:
             self.ray_tracer.elements[0].R_c += 1
         elif event.key == 'r':
             self.ray_tracer.elements[0].R_c -= 1
+        elif event.key == 'D':
+            self.ray_tracer.elements[1].z += 1
+        elif event.key == 'd':
+            self.ray_tracer.elements[1].z -= 1
+
         elif event.key == 'x':
             self.lim -= 10
         elif event.key == 'X':
@@ -305,13 +313,18 @@ class RayStudio:
         # self.ray = Ray(z=2, y=5, theta=0, n=1, num_of_beams=4, beams_delta_y=0.5)
 
         # Test 2
-        self.ray_tracer.add_element(CurvedSurface(R_c=5, z_c=10, n_c=3))
-        self.ray = Ray(z=2, y=-2, theta=0, n=1, num_of_beams=8, beams_delta_y=0.5)
+        # self.ray_tracer.add_element(CurvedSurface(R_c=-5, z_c=10, n_c=3))
+        # self.ray = Ray(z=2, y=-1.5, theta=0, n=1, num_of_beams=7, beams_delta_y=0.5)
 
         # Test 3
         # self.ray_tracer.add_element(CurvedSurface(R_c=-7, z_c=10, n_c=3))
         # self.ray_tracer.add_element(CurvedSurface(R_c=7, z_c=14, n_c=1))
         # self.ray = Ray(z=2, y=1, theta=0, n=1, num_of_beams=4, beams_delta_y=0.5)
+
+        # Test 4 - Plano-convex
+        self.ray_tracer.add_element(CurvedSurface(R_c=-4, z_c=10, n_c=3))
+        self.ray_tracer.add_element(FlatSurface(z_s=8, n_s=1))
+        self.ray = Ray(z=2, y=-1, theta=0, n=1, num_of_beams=7, beams_delta_y=0.5)
 
         # Propagate the ray through the system
         journey = self.ray_tracer.propagate(self.ray)
