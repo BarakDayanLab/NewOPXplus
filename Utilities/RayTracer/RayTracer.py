@@ -53,7 +53,7 @@ class FlatSurface(Surface):
     def draw(self):
         # Draw a vertical line and add a label near the vertical line with index of refraction
         plt.axvline(x=self.z, color='red', linewidth=2.5, linestyle='-')
-        plt.text(self.z+0.5, 0, f'n={self.n}', color='red', fontsize=8, verticalalignment='center', horizontalalignment='left')
+        plt.text(self.z+0.5, 0, f'n={self.n}', color='red', fontsize=12, verticalalignment='center', horizontalalignment='left')
         pass
 
     def propagate(self, ray):
@@ -131,10 +131,6 @@ class CurvedSurface(Surface):
 
         ray.y = ray.y + tan_theta * (ray.z - z1)
 
-        # if self.R_c > 0:
-        #     theta_r = np.arcsin(ray.y / -self.R_c)
-        # else:
-        #     theta_r = np.arcsin(ray.y / self.R_c)
         theta_r = np.arcsin(ray.y / self.R_c)
 
 
@@ -143,8 +139,6 @@ class CurvedSurface(Surface):
 
         theta_t = np.arcsin(n_ratio * np.sin(theta_delta)) - theta_r
 
-        print(f'z_1 = {z1} | y_1 = {y1} | z_2 = {ray.z} | y_2 = {ray.y}')
-        print(f'theta_r = {np.degrees(theta_r)} | theta_t = {np.degrees(theta_t)} | R_c = {self.R_c} | n1={ray.n} | n2 = {self.n}')
         ray.theta = np.degrees(theta_t)
 
         # Index of refraction at exit is the Surface index of refraction
@@ -199,7 +193,7 @@ class RayStudio:
 
         # Set title, labels, axis, grid
         plt.title("Rays Studio")
-        plt.xlabel("Z-coordinate")
+        plt.xlabel("Optical Axis (Z)")
         plt.ylabel("Y-coordinate")
         plt.axhline(0, color='gray', linewidth=0.5, linestyle="--")
         plt.axvline(0, color='gray', linewidth=0.5, linestyle="--")
@@ -328,74 +322,12 @@ class RayStudio:
 
     @staticmethod
     def run_studio():
-
         ray_studio = RayStudio()
         ray_studio.run()
-
-        pass
-
-    @staticmethod
-    def test_curved_surface():
-        """
-        Test Curved surface
-        """
-
-        ray_tracer = RayTracer()
-
-        # Create the system - add all elements
-        ray_tracer.add_element(CurvedSurface(R_c=1, z_c=10, n_c=1.2))
-        # ray_tracer.add_element(FlatSurface(z_s=30, n_s=1))
-
-        # Create a ray
-        ray_tracer.ray = Ray(z=5, y=-0.5, theta=0, n=1, num_of_beams=1, beams_delta_y=0.1)
-
-
-        # Propagate the ray through the system
-        ray = ray_tracer.propagate(ray_tracer.ray)
-
-        ray_tracer.plot_show()
-
-        pass
-
-    @staticmethod
-    def test_thick_lens():
-        ray_tracer = RayTracer()
-
-        ray_tracer.add_element(CurvedSurface(R_c=-1, z_c=10, n_c=3))
-        ray_tracer.add_element(CurvedSurface(R_c=1, z_c=15, n_c=1))
-
-        # Create a ray
-        ray = Ray(z=5, y=-0.2, theta=0, n=1, num_of_beams=1, beams_delta_y=0.1)
-
-        # Propagate the ray through the system
-        ray = ray_tracer.propagate(ray)
-        pass
-
-    @staticmethod
-    def test_flat_surface():
-        """
-        Test Flat Surface
-        """
-        ray_tracer = RayTracer()
-
-        # Create the system - add all elements
-        ray_tracer.add_element(FlatSurface(z_s=10, n_s=1.1))
-
-        # Create a ray
-        ray = Ray(z=2, y=-0.5, theta=10, n=1, num_of_beams=10, beams_delta_y=0.1)
-
-        # Propagate the ray through the system
-        ray = ray_tracer.propagate(ray)
-
         pass
 
 
 if __name__ == "__main__":
 
     RayStudio.run_studio()
-
-    # RayTracer.test_curved_surface()
-    # RayTracer.test_flat_surface()
-    # RayTracer.test_thick_lens()
-
     pass
