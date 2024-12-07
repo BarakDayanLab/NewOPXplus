@@ -1,31 +1,32 @@
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
-
+from matplotlib.patches import Arc
 
 # ------------------
 # TODO: Questions
 # ------------------
 # 1. Do we need to implement it as ABCD formalism?
+# 3. Why doesn't my thick len focus to the exact point?
+# 4. Why when using R_c=1 and R_c=0.5, the y,z does not hit the curved surface line?
 # ------------------
 
 class Ray:
 
-    def __init__(self, z, y, theta, n):
-        self.z = z
-        self.y = y
-        self.theta = theta
-        self.n = n
+    def __init__(self, z, y, theta, n, num_of_beams=10, beams_delta_y=1):
 
-        self.num_of_beams = 10
+        self.num_of_beams = num_of_beams
 
         self.z = np.full(self.num_of_beams, z)
-        self.delta_y = 1
-        self.y = np.arange(start=0, stop=self.num_of_beams, step=self.delta_y)
+        self.beams_delta_y = beams_delta_y
+        self.y = np.arange(start=y, stop=y+self.num_of_beams*self.beams_delta_y, step=self.beams_delta_y)
         self.theta = np.full(self.num_of_beams, theta)
         self.n = np.full(self.num_of_beams, n)
 
         return
+
+    def __str__(self):
+        return f'z={self.z[0]}, y={self.y[0]}, theta={self.theta[0]} n={self.n[0]} (#beams = {self.num_of_beams})'
 
 
 class Surface:
@@ -50,16 +51,9 @@ class FlatSurface(Surface):
         pass
 
     def draw(self):
+        # Draw a vertical line and add a label near the vertical line with index of refraction
         plt.axvline(x=self.z, color='red', linewidth=2.5, linestyle='-')
-
-        # Add a label near the vertical line
-        plt.text(
-            self.z+0.5, 0, f'n={self.n}',  # Position slightly to the right of x=25, and centered at y=0
-            color='red',
-            fontsize=8,
-            verticalalignment='center',
-            horizontalalignment='left'
-        )
+        plt.text(self.z+0.5, 0, f'n={self.n}', color='red', fontsize=8, verticalalignment='center', horizontalalignment='left')
         pass
 
     def propagate(self, ray):
@@ -88,21 +82,80 @@ class CurvedSurface(Surface):
         self.R_c = R_c
         pass
 
+    def draw(self):
+        r_x = self.z
+        radius = self.R_c
+        start_angle = 0
+        end_angle = 180
+
+        # Draw the arc
+        arc = Arc(
+            (r_x, 0),  # Center of the arc (x=r_x, y=0)
+            width=2 * radius,  # Diameter of the arc in x (2 * radius)
+            height=2 * radius,  # Diameter of the arc in y (same as x for a circle)
+            angle=-90,  # Rotation angle of the arc (0 degrees for no tilt)
+            theta1=start_angle,  # Starting angle of the arc
+            theta2=end_angle,  # Ending angle of the arc
+            color='blue',  # Arc color
+            linewidth=2  # Line thickness
+        )
+
+        # Add the arc to the plot
+        plt.gca().add_patch(arc)
+
+        # Draw a vertical line and add a label near the vertical line with index of refraction
+        plt.axvline(x=self.z, color='blue', linewidth=2.5, linestyle='--')
+
+        plt.text(self.z+0.5, 0, f'n={self.n}', color='blue', fontsize=8, verticalalignment='center', horizontalalignment='left')
+        pass
+
     def propagate(self, ray):
 
-        # TODO: implement
+        y1 = ray.y
+        z1 = ray.z
 
-        resulting_ray = None
-        return resulting_ray
+        theta = np.radians(ray.theta)
+        tan_theta = np.tan(theta)
+
+        A = 1 + tan_theta ** 2
+        B = 2 * tan_theta * ray.y - 2 * (tan_theta ** 2) * ray.z - 2 * self.z
+        C = self.z ** 2 + tan_theta ** 2 * (ray.z ** 2) - 2 * tan_theta * ray.z * ray.y + ray.y ** 2 - self.R_c ** 2
+
+        sol1 = (-B + np.sqrt(B**2 - 4*A*C)) / (2 * A)
+        sol2 = (-B - np.sqrt(B**2 - 4*A*C)) / (2 * A)
+
+        if self.R_c < 1:
+            ray.z = sol2
+        else:
+            ray.z = sol1
+
+        ray.y = ray.y + tan_theta * (ray.z - z1)
+
+        # if self.R_c > 0:
+        #     theta_r = np.arcsin(ray.y / -self.R_c)
+        # else:
+        #     theta_r = np.arcsin(ray.y / self.R_c)
+        theta_r = np.arcsin(ray.y / self.R_c)
+
+
+        n_ratio = ray.n / self.n
+        theta_delta = theta_r - theta
+
+        theta_t = np.arcsin(n_ratio * np.sin(theta_delta)) - theta_r
+
+        print(f'z_1 = {z1} | y_1 = {y1} | z_2 = {ray.z} | y_2 = {ray.y}')
+        print(f'theta_r = {np.degrees(theta_r)} | theta_t = {np.degrees(theta_t)} | R_c = {self.R_c} | n1={ray.n} | n2 = {self.n}')
+        ray.theta = np.degrees(theta_t)
+
+        # Index of refraction at exit is the Surface index of refraction
+        ray.n = np.full(ray.num_of_beams, self.n)
+
+        return ray
 
 class RayTracer:
 
     def __init__(self):
         self.elements = []
-
-        # Prepare figure for plot
-        self.fig = plt.figure(figsize=(10, 6))
-
         pass
 
     def clear_all_elements(self):
@@ -116,72 +169,233 @@ class RayTracer:
         pass
 
     def propagate(self, ray):
-        print('Running Ray Tracer...')
 
-        # Iterate over all elements - from last to first
-        intermediate_ray = ray
+        journey = [ray]
+        interim_ray = copy.deepcopy(ray)
         for element in self.elements:
-            # Plot the element
-            element.draw()
-
-            # beams_before_refraction = Ray.clone(intermediate_ray)
-            beams_before_refraction = copy.deepcopy(intermediate_ray)
-            intermediate_ray = element.propagate(intermediate_ray)
-            self.plot_ray(beams_before_refraction, intermediate_ray)
-
-        # Plot the last rays to infinity
-        self.plot_ray(intermediate_ray, None)
-
-        return intermediate_ray
+            interim_ray = element.propagate(interim_ray)
+            journey.append(interim_ray)
+        return journey
 
 
-    def plot_ray(self, source_ray, target_ray):
+class RayStudio:
 
-        if not hasattr(self, 'fig'):
-            self.fig = plt.figure(figsize=(10, 6))
+    def __init__(self):
 
-        for i in range(0, source_ray.num_of_beams-1):
-            # Extract components
-            x = source_ray.z[i]
-            y = source_ray.y[i]
-            theta = np.radians(source_ray.theta[i])  # Convert to radians
+        self.lim = 20
 
-            # Calculate end point
-            if target_ray is None:
-                delta_x = 10
-                x_end = x + delta_x * np.cos(theta)
-                y_end = y + delta_x * np.sin(theta)
-            else:
-                x_end = target_ray.z[i]
-                y_end = target_ray.y[i]
+        self.ray_tracer = RayTracer()
 
-            # Draw the line
-            # plt.plot([x, x_end], [y, y_end], marker="o", label=f"Vector ({x:.1f}, {y:.1f}, {theta:.1f}°)")
-            plt.plot([x, x_end], [y, y_end], label=f"Vector ({x:.1f}, {y:.1f}, {theta:.1f}°)")
+        self.prepare_display()
+        pass
 
+    def prepare_display(self):
 
-        # Configure the plot
-        plt.title("Vectors Visualization")
-        plt.xlabel("X-coordinate")
+        # Prepare figure for plot
+        self.fig = plt.figure(figsize=(10, 6))
+
+        # Connect the function to the key press event
+        self.fig.canvas.mpl_connect('key_press_event', self.on_key_press)
+
+        # Set title, labels, axis, grid
+        plt.title("Rays Studio")
+        plt.xlabel("Z-coordinate")
         plt.ylabel("Y-coordinate")
         plt.axhline(0, color='gray', linewidth=0.5, linestyle="--")
         plt.axvline(0, color='gray', linewidth=0.5, linestyle="--")
         plt.grid(True)
-        #plt.legend(loc="upper left", fontsize="small")
-        plt.show()
+
+        pass
+
+    def plot_journey(self, journey):
+
+        # Plot elements
+        for element in self.ray_tracer.elements:
+            element.draw()
+
+        # Plot the rays in journey
+        for i in range(0, len(journey)):
+            source_ray = journey[i]
+            if i == len(journey)-1:
+                target_ray = None
+            else:
+                target_ray = journey[i+1]
+
+            # Extract components
+            x = source_ray.z
+            y = source_ray.y
+
+            # Calculate end point
+            if target_ray is None:
+                inf_ray_len = 20
+                x_end = x + np.full(len(y), inf_ray_len)
+                y_end = y + inf_ray_len * np.sin(np.radians(source_ray.theta))
+            else:
+                x_end = target_ray.z
+                y_end = target_ray.y
+
+            # Draw the line
+            # plt.plot([x, x_end], [y, y_end], marker="o", label=f"Vector ({x:.1f}, {y:.1f}, {theta:.1f}°)")
+            plt.plot([x, x_end], [y, y_end], marker="o")
+
+        plt.xlim(0, self.lim)
+        plt.ylim(-10, 10)
+
+
+        # Show the ray properties
+        plt.text(0.01, 0.99, f'{journey[0]}', transform=plt.gca().transAxes, fontsize=12, verticalalignment='top', horizontalalignment='left')
+
+        plt.show(block=True)
+        pass
+
+    def on_key_press(self, event):
+
+        if not hasattr(self, 'original_ray'):
+            self.original_ray = copy.deepcopy(self.ray)
+
+        if event.key == 'y':
+            self.ray.y -= 2
+        elif event.key == 'Y':
+            self.ray.y += 2
+        elif event.key == 'z':
+            self.ray.z -= 5
+        elif event.key == 'Z':
+            self.ray.z += 5
+        elif event.key == 'n':
+            self.ray.n = self.ray.n - 0.5
+        elif event.key == 'N':
+            self.ray.n = self.ray.n + 0.5
+        elif event.key == 'm':
+            self.ray_tracer.elements[0].n -= 1
+        elif event.key == 'M':
+            self.ray_tracer.elements[0].n += 1
+        elif event.key == 't':
+            self.ray.theta -= 5
+        elif event.key == 'T':
+            self.ray.theta += 5
+        elif event.key == 'R':
+            self.ray_tracer.elements[0].R_c += 1
+        elif event.key == 'r':
+            self.ray_tracer.elements[0].R_c -= 1
+        elif event.key == 'x':
+            self.lim -= 10
+        elif event.key == 'X':
+            self.lim += 10
+        elif event.key == '0':
+            self.ray = copy.deepcopy(self.original_ray)
+        else:
+            return
+
+        # For debug purposes
+        print(f'Changing ray to {self.ray}')
+
+        plt.clf()
+        plt.title("Rays Studio")
+        plt.xlabel("Z-coordinate")
+        plt.ylabel("Y-coordinate")
+        plt.axhline(0, color='gray', linewidth=0.5, linestyle="--")
+        plt.axvline(0, color='gray', linewidth=0.5, linestyle="--")
+        plt.grid(True)
+
+        # Propagate the modified ray through the system and redraw
+        new_journey = self.ray_tracer.propagate(self.ray)
+
+        self.plot_journey(new_journey)
+        self.fig.canvas.draw()  # Redraw the figure to display the changes
+        pass
+
+    def run(self):
+
+        # Test 1
+        # self.ray_tracer.add_element(FlatSurface(z_s=10, n_s=3))
+        # self.ray = Ray(z=2, y=5, theta=0, n=1, num_of_beams=4, beams_delta_y=0.5)
+
+        # Test 2
+        self.ray_tracer.add_element(CurvedSurface(R_c=5, z_c=10, n_c=3))
+        self.ray = Ray(z=2, y=-2, theta=0, n=1, num_of_beams=8, beams_delta_y=0.5)
+
+        # Test 3
+        # self.ray_tracer.add_element(CurvedSurface(R_c=-7, z_c=10, n_c=3))
+        # self.ray_tracer.add_element(CurvedSurface(R_c=7, z_c=14, n_c=1))
+        # self.ray = Ray(z=2, y=1, theta=0, n=1, num_of_beams=4, beams_delta_y=0.5)
+
+        # Propagate the ray through the system
+        journey = self.ray_tracer.propagate(self.ray)
+
+        self.plot_journey(journey)
+
+        pass
+
+    @staticmethod
+    def run_studio():
+
+        ray_studio = RayStudio()
+        ray_studio.run()
+
+        pass
+
+    @staticmethod
+    def test_curved_surface():
+        """
+        Test Curved surface
+        """
+
+        ray_tracer = RayTracer()
+
+        # Create the system - add all elements
+        ray_tracer.add_element(CurvedSurface(R_c=1, z_c=10, n_c=1.2))
+        # ray_tracer.add_element(FlatSurface(z_s=30, n_s=1))
+
+        # Create a ray
+        ray_tracer.ray = Ray(z=5, y=-0.5, theta=0, n=1, num_of_beams=1, beams_delta_y=0.1)
+
+
+        # Propagate the ray through the system
+        ray = ray_tracer.propagate(ray_tracer.ray)
+
+        ray_tracer.plot_show()
+
+        pass
+
+    @staticmethod
+    def test_thick_lens():
+        ray_tracer = RayTracer()
+
+        ray_tracer.add_element(CurvedSurface(R_c=-1, z_c=10, n_c=3))
+        ray_tracer.add_element(CurvedSurface(R_c=1, z_c=15, n_c=1))
+
+        # Create a ray
+        ray = Ray(z=5, y=-0.2, theta=0, n=1, num_of_beams=1, beams_delta_y=0.1)
+
+        # Propagate the ray through the system
+        ray = ray_tracer.propagate(ray)
+        pass
+
+    @staticmethod
+    def test_flat_surface():
+        """
+        Test Flat Surface
+        """
+        ray_tracer = RayTracer()
+
+        # Create the system - add all elements
+        ray_tracer.add_element(FlatSurface(z_s=10, n_s=1.1))
+
+        # Create a ray
+        ray = Ray(z=2, y=-0.5, theta=10, n=1, num_of_beams=10, beams_delta_y=0.1)
+
+        # Propagate the ray through the system
+        ray = ray_tracer.propagate(ray)
+
+        pass
+
 
 if __name__ == "__main__":
 
-    ray_tracer = RayTracer()
+    RayStudio.run_studio()
 
-    # Create the system - add all elements
-    ray_tracer.add_element(FlatSurface(z_s=5, n_s=2))
-    ray_tracer.add_element(FlatSurface(z_s=10, n_s=1.5))
-
-    # Create a ray
-    ray = Ray(z=0, y=0, theta=45, n=1)
-
-    # Propagate the ray through the system
-    ray = ray_tracer.propagate(ray)
+    # RayTracer.test_curved_surface()
+    # RayTracer.test_flat_surface()
+    # RayTracer.test_thick_lens()
 
     pass
