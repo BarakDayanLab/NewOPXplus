@@ -16,14 +16,19 @@ class Ray:
     def __init__(self, z, y, theta, n, num_of_beams=10, beams_delta_y=1):
 
         self.num_of_beams = num_of_beams
-
-        self.z = np.full(self.num_of_beams, z)
         self.beams_delta_y = beams_delta_y
-        self.y = np.arange(start=y, stop=y+self.num_of_beams*self.beams_delta_y, step=self.beams_delta_y)
-        self.theta = np.full(self.num_of_beams, theta)
-        self.n = np.full(self.num_of_beams, n)
+
+        self.set_beams(z, y, theta, n, num_of_beams, beams_delta_y)
 
         return
+
+    def set_beams(self, z, y, theta, n, num_of_beams, beams_delta_y):
+        self.z = np.full(self.num_of_beams, z)
+        half = np.floor(num_of_beams/2) * self.beams_delta_y
+        self.y = np.arange(start=y-half, stop=y+half+self.beams_delta_y, step=self.beams_delta_y)
+        # self.y = np.arange(start=y, stop=y+self.num_of_beams*self.beams_delta_y, step=self.beams_delta_y)
+        self.theta = np.full(self.num_of_beams, theta)
+        self.n = np.full(self.num_of_beams, n)
 
     def __str__(self):
         return f'z={self.z[0]}, y={self.y[0]}, theta={self.theta[0]} n={self.n[0]} (#beams = {self.num_of_beams})'
@@ -236,7 +241,7 @@ class RayStudio:
             plt.plot([x, x_end], [y, y_end], marker="o")
 
         plt.xlim(0, self.lim)
-        plt.ylim(-10, 10)
+        plt.ylim(-4, 4)
 
 
         # Show the ray properties
@@ -263,9 +268,9 @@ class RayStudio:
         elif event.key == 'N':
             self.ray.n = self.ray.n + 0.5
         elif event.key == 'm':
-            self.ray_tracer.elements[0].n -= 1
+            self.ray_tracer.elements[0].n -= 0.2
         elif event.key == 'M':
-            self.ray_tracer.elements[0].n += 1
+            self.ray_tracer.elements[0].n += 0.2
         elif event.key == 't':
             self.ray.theta -= 5
         elif event.key == 'T':
@@ -278,6 +283,10 @@ class RayStudio:
             self.ray_tracer.elements[1].z += 1
         elif event.key == 'd':
             self.ray_tracer.elements[1].z -= 1
+        elif event.key == '+':
+            self.ray.num_of_beams += 2
+        elif event.key == '-':
+            self.ray.num_of_beams -= 2
 
         elif event.key == 'x':
             self.lim -= 10
@@ -316,15 +325,21 @@ class RayStudio:
         # self.ray_tracer.add_element(CurvedSurface(R_c=-5, z_c=10, n_c=3))
         # self.ray = Ray(z=2, y=-1.5, theta=0, n=1, num_of_beams=7, beams_delta_y=0.5)
 
-        # Test 3
+        # Test 3 - Thick Lens
         # self.ray_tracer.add_element(CurvedSurface(R_c=-7, z_c=10, n_c=3))
         # self.ray_tracer.add_element(CurvedSurface(R_c=7, z_c=14, n_c=1))
         # self.ray = Ray(z=2, y=1, theta=0, n=1, num_of_beams=4, beams_delta_y=0.5)
 
         # Test 4 - Plano-convex
-        self.ray_tracer.add_element(CurvedSurface(R_c=-4, z_c=10, n_c=3))
+        # self.ray_tracer.add_element(CurvedSurface(R_c=-4, z_c=10, n_c=3))
+        # self.ray_tracer.add_element(FlatSurface(z_s=8, n_s=1))
+        # self.ray = Ray(z=2, y=-1, theta=0, n=1, num_of_beams=7, beams_delta_y=0.5)
+
+        # Test 5 - Thorlabs LA4306 Fused Silica Lens
+        self.ray_tracer.add_element(CurvedSurface(R_c=-2.54, z_c=10, n_c=1.1))
         self.ray_tracer.add_element(FlatSurface(z_s=8, n_s=1))
-        self.ray = Ray(z=2, y=-1, theta=0, n=1, num_of_beams=7, beams_delta_y=0.5)
+        self.ray = Ray(z=2, y=0, theta=0, n=1, num_of_beams=9, beams_delta_y=0.2)
+
 
         # Propagate the ray through the system
         journey = self.ray_tracer.propagate(self.ray)
