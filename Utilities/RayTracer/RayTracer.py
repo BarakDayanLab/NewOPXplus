@@ -111,7 +111,11 @@ class CurvedSurface(Surface):
         # Draw a vertical line and add a label near the vertical line with index of refraction
         #plt.axvline(x=self.z, color='blue', linewidth=2.5, linestyle='--')
 
-        plt.text(self.z+0.5, 0, f'n={self.n}', color='blue', fontsize=8, verticalalignment='center', horizontalalignment='left')
+        if self.R_c < 0:
+            offset = self.z + self.R_c + 0.2
+        else:
+            offset = self.z + self.R_c - 0.8
+        plt.text(offset, 0, f'R={self.R_c}\nn={self.n}', color='blue', fontsize=12, verticalalignment='center', horizontalalignment='left')
         pass
 
     def propagate(self, ray):
@@ -229,7 +233,7 @@ class RayStudio:
 
             # Calculate end point
             if target_ray is None:
-                inf_ray_len = 20
+                inf_ray_len = 60
                 x_end = x + np.full(len(y), inf_ray_len)
                 y_end = y + inf_ray_len * np.sin(np.radians(source_ray.theta))
             else:
@@ -336,9 +340,13 @@ class RayStudio:
         # self.ray = Ray(z=2, y=-1, theta=0, n=1, num_of_beams=7, beams_delta_y=0.5)
 
         # Test 5 - Thorlabs LA4306 Fused Silica Lens
-        self.ray_tracer.add_element(CurvedSurface(R_c=-2.54, z_c=10, n_c=1.1))
-        self.ray_tracer.add_element(FlatSurface(z_s=8, n_s=1))
-        self.ray = Ray(z=2, y=0, theta=0, n=1, num_of_beams=9, beams_delta_y=0.2)
+        _Z_c = 30
+        _R_c = 18.4
+        _t_c = 7.1
+        _Z_s = _Z_c - _R_c + _t_c
+        self.ray_tracer.add_element(CurvedSurface(R_c=-_R_c, z_c=_Z_c, n_c=1.46))
+        self.ray_tracer.add_element(FlatSurface(z_s=_Z_s, n_s=1))
+        self.ray = Ray(z=2, y=0, theta=0, n=1, num_of_beams=5, beams_delta_y=0.2)
 
 
         # Propagate the ray through the system
