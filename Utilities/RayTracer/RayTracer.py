@@ -213,6 +213,35 @@ class RayStudio:
 
         pass
 
+    def find_intersection(self, y1, theta1, y2, theta2):
+        """ Finds the geometric intersection of two beams. """
+
+        # Convert angles to radians
+        # theta1 = math.radians(theta1)
+        # theta2 = math.radians(theta2)
+        #
+        # # Calculate slopes of the lines
+        # m1 = math.tan(theta1)
+        # m2 = math.tan(theta2)
+
+        m1 = np.tan(np.radians(theta1))
+        m2 = np.tan(np.radians(theta2))
+
+        # If slopes are equal, lines are parallel and don't intersect
+        if m1 == m2:
+            raise ValueError("The lines are parallel and do not intersect.")
+
+        # Calculate intersection coordinates
+        x = (y2 - y1) / (m1 - m2)
+        y = m1 * x + y1
+
+        return (x, y)
+
+    # def plot_intersection(self, line1, line2):
+    #     intersection = self.find_intersection(y1, theta1, y2, theta2)
+    #     plt.scatter(*intersection, color='red', label=f"Focal point intersection {intersection}")
+    #     pass
+
     def plot_journey(self, journey):
 
         # Plot elements
@@ -247,6 +276,17 @@ class RayStudio:
         plt.xlim(0, self.lim)
         plt.ylim(-4, 4)
 
+        # Plot focal point - take last beam journey segment and calc focal point with most extreme rays
+        ray = journey[-1]
+        lsa_point_intersection = self.find_intersection(ray.y[0], ray.theta[0], ray.y[-1], ray.theta[-1])
+        mid_index = int(len(ray.y) / 2)
+        focal_point_intersection = self.find_intersection(ray.y[mid_index-1], ray.theta[mid_index-1], ray.y[mid_index+1], ray.theta[mid_index+1])
+
+        plt.scatter(lsa_point_intersection[0]+ray.z[0], lsa_point_intersection[1], color='red', label=f"LSA point intersection")
+        plt.scatter(focal_point_intersection[0]+ray.z[0], focal_point_intersection[1], color='green', label=f"Focal point intersection")
+
+        LSA = np.abs(lsa_point_intersection[0] - focal_point_intersection[0])
+        print(f'LSA = {LSA} mm')
 
         # Show the ray properties
         plt.text(0.01, 0.99, f'{journey[0]}', transform=plt.gca().transAxes, fontsize=12, verticalalignment='top', horizontalalignment='left')
@@ -346,13 +386,14 @@ class RayStudio:
         _Z_s = _Z_c - _R_c + _t_c
         self.ray_tracer.add_element(CurvedSurface(R_c=-_R_c, z_c=_Z_c, n_c=1.46))
         self.ray_tracer.add_element(FlatSurface(z_s=_Z_s, n_s=1))
-        self.ray = Ray(z=2, y=0, theta=0, n=1, num_of_beams=5, beams_delta_y=0.2)
-
+        self.ray = Ray(z=2, y=0, theta=0, n=1, num_of_beams=5, beams_delta_y=0.4)
 
         # Propagate the ray through the system
         journey = self.ray_tracer.propagate(self.ray)
 
         self.plot_journey(journey)
+
+        # self.plot_intersection(journey[-1][0], journey[-1][-1])
 
         pass
 
