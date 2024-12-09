@@ -13,20 +13,28 @@ from matplotlib.patches import Arc
 
 class Ray:
 
-    def __init__(self, z, y, theta, n, num_of_beams=10, beams_delta_y=1):
+    def __init__(self, z, y, theta, n, num_of_beams=None, beams_delta_y=None):
 
         self.num_of_beams = num_of_beams
         self.beams_delta_y = beams_delta_y
 
-        self.set_beams(z, y, theta, n, num_of_beams, beams_delta_y)
+        if num_of_beams is not None:
+            self.set_beams(z, y, theta, n, num_of_beams, beams_delta_y)
+        else:
+            self.z = np.array(z)
+            self.y = np.array(y)
+            self.theta = np.array(theta)
+            self.n = np.array(n)
 
         return
 
     def set_beams(self, z, y, theta, n, num_of_beams, beams_delta_y):
         self.z = np.full(self.num_of_beams, z)
-        half = np.floor(num_of_beams/2) * self.beams_delta_y
-        self.y = np.arange(start=y-half, stop=y+half+self.beams_delta_y, step=self.beams_delta_y)
-        # self.y = np.arange(start=y, stop=y+self.num_of_beams*self.beams_delta_y, step=self.beams_delta_y)
+        if num_of_beams == 1:
+            self.y = np.array([y])
+        else:
+            half = np.floor(num_of_beams/2) * beams_delta_y
+            self.y = np.arange(start=y-half, stop=y+half+self.beams_delta_y, step=self.beams_delta_y)
         self.theta = np.full(self.num_of_beams, theta)
         self.n = np.full(self.num_of_beams, n)
 
@@ -70,13 +78,13 @@ class FlatSurface(Surface):
         ray.y = ray.y + (self.z - ray.z) * np.tan(np.radians(ray.theta))
 
         # Z-out position is the same as the Surface position
-        ray.z = np.full(ray.num_of_beams, self.z)
+        ray.z = np.full(len(ray.y), self.z)
 
         # Exit angle: Theta_2 = arcsin( n1/n2 * sin(Theta_1)
         ray.theta = np.degrees(np.arcsin(ray.n/self.n * np.sin(np.radians(ray.theta))))
 
         # Index of refraction at exit is the Surface index of refraction
-        ray.n = np.full(ray.num_of_beams, self.n)
+        ray.n = np.full(len(ray.y), self.n)
 
         return ray
 
@@ -154,7 +162,7 @@ class CurvedSurface(Surface):
             ray.theta = -ray.theta
 
         # Index of refraction at exit is the Surface index of refraction
-        ray.n = np.full(ray.num_of_beams, self.n)
+        ray.n = np.full(len(ray.y), self.n)
 
         return ray
 
@@ -237,10 +245,9 @@ class RayStudio:
 
         return (x, y)
 
-    # def plot_intersection(self, line1, line2):
-    #     intersection = self.find_intersection(y1, theta1, y2, theta2)
-    #     plt.scatter(*intersection, color='red', label=f"Focal point intersection {intersection}")
-    #     pass
+    def plot_focal_plane(self, fp_z):
+        plt.axvline(x=fp_z, color='red', linewidth=1, linestyle='--')
+        pass
 
     def plot_journey(self, journey):
 
@@ -277,16 +284,20 @@ class RayStudio:
         plt.ylim(-4, 4)
 
         # Plot focal point - take last beam journey segment and calc focal point with most extreme rays
-        ray = journey[-1]
-        lsa_point_intersection = self.find_intersection(ray.y[0], ray.theta[0], ray.y[-1], ray.theta[-1])
-        mid_index = int(len(ray.y) / 2)
-        focal_point_intersection = self.find_intersection(ray.y[mid_index-1], ray.theta[mid_index-1], ray.y[mid_index+1], ray.theta[mid_index+1])
+        if False:
+            ray = journey[-1]
+            if ray.y[0] != 0 and ray.theta[0] != 0:
+                lsa_point_intersection = self.find_intersection(ray.y[0], ray.theta[0], ray.y[-1], ray.theta[-1])
+                mid_index = int(len(ray.y) / 2)
+                focal_point_intersection = self.find_intersection(ray.y[mid_index-1], ray.theta[mid_index-1], ray.y[mid_index+1], ray.theta[mid_index+1])
 
-        plt.scatter(lsa_point_intersection[0]+ray.z[0], lsa_point_intersection[1], color='red', label=f"LSA point intersection")
-        plt.scatter(focal_point_intersection[0]+ray.z[0], focal_point_intersection[1], color='green', label=f"Focal point intersection")
+                plt.scatter(lsa_point_intersection[0]+ray.z[0], lsa_point_intersection[1], color='red', label=f"LSA point intersection")
+                plt.scatter(focal_point_intersection[0]+ray.z[0], focal_point_intersection[1], color='green', label=f"Focal point intersection")
+            else:
+                print('Gotcha!')
 
-        LSA = np.abs(lsa_point_intersection[0] - focal_point_intersection[0])
-        print(f'LSA = {LSA} mm')
+            LSA = np.abs(lsa_point_intersection[0] - focal_point_intersection[0])
+            print(f'LSA = {LSA} mm')
 
         # Show the ray properties
         plt.text(0.01, 0.99, f'{journey[0]}', transform=plt.gca().transAxes, fontsize=12, verticalalignment='top', horizontalalignment='left')
@@ -327,11 +338,6 @@ class RayStudio:
             self.ray_tracer.elements[1].z += 1
         elif event.key == 'd':
             self.ray_tracer.elements[1].z -= 1
-        elif event.key == '+':
-            self.ray.num_of_beams += 2
-        elif event.key == '-':
-            self.ray.num_of_beams -= 2
-
         elif event.key == 'x':
             self.lim -= 10
         elif event.key == 'X':
@@ -380,20 +386,26 @@ class RayStudio:
         # self.ray = Ray(z=2, y=-1, theta=0, n=1, num_of_beams=7, beams_delta_y=0.5)
 
         # Test 5 - Thorlabs LA4306 Fused Silica Lens
+        # _Z_c = 30
+        # _R_c = 18.4
+        # _t_c = 7.1
+        # _Z_s = _Z_c - _R_c + _t_c
+        # self.ray_tracer.add_element(CurvedSurface(R_c=-_R_c, z_c=_Z_c, n_c=1.46))
+        # self.ray_tracer.add_element(FlatSurface(z_s=_Z_s, n_s=1))
+        # self.ray = Ray(z=2, y=0, theta=0, n=1, num_of_beams=5, beams_delta_y=0.4)
+
+        # Test 6 - 3 rays against Thorlabs LA4306 Fused Silica Lens
         _Z_c = 30
         _R_c = 18.4
         _t_c = 7.1
         _Z_s = _Z_c - _R_c + _t_c
-        self.ray_tracer.add_element(CurvedSurface(R_c=-_R_c, z_c=_Z_c, n_c=1.46))
+        self.ray_tracer.add_element(CurvedSurface(R_c=-_R_c, z_c=_Z_c, n_c=1.457))
         self.ray_tracer.add_element(FlatSurface(z_s=_Z_s, n_s=1))
-        self.ray = Ray(z=2, y=0, theta=0, n=1, num_of_beams=5, beams_delta_y=0.4)
+        self.ray = Ray(z=[2, 2, 2], y=[0.1, 1, 10], theta=[0, 0, 0], n=[1, 1, 1])
 
-        # Propagate the ray through the system
         journey = self.ray_tracer.propagate(self.ray)
-
+        #self.plot_focal_plain(40.1)
         self.plot_journey(journey)
-
-        # self.plot_intersection(journey[-1][0], journey[-1][-1])
 
         pass
 
