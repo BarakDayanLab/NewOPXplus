@@ -401,11 +401,15 @@ class RayStudio:
         _Z_s = _Z_c - _R_c + _t_c
         self.ray_tracer.add_element(CurvedSurface(R_c=-_R_c, z_c=_Z_c, n_c=1.457))
         self.ray_tracer.add_element(FlatSurface(z_s=_Z_s, n_s=1))
-        self.ray = Ray(z=[2, 2, 2], y=[0.1, 1, 10], theta=[0, 0, 0], n=[1, 1, 1])
+        self.ray = Ray(z=2, y=0, theta=0, n=1, num_of_beams=7, beams_delta_y=0.5)  # Multi-Beams Ray, equal spacing!
+        # self.ray = Ray(z=[2, 2, 2], y=[0.1, 1, 10], theta=[0, 0, 0], n=[1, 1, 1])  # 3-beamed Ray, for measuring abberations
 
         journey = self.ray_tracer.propagate(self.ray)
         #self.plot_focal_plain(40.1)
         self.plot_journey(journey)
+
+        # The f that I get is 54, BFK Should be 35.3
+        back_focal_length = 54 - journey[-1].z
 
         pass
 
