@@ -1,4 +1,7 @@
 import copy
+import sys
+
+import numpy
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Arc
@@ -365,7 +368,27 @@ class RayStudio:
         self.fig.canvas.draw()  # Redraw the figure to display the changes
         pass
 
+    @staticmethod
+    def gaussian_beam_calc():
+
+        MFD = 5 * 1e-6  # 5 [um]
+        w0 = MFD / 2
+
+        lam = 780 * 1e-9 # 780 [nm]
+        z_r = (numpy.pi * (w0**2)) / lam
+        z_cm = 170  # mm
+        z = z_cm * 1e6  # um
+        z_ratio = z / z_r
+        w = w0 * numpy.sqrt(1+z_ratio**2)
+
+        print(f'w({z_cm} cm = {w} [um]')
+        pass
+
+
     def run(self):
+
+        RayStudio.gaussian_beam_calc()
+        sys.exit(1)
 
         # Test 1
         # self.ray_tracer.add_element(FlatSurface(z_s=10, n_s=3))
