@@ -248,10 +248,6 @@ class RayStudio:
 
         return (x, y)
 
-    def plot_focal_plane(self, fp_z):
-        plt.axvline(x=fp_z, color='red', linewidth=1, linestyle='--')
-        pass
-
     def plot_journey(self, journey):
 
         # Plot elements
@@ -287,20 +283,8 @@ class RayStudio:
         plt.ylim(-4, 4)
 
         # Plot focal point - take last beam journey segment and calc focal point with most extreme rays
-        if False:
-            ray = journey[-1]
-            if ray.y[0] != 0 and ray.theta[0] != 0:
-                lsa_point_intersection = self.find_intersection(ray.y[0], ray.theta[0], ray.y[-1], ray.theta[-1])
-                mid_index = int(len(ray.y) / 2)
-                focal_point_intersection = self.find_intersection(ray.y[mid_index-1], ray.theta[mid_index-1], ray.y[mid_index+1], ray.theta[mid_index+1])
-
-                plt.scatter(lsa_point_intersection[0]+ray.z[0], lsa_point_intersection[1], color='red', label=f"LSA point intersection")
-                plt.scatter(focal_point_intersection[0]+ray.z[0], focal_point_intersection[1], color='green', label=f"Focal point intersection")
-            else:
-                print('Gotcha!')
-
-            LSA = np.abs(lsa_point_intersection[0] - focal_point_intersection[0])
-            print(f'LSA = {LSA} mm')
+        if self.where_is_the_focus is not None:
+            plt.axvline(x=self.where_is_the_focus, color='red', linewidth=1, linestyle='--')
 
         # Show the ray properties
         plt.text(0.01, 0.99, f'{journey[0]}', transform=plt.gca().transAxes, fontsize=12, verticalalignment='top', horizontalalignment='left')
@@ -387,9 +371,6 @@ class RayStudio:
 
     def run(self):
 
-        RayStudio.gaussian_beam_calc()
-        sys.exit(1)
-
         # Test 1
         # self.ray_tracer.add_element(FlatSurface(z_s=10, n_s=3))
         # self.ray = Ray(z=2, y=5, theta=0, n=1, num_of_beams=4, beams_delta_y=0.5)
@@ -424,11 +405,15 @@ class RayStudio:
         _Z_s = _Z_c - _R_c + _t_c
         self.ray_tracer.add_element(CurvedSurface(R_c=-_R_c, z_c=_Z_c, n_c=1.457))
         self.ray_tracer.add_element(FlatSurface(z_s=_Z_s, n_s=1))
-        self.ray = Ray(z=2, y=0, theta=0, n=1, num_of_beams=7, beams_delta_y=0.5)  # Multi-Beams Ray, equal spacing!
-        # self.ray = Ray(z=[2, 2, 2], y=[0.1, 1, 10], theta=[0, 0, 0], n=[1, 1, 1])  # 3-beamed Ray, for measuring abberations
+        # self.ray = Ray(z=2, y=0, theta=0, n=1, num_of_beams=7, beams_delta_y=0.5)  # Multi-Beams Ray, equal spacing!
+        self.ray = Ray(z=[2, 2, 2], y=[0.1, 1, 10], theta=[0, 0, 0], n=[1, 1, 1])  # 3-beamed Ray, for measuring abberations
 
         journey = self.ray_tracer.propagate(self.ray)
-        #self.plot_focal_plain(40.1)
+
+        delta_z = 1.4
+        throlabs_la4306_focal_length = 40
+        H = _Z_c - _R_c + delta_z
+        self.where_is_the_focus = H + throlabs_la4306_focal_length
         self.plot_journey(journey)
 
         # The f that I get is 54, BFK Should be 35.3
