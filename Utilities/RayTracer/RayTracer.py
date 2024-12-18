@@ -8,7 +8,10 @@ from matplotlib.patches import Arc
 class Ray:
 
     def __init__(self, z, y, theta, n, num_of_beams=None, beams_delta_y=None):
-
+        """
+        Ray has few properties: (z, y, theta, n)
+        Use num_of_beams and beams_delta_y - to define few beams in the ray (use odd number)
+        """
         self.num_of_beams = num_of_beams
         self.beams_delta_y = beams_delta_y
 
@@ -35,7 +38,9 @@ class Ray:
 
 
 class Surface:
-
+    """
+    This is mainly a superclass. It can be inherited by other classes to implement 'propagate' and 'draw' functions.
+    """
     def __init__(self, z, n):
         self.z = z
         self.n = n
@@ -79,6 +84,7 @@ class FlatSurface(Surface):
 
         return ray
 
+
 class CurvedSurface(Surface):
 
     def __init__(self, R_c, z_c, n_c):
@@ -106,7 +112,7 @@ class CurvedSurface(Surface):
         # Add the arc to the plot
         plt.gca().add_patch(arc)
 
-        # Draw text specifying the index of refraction
+        # Draw text specifying the curved surface properties
         if self.R_c < 0:
             offset = self.z + self.R_c + 0.2
         else:
@@ -125,6 +131,8 @@ class CurvedSurface(Surface):
         B = 2 * tan_theta * ray.y - 2 * (tan_theta ** 2) * ray.z - 2 * self.z
         C = self.z ** 2 + tan_theta ** 2 * (ray.z ** 2) - 2 * tan_theta * ray.z * ray.y + ray.y ** 2 - self.R_c ** 2
 
+        # Calculate the quadratic equation solution. If value inside sqrt is negative, some values may become nan
+        # (this is ok with us as the ray in the display will not appear to propagate)
         sol1 = (-B + np.sqrt(B**2 - 4*A*C)) / (2 * A)
         sol2 = (-B - np.sqrt(B**2 - 4*A*C)) / (2 * A)
 
@@ -143,13 +151,16 @@ class CurvedSurface(Surface):
         ray.theta = np.degrees(theta_t)
         ray.theta = -ray.theta
 
-        # Index of refraction at exit is the Surface index of refraction
+        # Ray's refraction index at exit is the Surface's refraction index
         ray.n = np.full(len(ray.y), self.n)
 
         return ray
 
-class RayTracer:
 
+class RayTracer:
+    """
+    This class is like a canvas where elements and rays are placed, and then we can simulate the rays propagation.
+    """
     def __init__(self):
         self.elements = []
         pass
@@ -158,14 +169,9 @@ class RayTracer:
         self.elements.append(element)
         pass
 
-    def add_thick_lens(self, R_1, R_2, d, z_c, n_c):
-        self.elements.append(CurvedSurface(R_c=-R_1, z_c=z_c, n_c=n_c))
-        self.elements.append(CurvedSurface(R_c=R_2, z_c=z_c, n_c=1))
-        pass
-
     def propagate(self, ray):
         """
-        This function propagates a ray through all the elements, and saves its state at each state - this is a journey.
+        This function propagates a ray through all the elements, and saves its state at each segment - this is a journey.
         """
         journey = [ray]
         interim_ray = copy.deepcopy(ray)
@@ -176,7 +182,10 @@ class RayTracer:
 
 
 class RayStudio:
-
+    """
+    This class uses the RayTracer object and allows it to be interactive, by registering to key events and changing
+    properties of the ray or elements and then re-plotting them.
+    """
     def __init__(self):
         self.lim = 20
         self.ray_tracer = RayTracer()
@@ -228,7 +237,6 @@ class RayStudio:
                 if EXTEND:
                     y = y - x*np.sin(np.radians(source_ray.theta))
                     x = np.zeros(len(y))
-
             else:
                 x_end = target_ray.z
                 y_end = target_ray.y
@@ -242,18 +250,20 @@ class RayStudio:
         plt.xlim(-self.lim, self.lim)
         plt.ylim(-6, 6)
 
-        # Plot focal point - take last beam journey segment and calc focal point with most extreme rays
+        # If paraxial focal plane was calculated, plot it as a vertical line
         if hasattr(self, 'paraxial_focal_plane') and self.paraxial_focal_plane is not None:
             plt.axvline(x=self.paraxial_focal_plane, color='red', linewidth=1, linestyle='--')
 
-        # Show the ray properties
+        # Draw text that specifies ray properties
         plt.text(0.01, 0.99, f'{journey[0]}', transform=plt.gca().transAxes, fontsize=12, verticalalignment='top', horizontalalignment='left')
 
         plt.show(block=True)
         pass
 
     def on_key_press(self, event):
-
+        """
+        Handle various key events that drive the studio's interactivity
+        """
         if not hasattr(self, 'original_ray'):
             self.original_ray = copy.deepcopy(self.ray)
 
@@ -289,8 +299,6 @@ class RayStudio:
             self.lim -= 10
         elif event.key == 'X':
             self.lim += 10
-        elif event.key == '0':
-            self.ray = copy.deepcopy(self.original_ray)
         else:
             return
 
@@ -312,25 +320,27 @@ class RayStudio:
 
     def run(self):
 
-        test = 'plano-convex'
+        # Mention what is the test you want to run
+        test = 'curved surface CONVEX'
 
         # Test 1 - Flat Surface
         if test == 'flat surface':
-            self.ray_tracer.add_element(FlatSurface(z_s=10, n_s=3))
-            self.ray = Ray(z=2, y=5, theta=0, n=1, num_of_beams=4, beams_delta_y=0.5)
+            self.ray_tracer.add_element(FlatSurface(z_s=5, n_s=3))
+            self.ray = Ray(z=2, y=0, theta=0, n=1, num_of_beams=5, beams_delta_y=0.5)
             journey = self.ray_tracer.propagate(self.ray)
 
         # Test 2 - Curved Surface Concave
         if test == 'curved surface CONCAVE':
             self.ray_tracer.add_element(CurvedSurface(R_c=5, z_c=10, n_c=1))
-            self.ray = Ray(z=2, y=-1.5, theta=0, n=2, num_of_beams=7, beams_delta_y=0.5)
-            self.ray = Ray(z=[2], y=[1], theta=[10], n=[2])
+            self.ray = Ray(z=2, y=0, theta=0, n=2, num_of_beams=7, beams_delta_y=0.5)
+            # self.ray = Ray(z=[2], y=[1], theta=[10], n=[2])
             journey = self.ray_tracer.propagate(self.ray)
 
         # Test 3 - Curved Surface Convex
         if test == 'curved surface CONVEX':
             self.ray_tracer.add_element(CurvedSurface(R_c=-5, z_c=10, n_c=2))
-            self.ray = Ray(z=[2], y=[1], theta=[10], n=[1])
+            self.ray = Ray(z=2, y=0, theta=0, n=1, num_of_beams=7, beams_delta_y=0.5)
+            # self.ray = Ray(z=[2], y=[1], theta=[10], n=[1])
             journey = self.ray_tracer.propagate(self.ray)
 
         # Test 4 - Thin Lens
@@ -348,16 +358,7 @@ class RayStudio:
             self.ray = Ray(z=2, y=0, theta=0, n=1, num_of_beams=7, beams_delta_y=0.5)
             journey = self.ray_tracer.propagate(self.ray)
 
-        # Test 5 - Thorlabs LA4306 Fused Silica Lens
-        # _Z_c = 30
-        # _R_c = 18.4
-        # _t_c = 7.1
-        # _Z_s = _Z_c - _R_c + _t_c
-        # self.ray_tracer.add_element(CurvedSurface(R_c=-_R_c, z_c=_Z_c, n_c=1.46))
-        # self.ray_tracer.add_element(FlatSurface(z_s=_Z_s, n_s=1))
-        # self.ray = Ray(z=2, y=0, theta=0, n=1, num_of_beams=5, beams_delta_y=0.4)
-
-        # Test 6 - 3 rays propagate into CONVEX-PLAN Thorlabs LA4306 Fused Silica Lens
+        # Test 5 - 3 rays propagate into CONVEX-PLAN Thorlabs LA4306 Fused Silica Lens
         if test == 'thorlabs-la3406-convex-plano':
             n = 1.457
             _Z_c = 20
@@ -374,47 +375,6 @@ class RayStudio:
             journey = self.ray_tracer.propagate(self.ray)
             H_2 = -thorlabs_la4306_focal_length*(n-1)*_t_c/(n*_R_c)
             paraxial_focal_plane = _Z_s - H_2
-            self.paraxial_focal_plane = paraxial_focal_plane + thorlabs_la4306_focal_length
-
-        # Test 7 - Well optimized Bi-CONVEX Fused Silica Lens
-        if test == 'optimized biconvex':
-            n = 1.457
-            _t_c = 4
-            _Z1_c = 10
-            _Z2_c = 5 + _t_c
-            _R1_c = -8
-            _R2_c = 1
-            _Z_s = _Z1_c + _R1_c + _t_c
-            thorlabs_la4306_focal_length = 40.1
-            self.ray_tracer.add_element(CurvedSurface(R_c=_R1_c, z_c=_Z1_c, n_c=n))
-            self.ray_tracer.add_element(CurvedSurface(R_c=_R2_c, z_c=_Z2_c, n_c=1))
-            self.ray = Ray(z=[2, 2, 2], y=[0.1, 1, 10], theta=[0, 0, 0], n=[1, 1, 1])  # 3-beamed Ray, for measuring abberations
-            self.ray = Ray(z=[2, 2, 2], y=[0.2, 0.4, 0.6], theta=[0, 0, 0], n=[1, 1, 1])  # 3-beamed Ray, for measuring abberations
-
-            # self.ray = Ray(z=-12, y=0, theta=0, n=1, num_of_beams=9, beams_delta_y=1)  # Multi-Beams Ray, equal spacing!
-            # self.ray = Ray(z=[2, 2, 2, 2, 2], y=[0.1, 1, 3, 5, 10], theta=[0, 0, 0, 0, 0], n=[1, 1, 1, 1, 1])  # 3-beamed Ray, for measuring abberations
-            # self.ray = Ray(z=[2], y=[5], theta=[0], n=[1])
-            journey = self.ray_tracer.propagate(self.ray)
-            H_2 = -thorlabs_la4306_focal_length*(n-1)*_t_c/(n*_R1_c)
-            paraxial_focal_plane = _Z_s - H_2
-            self.paraxial_focal_plane = paraxial_focal_plane + thorlabs_la4306_focal_length
-
-        # Test 7 - 3 rays propagate into PLANO-CONVEX Thorlabs LA4306 Fused Silica Lens
-        if test == 'thorlabs-la3406-plano-convex':
-            n = 1.457
-            _Z_s = 10
-            _R_c = 18.4
-            _t_c = 7.1
-            _Z_c = _Z_s + _t_c
-            thorlabs_la4306_focal_length = 40.1
-            self.ray_tracer.add_element(FlatSurface(z_s=_Z_s, n_s=1.457))
-            self.ray_tracer.add_element(CurvedSurface(R_c=_R_c, z_c=_Z_c, n_c=1))
-            self.ray = Ray(z=[2, 2, 2], y=[0.1, 1, 10], theta=[0, 0, 0], n=[1, 1, 1])  # 3-beamed Ray, for measuring abberations
-            # self.ray = Ray(z=[2, 2, 2, 2, 2], y=[0.1, 1, 3, 5, 10], theta=[0, 0, 0, 0, 0], n=[1, 1, 1, 1, 1])  # 3-beamed Ray, for measuring abberations
-            # self.ray = Ray(z=[2], y=[5], theta=[0], n=[1])
-            journey = self.ray_tracer.propagate(self.ray)
-            H_1 = thorlabs_la4306_focal_length*(1-n)*_t_c/(n*_R_c)
-            paraxial_focal_plane = _Z_s + H_1
             self.paraxial_focal_plane = paraxial_focal_plane + thorlabs_la4306_focal_length
 
 
