@@ -41,15 +41,23 @@ class CalcMagneticField:
         plt.grid(True)
 
         I = 0.200  # 0.2 Ampere = 200 mA
-        a = 0.2  # 0.2 m = 20 cm
-        b = 0.1  # 0.1 m = 10 cm
+        I = 1.00  # 0.2 Ampere = 200 mA
+
+        n = 30  # Number of loops
+        I *= n
+
+        a = 0.126  # 0.2 m = 20 cm  12.6 cm
+        b = 0.114  # 0.1 m = 10 cm  11.4 cm
         z = np.arange(start=0.01, stop=0.7, step=0.01)  # from 0.01 = 1 mm to 30 mm
+
+        z_dist = 0.40 # cm  40 mm
+        x_dist = 1.6  # 160 mm
 
         Bz = self.rectangle_coil_magnetic_field(I, a, b, z)
         # Bz_n = self.rectangle_coil_magnetic_field(-I, a, b, z)
 
         # Plot. Translate m back to cm. Translate Tesla to Gauss
-        plt.plot(z * 100, Bz / 1e5, label='I=200 [ma]', marker="o")
+        plt.plot(z * 1000, Bz * 1e4, label=f'I={I*1000} [ma]', marker="o")
         # plt.plot(z * 100, Bz_n / 1e5, label='I=-200 [mA]', marker="o")
 
 
