@@ -8,7 +8,7 @@ class CalcMagneticField:
     def __init__(self):
         pass
 
-    def rectangle_coil_magnetic_field(self, I, a, b, z):
+    def rectangle_coil_magnetic_field(self, I, a, b, z, n):
         """
         Calculate the magnetic field B_z at a distance z above the center of a rectangular coil
 
@@ -17,6 +17,7 @@ class CalcMagneticField:
         - a: Half-length of the rectangle in x direction (Meters)
         - b: Half-length of the rectangle in y direction (Meters)
         - z: distance above the center of the coil (Meters)
+        - n: number of loops of the coil
 
         Output:
 
@@ -26,9 +27,12 @@ class CalcMagneticField:
         mu_0 = 4 * np.pi * 1e-7  # H/m
 
         # Calculate the magnetic field. Note the use of numpy's element-wise operations
-        B_z = (mu_0 * I) / (4 * np.pi) * (
+        B_z = (n * mu_0 * I) / (4 * np.pi) * (
                 (a ** 2) / ((a / 2) ** 2 + z ** 2) * (1 / np.sqrt((a ** 2 / 2) + z ** 2)) +
                 (b ** 2) / ((b / 2) ** 2 + z ** 2) * (1 / np.sqrt((b ** 2 / 2) + z ** 2)) )
+
+        # Convert from Tesla to Gauss
+        B_z *= 1e4
 
         return B_z
 
@@ -44,20 +48,19 @@ class CalcMagneticField:
         I = 1.00  # 0.2 Ampere = 200 mA
 
         n = 30  # Number of loops
-        I *= n
+        # I *= n
 
-        a = 0.126  # 0.2 m = 20 cm  12.6 cm
-        b = 0.114  # 0.1 m = 10 cm  11.4 cm
+        a = 0.126  # 12.6 cm
+        b = 0.114  # 11.4 cm
         z = np.arange(start=0.01, stop=0.7, step=0.01)  # from 0.01 = 1 mm to 30 mm
 
         z_dist = 0.40 # cm  40 mm
         x_dist = 1.6  # 160 mm
 
-        Bz = self.rectangle_coil_magnetic_field(I, a, b, z)
-        # Bz_n = self.rectangle_coil_magnetic_field(-I, a, b, z)
+        Bz = self.rectangle_coil_magnetic_field(I, a, b, z, n)
 
         # Plot. Translate m back to cm. Translate Tesla to Gauss
-        plt.plot(z * 1000, Bz * 1e4, label=f'I={I*1000} [ma]', marker="o")
+        plt.plot(z * 1000, Bz, label=f'I={I*1000} [ma]', marker="o")
         # plt.plot(z * 100, Bz_n / 1e5, label='I=-200 [mA]', marker="o")
 
 
