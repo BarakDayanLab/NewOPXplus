@@ -37,32 +37,34 @@ class CalcMagneticField:
         return B_z
 
     def run(self):
+
+        I = 0.200  # 0.2 Ampere = 200 mA
+        #I = 1.00  # 0.2 Ampere = 200 mA
+
         # Create figure
         self.fig = plt.figure(figsize=(10, 6))
-        plt.title("Magnetic Field vs Z")
+        plt.title(f'Magnetic Field vs Z (I={I*1000} mA)')
         plt.xlabel("Z Displacement [mm]")
         plt.ylabel("Magnetic Field [Gauss]")
         plt.grid(True)
 
-        I = 0.200  # 0.2 Ampere = 200 mA
-        I = 1.00  # 0.2 Ampere = 200 mA
-
         n = 30  # Number of loops
-        # I *= n
-
         a = 0.126  # 12.6 cm
         b = 0.114  # 11.4 cm
-        z = np.arange(start=0.01, stop=0.7, step=0.01)  # from 0.01 = 1 mm to 30 mm
+        z = np.arange(start=0.01, stop=0.3, step=0.01)  # from 0.01 = 1 mm to 30 mm
 
-        z_dist = 0.40 # cm  40 mm
-        x_dist = 1.6  # 160 mm
+        z_dist = 0.04  # 4 cm
+        x_dist = 0.16  # 16 cm
 
-        Bz = self.rectangle_coil_magnetic_field(I, a, b, z, n)
+        Bz_1 = self.rectangle_coil_magnetic_field(I, a, b, z, n)
+        Bz_2 = self.rectangle_coil_magnetic_field(I, a, b, z + z_dist, n)
+        Bz_2 = Bz_2[::-1]
+        Bz_sum = Bz_1 + Bz_2
 
         # Plot. Translate m back to cm. Translate Tesla to Gauss
-        plt.plot(z * 1000, Bz, label=f'I={I*1000} [ma]', marker="o")
-        # plt.plot(z * 100, Bz_n / 1e5, label='I=-200 [mA]', marker="o")
-
+        plt.plot(z * 1000, Bz_1, label=f'Top Coil', marker="o")
+        plt.plot(z * 1000, Bz_2, label=f'Bottom Coil', marker="o")
+        plt.plot(z * 1000, Bz_sum, label=f'Sum', marker="o")
 
         # Place vertical line at our atom cloud center-of-mass - 30mm:
         plt.axvline(x=30, color='red', linewidth=1, linestyle='--')
