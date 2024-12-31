@@ -250,9 +250,13 @@ class RayStudio:
         plt.xlim(-self.lim, self.lim)
         plt.ylim(-6, 6)
 
-        # If paraxial focal plane was calculated, plot it as a vertical line
+        # If paraxial focal plane was calculated, plot it as a blue vertical line
         if hasattr(self, 'paraxial_focal_plane') and self.paraxial_focal_plane is not None:
-            plt.axvline(x=self.paraxial_focal_plane, color='red', linewidth=1, linestyle='--')
+            plt.axvline(x=self.paraxial_focal_plane, color='blue', linewidth=1, linestyle='--')
+
+        # If focal plane was calculated, plot it as a red vertical line
+        if hasattr(self, 'focal_plane') and self.focal_plane is not None:
+            plt.axvline(x=self.focal_plane, color='red', linewidth=1, linestyle='--')
 
         # Draw text that specifies ray properties
         plt.text(0.01, 0.99, f'{journey[0]}', transform=plt.gca().transAxes, fontsize=12, verticalalignment='top', horizontalalignment='left')
@@ -321,7 +325,7 @@ class RayStudio:
     def run(self):
 
         # Mention what is the test you want to run
-        test = 'curved surface CONVEX'
+        test = 'thorlabs-la3406-convex-plano'
 
         # Test 1 - Flat Surface
         if test == 'flat surface':
@@ -362,21 +366,36 @@ class RayStudio:
         if test == 'thorlabs-la3406-convex-plano':
             n = 1.457
             _Z_c = 20
-            _R_c = -18.4
-            _t_c = 7.1
+            _R_c = -18.4  # [mm]
+            _t_c = 7.1  # center thickness [mm] - distance between curved-surface plane and flat-surface
             _Z_s = _Z_c + _R_c + _t_c
             thorlabs_la4306_focal_length = 40.1
             self.ray_tracer.add_element(CurvedSurface(R_c=_R_c, z_c=_Z_c, n_c=1.457))
             self.ray_tracer.add_element(FlatSurface(z_s=_Z_s, n_s=1))
             self.ray = Ray(z=[2, 2, 2], y=[0.1, 1, 10], theta=[0, 0, 0], n=[1, 1, 1])  # 3-beamed Ray, for measuring abberations
-            # self.ray = Ray(z=-12, y=0, theta=0, n=1, num_of_beams=9, beams_delta_y=1)  # Multi-Beams Ray, equal spacing!
-            # self.ray = Ray(z=[2, 2, 2, 2, 2], y=[0.1, 1, 3, 5, 10], theta=[0, 0, 0, 0, 0], n=[1, 1, 1, 1, 1])  # 3-beamed Ray, for measuring abberations
-            # self.ray = Ray(z=[2], y=[5], theta=[0], n=[1])
             journey = self.ray_tracer.propagate(self.ray)
             H_2 = -thorlabs_la4306_focal_length*(n-1)*_t_c/(n*_R_c)
-            paraxial_focal_plane = _Z_s - H_2
-            self.paraxial_focal_plane = paraxial_focal_plane + thorlabs_la4306_focal_length
+            self.paraxial_focal_plane = _Z_c + _R_c + H_2
+            self.paraxial_focal_plane_WRONG = _Z_s - H_2
+            self.focal_plane = self.paraxial_focal_plane + thorlabs_la4306_focal_length
+            print(f'_z_s = {_Z_s}, H_2 = {H_2}, paraxial_focal_plane={self.paraxial_focal_plane}, focal_point={self.focal_plane}')
 
+        # Test 5 - 3 rays propagate into CONVEX-PLAN Thorlabs LA4306 Fused Silica Lens
+        if test == 'thorlabs-la3406-convex-plano-reversed':
+            n = 1.457
+            _Z_s = 10
+            _R_c = 18.4  # [mm]
+            _t_c = 7.1  # center thickness [mm]
+            _Z_c = _Z_s + _t_c - _R_c  # Position of curved surface is the flat-surface position plus the center-thickness
+            thorlabs_la4306_focal_length = 40.1
+            self.ray_tracer.add_element(FlatSurface(z_s=_Z_s, n_s=1.457))
+            self.ray_tracer.add_element(CurvedSurface(R_c=_R_c, z_c=_Z_c, n_c=1))
+            self.ray = Ray(z=[2, 2, 2], y=[0.1, 1, 10], theta=[0, 0, 0], n=[1, 1, 1])  # 3-beamed Ray, for measuring abberations
+            journey = self.ray_tracer.propagate(self.ray)
+            H_2 = thorlabs_la4306_focal_length*(n-1)*_t_c/(n*_R_c)
+            self.paraxial_focal_plane = _Z_c + _R_c - H_2
+            self.focal_plane = self.paraxial_focal_plane + thorlabs_la4306_focal_length
+            print(f'_z_s = {_Z_s}, H_2 = {H_2}, paraxial_focal_plane={self.paraxial_focal_plane}, focal_point={self.focal_plane}')
 
         self.plot_journey(journey)
 
